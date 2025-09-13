@@ -1,0 +1,75 @@
+🔍 API Route called: POST /api/auth/login
+🔐 Login attempt for: admin@littlemonarch.com with password length: 11
+✅ User found: admin@littlemonarch.com Hash: $2b$12$Qn63H/HhWN3TS...
+🔑 Password valid: true
+Session created: {
+  sessionId: '67Y69pEnfWCfmO1MMuv8KfuW3YKabYKz',
+  userId: 'admin_monarch_competency_001',
+  userRole: 'organization_admin',
+  cookies: undefined
+}
+🍪 Session saved directly, ID: 67Y69pEnfWCfmO1MMuv8KfuW3YKabYKz
+🍪 Session data stored: { userId: 'admin_monarch_competency_001', role: 'organization_admin' }
+🍪 Cookie manually set: s:67Y69pEnfWCfmO1MMuv8KfuW3YKabYKz
+6:15:18 AM [express] POST /api/auth/login 200 in 393ms :: {"user":{"userId":"admin_monarch_competenc…
+🔍 API Route called: GET /api/organizations/monarch_competency
+Auth check: {
+  sessionId: '67Y69pEnfWCfmO1MMuv8KfuW3YKabYKz',
+  userId: 'admin_monarch_competency_001',
+  cookies: 'connect.sid=s%3A67Y69pEnfWCfmO1MMuv8KfuW3YKabYKz.0824CQuNWKY2zm0B7c0WRn5w6hMNU4tsnok%2BiW1np4Q',
+  sessionExists: true
+}
+✅ User authenticated: admin_monarch_competency_001
+6:15:18 AM [express] GET /api/organizations/monarch_competency 304 in 196ms :: {"id":"monarch_compet…
+🔍 API Route called: GET /api/super-admin/clients
+6:15:18 AM [express] GET /api/super-admin/clients 401 in 1ms :: {"message":"Authentication required"}
+🔍 API Route called: GET /api/super-admin/drivers
+6:15:18 AM [express] GET /api/super-admin/drivers 401 in 1ms :: {"message":"Authentication required"}
+🔍 API Route called: GET /api/trips/organization/monarch_competency
+Auth check: {
+  sessionId: '67Y69pEnfWCfmO1MMuv8KfuW3YKabYKz',
+  userId: 'admin_monarch_competency_001',
+  cookies: 'connect.sid=s%3A67Y69pEnfWCfmO1MMuv8KfuW3YKabYKz.0824CQuNWKY2zm0B7c0WRn5w6hMNU4tsnok%2BiW1np4Q',
+  sessionExists: true
+}
+🔍 API Route called: GET /api/clients/organization/monarch_competency
+Auth check: {
+  sessionId: '67Y69pEnfWCfmO1MMuv8KfuW3YKabYKz',
+  userId: 'admin_monarch_competency_001',
+  cookies: 'connect.sid=s%3A67Y69pEnfWCfmO1MMuv8KfuW3YKabYKz.0824CQuNWKY2zm0B7c0WRn5w6hMNU4tsnok%2BiW1np4Q',
+  sessionExists: true
+}
+🔍 API Route called: GET /api/drivers/organization/monarch_competency
+Auth check: {
+  sessionId: '67Y69pEnfWCfmO1MMuv8KfuW3YKabYKz',
+  userId: 'admin_monarch_competency_001',
+  cookies: 'connect.sid=s%3A67Y69pEnfWCfmO1MMuv8KfuW3YKabYKz.0824CQuNWKY2zm0B7c0WRn5w6hMNU4tsnok%2BiW1np4Q',
+  sessionExists: true
+}
+✅ User authenticated: admin_monarch_competency_001
+✅ User authenticated: admin_monarch_competency_001
+✅ User authenticated: admin_monarch_competency_001
+6:15:19 AM [express] GET /api/drivers/organization/monarch_competency 304 in 235ms :: [{"id":"driver…
+6:15:19 AM [express] GET /api/clients/organization/monarch_competency 304 in 245ms :: [{"id":"client…
+6:15:19 AM [express] GET /api/trips/organization/monarch_competency 304 in 477ms :: [{"id":"trip_175…
+🔍 API Route called: GET /api/trips/organization/monarch_competency
+Auth check: {
+  sessionId: '67Y69pEnfWCfmO1MMuv8KfuW3YKabYKz',
+  userId: 'admin_monarch_competency_001',
+  cookies: 'connect.sid=s%3A67Y69pEnfWCfmO1MMuv8KfuW3YKabYKz.0824CQuNWKY2zm0B7c0WRn5w6hMNU4tsnok%2BiW1np4Q',
+  sessionExists: true
+}
+✅ User authenticated: admin_monarch_competency_001
+6:15:19 AM [express] GET /api/trips/organization/monarch_competency 304 in 347ms :: [{"id":"trip_175…
+🔍 API Route called: GET /api/super-admin/clients
+6:15:20 AM [express] GET /api/super-admin/clients 401 in 1ms :: {"message":"Authentication required"}
+🔍 API Route called: GET /api/super-admin/drivers
+6:15:20 AM [express] GET /api/super-admin/drivers 401 in 1ms :: {"message":"Authentication required"}
+🔍 API Route called: GET /api/super-admin/drivers
+6:15:23 AM [express] GET /api/super-admin/drivers 401 in 0ms :: {"message":"Authentication required"}
+🔍 API Route called: GET /api/super-admin/clients
+6:15:23 AM [express] GET /api/super-admin/clients 401 in 7ms :: {"message":"Authentication required"}
+🔍 API Route called: GET /api/super-admin/drivers
+6:15:27 AM [express] GET /api/super-admin/drivers 401 in 1ms :: {"message":"Authentication required"}
+🔍 API Route called: GET /api/super-admin/clients
+6:15:27 AM [express] GET /api/super-admin/clients 401 in 1ms :: {"message":"Authentication required"}

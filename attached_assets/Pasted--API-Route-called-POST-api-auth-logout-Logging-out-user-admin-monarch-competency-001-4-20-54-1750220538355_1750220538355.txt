@@ -1,0 +1,217 @@
+🔍 API Route called: POST /api/auth/logout
+🔄 Logging out user: admin_monarch_competency_001
+4:20:54 AM [express] POST /api/auth/logout 200 in 1ms :: {"message":"Logged out successfully"}
+🔍 API Route called: GET /api/trips/organization/littlemonarch_org
+Auth check: {
+  sessionId: 'j0Vj2PK-J1zggWWbTGK6SATUodUlgc-n',
+  userId: undefined,
+  cookies: undefined,
+  sessionExists: true
+}
+❌ No userId found in session or auth header
+4:20:54 AM [express] GET /api/trips/organization/littlemonarch_org 401 in 1ms :: {"message":"Not aut…
+🔍 API Route called: GET /api/drivers/organization/littlemonarch_org
+Auth check: {
+  sessionId: 'X1rveZcDgvnqkPuUpr3tx-vUigFR38km',
+  userId: undefined,
+  cookies: undefined,
+  sessionExists: true
+}
+❌ No userId found in session or auth header
+4:20:54 AM [express] GET /api/drivers/organization/littlemonarch_org 401 in 1ms :: {"message":"Not a…
+🔍 API Route called: GET /api/clients/organization/littlemonarch_org
+Auth check: {
+  sessionId: 'EFZLDlNX-N3gGsndpYuRaNFuRAp1p4Iu',
+  userId: undefined,
+  cookies: undefined,
+  sessionExists: true
+}
+❌ No userId found in session or auth header
+4:20:54 AM [express] GET /api/clients/organization/littlemonarch_org 401 in 1ms :: {"message":"Not a…
+🔍 API Route called: POST /api/auth/login
+🔐 Login attempt for: admin@littlemonarch.com with password length: 9
+✅ User found: admin@littlemonarch.com Hash: $2b$12$VvGl/OBvLQrHk...
+🔑 Password valid: true
+Session created: {
+  sessionId: 'ZhZOztgzoj0J7YqzK01sD6aQ5R5_48E6',
+  userId: 'admin_monarch_competency_001',
+  userRole: 'organization_admin',
+  cookies: undefined
+}
+🍪 Session saved directly, ID: ZhZOztgzoj0J7YqzK01sD6aQ5R5_48E6
+🍪 Session data stored: { userId: 'admin_monarch_competency_001', role: 'organization_admin' }
+🍪 Session ID set: ZhZOztgzoj0J7YqzK01sD6aQ5R5_48E6
+4:21:27 AM [express] POST /api/auth/login 200 in 343ms :: {"user":{"user_id":"admin_monarch_competen…
+🔍 API Route called: GET /api/trips/organization/littlemonarch_org
+Auth check: {
+  sessionId: 'ZhZOztgzoj0J7YqzK01sD6aQ5R5_48E6',
+  userId: 'admin_monarch_competency_001',
+  cookies: 'connect.sid=s%3AZhZOztgzoj0J7YqzK01sD6aQ5R5_48E6.2oo6sU524Lpayk6oeRxoDtbhaofQOZCRCeLPzWo2vEs',
+  sessionExists: true
+}
+🔍 API Route called: GET /api/drivers/organization/littlemonarch_org
+Auth check: {
+  sessionId: 'ZhZOztgzoj0J7YqzK01sD6aQ5R5_48E6',
+  userId: 'admin_monarch_competency_001',
+  cookies: 'connect.sid=s%3AZhZOztgzoj0J7YqzK01sD6aQ5R5_48E6.2oo6sU524Lpayk6oeRxoDtbhaofQOZCRCeLPzWo2vEs',
+  sessionExists: true
+}
+🔍 API Route called: GET /api/clients/organization/littlemonarch_org
+Auth check: {
+  sessionId: 'ZhZOztgzoj0J7YqzK01sD6aQ5R5_48E6',
+  userId: 'admin_monarch_competency_001',
+  cookies: 'connect.sid=s%3AZhZOztgzoj0J7YqzK01sD6aQ5R5_48E6.2oo6sU524Lpayk6oeRxoDtbhaofQOZCRCeLPzWo2vEs',
+  sessionExists: true
+}
+✅ User authenticated: admin_monarch_competency_001
+✅ User authenticated: admin_monarch_competency_001
+✅ User authenticated: admin_monarch_competency_001
+🔍 PRODUCTION DEBUG - Fetching trips for org: littlemonarch_org, found 0 trips
+✅ Enhanced trips sample: []
+4:21:27 AM [express] GET /api/trips/organization/littlemonarch_org 200 in 117ms :: []
+4:21:27 AM [express] GET /api/drivers/organization/littlemonarch_org 304 in 169ms :: []
+4:21:27 AM [express] GET /api/clients/organization/littlemonarch_org 304 in 169ms :: []
+🔍 API Route called: GET /api/trips/organization/monarch_competency
+Auth check: {
+  sessionId: 'ZhZOztgzoj0J7YqzK01sD6aQ5R5_48E6',
+  userId: 'admin_monarch_competency_001',
+  cookies: 'connect.sid=s%3AZhZOztgzoj0J7YqzK01sD6aQ5R5_48E6.2oo6sU524Lpayk6oeRxoDtbhaofQOZCRCeLPzWo2vEs',
+  sessionExists: true
+}
+🔍 API Route called: GET /api/drivers/organization/monarch_competency
+Auth check: {
+  sessionId: 'ZhZOztgzoj0J7YqzK01sD6aQ5R5_48E6',
+  userId: 'admin_monarch_competency_001',
+  cookies: 'connect.sid=s%3AZhZOztgzoj0J7YqzK01sD6aQ5R5_48E6.2oo6sU524Lpayk6oeRxoDtbhaofQOZCRCeLPzWo2vEs',
+  sessionExists: true
+}
+🔍 API Route called: GET /api/clients/organization/monarch_competency
+Auth check: {
+  sessionId: 'ZhZOztgzoj0J7YqzK01sD6aQ5R5_48E6',
+  userId: 'admin_monarch_competency_001',
+  cookies: 'connect.sid=s%3AZhZOztgzoj0J7YqzK01sD6aQ5R5_48E6.2oo6sU524Lpayk6oeRxoDtbhaofQOZCRCeLPzWo2vEs',
+  sessionExists: true
+}
+✅ User authenticated: admin_monarch_competency_001
+✅ User authenticated: admin_monarch_competency_001
+✅ User authenticated: admin_monarch_competency_001
+4:21:45 AM [express] GET /api/drivers/organization/monarch_competency 304 in 147ms :: [{"id":"driver…
+4:21:45 AM [express] GET /api/clients/organization/monarch_competency 304 in 148ms :: [{"id":"client…
+🔍 PRODUCTION DEBUG - Fetching trips for org: monarch_competency, found 2 trips
+🔍 Trip trip_1750136637187: Client=Sarah Johnson, Driver=Alex Martinez
+🔍 Trip trip_1750178660425: Client=Sarah Johnson, Driver=Alex Martinez
+✅ Enhanced trips sample: [
+  {
+    id: 'trip_1750136637187',
+    organization_id: 'monarch_competency',
+    client_id: 'client_monarch_competency_001',
+    driver_id: 'driver_alex_001',
+    trip_type: 'one_way',
+    pickup_address: '5335 Newton St. Denver, CO 80221',
+    dropoff_address: '52 Yank Ct. Lakewood, CO 80228',
+    scheduled_pickup_time: '2025-07-02T17:00:00',
+    scheduled_return_time: null,
+    actual_pickup_time: null,
+    actual_dropoff_time: null,
+    actual_return_time: null,
+    passenger_count: 1,
+    special_requirements: null,
+    status: 'scheduled',
+    notes: null,
+    created_at: '2025-06-17T05:03:57.187',
+    updated_at: '2025-06-17T05:03:57.187',
+    pickup_location: null,
+    dropoff_location: null,
+    scheduled_dropoff_time: null,
+    vehicle_id: null,
+    clients: {
+      phone: '(704) 555-0201',
+      address: '123 Main St, Charlotte, NC 28202',
+      last_name: 'Johnson',
+      first_name: 'Sarah'
+    },
+    drivers: { users: [Object], user_id: 'alex_monarch_competency_001' },
+    client_first_name: 'Sarah',
+    client_last_name: 'Johnson',
+    driver_name: 'Alex Martinez',
+    client: {
+      first_name: 'Sarah',
+      last_name: 'Johnson',
+      phone: '(704) 555-0201',
+      email: 'sarah.johnson@email.com'
+    }
+  }
+]
+4:21:45 AM [express] GET /api/trips/organization/monarch_competency 200 in 276ms :: [{"id":"trip_175…
+🔍 API Route called: GET /api/trips/organization/monarch_competency
+Auth check: {
+  sessionId: 'ZhZOztgzoj0J7YqzK01sD6aQ5R5_48E6',
+  userId: 'admin_monarch_competency_001',
+  cookies: 'connect.sid=s%3AZhZOztgzoj0J7YqzK01sD6aQ5R5_48E6.2oo6sU524Lpayk6oeRxoDtbhaofQOZCRCeLPzWo2vEs',
+  sessionExists: true
+}
+🔍 API Route called: GET /api/clients/organization/monarch_competency
+Auth check: {
+  sessionId: 'ZhZOztgzoj0J7YqzK01sD6aQ5R5_48E6',
+  userId: 'admin_monarch_competency_001',
+  cookies: 'connect.sid=s%3AZhZOztgzoj0J7YqzK01sD6aQ5R5_48E6.2oo6sU524Lpayk6oeRxoDtbhaofQOZCRCeLPzWo2vEs',
+  sessionExists: true
+}
+🔍 API Route called: GET /api/drivers/organization/monarch_competency
+Auth check: {
+  sessionId: 'ZhZOztgzoj0J7YqzK01sD6aQ5R5_48E6',
+  userId: 'admin_monarch_competency_001',
+  cookies: 'connect.sid=s%3AZhZOztgzoj0J7YqzK01sD6aQ5R5_48E6.2oo6sU524Lpayk6oeRxoDtbhaofQOZCRCeLPzWo2vEs',
+  sessionExists: true
+}
+✅ User authenticated: admin_monarch_competency_001
+✅ User authenticated: admin_monarch_competency_001
+✅ User authenticated: admin_monarch_competency_001
+4:21:45 AM [express] GET /api/clients/organization/monarch_competency 304 in 113ms :: [{"id":"client…
+4:21:45 AM [express] GET /api/drivers/organization/monarch_competency 304 in 113ms :: [{"id":"driver…
+🔍 PRODUCTION DEBUG - Fetching trips for org: monarch_competency, found 2 trips
+🔍 Trip trip_1750136637187: Client=Sarah Johnson, Driver=Alex Martinez
+🔍 Trip trip_1750178660425: Client=Sarah Johnson, Driver=Alex Martinez
+✅ Enhanced trips sample: [
+  {
+    id: 'trip_1750136637187',
+    organization_id: 'monarch_competency',
+    client_id: 'client_monarch_competency_001',
+    driver_id: 'driver_alex_001',
+    trip_type: 'one_way',
+    pickup_address: '5335 Newton St. Denver, CO 80221',
+    dropoff_address: '52 Yank Ct. Lakewood, CO 80228',
+    scheduled_pickup_time: '2025-07-02T17:00:00',
+    scheduled_return_time: null,
+    actual_pickup_time: null,
+    actual_dropoff_time: null,
+    actual_return_time: null,
+    passenger_count: 1,
+    special_requirements: null,
+    status: 'scheduled',
+    notes: null,
+    created_at: '2025-06-17T05:03:57.187',
+    updated_at: '2025-06-17T05:03:57.187',
+    pickup_location: null,
+    dropoff_location: null,
+    scheduled_dropoff_time: null,
+    vehicle_id: null,
+    clients: {
+      phone: '(704) 555-0201',
+      address: '123 Main St, Charlotte, NC 28202',
+      last_name: 'Johnson',
+      first_name: 'Sarah'
+    },
+    drivers: { users: [Object], user_id: 'alex_monarch_competency_001' },
+    client_first_name: 'Sarah',
+    client_last_name: 'Johnson',
+    driver_name: 'Alex Martinez',
+    client: {
+      first_name: 'Sarah',
+      last_name: 'Johnson',
+      phone: '(704) 555-0201',
+      email: 'sarah.johnson@email.com'
+    }
+  }
+]
+4:21:45 AM [express] GET /api/trips/organization/monarch_competency 200 in 245ms :: [{"id":"trip_175…

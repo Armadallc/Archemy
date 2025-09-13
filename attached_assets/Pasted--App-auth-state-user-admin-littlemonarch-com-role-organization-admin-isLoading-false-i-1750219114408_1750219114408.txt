@@ -1,0 +1,261 @@
+🔍 App auth state: {user: 'admin@littlemonarch.com', role: 'organization_admin', isLoading: false}
+index-DQM8Dnpe.js:368 ✅ Calendar received 2 trips: (2) [{…}, {…}]
+index-DQM8Dnpe.js:395 🔍 App auth state: {user: 'admin@littlemonarch.com', role: 'organization_admin', isLoading: false}
+index-DQM8Dnpe.js:385 Clients data: {clientsData: Array(2), clients: Array(2), isArray: true, error: null, currentOrganization: {…}}
+index-DQM8Dnpe.js:385 Service areas data: {serviceAreasData: undefined, serviceAreas: Array(0), isArray: false, error: null}
+index-DQM8Dnpe.js:328 
+            
+            
+           GET https://aethr-transport-66yvtc4jtf.replit.app/api/service-areas/organization/monarch_competency 404 (Not Found)
+pe @ index-DQM8Dnpe.js:328
+queryFn @ index-DQM8Dnpe.js:385
+a @ index-DQM8Dnpe.js:40
+w @ index-DQM8Dnpe.js:40
+start @ index-DQM8Dnpe.js:40
+fetch @ index-DQM8Dnpe.js:40
+Eo @ index-DQM8Dnpe.js:40
+onSubscribe @ index-DQM8Dnpe.js:40
+subscribe @ index-DQM8Dnpe.js:40
+(anonymous) @ index-DQM8Dnpe.js:40
+q0 @ index-DQM8Dnpe.js:38
+od @ index-DQM8Dnpe.js:40
+ha @ index-DQM8Dnpe.js:40
+wE @ index-DQM8Dnpe.js:40
+ni @ index-DQM8Dnpe.js:40
+Rv @ index-DQM8Dnpe.js:40
+Ys @ index-DQM8Dnpe.js:38
+(anonymous) @ index-DQM8Dnpe.js:40
+index-DQM8Dnpe.js:328 
+            
+            
+           GET https://aethr-transport-66yvtc4jtf.replit.app/api/client-groups/organization/monarch_competency 404 (Not Found)
+pe @ index-DQM8Dnpe.js:328
+queryFn @ index-DQM8Dnpe.js:385
+a @ index-DQM8Dnpe.js:40
+w @ index-DQM8Dnpe.js:40
+start @ index-DQM8Dnpe.js:40
+fetch @ index-DQM8Dnpe.js:40
+Eo @ index-DQM8Dnpe.js:40
+onSubscribe @ index-DQM8Dnpe.js:40
+subscribe @ index-DQM8Dnpe.js:40
+(anonymous) @ index-DQM8Dnpe.js:40
+q0 @ index-DQM8Dnpe.js:38
+od @ index-DQM8Dnpe.js:40
+ha @ index-DQM8Dnpe.js:40
+wE @ index-DQM8Dnpe.js:40
+ni @ index-DQM8Dnpe.js:40
+Rv @ index-DQM8Dnpe.js:40
+Ys @ index-DQM8Dnpe.js:38
+(anonymous) @ index-DQM8Dnpe.js:40
+index-DQM8Dnpe.js:328 
+            
+            
+           GET https://aethr-transport-66yvtc4jtf.replit.app/api/service-areas/organization/monarch_competency 404 (Not Found)
+pe @ index-DQM8Dnpe.js:328
+queryFn @ index-DQM8Dnpe.js:385
+a @ index-DQM8Dnpe.js:40
+w @ index-DQM8Dnpe.js:40
+(anonymous) @ index-DQM8Dnpe.js:40
+Promise.then
+(anonymous) @ index-DQM8Dnpe.js:40
+Promise.catch
+w @ index-DQM8Dnpe.js:40
+start @ index-DQM8Dnpe.js:40
+fetch @ index-DQM8Dnpe.js:40
+Eo @ index-DQM8Dnpe.js:40
+onSubscribe @ index-DQM8Dnpe.js:40
+subscribe @ index-DQM8Dnpe.js:40
+(anonymous) @ index-DQM8Dnpe.js:40
+q0 @ index-DQM8Dnpe.js:38
+od @ index-DQM8Dnpe.js:40
+ha @ index-DQM8Dnpe.js:40
+wE @ index-DQM8Dnpe.js:40
+ni @ index-DQM8Dnpe.js:40
+Rv @ index-DQM8Dnpe.js:40
+Ys @ index-DQM8Dnpe.js:38
+(anonymous) @ index-DQM8Dnpe.js:40
+index-DQM8Dnpe.js:328 
+            
+            
+           GET https://aethr-transport-66yvtc4jtf.replit.app/api/client-groups/organization/monarch_competency 404 (Not Found)
+pe @ index-DQM8Dnpe.js:328
+queryFn @ index-DQM8Dnpe.js:385
+a @ index-DQM8Dnpe.js:40
+w @ index-DQM8Dnpe.js:40
+(anonymous) @ index-DQM8Dnpe.js:40
+Promise.then
+(anonymous) @ index-DQM8Dnpe.js:40
+Promise.catch
+w @ index-DQM8Dnpe.js:40
+start @ index-DQM8Dnpe.js:40
+fetch @ index-DQM8Dnpe.js:40
+Eo @ index-DQM8Dnpe.js:40
+onSubscribe @ index-DQM8Dnpe.js:40
+subscribe @ index-DQM8Dnpe.js:40
+(anonymous) @ index-DQM8Dnpe.js:40
+q0 @ index-DQM8Dnpe.js:38
+od @ index-DQM8Dnpe.js:40
+ha @ index-DQM8Dnpe.js:40
+wE @ index-DQM8Dnpe.js:40
+ni @ index-DQM8Dnpe.js:40
+Rv @ index-DQM8Dnpe.js:40
+Ys @ index-DQM8Dnpe.js:38
+(anonymous) @ index-DQM8Dnpe.js:40
+index-DQM8Dnpe.js:395 🔍 App auth state: {user: 'admin@littlemonarch.com', role: 'organization_admin', isLoading: false}
+index-DQM8Dnpe.js:395 🔍 App auth state: {user: 'admin@littlemonarch.com', role: 'organization_admin', isLoading: false}
+index-DQM8Dnpe.js:395 🔍 App auth state: {user: 'admin@littlemonarch.com', role: 'organization_admin', isLoading: false}
+index-DQM8Dnpe.js:328 
+            
+            
+           GET https://aethr-transport-66yvtc4jtf.replit.app/api/service-areas/organization/monarch_competency 404 (Not Found)
+pe @ index-DQM8Dnpe.js:328
+queryFn @ index-DQM8Dnpe.js:385
+a @ index-DQM8Dnpe.js:40
+w @ index-DQM8Dnpe.js:40
+start @ index-DQM8Dnpe.js:40
+fetch @ index-DQM8Dnpe.js:40
+Eo @ index-DQM8Dnpe.js:40
+onSubscribe @ index-DQM8Dnpe.js:40
+subscribe @ index-DQM8Dnpe.js:40
+(anonymous) @ index-DQM8Dnpe.js:40
+q0 @ index-DQM8Dnpe.js:38
+od @ index-DQM8Dnpe.js:40
+ha @ index-DQM8Dnpe.js:40
+wE @ index-DQM8Dnpe.js:40
+ni @ index-DQM8Dnpe.js:40
+Rv @ index-DQM8Dnpe.js:40
+Ys @ index-DQM8Dnpe.js:38
+(anonymous) @ index-DQM8Dnpe.js:40
+index-DQM8Dnpe.js:328 
+            
+            
+           GET https://aethr-transport-66yvtc4jtf.replit.app/api/service-areas/organization/monarch_competency 404 (Not Found)
+pe @ index-DQM8Dnpe.js:328
+queryFn @ index-DQM8Dnpe.js:385
+a @ index-DQM8Dnpe.js:40
+w @ index-DQM8Dnpe.js:40
+(anonymous) @ index-DQM8Dnpe.js:40
+Promise.then
+(anonymous) @ index-DQM8Dnpe.js:40
+Promise.catch
+w @ index-DQM8Dnpe.js:40
+start @ index-DQM8Dnpe.js:40
+fetch @ index-DQM8Dnpe.js:40
+Eo @ index-DQM8Dnpe.js:40
+onSubscribe @ index-DQM8Dnpe.js:40
+subscribe @ index-DQM8Dnpe.js:40
+(anonymous) @ index-DQM8Dnpe.js:40
+q0 @ index-DQM8Dnpe.js:38
+od @ index-DQM8Dnpe.js:40
+ha @ index-DQM8Dnpe.js:40
+wE @ index-DQM8Dnpe.js:40
+ni @ index-DQM8Dnpe.js:40
+Rv @ index-DQM8Dnpe.js:40
+Ys @ index-DQM8Dnpe.js:38
+(anonymous) @ index-DQM8Dnpe.js:40
+index-DQM8Dnpe.js:395 🔍 App auth state: {user: 'admin@littlemonarch.com', role: 'organization_admin', isLoading: false}
+index-DQM8Dnpe.js:328 
+            
+            
+           GET https://aethr-transport-66yvtc4jtf.replit.app/api/users/organization/monarch_competency 404 (Not Found)
+pe @ index-DQM8Dnpe.js:328
+queryFn @ index-DQM8Dnpe.js:385
+a @ index-DQM8Dnpe.js:40
+w @ index-DQM8Dnpe.js:40
+start @ index-DQM8Dnpe.js:40
+fetch @ index-DQM8Dnpe.js:40
+Eo @ index-DQM8Dnpe.js:40
+onSubscribe @ index-DQM8Dnpe.js:40
+subscribe @ index-DQM8Dnpe.js:40
+(anonymous) @ index-DQM8Dnpe.js:40
+q0 @ index-DQM8Dnpe.js:38
+od @ index-DQM8Dnpe.js:40
+ha @ index-DQM8Dnpe.js:40
+wE @ index-DQM8Dnpe.js:40
+ni @ index-DQM8Dnpe.js:40
+Rv @ index-DQM8Dnpe.js:40
+Ys @ index-DQM8Dnpe.js:38
+(anonymous) @ index-DQM8Dnpe.js:40
+index-DQM8Dnpe.js:328 
+            
+            
+           GET https://aethr-transport-66yvtc4jtf.replit.app/api/users/organization/monarch_competency 404 (Not Found)
+pe @ index-DQM8Dnpe.js:328
+queryFn @ index-DQM8Dnpe.js:385
+a @ index-DQM8Dnpe.js:40
+w @ index-DQM8Dnpe.js:40
+(anonymous) @ index-DQM8Dnpe.js:40
+Promise.then
+(anonymous) @ index-DQM8Dnpe.js:40
+Promise.catch
+w @ index-DQM8Dnpe.js:40
+start @ index-DQM8Dnpe.js:40
+fetch @ index-DQM8Dnpe.js:40
+Eo @ index-DQM8Dnpe.js:40
+onSubscribe @ index-DQM8Dnpe.js:40
+subscribe @ index-DQM8Dnpe.js:40
+(anonymous) @ index-DQM8Dnpe.js:40
+q0 @ index-DQM8Dnpe.js:38
+od @ index-DQM8Dnpe.js:40
+ha @ index-DQM8Dnpe.js:40
+wE @ index-DQM8Dnpe.js:40
+ni @ index-DQM8Dnpe.js:40
+Rv @ index-DQM8Dnpe.js:40
+Ys @ index-DQM8Dnpe.js:38
+(anonymous) @ index-DQM8Dnpe.js:40
+index-DQM8Dnpe.js:395 🔍 App auth state: {user: 'admin@littlemonarch.com', role: 'organization_admin', isLoading: false}
+index-DQM8Dnpe.js:328 
+            
+            
+           GET https://aethr-transport-66yvtc4jtf.replit.app/api/driver-schedules/organization/monarch_competency 404 (Not Found)
+pe @ index-DQM8Dnpe.js:328
+queryFn @ index-DQM8Dnpe.js:385
+a @ index-DQM8Dnpe.js:40
+w @ index-DQM8Dnpe.js:40
+start @ index-DQM8Dnpe.js:40
+fetch @ index-DQM8Dnpe.js:40
+Eo @ index-DQM8Dnpe.js:40
+onSubscribe @ index-DQM8Dnpe.js:40
+subscribe @ index-DQM8Dnpe.js:40
+(anonymous) @ index-DQM8Dnpe.js:40
+q0 @ index-DQM8Dnpe.js:38
+od @ index-DQM8Dnpe.js:40
+ha @ index-DQM8Dnpe.js:40
+wE @ index-DQM8Dnpe.js:40
+ni @ index-DQM8Dnpe.js:40
+Rv @ index-DQM8Dnpe.js:40
+Ys @ index-DQM8Dnpe.js:38
+(anonymous) @ index-DQM8Dnpe.js:40
+index-DQM8Dnpe.js:328 
+            
+            
+           GET https://aethr-transport-66yvtc4jtf.replit.app/api/driver-schedules/organization/monarch_competency 404 (Not Found)
+pe @ index-DQM8Dnpe.js:328
+queryFn @ index-DQM8Dnpe.js:385
+a @ index-DQM8Dnpe.js:40
+w @ index-DQM8Dnpe.js:40
+(anonymous) @ index-DQM8Dnpe.js:40
+Promise.then
+(anonymous) @ index-DQM8Dnpe.js:40
+Promise.catch
+w @ index-DQM8Dnpe.js:40
+start @ index-DQM8Dnpe.js:40
+fetch @ index-DQM8Dnpe.js:40
+Eo @ index-DQM8Dnpe.js:40
+onSubscribe @ index-DQM8Dnpe.js:40
+subscribe @ index-DQM8Dnpe.js:40
+(anonymous) @ index-DQM8Dnpe.js:40
+q0 @ index-DQM8Dnpe.js:38
+od @ index-DQM8Dnpe.js:40
+ha @ index-DQM8Dnpe.js:40
+wE @ index-DQM8Dnpe.js:40
+ni @ index-DQM8Dnpe.js:40
+Rv @ index-DQM8Dnpe.js:40
+Ys @ index-DQM8Dnpe.js:38
+(anonymous) @ index-DQM8Dnpe.js:40
+index-DQM8Dnpe.js:395 🔍 App auth state: {user: 'admin@littlemonarch.com', role: 'organization_admin', isLoading: false}
+index-DQM8Dnpe.js:385 Mobile app query state: {trips: Array(0), isLoading: true, error: null, isAuthenticated: false, webAppAuthenticated: true}
+/mobile-preview:1 [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) <input type=​"password" class=​"flex h-10 w-full rounded-md border px-3 py-2 text-base ring-offset-background file:​border-0 file:​bg-transparent file:​text-sm file:​font-medium file:​text-foreground placeholder:​text-muted-foreground focus-visible:​outline-none focus-visible:​ring-2 focus-visible:​ring-ring focus-visible:​ring-offset-2 disabled:​cursor-not-allowed disabled:​opacity-50 md:​text-sm bg-gray-700 border-gray-600 text-white" placeholder=​"Password" value>​flex
+index-DQM8Dnpe.js:395 🔍 App auth state: {user: 'admin@littlemonarch.com', role: 'organization_admin', isLoading: false}
+index-DQM8Dnpe.js:395 🔍 App auth state: {user: 'admin@littlemonarch.com', role: 'organization_admin', isLoading: false}
+index-DQM8Dnpe.js:368 ✅ Calendar received 2 trips: (2) [{…}, {…}]

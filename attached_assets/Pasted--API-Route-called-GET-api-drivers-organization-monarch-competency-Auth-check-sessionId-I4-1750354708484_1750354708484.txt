@@ -1,0 +1,76 @@
+🔍 API Route called: GET /api/drivers/organization/monarch_competency
+Auth check: {
+  sessionId: 'I41yYMM8WcxQK9-1sUHjYfG9a6TRSVtc',
+  userId: undefined,
+  cookies: undefined,
+  sessionExists: true,
+  sessionData: Session {
+    cookie: {
+      path: '/',
+      _expires: 2025-06-20T01:35:56.278Z,
+      originalMaxAge: 28800000,
+      httpOnly: false,
+      secure: false,
+      sameSite: 'lax'
+    }
+  }
+}
+❌ No userId found in session or auth header
+5:35:56 PM [express] GET /api/drivers/organization/monarch_competency 401 in 1ms :: {"message":"Not …
+🔍 API Route called: GET /api/drivers/organization/monarch_competency
+Auth check: {
+  sessionId: 'YMHeLcu2Hwp7I9PVvGkjMfurtxQJvyEG',
+  userId: undefined,
+  cookies: undefined,
+  sessionExists: true,
+  sessionData: Session {
+    cookie: {
+      path: '/',
+      _expires: 2025-06-20T01:35:57.376Z,
+      originalMaxAge: 28800000,
+      httpOnly: false,
+      secure: false,
+      sameSite: 'lax'
+    }
+  }
+}
+❌ No userId found in session or auth header
+5:35:57 PM [express] GET /api/drivers/organization/monarch_competency 401 in 1ms :: {"message":"Not …
+🔍 API Route called: GET /api/drivers/organization/monarch_competency
+Auth check: {
+  sessionId: '0-fqpOUhHgHQuWsVuLwczDPG0K8V0CM-',
+  userId: undefined,
+  cookies: undefined,
+  sessionExists: true,
+  sessionData: Session {
+    cookie: {
+      path: '/',
+      _expires: 2025-06-20T01:35:59.454Z,
+      originalMaxAge: 28800000,
+      httpOnly: false,
+      secure: false,
+      sameSite: 'lax'
+    }
+  }
+}
+❌ No userId found in session or auth header
+5:35:59 PM [express] GET /api/drivers/organization/monarch_competency 401 in 1ms :: {"message":"Not …
+🔍 API Route called: GET /api/drivers/organization/monarch_competency
+Auth check: {
+  sessionId: 'j6GkI5L70XMZmoFDnBsEsHsobjbuEzRK',
+  userId: undefined,
+  cookies: undefined,
+  sessionExists: true,
+  sessionData: Session {
+    cookie: {
+      path: '/',
+      _expires: 2025-06-20T01:36:03.524Z,
+      originalMaxAge: 28800000,
+      httpOnly: false,
+      secure: false,
+      sameSite: 'lax'
+    }
+  }
+}
+❌ No userId found in session or auth header
+5:36:03 PM [express] GET /api/drivers/organization/monarch_competency 401 in 1ms :: {"message":"Not …

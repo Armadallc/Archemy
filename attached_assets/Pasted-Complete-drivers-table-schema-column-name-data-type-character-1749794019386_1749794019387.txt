@@ -1,0 +1,41 @@
+Complete drivers table schema:
+
+| column_name              | data_type                   | character_maximum_length | is_nullable | column_default                         | ordinal_position |
+| ------------------------ | --------------------------- | ------------------------ | ----------- | -------------------------------------- | ---------------- |
+| id                       | text                        | null                     | NO          | ('driver_'::text || gen_random_uuid()) | 1                |
+| user_id                  | text                        | null                     | NO          | null                                   | 2                |
+| primary_organization_id  | text                        | null                     | NO          | null                                   | 3                |
+| authorized_organizations | ARRAY                       | null                     | YES         | '{}'::text[]                           | 4                |
+| license_number           | text                        | null                     | NO          | null                                   | 5                |
+| license_expiry           | date                        | null                     | YES         | null                                   | 6                |
+| vehicle_info             | text                        | null                     | YES         | null                                   | 7                |
+| phone                    | text                        | null                     | YES         | null                                   | 8                |
+| emergency_contact        | text                        | null                     | YES         | null                                   | 9                |
+| emergency_phone          | text                        | null                     | YES         | null                                   | 10               |
+| is_available             | boolean                     | null                     | YES         | true                                   | 11               |
+| is_active                | boolean                     | null                     | YES         | true                                   | 12               |
+| created_at               | timestamp without time zone | null                     | YES         | CURRENT_TIMESTAMP                      | 13               |
+| updated_at               | timestamp without time zone | null                     | YES         | CURRENT_TIMESTAMP                      | 14               |
+
+
+All drivers data:
+
+| id                   | user_id       | primary_organization_id | authorized_organizations | license_number | license_expiry | vehicle_info             | phone | emergency_contact | emergency_phone | is_available | is_active | created_at                 | updated_at                 |
+| -------------------- | ------------- | ----------------------- | ------------------------ | -------------- | -------------- | ------------------------ | ----- | ----------------- | --------------- | ------------ | --------- | -------------------------- | -------------------------- |
+| driver_1749740891490 | test_user_001 | monarch_competency      | []                       | NC123456789    | null           | 2020 Honda Pilot - White | null  | null              | null            | true         | true      | 2025-06-12 15:08:11.619821 | 2025-06-12 15:08:11.619821 |
+| driver_1749740840868 | test_user_001 | monarch_competency      | []                       | NC123456789    | null           | 2020 Honda Pilot - White | null  | null              | null            | true         | true      | 2025-06-12 15:07:20.96204  | 2025-06-12 15:07:20.96204  |
+
+
+Driver statistics by organization;
+
+| primary_organization_id | total_drivers | active_drivers | available_drivers | drivers_with_vehicles |
+| ----------------------- | ------------- | -------------- | ----------------- | --------------------- |
+| monarch_competency      | 2             | 2              | 2                 | 2                     |
+
+
+Data quality isues:
+
+| issue                    | user_id       | count |
+| ------------------------ | ------------- | ----- |
+| Duplicate user_id        | test_user_001 | 2     |
+| Duplicate license_number | NC123456789   | 2     |

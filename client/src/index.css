@@ -1,0 +1,871 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Font Faces */
+/* Nohemi - For body text and general UI */
+@font-face {
+  font-family: 'Nohemi';
+  src: url('/fonts/Nohemi-Regular-BF6438cc58b98fc_1751001805496.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nohemi';
+  src: url('/fonts/Nohemi-Medium-BF6438cc581a509_1751001805496.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nohemi';
+  src: url('/fonts/Nohemi-SemiBold-BF6438cc588b5e5_1751001805496.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* DegularDisplay - For headers and titles */
+@font-face {
+  font-family: 'DegularDisplay';
+  src: url('/fonts/DegularDisplay-Bold_1751002370220.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'DegularDisplay';
+  src: url('/fonts/DegularDisplay-Black_1751002370214.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+
+
+/* Brutalist Typography Scale (1.618 Golden Ratio) */
+@layer components {
+  /* Mega Headers - Page Titles */
+  .text-mega { 
+    font-family: var(--font-primary);
+    font-weight: 900; 
+    font-size: 64px; 
+    line-height: 0.9; 
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+  }
+  
+  .text-xl-display { 
+    font-family: var(--font-primary);
+    font-weight: 800; 
+    font-size: 48px; 
+    line-height: 0.95; 
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+  }
+
+  /* Section Headers */
+  .text-brutalist-h1 { 
+    font-family: var(--font-primary);
+    font-weight: 700; 
+    font-size: 36px; 
+    line-height: 1.1; 
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+  }
+  
+  .text-brutalist-h2 { 
+    font-family: var(--font-primary);
+    font-weight: 600; 
+    font-size: 28px; 
+    line-height: 1.2; 
+    text-transform: uppercase;
+  }
+
+  /* Body Text */
+  .text-brutalist-body { 
+    font-family: var(--font-primary);
+    font-weight: 500; 
+    font-size: 18px; 
+    line-height: 1.4; 
+  }
+  
+  .text-brutalist-small { 
+    font-family: var(--font-primary);
+    font-weight: 500; 
+    font-size: 14px; 
+    line-height: 1.3; 
+  }
+  
+  .text-brutalist-caption { 
+    font-family: var(--font-primary);
+    font-weight: 600; 
+    font-size: 12px; 
+    text-transform: uppercase; 
+    letter-spacing: 0.1em; 
+  }
+
+  /* Legacy Typography - maintained for compatibility */
+  .heading-primary {
+    @apply font-heading font-bold text-2xl;
+  }
+  
+  .heading-secondary {
+    @apply font-heading font-bold text-xl;
+  }
+  
+  .heading-tertiary {
+    @apply font-heading font-bold text-lg;
+  }
+}
+
+/* PWA and Mobile Optimizations */
+@layer base {
+  html {
+    /* Prevent zoom on input focus on iOS */
+    -webkit-text-size-adjust: 100%;
+    /* Better font rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    /* Prevent pull-to-refresh and overscroll */
+    overscroll-behavior: none;
+    /* Better touch scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Safe area support for notched devices */
+  :root {
+    --safe-area-inset-top: env(safe-area-inset-top);
+    --safe-area-inset-right: env(safe-area-inset-right);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom);
+    --safe-area-inset-left: env(safe-area-inset-left);
+  }
+
+  .h-safe-area-inset-bottom {
+    height: var(--safe-area-inset-bottom);
+  }
+
+  /* Improve button and link touch targets for mobile */
+  button, a, [role="button"] {
+    min-height: 44px; /* iOS recommended touch target */
+  }
+  
+  /* Ensure proper viewport on mobile */
+  @media screen and (max-width: 768px) {
+    body {
+      font-size: 16px; /* Prevent zoom on input focus */
+    }
+    
+    /* Hide desktop elements on mobile */
+    .desktop-only {
+      display: none !important;
+    }
+    
+    /* Mobile-specific styles */
+    .mobile-optimized {
+      padding: 1rem;
+      max-width: 100vw;
+    }
+    
+    /* Full-width cards on mobile */
+    .trip-card-mobile {
+      margin: 0;
+      border-radius: 0.5rem;
+    }
+    
+    /* Safe area for mobile devices */
+    .safe-area-pb {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+
+  /* Better focus states for keyboard users */
+  button:focus-visible, 
+  a:focus-visible, 
+  [role="button"]:focus-visible {
+    outline: 2px solid #3B82F6;
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Mobile-optimized trip cards */
+  .trip-card-mobile {
+    @apply p-4 rounded-lg border border-gray-200 bg-white shadow-sm;
+    touch-action: manipulation; /* Disable double-tap zoom */
+  }
+
+  /* Better mobile form inputs */
+  .form-input-mobile {
+    @apply px-4 py-3 text-base border rounded-lg;
+    /* Prevent zoom on focus on iOS */
+    font-size: 16px;
+  }
+
+  /* Mobile-optimized buttons */
+  .btn-mobile {
+    @apply min-h-12 px-6 py-3 text-base font-medium rounded-lg;
+    touch-action: manipulation;
+  }
+
+  /* Status badges with better mobile visibility */
+  .status-badge-mobile {
+    @apply px-3 py-1 text-sm font-medium rounded-full;
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbars but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Better mobile spacing */
+  .mobile-padding {
+    @apply px-4 py-6;
+  }
+
+  /* Responsive text sizes */
+  .text-mobile-lg {
+    @apply text-lg md:text-xl;
+  }
+
+  .text-mobile-base {
+    @apply text-base md:text-lg;
+  }
+
+  .text-mobile-sm {
+    @apply text-sm md:text-base;
+  }
+}
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(60, 4.8%, 95.9%);
+  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --accent: hsl(60, 4.8%, 95.9%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.5rem;
+
+  /* Trip status colors */
+  --scheduled: hsl(45, 100%, 51%);
+  --confirmed: hsl(207, 90%, 54%);
+  --in-progress: hsl(36, 100%, 50%);
+  --completed: hsl(122, 39%, 49%);
+  --cancelled: hsl(0, 84%, 60%);
+
+  /* Minimal Brutalist Color Palette */
+  /* Payne's Grey Primary + 4 Tones */
+  --payne-grey: #424348;
+  --payne-dark: #2c2b30;
+  --payne-deeper: #1a1a1e;
+  --payne-light: #51565e;
+  --payne-lighter: #6a7179;
+
+  /* Casper Blue Primary + 4 Tones */
+  --casper-blue: #A4B7BB;
+  --casper-dark: #87939d;
+  --casper-deeper: #6a7179;
+  --casper-light: #b5bbc4;
+  --casper-lighter: #cfdee6;
+
+  /* White Smoke Primary + 4 Tones */
+  --white-smoke: #F0F0F0;
+  --smoke-dark: #dedadf;
+  --smoke-deeper: #bcb6bd;
+  --smoke-light: #f6f8f8;
+  --smoke-lighter: #fafbfa;
+
+  /* Coral Accent Primary + 4 Tones - Darker Reference Match */
+  --coral-accent: #E74C3C;
+  --coral-dark: #C0392B;
+  --coral-deeper: #A93226;
+  --coral-light: #EC7063;
+  --coral-lighter: #F1948A;
+
+  /* Two-Color Foundation Interface */
+  --foundation-bg: #F0EDE5;        /* Cow's Milk - everything */
+  --foundation-text: #312F2C;      /* Holy Crow - all text */
+  --foundation-border: #312F2C;    /* Holy Crow - all borders */
+  --foundation-shadow: #312F2C;    /* Holy Crow - drop shadows */
+  
+  /* Subtle Hover Variations (same color family) */
+  --hover-bg-light: #f5f2ea;      /* Lighter Cow's Milk */
+  --hover-bg-dark: #ebe7de;       /* Darker Cow's Milk */
+  --hover-text-light: #403d39;    /* Lighter Holy Crow */
+  
+  /* Status/Alert Color (minimal usage) */
+  --status-accent: #A4B7BB;       /* Casper - gentle on eyes */
+  --status-shadow: #A4B7BB;       /* Casper shadows */
+  
+  /* Subtle Radius System */
+  --radius-sm: 4px;    /* Small elements */
+  --radius-md: 8px;    /* Cards, buttons */
+  --radius-lg: 12px;   /* Sections */
+  --radius-xl: 16px;   /* Main containers */
+  
+  /* Legacy Brutalist Color System - for compatibility */
+  --holy-crow: #312F2C;        /* Dark charcoal */
+  --stargazing: #424348;       /* Medium grey */
+  --cows-milk: #F0EDE5;        /* Warm cream */
+  --casper-brutalist: #A4B7BB; /* Steel blue-grey */
+  --ultra-moss: #D2F75A;       /* Lime accent */
+  
+  /* Brutalist Tonal Variations */
+  --holy-crow-light: #403d39;
+  --stargazing-light: #51565e;
+  --cows-milk-dark: #e8e4db;
+  --casper-brutalist-dark: #87939d;
+  --ultra-moss-dark: #b8e039;
+
+  /* Calendar Specific Colors */
+  --calendar-bg: var(--foundation-bg);           /* Calendar background */
+  --calendar-cell-bg: var(--foundation-bg);      /* Calendar cell background */
+  --calendar-cell-hover: var(--hover-bg-light);  /* Calendar cell hover */
+  --calendar-cell-border: var(--foundation-border); /* Calendar cell border */
+  --calendar-header-bg: var(--hover-bg-dark);    /* Calendar header background */
+  --calendar-today-bg: var(--status-accent);     /* Today's date background */
+  --calendar-selected-bg: var(--status-accent);  /* Selected date background */
+  --calendar-nav-hover: var(--hover-bg-light);   /* Navigation button hover */
+  
+  /* Card Specific Colors */
+  --card-bg: var(--foundation-bg);               /* Card background */
+  --card-border: var(--foundation-border);       /* Card border */
+  --card-hover-bg: var(--hover-bg-light);        /* Card hover background */
+  --card-hover-border: var(--status-accent);     /* Card hover border */
+  --card-header-bg: var(--hover-bg-dark);        /* Card header background */
+  --card-shadow: rgba(49, 47, 44, 0.1);          /* Card shadow */
+  --card-hover-shadow: rgba(49, 47, 44, 0.15);   /* Card hover shadow */
+  
+  /* List Specific Colors */
+  --list-bg: var(--foundation-bg);               /* List background */
+  --list-item-bg: var(--foundation-bg);          /* List item background */
+  --list-item-hover: var(--hover-bg-light);      /* List item hover */
+  --list-item-border: var(--foundation-border);  /* List item border */
+  --list-item-active: var(--status-accent);      /* Active list item */
+  --list-header-bg: var(--hover-bg-dark);        /* List header background */
+  --list-divider: var(--foundation-border);      /* List divider */
+  
+  /* Driver Assignment Colors for Calendar */
+  --driver-color-1: #8B5CF6;  /* Violet */
+  --driver-color-2: #EC4899;  /* Pink */
+  --driver-color-3: #06B6D4;  /* Cyan */
+  --driver-color-4: #84CC16;  /* Lime */
+  --driver-color-5: #F97316;  /* Orange */
+  --driver-color-6: #6366F1;  /* Indigo */
+
+  /* Typography */
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.dark {
+  --background: hsl(0, 0%, 4%);
+  --foreground: hsl(0, 0%, 94%);
+  --muted: hsl(0, 0%, 8%);
+  --muted-foreground: hsl(195, 12%, 72%);
+  --popover: hsl(0, 0%, 4%);
+  --popover-foreground: hsl(0, 0%, 94%);
+  --card: hsl(0, 0%, 6%);
+  --card-foreground: hsl(0, 0%, 94%);
+  --border: hsl(0, 0%, 12%);
+  --input: hsl(0, 0%, 10%);
+  --primary: hsl(4, 90%, 58%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(0, 0%, 10%);
+  --secondary-foreground: hsl(0, 0%, 94%);
+  --accent: hsl(0, 0%, 10%);
+  --accent-foreground: hsl(0, 0%, 94%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(4, 90%, 58%);
+
+  /* Trip status colors for dark mode */
+  --scheduled: hsl(45, 100%, 51%);
+  --confirmed: hsl(207, 90%, 54%);
+  --in-progress: hsl(36, 100%, 50%);
+  --completed: hsl(122, 39%, 49%);
+  --cancelled: hsl(0, 84%, 60%);
+
+  /* Dark Mode Brand Colors */
+  --payne-grey: #F0F0F0;
+  --payne-dark: #dedadf;
+  --payne-deeper: #bcb6bd;
+  --payne-light: #f6f8f8;
+  --payne-lighter: #fafbfa;
+
+  --casper-blue: #A4B7BB;
+  --casper-dark: #87939d;
+  --casper-deeper: #6a7179;
+  --casper-light: #b5bbc4;
+  --casper-lighter: #cfdee6;
+
+  --white-smoke: #1A1A1A;
+  --smoke-dark: #0A0A0A;
+  --smoke-deeper: #000000;
+  --smoke-light: #2A2A2A;
+  --smoke-lighter: #3A3A3A;
+
+  --coral-accent: #E74C3C;
+  --coral-dark: #C0392B;
+  --coral-deeper: #A93226;
+  --coral-light: #EC7063;
+  --coral-lighter: #F1948A;
+
+  /* Dark Mode Calendar Colors */
+  --calendar-bg: hsl(0, 0%, 4%);
+  --calendar-cell-bg: hsl(0, 0%, 6%);
+  --calendar-cell-hover: hsl(0, 0%, 10%);
+  --calendar-cell-border: hsl(0, 0%, 12%);
+  --calendar-header-bg: hsl(0, 0%, 8%);
+  --calendar-today-bg: hsl(4, 90%, 58%);
+  --calendar-selected-bg: hsl(4, 90%, 58%);
+  --calendar-nav-hover: hsl(0, 0%, 10%);
+  
+  /* Dark Mode Card Colors */
+  --card-bg: hsl(0, 0%, 6%);
+  --card-border: hsl(0, 0%, 12%);
+  --card-hover-bg: hsl(0, 0%, 8%);
+  --card-hover-border: hsl(4, 90%, 58%);
+  --card-header-bg: hsl(0, 0%, 4%);
+  --card-shadow: rgba(0, 0, 0, 0.3);
+  --card-hover-shadow: rgba(0, 0, 0, 0.5);
+  
+  /* Dark Mode List Colors */
+  --list-bg: hsl(0, 0%, 4%);
+  --list-item-bg: hsl(0, 0%, 6%);
+  --list-item-hover: hsl(0, 0%, 8%);
+  --list-item-border: hsl(0, 0%, 12%);
+  --list-item-active: hsl(4, 90%, 58%);
+  --list-header-bg: hsl(0, 0%, 4%);
+  --list-divider: hsl(0, 0%, 12%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer utilities {
+  .status-scheduled {
+    background-color: var(--scheduled);
+  }
+  
+  .status-confirmed {
+    background-color: var(--confirmed);
+  }
+  
+  .status-in-progress {
+    background-color: var(--in-progress);
+  }
+  
+  .status-completed {
+    background-color: var(--completed);
+  }
+  
+  .status-cancelled {
+    background-color: var(--cancelled);
+  }
+
+  .text-scheduled {
+    color: var(--scheduled);
+  }
+  
+  .text-confirmed {
+    color: var(--confirmed);
+  }
+  
+  .text-in-progress {
+    color: var(--in-progress);
+  }
+  
+  .text-completed {
+    color: var(--completed);
+  }
+  
+  .text-cancelled {
+    color: var(--cancelled);
+  }
+}
+
+/* Motion Design System - Performance Optimized */
+@layer components {
+  /* Base Animation Properties - GPU Optimized */
+  .animate-smooth {
+    transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .animate-smooth-slow {
+    transition: transform 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  /* Interactive Elements */
+  .interactive-hover {
+    transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+  }
+  
+  .interactive-hover:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .interactive-hover:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Button Enhancements */
+  .btn-coral {
+    background: var(--coral-accent);
+    color: white;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .btn-coral:hover {
+    background: var(--coral-dark);
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+  }
+  
+  .btn-coral:active {
+    transform: scale(0.98);
+  }
+
+  /* Status Indicators with Pulse */
+  .status-pulse {
+    transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+    animation: status-pulse 2s infinite;
+  }
+  
+  @keyframes status-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.05); }
+  }
+
+  /* Form Focus Ring Enhancement */
+  .form-focus {
+    transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+    outline: none;
+    border-color: transparent;
+  }
+  
+  .form-focus:focus {
+    border-color: var(--coral-accent);
+    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+  }
+  
+  /* Dark mode form focus */
+  .dark .form-focus:focus {
+    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.3);
+  }
+
+  /* Card Hover Effects */
+  .card-hover {
+    transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+    background: var(--white-smoke-base);
+    border: 1px solid var(--casper-blue-light);
+  }
+  
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    border-color: var(--casper-blue-base);
+  }
+  
+  /* Dark mode card hovers */
+  .dark .card-hover:hover {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+  }
+
+  /* Navigation State Changes */
+  .nav-active {
+    transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+    background: linear-gradient(135deg, var(--casper-blue-light), var(--casper-blue-base));
+    color: var(--payne-grey-dark);
+  }
+  
+  .nav-inactive {
+    transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+    background: transparent;
+    color: var(--payne-grey-base);
+  }
+  
+  .nav-inactive:hover {
+    background: var(--white-smoke-light);
+    transform: translateX(4px);
+  }
+
+  /* Loading States */
+  .loading-coral {
+    animation: spin 1s linear infinite;
+    border: 2px solid var(--coral-light);
+    border-top: 2px solid var(--coral-accent);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Modal Entrances */
+  .modal-enter {
+    animation: modal-slide-in 0.3s ease-out;
+  }
+  
+  @keyframes modal-slide-in {
+    0% { 
+      opacity: 0; 
+      transform: scale(0.9) translateY(-10px); 
+    }
+    100% { 
+      opacity: 1; 
+      transform: scale(1) translateY(0); 
+    }
+  }
+
+  /* Data Table Row Highlights */
+  .table-row-highlight {
+    transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+    background: var(--white-smoke-base);
+  }
+  
+  .table-row-highlight:hover {
+    background: var(--casper-blue-light);
+  }
+  
+  .table-row-highlight.updated {
+    animation: row-flash 0.6s ease-out;
+  }
+  
+  @keyframes row-flash {
+    0% { background: var(--coral-light); }
+    100% { background: var(--white-smoke-base); }
+  }
+
+  /* Staggered Reveals for Dashboard Cards */
+  .stagger-reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: reveal-up 0.6s ease-out forwards;
+  }
+  
+  .stagger-reveal:nth-child(1) { animation-delay: 0.1s; }
+  .stagger-reveal:nth-child(2) { animation-delay: 0.2s; }
+  .stagger-reveal:nth-child(3) { animation-delay: 0.3s; }
+  .stagger-reveal:nth-child(4) { animation-delay: 0.4s; }
+  
+  @keyframes reveal-up {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Micro-interactions for Status Changes */
+  .status-change {
+    animation: status-bounce 0.5s ease-out;
+  }
+  
+  @keyframes status-bounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+
+  /* Calendar Day Selection Morphing */
+  .calendar-day {
+    transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+    background: var(--white-smoke-base);
+    border: 1px solid var(--casper-blue-light);
+  }
+  
+  .calendar-day:hover {
+    background: var(--casper-blue-light);
+    transform: scale(1.05);
+  }
+  
+  .calendar-day.selected {
+    background: var(--coral-accent);
+    color: white;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+  }
+}
+
+/* Accessibility: Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .status-pulse {
+    animation: none;
+  }
+  
+  .stagger-reveal {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+}
+
+/* Brutalist Interactive Elements */
+@layer utilities {
+  /* Two-Color Foundation Interactive Card Effects */
+  .interactive-card {
+    border-radius: var(--radius-lg);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid var(--foundation-border);
+    background-color: var(--foundation-bg);
+  }
+
+  .interactive-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(49, 47, 44, 0.15);
+    background-color: var(--hover-bg-light);
+    border-radius: var(--radius-xl);
+  }
+
+  /* Refined Brutalist Button Effects */
+  .brutalist-button {
+    border-radius: var(--radius-md);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(49, 47, 44, 0.1);
+    transform: translateY(0);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: none;
+  }
+
+  .brutalist-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(210, 247, 90, 0.25);
+    border-radius: var(--radius-lg);
+  }
+
+  .brutalist-button:active {
+    transform: translateY(0);
+    border-radius: var(--radius-sm);
+  }
+
+  /* Brutalist Color Utilities */
+  .bg-holy-crow { background-color: var(--holy-crow); }
+  .bg-stargazing { background-color: var(--stargazing); }
+  .bg-cows-milk { background-color: var(--cows-milk); }
+  .bg-casper-brutalist { background-color: var(--casper-brutalist); }
+  .bg-ultra-moss { background-color: var(--ultra-moss); }
+
+  .text-holy-crow { color: var(--holy-crow); }
+  .text-stargazing { color: var(--stargazing); }
+  .text-cows-milk { color: var(--cows-milk); }
+  .text-casper-brutalist { color: var(--casper-brutalist); }
+  .text-ultra-moss { color: var(--ultra-moss); }
+
+  .border-holy-crow { border-color: var(--holy-crow); }
+  .border-stargazing { border-color: var(--stargazing); }
+  .border-cows-milk { border-color: var(--cows-milk); }
+  .border-casper-brutalist { border-color: var(--casper-brutalist); }
+  .border-ultra-moss { border-color: var(--ultra-moss); }
+
+  /* Refined radius system */
+  .rounded-sm { border-radius: var(--radius-sm); }
+  .rounded-md { border-radius: var(--radius-md); }
+  .rounded-lg { border-radius: var(--radius-lg); }
+  .rounded-xl { border-radius: var(--radius-xl); }
+  
+  /* Remove rounded corners for brutalist design */
+  .rounded-brutalist { border-radius: 0; }
+  
+  /* Thick borders for brutalist look */
+  .border-brutalist { border-width: 3px; }
+  .border-brutalist-thick { border-width: 4px; }
+
+  /* Two-Color Foundation Utilities */
+  .bg-foundation { background-color: var(--foundation-bg); }
+  .text-foundation { color: var(--foundation-text); }
+  .border-foundation { border-color: var(--foundation-border); }
+  
+  /* Subtle Hover Variations */
+  .hover-lighter:hover { background-color: var(--hover-bg-light); }
+  .hover-darker:hover { background-color: var(--hover-bg-dark); }
+  .hover-shadow:hover { box-shadow: 0 8px 16px rgba(49, 47, 44, 0.15); }
+  .hover-lift:hover { transform: translateY(-2px); }
+  
+  /* Status/Alert Color (minimal usage) */
+  .bg-status-accent { background-color: var(--status-accent); }
+  .text-status-accent { color: var(--status-accent); }
+  .shadow-status { box-shadow: 0 8px 16px rgba(164, 183, 187, 0.15); }
+  
+  /* Calendar Component Utilities */
+  .calendar-bg { background-color: var(--calendar-bg); }
+  .calendar-cell-bg { background-color: var(--calendar-cell-bg); }
+  .calendar-cell-hover:hover { background-color: var(--calendar-cell-hover); }
+  .calendar-cell-border { border-color: var(--calendar-cell-border); }
+  .calendar-header-bg { background-color: var(--calendar-header-bg); }
+  .calendar-today-bg { background-color: var(--calendar-today-bg); }
+  .calendar-selected-bg { background-color: var(--calendar-selected-bg); }
+  .calendar-nav-hover:hover { background-color: var(--calendar-nav-hover); }
+  
+  /* Card Component Utilities */
+  .card-custom-bg { background-color: var(--card-bg); }
+  .card-custom-border { border-color: var(--card-border); }
+  .card-custom-hover:hover { 
+    background-color: var(--card-hover-bg); 
+    border-color: var(--card-hover-border);
+    box-shadow: var(--card-hover-shadow);
+  }
+  .card-header-bg { background-color: var(--card-header-bg); }
+  .card-custom-shadow { box-shadow: var(--card-shadow); }
+  
+  /* List Component Utilities */
+  .list-custom-bg { background-color: var(--list-bg); }
+  .list-item-bg { background-color: var(--list-item-bg); }
+  .list-item-hover:hover { background-color: var(--list-item-hover); }
+  .list-item-border { border-color: var(--list-item-border); }
+  .list-item-active { background-color: var(--list-item-active); }
+  .list-header-bg { background-color: var(--list-header-bg); }
+  .list-divider { border-color: var(--list-divider); }
+}

@@ -1,0 +1,105 @@
+🔍 API Route called: GET /api/trips/organization/monarch_competency
+Auth check: {
+  sessionId: 'WtOqBYh0a6sx6lNvVFSM1NWrtwtkOGzU',
+  userId: undefined,
+  cookies: undefined,
+  sessionExists: true,
+  sessionData: Session {
+    cookie: {
+      path: '/',
+      _expires: 2025-06-26T04:00:22.993Z,
+      originalMaxAge: 14400000,
+      httpOnly: false,
+      secure: false,
+      sameSite: 'lax',
+      domain: undefined
+    }
+  }
+}
+🔑 Using auth token for authentication
+✅ User authenticated: super_admin_monarch_001
+12:00:23 AM [express] GET /api/trips/organization/monarch_competency 200 in 554ms :: [{"id":"trip_175…
+🔍 API Route called: DELETE /api/trips/trip_1750882910535_2xppyxes5_w3
+Auth check: {
+  sessionId: 'dDuBrBHyS8_UDMdPF3pf9Cb_DZy7PsbL',
+  userId: undefined,
+  cookies: undefined,
+  sessionExists: true,
+  sessionData: Session {
+    cookie: {
+      path: '/',
+      _expires: 2025-06-26T04:00:26.117Z,
+      originalMaxAge: 14400000,
+      httpOnly: false,
+      secure: false,
+      sameSite: 'lax',
+      domain: undefined
+    }
+  }
+}
+🔑 Using auth token for authentication
+✅ User authenticated: super_admin_monarch_001
+12:00:26 AM [express] DELETE /api/trips/trip_1750882910535_2xppyxes5_w3 204 in 198ms
+🔍 API Route called: GET /api/trips/organization/monarch_competency
+Auth check: {
+  sessionId: 'gDzxLX_mdlHixBwq-01h7fiRUNx2ei-X',
+  userId: undefined,
+  cookies: undefined,
+  sessionExists: true,
+  sessionData: Session {
+    cookie: {
+      path: '/',
+      _expires: 2025-06-26T04:00:26.403Z,
+      originalMaxAge: 14400000,
+      httpOnly: false,
+      secure: false,
+      sameSite: 'lax',
+      domain: undefined
+    }
+  }
+}
+🔑 Using auth token for authentication
+✅ User authenticated: super_admin_monarch_001
+🔍 API Route called: GET /api/trips/organization/monarch_competency
+Auth check: {
+  sessionId: '3bBB-H5uPr4iEpqt1DsFqrbSSBDy9lgA',
+  userId: undefined,
+  cookies: undefined,
+  sessionExists: true,
+  sessionData: Session {
+    cookie: {
+      path: '/',
+      _expires: 2025-06-26T04:00:26.654Z,
+      originalMaxAge: 14400000,
+      httpOnly: false,
+      secure: false,
+      sameSite: 'lax',
+      domain: undefined
+    }
+  }
+}
+🔑 Using auth token for authentication
+✅ User authenticated: super_admin_monarch_001
+12:00:26 AM [express] GET /api/trips/organization/monarch_competency 200 in 433ms :: [{"id":"trip_175…
+12:00:27 AM [express] GET /api/trips/organization/monarch_competency 200 in 382ms :: [{"id":"trip_175…
+🔍 API Route called: GET /api/trips/organization/monarch_competency
+Auth check: {
+  sessionId: '7J0iNpU5ZvMPyrvs5CS3lUHscWqdXVf8',
+  userId: undefined,
+  cookies: undefined,
+  sessionExists: true,
+  sessionData: Session {
+    cookie: {
+      path: '/',
+      _expires: 2025-06-26T04:00:37.063Z,
+      originalMaxAge: 14400000,
+      httpOnly: false,
+      secure: false,
+      sameSite: 'lax',
+      domain: undefined
+    }
+  }
+}
+🔑 Using auth token for authentication
+✅ User authenticated: super_admin_monarch_001
+12:00:37 AM [express] GET /api/trips/organization/monarch_competency 200 in 447ms :: [{"id":"trip_175…

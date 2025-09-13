@@ -1,0 +1,62 @@
+🔍 API Route called: POST /api/auth/login
+🔐 Login attempt for: admin@littlemonarch.com with password length: 11
+✅ User found: admin@littlemonarch.com Hash: $2b$12$MzeEK8Mo/.oKd...
+🔑 Password valid: true
+Session created: {
+  sessionId: '7XcQZHhcKFbU1Rs-WICnafYCxtLADkmV',
+  userId: 'admin_littlemonarch_001',
+  userRole: 'organization_admin',
+  cookies: undefined
+}
+🍪 Session saved directly, ID: 7XcQZHhcKFbU1Rs-WICnafYCxtLADkmV
+🍪 Session data stored: { userId: 'admin_littlemonarch_001', role: 'organization_admin' }
+🍪 Cookie manually set: s:7XcQZHhcKFbU1Rs-WICnafYCxtLADkmV
+3:55:36 AM [express] POST /api/auth/login 200 in 374ms :: {"user":{"userId":"admin_littlemonarch_001…
+🔍 API Route called: GET /api/organizations/littlemonarch_org
+3:55:36 AM [express] GET /api/organizations/littlemonarch_org 404 in 2ms :: {"error":"API endpoint n…
+🔍 API Route called: GET /api/trips/organization/monarch_competency
+3:55:36 AM [express] GET /api/trips/organization/monarch_competency 404 in 1ms :: {"error":"API endp…
+🔍 API Route called: GET /api/drivers/organization/monarch_competency
+3:55:36 AM [express] GET /api/drivers/organization/monarch_competency 404 in 1ms :: {"error":"API en…
+🔍 API Route called: GET /api/clients/organization/monarch_competency
+3:55:36 AM [express] GET /api/clients/organization/monarch_competency 404 in 1ms :: {"error":"API en…
+🔍 API Route called: GET /api/organizations/littlemonarch_org
+3:55:38 AM [express] GET /api/organizations/littlemonarch_org 404 in 0ms :: {"error":"API endpoint n…
+🔍 API Route called: GET /api/trips/organization/monarch_competency
+3:55:38 AM [express] GET /api/trips/organization/monarch_competency 404 in 1ms :: {"error":"API endp…
+🔍 API Route called: GET /api/drivers/organization/monarch_competency
+3:55:38 AM [express] GET /api/drivers/organization/monarch_competency 404 in 1ms :: {"error":"API en…
+🔍 API Route called: GET /api/clients/organization/monarch_competency
+3:55:38 AM [express] GET /api/clients/organization/monarch_competency 404 in 1ms :: {"error":"API en…
+🔍 API Route called: GET /api/organizations/littlemonarch_org
+3:55:40 AM [express] GET /api/organizations/littlemonarch_org 404 in 1ms :: {"error":"API endpoint n…
+🔍 API Route called: GET /api/trips/organization/monarch_competency
+3:55:40 AM [express] GET /api/trips/organization/monarch_competency 404 in 1ms :: {"error":"API endp…
+🔍 API Route called: GET /api/drivers/organization/monarch_competency
+3:55:40 AM [express] GET /api/drivers/organization/monarch_competency 404 in 1ms :: {"error":"API en…
+🔍 API Route called: GET /api/clients/organization/monarch_competency
+3:55:40 AM [express] GET /api/clients/organization/monarch_competency 404 in 0ms :: {"error":"API en…
+🔍 API Route called: GET /api/organizations/littlemonarch_org
+3:55:44 AM [express] GET /api/organizations/littlemonarch_org 404 in 1ms :: {"error":"API endpoint n…
+🔍 API Route called: GET /api/trips/organization/monarch_competency
+3:55:44 AM [express] GET /api/trips/organization/monarch_competency 404 in 1ms :: {"error":"API endp…
+🔍 API Route called: GET /api/clients/organization/monarch_competency
+3:55:44 AM [express] GET /api/clients/organization/monarch_competency 404 in 1ms :: {"error":"API en…
+🔍 API Route called: GET /api/drivers/organization/monarch_competency
+3:55:44 AM [express] GET /api/drivers/organization/monarch_competency 404 in 1ms :: {"error":"API en…
+🔍 API Route called: GET /api/super-admin/drivers
+3:55:45 AM [express] GET /api/super-admin/drivers 404 in 1ms :: {"error":"API endpoint not found"}
+🔍 API Route called: GET /api/super-admin/clients
+3:55:45 AM [express] GET /api/super-admin/clients 404 in 0ms :: {"error":"API endpoint not found"}
+🔍 API Route called: GET /api/super-admin/clients
+3:55:47 AM [express] GET /api/super-admin/clients 404 in 1ms :: {"error":"API endpoint not found"}
+🔍 API Route called: GET /api/super-admin/drivers
+3:55:47 AM [express] GET /api/super-admin/drivers 404 in 0ms :: {"error":"API endpoint not found"}
+🔍 API Route called: GET /api/super-admin/clients
+3:55:49 AM [express] GET /api/super-admin/clients 404 in 0ms :: {"error":"API endpoint not found"}
+🔍 API Route called: GET /api/super-admin/drivers
+3:55:49 AM [express] GET /api/super-admin/drivers 404 in 1ms :: {"error":"API endpoint not found"}
+🔍 API Route called: GET /api/super-admin/clients
+3:55:53 AM [express] GET /api/super-admin/clients 404 in 1ms :: {"error":"API endpoint not found"}
+🔍 API Route called: GET /api/super-admin/drivers
+3:55:53 AM [express] GET /api/super-admin/drivers 404 in 0ms :: {"error":"API endpoint not found"}

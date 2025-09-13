@@ -1,0 +1,78 @@
+Recommended Font Strategy: Milligram Complete
+
+**Milligram’s weight spectrum enables perfect brutalist typography:**
+
+```css
+/* Milligram Font Implementation */
+@import url('https://fonts.googleapis.com/css2?family=Milligram:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+:root {
+  --font-primary: 'Milligram', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Brutalist Typography Hierarchy */
+.text-mega { 
+  font-family: var(--font-primary);
+  font-weight: 900; /* Extra Bold */
+  font-size: 64px; 
+  line-height: 0.9; 
+  letter-spacing: -0.02em;
+}
+
+.text-brutalist-h1 { 
+  font-family: var(--font-primary);
+  font-weight: 800; /* Bold */
+  font-size: 36px; 
+  line-height: 1.1; 
+  letter-spacing: -0.01em;
+}
+
+.text-brutalist-h2 { 
+  font-family: var(--font-primary);
+  font-weight: 700; /* Semi Bold */
+  font-size: 28px; 
+  line-height: 1.2; 
+}
+
+.text-brutalist-body { 
+  font-family: var(--font-primary);
+  font-weight: 500; /* Medium */
+  font-size: 18px; 
+  line-height: 1.4; 
+}
+
+.text-brutalist-small { 
+  font-family: var(--font-primary);
+  font-weight: 400; /* Regular */
+  font-size: 14px; 
+  line-height: 1.3; 
+}
+
+.text-brutalist-caption { 
+  font-family: var(--font-primary);
+  font-weight: 600; /* Semi Bold */
+  font-size: 12px; 
+  text-transform: uppercase; 
+  letter-spacing: 0.1em; 
+}
+```
+
+## Strategic Advantages of Milligram-Only:
+
+**Visual Consistency:** Single font family eliminates typographic discord while providing massive weight variation for clear hierarchy.
+
+**Operational Clarity:** Uniform character shapes across all weights ensure rapid text recognition under operational stress—critical for healthcare transportation interfaces.
+
+**Load Performance:** One font family reduces HTTP requests and improves initial page load compared to multiple font imports.
+
+**Design Authority:** Milligram’s geometric construction aligns perfectly with brutalist architectural principles—clean, uncompromising, functional.
+
+## Weight Mapping for Interface Elements:
+
+- **900 (Black):** Page titles, system alerts
+- **800 (Extra Bold):** Section headers, primary actions
+- **700 (Bold):** Card titles, navigation active states
+- **600 (Semi Bold):** Button labels, form labels
+- **500 (Medium):** Body text, descriptions
+- **400 (Regular):** Secondary text, placeholders
+- **300 (Light):** Timestamps, metadata (minimal use)

@@ -1,0 +1,194 @@
+🔍 API Route called: GET /api/serviceareas/organization/monarch_competency
+Auth check: {
+  sessionId: 'ACPdDFm9AMpl5HEoxyPz0NIVc4xrJxY7',
+  userId: undefined,
+  cookies: undefined,
+  sessionExists: true,
+  sessionData: Session {
+    cookie: {
+      path: '/',
+      _expires: 2025-06-21T04:55:24.197Z,
+      originalMaxAge: 14400000,
+      httpOnly: false,
+      secure: false,
+      sameSite: 'lax',
+      domain: undefined
+    }
+  }
+}
+🔍 API Route called: GET /api/clients/organization/monarch_competency
+Auth check: {
+  sessionId: 'NsEoXR4FqFQVPU9RRbwluMI0PSPch_Z1',
+  userId: undefined,
+  cookies: undefined,
+  sessionExists: true,
+  sessionData: Session {
+    cookie: {
+      path: '/',
+      _expires: 2025-06-21T04:55:24.199Z,
+      originalMaxAge: 14400000,
+      httpOnly: false,
+      secure: false,
+      sameSite: 'lax',
+      domain: undefined
+    }
+  }
+}
+🔍 API Route called: GET /api/trips/organization/monarch_competency
+Auth check: {
+  sessionId: '8UsOfTDxuF0K54Az90Uitblx_p80KDjP',
+  userId: undefined,
+  cookies: undefined,
+  sessionExists: true,
+  sessionData: Session {
+    cookie: {
+      path: '/',
+      _expires: 2025-06-21T04:55:24.217Z,
+      originalMaxAge: 14400000,
+      httpOnly: false,
+      secure: false,
+      sameSite: 'lax',
+      domain: undefined
+    }
+  }
+}
+✅ User authenticated: admin_monarch_competency_001
+✅ User authenticated: admin_monarch_competency_001
+✅ User authenticated: admin_monarch_competency_001
+12:55:24 AM [express] GET /api/serviceareas/organization/monarch_competency 304 in 185ms :: [{"id":"s…
+12:55:24 AM [express] GET /api/clients/organization/monarch_competency 304 in 204ms :: [{"id":"client…
+🔍 API Route called: GET /api/frequentlocations/organization/monarch_competency
+Auth check: {
+  sessionId: 'yJ1VQI1Z99RIKFXq67LW1dCvKtRLVJP7',
+  userId: undefined,
+  cookies: undefined,
+  sessionExists: true,
+  sessionData: Session {
+    cookie: {
+      path: '/',
+      _expires: 2025-06-21T04:55:24.474Z,
+      originalMaxAge: 14400000,
+      httpOnly: false,
+      secure: false,
+      sameSite: 'lax',
+      domain: undefined
+    }
+  }
+}
+✅ User authenticated: admin_monarch_competency_001
+12:55:24 AM [express] GET /api/frequentlocations/organization/monarch_competency 304 in 182ms :: [{"i…
+12:55:24 AM [express] GET /api/trips/organization/monarch_competency 200 in 568ms :: [{"id":"trip_175…
+🔍 API Route called: GET /api/drivers/organization/monarch_competency
+Auth check: {
+  sessionId: 'jgswEBncW14CjL0JFgZHEQ-PnpKspDUx',
+  userId: 'alex_driver_user',
+  cookies: 'connect.sid=s%3AjgswEBncW14CjL0JFgZHEQ-PnpKspDUx.iZd%2BABsy4yfjKSxCm8iMESoVwxK7FcGFUbKOs9jK%2BoE',
+  sessionExists: true,
+  sessionData: Session {
+    cookie: {
+      path: '/',
+      _expires: 2025-06-21T12:55:16.667Z,
+      originalMaxAge: 43200000,
+      httpOnly: false,
+      secure: false,
+      sameSite: 'lax'
+    },
+    userId: 'alex_driver_user',
+    user: {
+      user_id: 'alex_driver_user',
+      user_name: 'Alex Thompson',
+      email: 'alex@monarch.com',
+      password_hash: '$2b$10$PEBmBX2za.dWH9z38/xAouyZ74swSAIxzkLxze5NPZ7p4I.eQvWkq',
+      role: 'driver',
+      primary_organization_id: 'monarch_competency',
+      authorized_organizations: [Array],
+      is_active: true,
+      created_at: '2025-06-14T18:43:50.400742',
+      updated_at: '2025-06-20T05:06:12.927316'
+    },
+    currentOrganizationId: 'monarch_competency'
+  }
+}
+✅ User authenticated: alex_driver_user
+12:55:26 AM [express] GET /api/drivers/organization/monarch_competency 304 in 335ms :: [{"id":"driver…
+🔍 API Route called: GET /api/trips/driver/driver_3a7ff0fb-3f54-4943-8c97-6ced934ab2d6
+🔍 Fetching trips for driver: driver_3a7ff0fb-3f54-4943-8c97-6ced934ab2d6
+📋 Found 5 trips for driver driver_3a7ff0fb-3f54-4943-8c97-6ced934ab2d6
+📋 Enhanced 5 trips with client details for driver driver_3a7ff0fb-3f54-4943-8c97-6ced934ab2d6
+12:55:26 AM [express] GET /api/trips/driver/driver_3a7ff0fb-3f54-4943-8c97-6ced934ab2d6 304 in 202ms …
+🔍 API Route called: GET /api/drivers/organization/monarch_competency
+Auth check: {
+  sessionId: 'jgswEBncW14CjL0JFgZHEQ-PnpKspDUx',
+  userId: 'alex_driver_user',
+  cookies: 'connect.sid=s%3AjgswEBncW14CjL0JFgZHEQ-PnpKspDUx.iZd%2BABsy4yfjKSxCm8iMESoVwxK7FcGFUbKOs9jK%2BoE',
+  sessionExists: true,
+  sessionData: Session {
+    cookie: {
+      path: '/',
+      _expires: 2025-06-21T12:55:26.603Z,
+      originalMaxAge: 43200000,
+      httpOnly: false,
+      secure: false,
+      sameSite: 'lax'
+    },
+    userId: 'alex_driver_user',
+    user: {
+      user_id: 'alex_driver_user',
+      user_name: 'Alex Thompson',
+      email: 'alex@monarch.com',
+      password_hash: '$2b$10$PEBmBX2za.dWH9z38/xAouyZ74swSAIxzkLxze5NPZ7p4I.eQvWkq',
+      role: 'driver',
+      primary_organization_id: 'monarch_competency',
+      authorized_organizations: [Array],
+      is_active: true,
+      created_at: '2025-06-14T18:43:50.400742',
+      updated_at: '2025-06-20T05:06:12.927316'
+    },
+    currentOrganizationId: 'monarch_competency'
+  }
+}
+✅ User authenticated: alex_driver_user
+12:55:36 AM [express] GET /api/drivers/organization/monarch_competency 304 in 210ms :: [{"id":"driver…
+🔍 API Route called: GET /api/trips/driver/driver_3a7ff0fb-3f54-4943-8c97-6ced934ab2d6
+🔍 Fetching trips for driver: driver_3a7ff0fb-3f54-4943-8c97-6ced934ab2d6
+📋 Found 5 trips for driver driver_3a7ff0fb-3f54-4943-8c97-6ced934ab2d6
+📋 Enhanced 5 trips with client details for driver driver_3a7ff0fb-3f54-4943-8c97-6ced934ab2d6
+12:55:36 AM [express] GET /api/trips/driver/driver_3a7ff0fb-3f54-4943-8c97-6ced934ab2d6 304 in 182ms …
+🔍 API Route called: GET /api/drivers/organization/monarch_competency
+Auth check: {
+  sessionId: 'jgswEBncW14CjL0JFgZHEQ-PnpKspDUx',
+  userId: 'alex_driver_user',
+  cookies: 'connect.sid=s%3AjgswEBncW14CjL0JFgZHEQ-PnpKspDUx.iZd%2BABsy4yfjKSxCm8iMESoVwxK7FcGFUbKOs9jK%2BoE',
+  sessionExists: true,
+  sessionData: Session {
+    cookie: {
+      path: '/',
+      _expires: 2025-06-21T12:55:36.485Z,
+      originalMaxAge: 43200000,
+      httpOnly: false,
+      secure: false,
+      sameSite: 'lax'
+    },
+    userId: 'alex_driver_user',
+    user: {
+      user_id: 'alex_driver_user',
+      user_name: 'Alex Thompson',
+      email: 'alex@monarch.com',
+      password_hash: '$2b$10$PEBmBX2za.dWH9z38/xAouyZ74swSAIxzkLxze5NPZ7p4I.eQvWkq',
+      role: 'driver',
+      primary_organization_id: 'monarch_competency',
+      authorized_organizations: [Array],
+      is_active: true,
+      created_at: '2025-06-14T18:43:50.400742',
+      updated_at: '2025-06-20T05:06:12.927316'
+    },
+    currentOrganizationId: 'monarch_competency'
+  }
+}
+✅ User authenticated: alex_driver_user
+12:55:46 AM [express] GET /api/drivers/organization/monarch_competency 304 in 193ms :: [{"id":"driver…
+🔍 API Route called: GET /api/trips/driver/driver_3a7ff0fb-3f54-4943-8c97-6ced934ab2d6
+🔍 Fetching trips for driver: driver_3a7ff0fb-3f54-4943-8c97-6ced934ab2d6
+📋 Found 5 trips for driver driver_3a7ff0fb-3f54-4943-8c97-6ced934ab2d6
+📋 Enhanced 5 trips with client details for driver driver_3a7ff0fb-3f54-4943-8c97-6ced934ab2d6
+12:55:46 AM [express] GET /api/trips/driver/driver_3a7ff0fb-3f54-4943-8c97-6ced934ab2d6 304 in 207ms …

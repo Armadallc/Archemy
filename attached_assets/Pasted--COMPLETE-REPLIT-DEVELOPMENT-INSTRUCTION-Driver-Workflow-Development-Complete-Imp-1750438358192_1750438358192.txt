@@ -1,0 +1,89 @@
+**🔧 COMPLETE REPLIT DEVELOPMENT INSTRUCTION:**
+
+-----
+
+**Driver Workflow Development - Complete Implementation Strategy**
+
+**🚨 MANDATORY TESTING PROTOCOL:**
+
+- **NO CHANGES WITHOUT VERIFICATION** - Every modification must be tested and confirmed working before proceeding
+- **INCREMENTAL DEVELOPMENT** - Make one small change at a time, test it, then move to the next
+- **IMMEDIATE ROLLBACK** - If ANY change breaks functionality, immediately revert to the last known working state
+- **PRESERVE CURRENT FUNCTIONALITY** - The drivers page and authentication are currently working perfectly - do not break these
+
+**📋 TESTING CHECKLIST FOR EVERY CHANGE:**
+
+- [ ] Drivers page still loads correctly
+- [ ] All 3 drivers (Sarah, Michael, Alex) still display
+- [ ] User authentication still works
+- [ ] API endpoints still return data
+- [ ] No console errors in browser dev tools
+- [ ] Database connections remain stable
+
+**🔄 DEVELOPMENT WORKFLOW:**
+
+1. **Identify specific driver workflow requirement**
+1. **Plan minimal code change to implement it**
+1. **Make the single change**
+1. **Test immediately** - verify nothing broke
+1. **If broken** → revert immediately and try different approach
+1. **If working** → document the change and proceed to next requirement
+
+**🎯 DRIVER WORKFLOW OBJECTIVES:**
+
+**FOUNDATION - Working Test Case:**
+
+- **Alex (driver_3a7ff0fb-3f54-4943-8c97-6ced934ab2d6)** is our working driver
+- **5 assigned trips** ready for testing status workflow
+- **All trips currently status: “scheduled”**
+
+**PHASE 1: Driver Trip Status Management**
+
+**STEP 1: Driver Dashboard (Test First)**
+
+- Create page showing Alex’s assigned trips for today
+- Display trip details: pickup/dropoff locations, times, client info
+- **TEST:** Verify page loads and shows 5 trips correctly
+
+**STEP 2: Status Update API (Build & Test)**
+
+- Create `PUT /api/trips/:tripId/status` endpoint
+- Support status transitions: scheduled → confirmed → in_progress → completed
+- Also support: any status → cancelled
+- **TEST:** Manual API calls to verify status updates work
+
+**STEP 3: Status Update Buttons (UI & Test)**
+
+- Add buttons for each status transition
+- Only show relevant buttons based on current status
+- **TEST:** Click buttons and verify database updates
+
+**STEP 4: Real-time Updates (Final Test)**
+
+- Ensure status changes are visible to all users immediately
+- **TEST:** Update status as driver, verify admin sees change
+
+**🚀 IMPLEMENTATION ORDER:**
+
+1. **Driver trip dashboard** (read-only first)
+1. **Status update API endpoint**
+1. **Status update buttons in UI**
+1. **Cross-user visibility testing**
+
+**📊 SUCCESS CRITERIA:**
+
+- Alex can see his 5 trips in dashboard
+- Alex can change trip status using buttons
+- Status changes persist in database
+- All users see updated statuses immediately
+- No existing functionality broken
+
+**DEFER UNTIL LATER:**
+
+- Cross-org driver selection in trip creation
+- Driver notifications system
+- Expanding to other drivers
+
+**START WITH ALEX’S TRIPS AS PROOF OF CONCEPT - THEN EXPAND.**
+
+-----

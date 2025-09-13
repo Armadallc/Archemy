@@ -1,0 +1,78 @@
+🔍 API Route called: POST /api/client-groups
+Auth check: {
+  sessionId: 'KVbEIAgOxNQwU2cqimQ99xFaGsJtXTso',
+  userId: 'admin_monarch_competency_001',
+  cookies: 'connect.sid=s%3AKVbEIAgOxNQwU2cqimQ99xFaGsJtXTso.yKCBbez6FXk5CKe%2FwyZnDBo8%2BDJcYeRpevSLladRI4Q',
+  sessionExists: true,
+  sessionData: Session {
+    cookie: {
+      path: '/',
+      _expires: 2025-06-21T10:59:55.757Z,
+      originalMaxAge: 14400000,
+      httpOnly: false,
+      secure: false,
+      sameSite: 'lax'
+    },
+    userId: 'admin_monarch_competency_001',
+    user: {
+      user_id: 'admin_monarch_competency_001',
+      user_name: 'admin@littlemonarch.com',
+      email: 'admin@littlemonarch.com',
+      password_hash: '$2b$10$.v5wVOXC/1HSeLKPhdfW8OAx8Shj/J6TyWTBVE7tLBxINEdlgVnd2',
+      role: 'organization_admin',
+      primary_organization_id: 'monarch_competency',
+      authorized_organizations: [Array],
+      is_active: true,
+      created_at: '2025-06-17T04:49:25.137624',
+      updated_at: '2025-06-19T18:26:46.085779'
+    },
+    currentOrganizationId: 'monarch_competency'
+  }
+}
+✅ User authenticated: admin_monarch_competency_001
+Error creating client group: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'createdAt' column of 'client_groups' in the schema cache"
+}
+7:00:41 AM [express] POST /api/client-groups 400 in 185ms :: {"error":"Failed to create client group…
+🔍 API Route called: POST /api/client-groups
+Auth check: {
+  sessionId: 'KVbEIAgOxNQwU2cqimQ99xFaGsJtXTso',
+  userId: 'admin_monarch_competency_001',
+  cookies: 'connect.sid=s%3AKVbEIAgOxNQwU2cqimQ99xFaGsJtXTso.yKCBbez6FXk5CKe%2FwyZnDBo8%2BDJcYeRpevSLladRI4Q',
+  sessionExists: true,
+  sessionData: Session {
+    cookie: {
+      path: '/',
+      _expires: 2025-06-21T11:00:41.786Z,
+      originalMaxAge: 14400000,
+      httpOnly: false,
+      secure: false,
+      sameSite: 'lax'
+    },
+    userId: 'admin_monarch_competency_001',
+    user: {
+      user_id: 'admin_monarch_competency_001',
+      user_name: 'admin@littlemonarch.com',
+      email: 'admin@littlemonarch.com',
+      password_hash: '$2b$10$.v5wVOXC/1HSeLKPhdfW8OAx8Shj/J6TyWTBVE7tLBxINEdlgVnd2',
+      role: 'organization_admin',
+      primary_organization_id: 'monarch_competency',
+      authorized_organizations: [Array],
+      is_active: true,
+      created_at: '2025-06-17T04:49:25.137624',
+      updated_at: '2025-06-19T18:26:46.085779'
+    },
+    currentOrganizationId: 'monarch_competency'
+  }
+}
+✅ User authenticated: admin_monarch_competency_001
+Error creating client group: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'createdAt' column of 'client_groups' in the schema cache"
+}
+7:01:26 AM [express] POST /api/client-groups 400 in 294ms :: {"error":"Failed to create client group…

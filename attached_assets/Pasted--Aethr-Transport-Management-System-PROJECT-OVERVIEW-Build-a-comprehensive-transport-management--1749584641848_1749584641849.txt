@@ -1,0 +1,295 @@
+“Aethr” Transport Management System
+
+## PROJECT OVERVIEW
+Build a comprehensive transport management system for Monarch's multiple organizations with flexible driver scheduling, service area management, and a simplified booking kiosk interface.
+
+## BUSINESS CONTEXT
+Monarch operates multiple organizations under one ownership:
+- Monarch Competency (multiple locations)
+- Monarch Mental Health (multiple locations)  
+- Monarch Sober Living (multiple locations)
+- Monarch Launch (multiple locations)
+
+Each organization has multiple physical locations called "service areas" with user-friendly nicknames for easy identification.
+
+## USER ROLES & PERMISSIONS
+
+### 1. super_admin
+- System-wide access to all organizations
+- Can manage any data across the entire platform
+
+### 2. monarch_owner
+- Single login with oversight across ALL Monarch organizations
+- Dashboard shows consolidated view or can switch between organizations
+- Strategic oversight role for business owners
+
+### 3. organization_admin
+- Manages one specific organization and all its service areas
+- Can create/modify: drivers, organization_users, service areas, clients
+- Sets organization operating hours and policies
+- Full system management for their assigned organization
+
+### 4. organization_user (Booking Kiosk Role)
+- Simplified booking interface only - designed as persistent widget
+- Can add/modify clients (selecting from service area dropdown)
+- Can create/modify/cancel trips (any pickup/dropoff addresses)
+- Can view organization calendar with color-coded trip statuses
+- Can modify/cancel any trip within their organization
+- NO access to: user management, system settings, reports, driver management
+- Extended session timeout (8-24 hours) for persistent desktop use
+
+### 5. driver
+- Flexible cross-organization assignment capability
+- Has primary_organization_id but can work for authorized_organizations[]
+- Can confirm, start, and complete assigned trips
+- Updates trip status through simple driver interface
+
+## DATABASE SCHEMA
+
+### organizations
+```sql
+id (varchar, primary key) - examples: 'monarch_competency', 'monarch_mental_health'
+name (varchar) - 'Monarch Competency', 'Monarch Mental Health'
+operating_hours_start (time) - '08:00'
+operating_hours_end (time) - '22:00'
+created_at (timestamp)
+updated_at (timestamp)
+```
+
+### users
+```sql
+user_id (varchar, primary key) - examples: 'monarch_owner_001', 'competency_admin_001', 'competency_user_001'
+user_name (varchar) - display name
+email (varchar, unique)
+password_hash (varchar)
+role (enum) - 'super_admin', 'monarch_owner', 'organization_admin', 'organization_user', 'driver'
+primary_organization_id (varchar) - references organizations.id
+authorized_organizations (varchar[]) - array for drivers who can work multiple orgs
+created_at (timestamp)
+updated_at (timestamp)
+```
+
+### service_areas
+```sql
+id (uuid, primary key)
+organization_id (varchar) - references organizations.id
+nickname (varchar) - 'Lowell Men\'s', 'Lowell Women\'s', 'The Office'
+full_address (varchar) - '5241 Lowell Blvd, Denver, CO 80221'
+created_at (timestamp)
+updated_at (timestamp)
+```
+
+### clients
+```sql
+id (uuid, primary key)
+organization_id (varchar) - references organizations.id
+service_area_id (uuid) - references service_areas.id
+first_name (varchar)
+last_name (varchar)
+phone (varchar)
+email (varchar)
+notes (text)
+created_at (timestamp)
+updated_at (timestamp)
+```
+
+### drivers
+```sql
+id (uuid, primary key)
+user_id (varchar) - references users.user_id
+license_number (varchar)
+vehicle_info (text)
+primary_organization_id (varchar)
+authorized_organizations (varchar[])
+created_at (timestamp)
+updated_at (timestamp)
+```
+
+### driver_schedules
+```sql
+id (uuid, primary key)
+driver_id (varchar) - references users.user_id
+organization_id (varchar) - references organizations.id
+day_of_week (integer) - 0=Sunday, 1=Monday, etc.
+start_time (time)
+end_time (time)
+is_on_call (boolean) - willing to work outside organization hours
+created_at (timestamp)
+```
+
+### trips
+```sql
+id (uuid, primary key)
+organization_id (varchar) - references organizations.id
+client_id (uuid) - references clients.id
+driver_id (varchar) - references users.user_id
+pickup_address (varchar) - any address, not limited to service areas
+dropoff_address (varchar) - any address
+scheduled_pickup_time (timestamp)
+scheduled_dropoff_time (timestamp)
+trip_type (enum) - 'one_way', 'round_trip'
+passenger_count (integer)
+special_requirements (text)
+status (enum) - 'scheduled', 'confirmed', 'in_progress', 'completed', 'cancelled'
+created_by (varchar) - references users.user_id
+modified_by (varchar) - references users.user_id
+cancelled_by (varchar) - references users.user_id
+created_at (timestamp)
+modified_at (timestamp)
+```
+
+## TRIP STATUS WORKFLOW
+
+### Status Flow:
+1. **SCHEDULED** (yellow) - User creates trip, awaiting driver confirmation
+2. **CONFIRMED** (blue) - Driver accepts and confirms the trip
+3. **IN_PROGRESS** (orange) - Driver has started the trip (en route or transporting)
+4. **COMPLETED** (green) - Trip successfully finished
+5. **CANCELLED** (red) - Trip cancelled by user, driver, or admin
+
+### Calendar Color Coding:
+All calendar views should display trips with status-based color coding for immediate visual status recognition.
+
+## DRIVER SCHEDULING SYSTEM
+
+### Organization Operating Hours:
+- Each organization sets operating hours (example: 8am-10pm)
+- Trips are generally expected within these hours
+
+### Driver Availability:
+- Regular schedule (M-F 10am-5pm)
+- Weekend schedule (Sat-Sun 9am-4pm)
+- On-call status (willing to work outside organization hours)
+- Drivers can have different schedules for different authorized organizations
+
+### Trip Assignment Logic:
+- When user selects date/time for trip, system shows only drivers available for that time slot
+- Filters by driver schedules and existing trip assignments
+- User selects from available driver list
+
+## USER INTERFACES
+
+### Booking Kiosk (organization_user)
+Design as a persistent widget that can stay open on desktop/browser:
+- **Extended session timeout** (8-24 hours configurable)
+- **Compact, efficient interface** focused on core booking functions
+- **Quick trip booking form** with client selection and address entry
+- **Client management** with service area dropdown for new clients
+- **Calendar view** showing color-coded trip statuses
+- **Minimal navigation** - no complex menus or features
+- **Always-ready booking experience** like a point-of-sale terminal
+
+### Organization Admin Dashboard
+- Complete management interface for their organization
+- Driver management (create, schedule, assign organizations)
+- User management (create organization_users)
+- Service area management (create, modify locations with nicknames)
+- Client management (full CRUD operations)
+- Trip oversight and management
+- Organization settings (operating hours, policies)
+
+### Driver Interface
+- Simple dashboard showing assigned trips
+- Trip status update controls (confirm, start, complete)
+- Schedule management
+- Cross-organization trip visibility for authorized orgs
+
+### Monarch Owner Dashboard
+- Consolidated view across all Monarch organizations
+- Ability to switch between organization views
+- High-level metrics and oversight
+- Strategic management tools
+
+## CORE FEATURES TO IMPLEMENT
+
+### 1. Authentication & Authorization
+- Role-based access control for all user types
+- Extended session management for booking kiosk users
+- Organization-based data isolation
+
+### 2. Service Area Management
+- Create service areas with nicknames and addresses
+- Assign clients to service areas
+- Easy service area selection in booking interface
+
+### 3. Trip Booking System
+- Quick booking interface for organization_users
+- Client selection from organization's client list
+- Any-address pickup/dropoff (not limited to service areas)
+- Driver availability filtering by date/time
+- Trip type selection (one-way, round-trip, recurring)
+
+### 4. Driver Scheduling
+- Flexible schedule creation (regular hours, weekends, on-call)
+- Cross-organization authorization for drivers
+- Availability checking during trip booking
+
+### 5. Trip Status Management
+- Status workflow implementation with color coding
+- Driver status update interface
+- Real-time status updates in calendar views
+
+### 6. Calendar Integration
+- Color-coded trip display
+- Organization-specific calendar views
+- Status-based filtering and display
+
+## TECHNICAL REQUIREMENTS
+
+### Frontend:
+- Modern React application with TypeScript
+- Responsive design for desktop and mobile
+- Real-time updates for trip status changes
+- Persistent booking kiosk interface
+- Calendar component with color coding
+
+### Backend:
+- RESTful API or GraphQL
+- Role-based authorization middleware
+- Real-time notifications system
+- Data validation and sanitization
+
+### Database:
+- PostgreSQL or similar relational database
+- Proper indexing for performance
+- Data integrity constraints
+- Audit trail implementation
+
+## SAMPLE DATA FOR TESTING
+
+### Organizations:
+- monarch_competency, monarch_mental_health, monarch_sober_living, monarch_launch
+
+### Sample Service Areas:
+- "Lowell Men's" (5241 Lowell Blvd, Denver, CO)
+- "Lowell Women's" (5201 Lowell Blvd, Denver, CO)  
+- "The Office" (5335 Newton St, Denver, CO)
+- "Downtown Hub" (123 Main St, Denver, CO)
+
+### Sample Users:
+- monarch_owner_001 (oversight across all orgs)
+- competency_admin_001 (manages Monarch Competency)
+- competency_user_001, competency_user_002 (booking kiosk users)
+- driver_john_smith (primary: competency, authorized: [competency, mental_health])
+
+## SUCCESS CRITERIA
+
+1. **Booking kiosk users** can quickly create trips without complex navigation
+2. **Organization admins** have complete control over their organization
+3. **Drivers** can easily see and update trip statuses
+4. **Cross-organization flexibility** works for drivers and owners
+5. **Calendar provides clear visual status** of all trips
+6. **System handles multiple organizations** without data leakage
+7. **Extended sessions work** for persistent booking interface
+
+## PRIORITY ORDER
+
+1. **Core authentication** and role-based access
+2. **Organization and service area management**
+3. **Basic trip booking** functionality
+4. **Driver scheduling** and availability
+5. **Trip status workflow** and calendar integration
+6. **Booking kiosk interface** optimization
+7. **Cross-organization features** and monarch owner dashboard
+
+Build a production-ready system that can handle real-world transport operations with clean code, proper error handling, and intuitive user experiences.
