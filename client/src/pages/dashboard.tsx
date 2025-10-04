@@ -10,6 +10,15 @@ import RecentActivity from "../components/RecentActivity";
 import DebugPanel from "../components/DebugPanel";
 import EnhancedActivityFeed from "../components/EnhancedActivityFeed";
 // EnhancedTripCalendar moved to dedicated calendar page
+
+// New widget system
+import Widget from "../components/dashboard/Widget";
+import WidgetGrid from "../components/dashboard/WidgetGrid";
+import LiveOperationsWidget from "../components/dashboard/LiveOperationsWidget";
+import FleetStatusWidget from "../components/dashboard/FleetStatusWidget";
+import RevenueWidget from "../components/dashboard/RevenueWidget";
+import PerformanceMetricsWidget from "../components/dashboard/PerformanceMetricsWidget";
+import TaskManagementWidget from "../components/dashboard/TaskManagementWidget";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "../lib/queryClient";
 import { useAuth } from "../hooks/useAuth";
@@ -207,12 +216,66 @@ export default function Dashboard({
     if (!selectedCorporateClient) {
       return (
         <div className="space-y-6">
-          {/* Corporate Dashboard Content */}
-          
+          {/* Header */}
           <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold">CORPORATE DASHBOARD</h1>
-            {/* Removed organization display name for super admin */}
+            <div>
+              <h1 className="text-3xl font-bold">CORPORATE DASHBOARD</h1>
+              <p className="text-muted-foreground">System-wide operations and performance overview</p>
+            </div>
           </div>
+
+          {/* Control Panel Grid */}
+          <WidgetGrid columns={4}>
+            {/* Live Operations */}
+            <LiveOperationsWidget />
+            
+            {/* Fleet Status */}
+            <FleetStatusWidget />
+            
+            {/* Revenue Dashboard */}
+            <RevenueWidget />
+            
+            {/* Performance Metrics */}
+            <PerformanceMetricsWidget />
+          </WidgetGrid>
+
+          {/* Second Row */}
+          <WidgetGrid columns={3}>
+            {/* Task Management */}
+            <TaskManagementWidget />
+            
+            {/* System Health */}
+            <Widget title="System Health" icon={<Bug className="h-5 w-5" />} size="medium">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className="text-sm font-medium">API Status</span>
+                  </div>
+                  <Badge variant="outline">Healthy</Badge>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className="text-sm font-medium">Database</span>
+                  </div>
+                  <Badge variant="outline">Connected</Badge>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                    <span className="text-sm font-medium">Storage</span>
+                  </div>
+                  <Badge variant="secondary">85% Used</Badge>
+                </div>
+              </div>
+            </Widget>
+            
+            {/* Recent Activity */}
+            <Widget title="Recent Activity" icon={<Calendar className="h-5 w-5" />} size="medium">
+              <EnhancedActivityFeed />
+            </Widget>
+          </WidgetGrid>
 
 
           {/* Corporate Client Overview Stats */}
@@ -570,19 +633,47 @@ export default function Dashboard({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">{getRoleBasedTitle()}</h1>
-        <div className="text-sm text-muted-foreground">
-          {getOrganizationDisplayName()}
+        <div>
+          <h1 className="text-3xl font-bold">{getRoleBasedTitle()}</h1>
+          <p className="text-muted-foreground">{getOrganizationDisplayName()}</p>
         </div>
       </div>
 
-      {/* Dashboard Stats */}
-      <DashboardStats 
-        todaysTrips={dashboardStats.scheduledTrips}
-        completedTrips={dashboardStats.completedTrips}
-        activeDrivers={dashboardStats.activeDrivers}
-        totalClients={dashboardStats.totalClients}
-      />
+      {/* Control Panel Grid */}
+      <WidgetGrid columns={4}>
+        {/* Live Operations */}
+        <LiveOperationsWidget />
+        
+        {/* Fleet Status */}
+        <FleetStatusWidget />
+        
+        {/* Revenue Dashboard */}
+        <RevenueWidget />
+        
+        {/* Performance Metrics */}
+        <PerformanceMetricsWidget />
+      </WidgetGrid>
+
+      {/* Second Row */}
+      <WidgetGrid columns={3}>
+        {/* Task Management */}
+        <TaskManagementWidget />
+        
+        {/* Dashboard Stats */}
+        <Widget title="Overview Stats" icon={<Calendar className="h-5 w-5" />} size="medium">
+          <DashboardStats 
+            todaysTrips={dashboardStats.scheduledTrips}
+            completedTrips={dashboardStats.completedTrips}
+            activeDrivers={dashboardStats.activeDrivers}
+            totalClients={dashboardStats.totalClients}
+          />
+        </Widget>
+        
+        {/* Recent Activity */}
+        <Widget title="Recent Activity" icon={<Calendar className="h-5 w-5" />} size="medium">
+          <EnhancedActivityFeed />
+        </Widget>
+      </WidgetGrid>
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
