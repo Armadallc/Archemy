@@ -65,7 +65,7 @@ export default function Drivers() {
   const { level, selectedProgram, selectedCorporateClient } = useHierarchy();
 
   // Fetch drivers for current hierarchy level
-  const { data: driversData = [], isLoading } = useQuery({
+  const { data: driversData = [], isLoading, error } = useQuery({
     queryKey: ["/api/drivers", level, selectedProgram, selectedCorporateClient],
     queryFn: async () => {
       let endpoint = "/api/drivers";
@@ -76,8 +76,14 @@ export default function Drivers() {
       }
       // For super admin (corporate level), use the base endpoint
       
+      console.log('🚗 Drivers query:', { level, selectedProgram, selectedCorporateClient, endpoint });
+      
       const response = await apiRequest("GET", endpoint);
-      return await response.json();
+      const data = await response.json();
+      
+      console.log('🚗 Drivers response:', { status: response.status, data });
+      
+      return data;
     },
     enabled: true, // Always enabled - let the API handle permissions
   });
@@ -250,11 +256,26 @@ export default function Drivers() {
     driver.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Show loading if data is loading or organization is not ready
-  if (isLoading || (!selectedProgram && !user?.primary_program_id)) {
+  // Show loading if data is loading
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // Show error if there's an error
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <h3 className="text-lg font-medium text-red-600 mb-2">Error loading drivers</h3>
+          <p className="text-sm text-gray-500 mb-4">{error.message || 'Unknown error'}</p>
+          <Button onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/drivers"] })}>
+            Retry
+          </Button>
+        </div>
       </div>
     );
   }
