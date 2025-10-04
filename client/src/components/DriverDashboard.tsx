@@ -1,13 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import DriverTripCard from "@/components/DriverTripCard";
-import { useRealTimeUpdates } from "@/hooks/useRealTimeUpdates";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import DriverTripCard from "../components/DriverTripCard";
+import { useRealTimeUpdates } from "../hooks/useRealTimeUpdates";
 import { Calendar, Clock, MapPin, User, Truck, RefreshCw } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
-import { useAuth } from "@/hooks/useAuth";
-import { useOrganization } from "@/hooks/useOrganization";
+import { apiRequest } from "../lib/queryClient";
+import { useAuth } from "../hooks/useAuth";
+import { useHierarchy } from "../hooks/useHierarchy";
 import { format, isToday, isTomorrow, parseISO } from "date-fns";
 
 interface Trip {
@@ -25,18 +25,25 @@ interface Trip {
 
 export default function DriverDashboard() {
   const { user } = useAuth();
-  const { currentOrganization } = useOrganization();
+  const { level, selectedProgram, selectedCorporateClient } = useHierarchy();
 
   // Fetch driver trips
   const { data: tripsData, isLoading, refetch } = useQuery({
-    queryKey: ["/api/trips/driver", user?.userId],
+    queryKey: ["/api/trips/driver", user?.user_id],
     queryFn: async () => {
-      if (!currentOrganization?.id || !user?.userId) return [];
+      if (!user?.user_id || (!selectedProgram && !selectedCorporateClient)) return [];
       
-      // Get driver record first
-      const driversResponse = await apiRequest("GET", `/api/drivers/organization/${currentOrganization.id}`);
+      // Get driver record first based on hierarchy level
+      let driversEndpoint = "/api/drivers";
+      if (level === 'program' && selectedProgram) {
+        driversEndpoint = `/api/drivers/program/${selectedProgram}`;
+      } else if (level === 'client' && selectedCorporateClient) {
+        driversEndpoint = `/api/drivers/corporate-client/${selectedCorporateClient}`;
+      }
+      
+      const driversResponse = await apiRequest("GET", driversEndpoint);
       const driversData = await driversResponse.json();
-      const driverRecord = driversData.find((d: any) => d.user_id === user.userId);
+      const driverRecord = driversData.find((d: any) => d.user_id === user.user_id);
       
       if (driverRecord) {
         const response = await apiRequest("GET", `/api/trips/driver/${driverRecord.id}`);
@@ -44,14 +51,14 @@ export default function DriverDashboard() {
       }
       return [];
     },
-    enabled: !!user?.userId && !!currentOrganization?.id,
+    enabled: !!user?.user_id && !!(selectedProgram || selectedCorporateClient),
   });
 
   // Enable real-time updates for driver trips
   const { refreshNow } = useRealTimeUpdates({
-    enabled: !!user?.userId && !!currentOrganization?.id,
+    enabled: !!user?.user_id && !!(selectedProgram || selectedCorporateClient),
     interval: 10000, // 10 seconds
-    queryKeys: [`["/api/trips/driver","${user?.userId}"]`]
+    queryKeys: [`["/api/trips/driver","${user?.user_id}"]`]
   });
 
   const trips = Array.isArray(tripsData) ? tripsData : [];
@@ -112,7 +119,7 @@ export default function DriverDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-gray-600">Welcome back, {user?.userName}</p>
+          <p className="text-gray-600">Welcome back, {user?.user_name}</p>
         </div>
         <div className="flex items-center gap-4">
           <Button 

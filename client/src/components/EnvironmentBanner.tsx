@@ -1,4 +1,5 @@
-import { ENVIRONMENT } from "@/lib/environment";
+import React from "react";
+import { ENVIRONMENT } from "../lib/environment";
 
 export function EnvironmentBanner() {
   if (ENVIRONMENT.isProduction) {

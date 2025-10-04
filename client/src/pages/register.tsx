@@ -1,22 +1,27 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { Textarea } from "../components/ui/textarea";
 import { Loader2, Building2, User, Mail, Phone, MapPin } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest } from "../lib/queryClient";
 import { Link, useLocation } from "wouter";
 
 interface RegistrationData {
-  // Organization Info
-  organizationName: string;
-  organizationAddress: string;
-  organizationPhone: string;
-  organizationEmail: string;
+  // Corporate Client Info
+  corporateClientName: string;
+  corporateClientAddress: string;
+  corporateClientPhone: string;
+  corporateClientEmail: string;
+  
+  // Program Info
+  programName: string;
+  programDescription: string;
+  programAddress: string;
   
   // Admin User Info
   adminName: string;
@@ -27,10 +32,13 @@ interface RegistrationData {
 }
 
 const initialFormData: RegistrationData = {
-  organizationName: "",
-  organizationAddress: "",
-  organizationPhone: "",
-  organizationEmail: "",
+  corporateClientName: "",
+  corporateClientAddress: "",
+  corporateClientPhone: "",
+  corporateClientEmail: "",
+  programName: "",
+  programDescription: "",
+  programAddress: "",
   adminName: "",
   adminEmail: "",
   adminPhone: "",
@@ -53,18 +61,21 @@ export default function Register() {
       setLocation("/login?registered=true");
     },
     onError: (error: any) => {
-      setError(error.message || "Registration failed");
+      setError(error.message || "Registration failed. Please try again.");
     },
   });
 
   const handleInputChange = (field: keyof RegistrationData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (error) setError("");
   };
 
   const validateStep1 = () => {
-    return formData.organizationName && 
-           formData.organizationEmail && 
-           formData.organizationAddress;
+    return formData.corporateClientName && 
+           formData.corporateClientEmail && 
+           formData.corporateClientAddress &&
+           formData.programName &&
+           formData.programDescription;
   };
 
   const validateStep2 = () => {
@@ -72,25 +83,28 @@ export default function Register() {
            formData.adminEmail && 
            formData.password && 
            formData.confirmPassword &&
-           formData.password === formData.confirmPassword &&
-           formData.password.length >= 8;
+           formData.password === formData.confirmPassword;
   };
 
   const handleNext = () => {
-    if (step === 1 && validateStep1()) {
-      setStep(2);
-      setError("");
-    } else if (step === 1) {
-      setError("Please fill in all required organization fields");
+    if (step === 1) {
+      if (!validateStep1()) {
+        setError("Please fill in all required fields");
+        return;
+      }
     }
+    setStep(2);
+  };
+
+  const handleBack = () => {
+    setStep(1);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-
+    
     if (!validateStep2()) {
-      setError("Please fill in all required fields and ensure passwords match (minimum 8 characters)");
+      setError("Please fill in all required fields and ensure passwords match");
       return;
     }
 
@@ -98,230 +112,232 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <Card className="w-full max-w-2xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="w-6 h-6 text-blue-600" />
-            Register Your Organization
-          </CardTitle>
-          <CardDescription>
-            Join the Aethr Transport Management Network
-          </CardDescription>
-          
-          {/* Progress Indicator */}
-          <div className="flex items-center justify-center mt-4">
-            <div className="flex items-center space-x-4">
-              <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
-                step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
-              }`}>
-                1
-              </div>
-              <div className={`w-16 h-1 ${step >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
-              <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
-                step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
-              }`}>
-                2
-              </div>
-            </div>
-          </div>
-          
-          <div className="text-center mt-2">
-            <span className="text-sm text-gray-600">
-              Step {step} of 2: {step === 1 ? 'Organization Details' : 'Admin Account'}
-            </span>
-          </div>
-        </CardHeader>
-        
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {step === 1 && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <Building2 className="w-5 h-5 text-blue-600" />
-                  <h3 className="text-lg font-semibold">Organization Information</h3>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="md:col-span-2">
-                    <Label htmlFor="organizationName">Organization Name *</Label>
-                    <Input
-                      id="organizationName"
-                      value={formData.organizationName}
-                      onChange={(e) => handleInputChange('organizationName', e.target.value)}
-                      placeholder="e.g., ABC Senior Center"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="organizationEmail">Organization Email *</Label>
-                    <Input
-                      id="organizationEmail"
-                      type="email"
-                      value={formData.organizationEmail}
-                      onChange={(e) => handleInputChange('organizationEmail', e.target.value)}
-                      placeholder="info@organization.com"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="organizationPhone">Phone Number</Label>
-                    <Input
-                      id="organizationPhone"
-                      type="tel"
-                      value={formData.organizationPhone}
-                      onChange={(e) => handleInputChange('organizationPhone', e.target.value)}
-                      placeholder="(555) 123-4567"
-                    />
-                  </div>
-                  
-                  <div className="md:col-span-2">
-                    <Label htmlFor="organizationAddress">Address *</Label>
-                    <Textarea
-                      id="organizationAddress"
-                      value={formData.organizationAddress}
-                      onChange={(e) => handleInputChange('organizationAddress', e.target.value)}
-                      placeholder="Full organization address"
-                      required
-                      rows={3}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl w-full space-y-8">
+        <div className="text-center">
+          <Building2 className="mx-auto h-12 w-12 text-blue-600" />
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+            Register Your Corporate Client
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Create your corporate client account and first program
+          </p>
+        </div>
 
-            {step === 2 && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <User className="w-5 h-5 text-blue-600" />
-                  <h3 className="text-lg font-semibold">Administrator Account</h3>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="md:col-span-2">
-                    <Label htmlFor="adminName">Full Name *</Label>
-                    <Input
-                      id="adminName"
-                      value={formData.adminName}
-                      onChange={(e) => handleInputChange('adminName', e.target.value)}
-                      placeholder="John Smith"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="adminEmail">Email Address *</Label>
-                    <Input
-                      id="adminEmail"
-                      type="email"
-                      value={formData.adminEmail}
-                      onChange={(e) => handleInputChange('adminEmail', e.target.value)}
-                      placeholder="john@organization.com"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="adminPhone">Phone Number</Label>
-                    <Input
-                      id="adminPhone"
-                      type="tel"
-                      value={formData.adminPhone}
-                      onChange={(e) => handleInputChange('adminPhone', e.target.value)}
-                      placeholder="(555) 123-4567"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="password">Password *</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => handleInputChange('password', e.target.value)}
-                      placeholder="Minimum 8 characters"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="confirmPassword">Confirm Password *</Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      value={formData.confirmPassword}
-                      onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                      placeholder="Confirm your password"
-                      required
-                    />
-                  </div>
-                </div>
-                
-                {formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword && (
-                  <Alert variant="destructive">
-                    <AlertDescription>Passwords do not match</AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            )}
-
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-center">
+              Step {step} of 2: {step === 1 ? 'Corporate Client & Program Details' : 'Admin Account'}
+            </CardTitle>
+            <CardDescription className="text-center">
+              {step === 1 
+                ? 'Set up your corporate client information and first program'
+                : 'Create your administrator account'
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             {error && (
-              <Alert variant="destructive">
+              <Alert className="mb-6" variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
-            <div className="flex justify-between pt-4">
-              {step === 2 && (
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setStep(1)}
-                  disabled={registerMutation.isPending}
-                >
-                  Back
-                </Button>
-              )}
-              
+            <form onSubmit={handleSubmit} className="space-y-6">
               {step === 1 ? (
-                <Button 
-                  type="button" 
-                  onClick={handleNext}
-                  className="ml-auto bg-blue-600 hover:bg-blue-700"
-                >
-                  Next Step
-                </Button>
+                <>
+                  {/* Corporate Client Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Corporate Client Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="corporateClientName">Corporate Client Name *</Label>
+                        <Input
+                          id="corporateClientName"
+                          type="text"
+                          value={formData.corporateClientName}
+                          onChange={(e) => handleInputChange('corporateClientName', e.target.value)}
+                          placeholder="Your Company Name"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="corporateClientEmail">Corporate Client Email *</Label>
+                        <Input
+                          id="corporateClientEmail"
+                          type="email"
+                          value={formData.corporateClientEmail}
+                          onChange={(e) => handleInputChange('corporateClientEmail', e.target.value)}
+                          placeholder="info@company.com"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="corporateClientPhone">Phone Number</Label>
+                        <Input
+                          id="corporateClientPhone"
+                          type="tel"
+                          value={formData.corporateClientPhone}
+                          onChange={(e) => handleInputChange('corporateClientPhone', e.target.value)}
+                          placeholder="+1 (555) 123-4567"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="corporateClientAddress">Address *</Label>
+                        <Textarea
+                          id="corporateClientAddress"
+                          value={formData.corporateClientAddress}
+                          onChange={(e) => handleInputChange('corporateClientAddress', e.target.value)}
+                          placeholder="Full corporate client address"
+                          rows={2}
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Program Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Program Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="programName">Program Name *</Label>
+                        <Input
+                          id="programName"
+                          type="text"
+                          value={formData.programName}
+                          onChange={(e) => handleInputChange('programName', e.target.value)}
+                          placeholder="e.g., Mental Health Program"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="programDescription">Program Description *</Label>
+                        <Input
+                          id="programDescription"
+                          type="text"
+                          value={formData.programDescription}
+                          onChange={(e) => handleInputChange('programDescription', e.target.value)}
+                          placeholder="Brief description of the program"
+                          required
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <Label htmlFor="programAddress">Program Address</Label>
+                        <Textarea
+                          id="programAddress"
+                          value={formData.programAddress}
+                          onChange={(e) => handleInputChange('programAddress', e.target.value)}
+                          placeholder="Program location address"
+                          rows={2}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Button type="button" onClick={handleNext}>
+                      Next Step
+                    </Button>
+                  </div>
+                </>
               ) : (
-                <Button 
-                  type="submit" 
-                  disabled={registerMutation.isPending || !validateStep2()}
-                  className="ml-auto bg-blue-600 hover:bg-blue-700"
-                >
-                  {registerMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating Account...
-                    </>
-                  ) : (
-                    "Create Organization"
-                  )}
-                </Button>
+                <>
+                  {/* Admin Account Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Administrator Account</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="adminName">Full Name *</Label>
+                        <Input
+                          id="adminName"
+                          type="text"
+                          value={formData.adminName}
+                          onChange={(e) => handleInputChange('adminName', e.target.value)}
+                          placeholder="John Doe"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="adminEmail">Email Address *</Label>
+                        <Input
+                          id="adminEmail"
+                          type="email"
+                          value={formData.adminEmail}
+                          onChange={(e) => handleInputChange('adminEmail', e.target.value)}
+                          placeholder="john@company.com"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="adminPhone">Phone Number</Label>
+                        <Input
+                          id="adminPhone"
+                          type="tel"
+                          value={formData.adminPhone}
+                          onChange={(e) => handleInputChange('adminPhone', e.target.value)}
+                          placeholder="+1 (555) 123-4567"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="password">Password *</Label>
+                        <Input
+                          id="password"
+                          type="password"
+                          value={formData.password}
+                          onChange={(e) => handleInputChange('password', e.target.value)}
+                          placeholder="Create a strong password"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                        <Input
+                          id="confirmPassword"
+                          type="password"
+                          value={formData.confirmPassword}
+                          onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                          placeholder="Confirm your password"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <Button type="button" variant="outline" onClick={handleBack}>
+                      Back
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      disabled={registerMutation.isPending}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {registerMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Creating Account...
+                        </>
+                      ) : (
+                        "Create Corporate Client"
+                      )}
+                    </Button>
+                  </div>
+                </>
               )}
+            </form>
+
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-600">
+                Already have an account?{" "}
+                <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+                  Sign in here
+                </Link>
+              </p>
             </div>
-          </form>
-          
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Already have an account?{" "}
-              <Link href="/login" className="text-blue-600 hover:text-blue-500 font-medium">
-                Sign in here
-              </Link>
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

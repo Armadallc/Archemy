@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { useAuth } from "@/hooks/useAuth";
-import { useOrganization } from "@/hooks/useOrganization";
-import ActivityModal from "@/components/ActivityModal";
+import { apiRequest } from "../lib/queryClient";
+import { useAuth } from "../hooks/useAuth";
+import { useHierarchy } from "../hooks/useHierarchy";
+import ActivityModal from "./ActivityModal";
 import { 
   Clock, 
   Car, 
@@ -65,46 +65,70 @@ const priorityColors = {
 
 export default function RecentActivity() {
   const { user } = useAuth();
-  const { currentOrganization } = useOrganization();
+  const { level, selectedProgram, selectedCorporateClient } = useHierarchy();
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Fetch trips data
+  // Fetch trips data based on hierarchy level
   const { data: trips = [] } = useQuery({
-    queryKey: ["/api/trips", currentOrganization?.id],
+    queryKey: ["/api/trips", level, selectedProgram, selectedCorporateClient],
     queryFn: async () => {
-      if (!currentOrganization?.id) return [];
-      const response = await apiRequest("GET", `/api/trips/organization/${currentOrganization.id}`);
+      if (!selectedProgram && !selectedCorporateClient) return [];
+      
+      let endpoint = "/api/trips";
+      if (level === 'program' && selectedProgram) {
+        endpoint = `/api/trips/program/${selectedProgram}`;
+      } else if (level === 'client' && selectedCorporateClient) {
+        endpoint = `/api/trips/corporate-client/${selectedCorporateClient}`;
+      }
+      
+      const response = await apiRequest("GET", endpoint);
       return await response.json();
     },
-    enabled: !!currentOrganization?.id,
+    enabled: !!(selectedProgram || selectedCorporateClient),
   });
 
-  // Fetch clients data
+  // Fetch clients data based on hierarchy level
   const { data: clients = [] } = useQuery({
-    queryKey: ["/api/clients", currentOrganization?.id],
+    queryKey: ["/api/clients", level, selectedProgram, selectedCorporateClient],
     queryFn: async () => {
-      if (!currentOrganization?.id) return [];
-      const response = await apiRequest("GET", `/api/clients/organization/${currentOrganization.id}`);
+      if (!selectedProgram && !selectedCorporateClient) return [];
+      
+      let endpoint = "/api/clients";
+      if (level === 'program' && selectedProgram) {
+        endpoint = `/api/clients/program/${selectedProgram}`;
+      } else if (level === 'client' && selectedCorporateClient) {
+        endpoint = `/api/clients/corporate-client/${selectedCorporateClient}`;
+      }
+      
+      const response = await apiRequest("GET", endpoint);
       return await response.json();
     },
-    enabled: !!currentOrganization?.id,
+    enabled: !!(selectedProgram || selectedCorporateClient),
   });
 
-  // Fetch client groups data
+  // Fetch client groups data based on hierarchy level
   const { data: clientGroups = [] } = useQuery({
-    queryKey: ["/api/client-groups", currentOrganization?.id],
+    queryKey: ["/api/client-groups", level, selectedProgram, selectedCorporateClient],
     queryFn: async () => {
-      if (!currentOrganization?.id) return [];
-      const response = await apiRequest("GET", `/api/client-groups/organization/${currentOrganization.id}`);
+      if (!selectedProgram && !selectedCorporateClient) return [];
+      
+      let endpoint = "/api/client-groups";
+      if (level === 'program' && selectedProgram) {
+        endpoint = `/api/client-groups/program/${selectedProgram}`;
+      } else if (level === 'client' && selectedCorporateClient) {
+        endpoint = `/api/client-groups/corporate-client/${selectedCorporateClient}`;
+      }
+      
+      const response = await apiRequest("GET", endpoint);
       return await response.json();
     },
-    enabled: !!currentOrganization?.id,
+    enabled: !!(selectedProgram || selectedCorporateClient),
   });
 
   // Generate activity items from real data
   useEffect(() => {
-    if (!currentOrganization?.id || (trips.length === 0 && clients.length === 0 && clientGroups.length === 0)) {
+    if (!selectedProgram && !selectedCorporateClient || (trips.length === 0 && clients.length === 0 && clientGroups.length === 0)) {
       return;
     }
 
@@ -237,7 +261,7 @@ export default function RecentActivity() {
     };
 
     setActivities(generateActivities());
-  }, [trips.length, clients.length, clientGroups.length, currentOrganization?.id]);
+  }, [trips.length, clients.length, clientGroups.length, selectedProgram, selectedCorporateClient]);
 
   const getRelativeTime = (timestamp: string) => {
     try {

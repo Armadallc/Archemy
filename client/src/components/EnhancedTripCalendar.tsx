@@ -1,11 +1,11 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TripHoverCard } from "@/components/TripHoverCard";
-import { useRealTimeUpdates } from "@/hooks/useRealTimeUpdates";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { useRealTimeUpdates } from "../hooks/useRealTimeUpdates";
+import { TripHoverCard } from "./TripHoverCard";
 import { 
   Calendar, 
   ChevronLeft, 
@@ -36,15 +36,15 @@ import { format,
   addWeeks,
   subWeeks
 } from "date-fns";
-import { apiRequest } from "@/lib/queryClient";
-import { useAuth } from "@/hooks/useAuth";
-import { useOrganization } from "@/hooks/useOrganization";
+import { apiRequest } from "../lib/queryClient";
+import { useAuth } from "../hooks/useAuth";
+import { useHierarchy } from "../hooks/useHierarchy";
 
 interface Trip {
   id: string;
-  organization_id: string;
+  program_id: string;
   client_id: string;
-  driver_id: string;
+  driver_id?: string;
   pickup_address: string;
   dropoff_address: string;
   scheduled_pickup_time: string;
@@ -53,18 +53,12 @@ interface Trip {
   trip_type: string;
   passenger_count: number;
   notes?: string;
-  client_first_name?: string;
-  client_last_name?: string;
-  driver_name?: string;
-  clientName?: string;
-  tripNickname?: string;
-  passengerCount?: number;
-}
-
-interface Driver {
-  id: string;
-  users: {
-    user_name: string;
+  client?: {
+    first_name: string;
+    last_name: string;
+  };
+  driver?: {
+    user_id: string;
   };
 }
 
@@ -86,9 +80,10 @@ const driverColors = [
   '#6366F1', // indigo
 ];
 
-export default function TripCalendar() {
+export default function EnhancedTripCalendar() {
   const { user } = useAuth();
-  const { currentOrganization, isLoading: orgLoading } = useOrganization();
+  const { level, selectedProgram, selectedCorporateClient } = useHierarchy();
+  
   // Set initial date to current date for drivers, July 2025 for others
   const [currentDate, setCurrentDate] = useState(
     user?.role === 'driver' ? new Date() : new Date(2025, 6, 1)
@@ -99,17 +94,26 @@ export default function TripCalendar() {
   );
   const [colorMode, setColorMode] = useState<'status' | 'driver'>('status');
 
-  // Fetch trips data - driver-specific or organization-wide
+  // Fetch trips data based on hierarchy level
   const { data: tripsData, isLoading: tripsLoading, error: tripsError } = useQuery({
-    queryKey: ["/api/trips", currentOrganization?.id, user?.role],
+    queryKey: ["/api/trips", level, selectedProgram, selectedCorporateClient, user?.role],
     queryFn: async () => {
-      if (!currentOrganization?.id) return [];
+      let endpoint = "/api/trips";
+      
+      if (level === 'program' && selectedProgram) {
+        endpoint = `/api/trips/program/${selectedProgram}`;
+      } else if (level === 'client' && selectedCorporateClient) {
+        endpoint = `/api/trips/corporate-client/${selectedCorporateClient}`;
+      } else if (level === 'corporate') {
+        // For corporate level (super admin), use regular trips endpoint
+        endpoint = "/api/trips";
+      }
       
       if (user?.role === 'driver') {
         // For drivers, find their driver record and fetch assigned trips
-        const driversResponse = await apiRequest("GET", `/api/drivers/organization/${currentOrganization.id}`);
+        const driversResponse = await apiRequest("GET", endpoint.replace('/api/trips', '/api/drivers'));
         const driversData = await driversResponse.json();
-        const driverRecord = driversData.find((d: any) => d.user_id === user?.userId);
+        const driverRecord = driversData.find((d: any) => d.user_id === user?.user_id);
         
         if (driverRecord) {
           const response = await apiRequest("GET", `/api/trips/driver/${driverRecord.id}`);
@@ -117,39 +121,60 @@ export default function TripCalendar() {
         }
         return [];
       } else {
-        // For other roles, fetch organization trips
-        const response = await apiRequest("GET", `/api/trips/organization/${currentOrganization.id}`);
+        // For other roles, fetch hierarchy trips
+        const response = await apiRequest("GET", endpoint);
         return await response.json();
       }
     },
-    enabled: !!currentOrganization?.id && !!user,
+    enabled: !!user,
   });
 
   // Enable real-time updates for trips
   const { refreshNow } = useRealTimeUpdates({
-    enabled: !!currentOrganization?.id && !!user,
+    enabled: !!user,
     interval: 10000, // 10 seconds
-    queryKeys: [`["/api/trips","${currentOrganization?.id}","${user?.role}"]`]
+    queryKeys: [`["/api/trips","${level}","${selectedProgram}","${selectedCorporateClient}","${user?.role}"]`]
   });
 
   // Ensure trips is always an array and wait for data to load
   const trips = Array.isArray(tripsData) ? tripsData : [];
+  
+  // Debug logging (can be removed in production)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🗓️ Calendar Debug:', {
+      level,
+      selectedProgram,
+      selectedCorporateClient,
+      tripsCount: trips.length,
+      tripsLoading,
+      tripsError: tripsError?.message,
+      userRole: user?.role
+    });
+  }
 
   // Fetch drivers for color coding
   const { data: drivers = [] } = useQuery({
-    queryKey: ["/api/drivers", currentOrganization?.id],
+    queryKey: ["/api/drivers", level, selectedProgram, selectedCorporateClient],
     queryFn: async () => {
-      if (!currentOrganization?.id) return [];
-      const response = await apiRequest("GET", `/api/drivers/organization/${currentOrganization?.id}`);
+      if (!selectedProgram && !selectedCorporateClient) return [];
+      
+      let endpoint = "/api/drivers";
+      if (level === 'program' && selectedProgram) {
+        endpoint = `/api/drivers/program/${selectedProgram}`;
+      } else if (level === 'client' && selectedCorporateClient) {
+        endpoint = `/api/drivers/corporate-client/${selectedCorporateClient}`;
+      }
+      
+      const response = await apiRequest("GET", endpoint);
       return await response.json();
     },
-    enabled: !!currentOrganization?.id,
+    enabled: !!(selectedProgram || selectedCorporateClient),
   });
 
   // Create driver color mapping
   const driverColorMap = useMemo(() => {
     const map = new Map();
-    drivers.forEach((driver: Driver, index: number) => {
+    drivers.forEach((driver: any, index: number) => {
       map.set(driver.id, driverColors[index % driverColors.length]);
     });
     return map;
@@ -177,8 +202,6 @@ export default function TripCalendar() {
 
   const dateRange = getDateRange();
   const days = eachDayOfInterval(dateRange);
-  
-
 
   const getTripsForDate = (date: Date) => {
     return trips.filter((trip: Trip) => {
@@ -230,7 +253,7 @@ export default function TripCalendar() {
     }
   };
 
-  if (orgLoading || tripsLoading || !tripsData) {
+  if (tripsLoading || !tripsData) {
     return (
       <Card>
         <CardHeader>
@@ -267,7 +290,7 @@ export default function TripCalendar() {
     );
   }
 
-  if (!currentOrganization) {
+  if (!selectedProgram && !selectedCorporateClient && level !== 'corporate') {
     return (
       <Card>
         <CardHeader>
@@ -278,7 +301,7 @@ export default function TripCalendar() {
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-gray-500">
-            No organization selected
+            No program or corporate client selected
           </div>
         </CardContent>
       </Card>
@@ -367,55 +390,49 @@ export default function TripCalendar() {
                   .map((trip: Trip) => (
                     <TripHoverCard key={trip.id} trip={trip}>
                       <div 
-                        className="border rounded-lg p-3 space-y-2 cursor-pointer hover:shadow-md transition-shadow"
-                        style={{ borderLeftColor: getTripColor(trip), borderLeftWidth: '4px' }}
+                        className="border rounded-lg p-3 space-y-2 cursor-pointer hover:shadow-md transition-shadow bg-white dark:bg-gray-800 border-l-4"
+                        style={{ borderLeftColor: getTripColor(trip) }}
                       >
-                      <div className="flex justify-between items-start">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4" />
-                            <span className="font-medium">
-                              {(() => {
-                                const pickupTime = new Date(trip.scheduled_pickup_time);
-                                const denverPickup = new Date(pickupTime.getTime() - (6 * 60 * 60 * 1000));
-                                let timeDisplay = format(denverPickup, 'h:mm a');
-                                
-                                if (trip.scheduled_return_time) {
-                                  const returnTime = new Date(trip.scheduled_return_time);
-                                  const denverReturn = new Date(returnTime.getTime() - (6 * 60 * 60 * 1000));
-                                  timeDisplay += ` - ${format(denverReturn, 'h:mm a')}`;
-                                }
-                                
-                                return timeDisplay;
-                              })()}
-                            </span>
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4" />
+                              <span className="font-medium">
+                                {format(parseISO(trip.scheduled_pickup_time), 'h:mm a')}
+                                {trip.scheduled_return_time && (
+                                  <span className="text-gray-500">
+                                    {' - '}
+                                    {format(parseISO(trip.scheduled_return_time), 'h:mm a')}
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4" />
+                              <span className="text-sm">
+                                {trip.client?.first_name} {trip.client?.last_name}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Car className="h-4 w-4" />
+                              <span className="text-sm">
+                                {trip.driver ? 'Assigned' : 'Unassigned'}
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4" />
-                            <span className="text-sm">
-                              {trip.client_first_name} {trip.client_last_name}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Car className="h-4 w-4" />
-                            <span className="text-sm">
-                              {trip.driver_name || 'Unassigned'}
-                            </span>
-                          </div>
+                          <Badge 
+                            style={{ 
+                              backgroundColor: getTripColor(trip),
+                              color: 'white'
+                            }}
+                          >
+                            {colorMode === 'status' ? trip.status.replace('_', ' ') : 'Driver'}
+                          </Badge>
                         </div>
-                        <Badge 
-                          style={{ 
-                            backgroundColor: getTripColor(trip),
-                            color: 'white'
-                          }}
-                        >
-                          {colorMode === 'status' ? trip.status.replace('_', ' ') : trip.driver_name || 'Unassigned'}
-                        </Badge>
-                      </div>
-                      <div className="text-xs text-gray-600 flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        <span className="truncate">{trip.pickup_address} → {trip.dropoff_address}</span>
-                      </div>
+                        <div className="text-xs text-gray-600 flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          <span className="truncate">{trip.pickup_address} → {trip.dropoff_address}</span>
+                        </div>
                       </div>
                     </TripHoverCard>
                   ))}
@@ -441,14 +458,21 @@ export default function TripCalendar() {
                 <div 
                   key={day.toISOString()} 
                   className={`
-                    bg-white dark:bg-gray-900 p-2 min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700
-                    ${!isCurrentMonth ? 'text-gray-400 bg-gray-50 dark:bg-gray-800' : ''}
+                    p-2 min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700
+                    ${isCurrentMonth 
+                      ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100' 
+                      : 'text-gray-300 bg-gray-100 dark:bg-gray-800 dark:text-gray-500'
+                    }
                     ${isDayToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''}
                   `}
                 >
                   <div className={`
                     text-sm font-medium mb-1 
-                    ${isDayToday ? 'text-blue-600 dark:text-blue-400' : ''}
+                    ${isCurrentMonth 
+                      ? 'text-gray-900 dark:text-gray-100' 
+                      : 'text-gray-300 dark:text-gray-500'
+                    }
+                    ${isDayToday ? 'text-blue-600 dark:text-blue-400 font-bold' : ''}
                   `}>
                     {format(day, 'd')}
                   </div>
@@ -457,11 +481,12 @@ export default function TripCalendar() {
                     {dayTrips.slice(0, 3).map((trip: Trip) => (
                       <TripHoverCard key={trip.id} trip={trip}>
                         <div
-                          className="text-xs p-1 rounded text-white truncate cursor-pointer hover:opacity-80 transition-opacity"
+                          className={`text-xs p-1 rounded text-white truncate cursor-pointer hover:opacity-80 transition-opacity ${
+                            !isCurrentMonth ? 'opacity-60' : ''
+                          }`}
                           style={{ backgroundColor: getTripColor(trip) }}
-                          onClick={() => console.log('🔍 CALENDAR CLICK DEBUG - Trip data:', trip)}
                         >
-                          {format(parseISO(trip.scheduled_pickup_time), 'h:mm a')} {trip.clientName || (trip.client_first_name && trip.client_last_name ? `${trip.client_first_name} ${trip.client_last_name}` : trip.client_first_name) || 'Client'}
+                          {format(parseISO(trip.scheduled_pickup_time), 'h:mm a')} {trip.client?.first_name || 'Client'}
                         </div>
                       </TripHoverCard>
                     ))}
@@ -480,8 +505,8 @@ export default function TripCalendar() {
         {/* Legend */}
         <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <div className="flex items-center gap-2 mb-2">
-            <Filter className="h-4 w-4" />
-            <span className="text-sm font-medium">
+            <Filter className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
               Color Legend ({colorMode === 'status' ? 'Trip Status' : 'Drivers'})
             </span>
           </div>
@@ -493,17 +518,17 @@ export default function TripCalendar() {
                     className="w-3 h-3 rounded-full" 
                     style={{ backgroundColor: color }}
                   />
-                  <span className="text-xs capitalize">{status.replace('_', ' ')}</span>
+                  <span className="text-xs capitalize text-gray-700 dark:text-gray-300">{status.replace('_', ' ')}</span>
                 </div>
               ))
             ) : (
-              drivers.slice(0, 8).map((driver: Driver, index: number) => (
+              drivers.slice(0, 8).map((driver: any, index: number) => (
                 <div key={driver.id} className="flex items-center gap-2">
                   <div 
                     className="w-3 h-3 rounded-full" 
                     style={{ backgroundColor: driverColors[index % driverColors.length] }}
                   />
-                  <span className="text-xs truncate">{driver.users?.user_name}</span>
+                  <span className="text-xs truncate text-gray-700 dark:text-gray-300">{driver.user_id}</span>
                 </div>
               ))
             )}

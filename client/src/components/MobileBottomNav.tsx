@@ -1,5 +1,6 @@
+import React from "react";
 import { Home, Route, LogOut, User } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "../hooks/useAuth";
 import { useLocation } from "wouter";
 
 export default function MobileBottomNav() {

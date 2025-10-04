@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Alert, AlertDescription } from '../components/ui/alert';
 import { Shield, Eye, EyeOff, CheckCircle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '../hooks/use-toast';
+import { apiRequest } from '../lib/queryClient';
 
 interface BillingPinSetupProps {
   onPinSet: () => void;
@@ -32,7 +32,7 @@ export default function BillingPinSetup({ onPinSet, userHasPin }: BillingPinSetu
         title: "PIN Set Successfully",
         description: "Your billing PIN has been securely saved.",
       });
-      // Force refresh of user data to get updated billing_pin
+      // Force refresh of user data to get updated user info
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       queryClient.refetchQueries({ queryKey: ['/api/auth/user'] });
       // Wait a moment for the user data to update before calling onPinSet

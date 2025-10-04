@@ -29,7 +29,8 @@ export interface ClientWithServiceArea {
   first_name: string;
   last_name: string;
   service_area_id: string;
-  organization_id: string;
+  program_id: string;
+  location_id?: string | null;
   phone?: string | null;
   email?: string | null;
   address?: string | null;

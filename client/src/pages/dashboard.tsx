@@ -1,45 +1,56 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import DashboardStats from "@/components/stats/dashboard-stats";
-import SimpleBookingForm from "@/components/booking/simple-booking-form";
-import TripCalendar from "@/components/TripCalendar";
-import DriverDashboard from "@/components/DriverDashboard";
-import RecentActivity from "@/components/RecentActivity";
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Plus, Building2, Users, Car, Calendar, MapPin, Badge, ChevronDown, ArrowLeft, Bug } from "lucide-react";
+import DashboardStats from "../components/stats/dashboard-stats";
+import SimpleBookingForm from "../components/booking/simple-booking-form";
+import DriverDashboard from "../components/DriverDashboard";
+import RecentActivity from "../components/RecentActivity";
+import DebugPanel from "../components/DebugPanel";
+import EnhancedActivityFeed from "../components/EnhancedActivityFeed";
+import EnhancedTripCalendar from "../components/EnhancedTripCalendar";
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { useOrganization } from "@/hooks/useOrganization";
-import { useAuth } from "@/hooks/useAuth";
-import { DEFAULT_ORGANIZATION_ID } from "@/lib/environment";
+import { apiRequest } from "../lib/queryClient";
+import { useAuth } from "../hooks/useAuth";
+import { useHierarchy } from "../hooks/useHierarchy";
+import { DEFAULT_PROGRAM_ID, CORPORATE_LEVEL_PROGRAM_ID } from "../lib/environment";
 import { Link } from "wouter";
 
 interface DashboardProps {
-  currentOrganization?: string;
+  currentProgram?: string;
 }
 
 export default function Dashboard({ 
-  currentOrganization = DEFAULT_ORGANIZATION_ID 
+  currentProgram = DEFAULT_PROGRAM_ID 
 }: DashboardProps) {
   const { user } = useAuth();
-  const { currentOrganization: orgFromHook } = useOrganization();
-  // Prioritize user's actual organization over default
-  const activeOrganization = orgFromHook?.id || user?.primaryOrganizationId || currentOrganization;
-  const userRole = user?.role || "organization_admin";
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
+  const { level, selectedCorporateClient, selectedProgram, getFilterParams, navigateToCorporate, navigateToClient, navigateToProgram } = useHierarchy();
   
-
-
+  const userRole = user?.role || "program_admin";
+  
+  // Super admin detection - corporate level access
+  // Super admin should have primary_program_id = null AND role = 'super_admin'
+  const isSuperAdmin = userRole === 'super_admin' && user?.primary_program_id === null;
+  
+  // Use hierarchical context for data filtering
+  const filterParams = getFilterParams();
+  const activeProgram = isSuperAdmin && level === 'corporate' 
+    ? CORPORATE_LEVEL_PROGRAM_ID  // null for corporate level - shows all data
+    : filterParams.programId || selectedProgram || user?.primary_program_id || currentProgram;
+  
   // Debug logging for driver authentication
-  console.log('🎯 Dashboard - User:', user?.email, 'Role:', userRole, 'Organization:', activeOrganization);
+  console.log('🎯 Dashboard - User:', user?.email, 'Role:', userRole, 'Level:', level, 'Program:', activeProgram, 'IsSuperAdmin:', isSuperAdmin);
 
-  // Fetch data based on user role
+  // Fetch data based on user role and hierarchy level
   const { data: tripsData, isLoading: tripsLoading } = useQuery({
-    queryKey: ["/api/trips", activeOrganization, userRole],
+    queryKey: ["/api/trips", activeProgram, userRole, level, filterParams],
     queryFn: async () => {
       if (userRole === "driver") {
         // For drivers, find their driver record and fetch assigned trips
-        const driversResponse = await apiRequest("GET", `/api/drivers/organization/${activeOrganization}`);
+        const driversResponse = await apiRequest("GET", `/api/drivers/program/${activeProgram}`);
         const driversData = await driversResponse.json();
-        const driverRecord = driversData.find((d: any) => d.user_id === user?.userId);
+        const driverRecord = driversData.find((d: any) => d.user_id === user?.user_id);
         
         if (driverRecord) {
           const response = await apiRequest("GET", `/api/trips/driver/${driverRecord.id}`);
@@ -47,156 +58,619 @@ export default function Dashboard({
         }
         return [];
       } else {
-        // For other roles, fetch organization trips
-        const response = await apiRequest("GET", `/api/trips/organization/${activeOrganization}`);
+        // For other roles, fetch program trips
+        const response = await apiRequest("GET", `/api/trips/program/${activeProgram}`);
         return await response.json();
       }
     },
-    enabled: !!user?.userId || userRole !== "driver",
+    enabled: !!user && !!activeProgram && !isSuperAdmin, // Don't fetch program trips for super admin
   });
 
+  // Fetch drivers for the active program
   const { data: driversData, isLoading: driversLoading } = useQuery({
-    queryKey: ["/api/drivers", activeOrganization],
+    queryKey: ["/api/drivers", activeProgram],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/drivers/organization/${activeOrganization}`);
+      const response = await apiRequest("GET", `/api/drivers/program/${activeProgram}`);
       return await response.json();
     },
-    enabled: userRole !== "driver", // Drivers don't need to see all drivers
+    enabled: !!user && !!activeProgram && !isSuperAdmin, // Don't fetch program data for super admin
   });
 
+  // Fetch clients for the active program
   const { data: clientsData, isLoading: clientsLoading } = useQuery({
-    queryKey: ["/api/clients", activeOrganization],
+    queryKey: ["/api/clients", activeProgram],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/clients/organization/${activeOrganization}`);
+      const response = await apiRequest("GET", `/api/clients/program/${activeProgram}`);
       return await response.json();
     },
-    enabled: userRole !== "driver", // Drivers don't need to see all clients
+    enabled: !!user && !!activeProgram && !isSuperAdmin, // Don't fetch program data for super admin
   });
 
-  // Calculate statistics from real data
-  const trips = Array.isArray(tripsData) ? tripsData : [];
-  const drivers = Array.isArray(driversData) ? driversData : [];
-  const clients = Array.isArray(clientsData) ? clientsData : [];
+  // Fetch client groups for the active program
+  const { data: clientGroupsData, isLoading: clientGroupsLoading } = useQuery({
+    queryKey: ["/api/client-groups", activeProgram],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/client-groups/program/${activeProgram}`);
+      return await response.json();
+    },
+    enabled: !!user && !!activeProgram && !isSuperAdmin, // Don't fetch program data for super admin
+  });
 
-  const today = new Date().toISOString().split('T')[0];
-  
+  // Corporate data fetching for super admin
+  const { data: corporateClients, isLoading: corporateClientsLoading, error: corporateClientsError } = useQuery({
+    queryKey: ["/api/corporate-clients", level, filterParams],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/corporate-clients");
+      const data = await response.json();
+      return data;
+    },
+    enabled: isSuperAdmin
+  });
+
+
+  const { data: corporatePrograms, isLoading: programsLoading } = useQuery({
+    queryKey: ["/api/programs"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/programs");
+      return await response.json();
+    },
+    enabled: isSuperAdmin
+  });
+
+  const { data: universalTrips, isLoading: universalTripsLoading } = useQuery({
+    queryKey: ["/api/trips"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/trips");
+      return await response.json();
+    },
+    enabled: isSuperAdmin
+  });
+
+  const { data: fleetData, isLoading: fleetLoading } = useQuery({
+    queryKey: ["/api/vehicles"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/vehicles");
+      return await response.json();
+    },
+    enabled: isSuperAdmin
+  });
+
+  const { data: corporateDriversData, isLoading: corporateDriversLoading } = useQuery({
+    queryKey: ["/api/drivers"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/drivers");
+      return await response.json();
+    },
+    enabled: isSuperAdmin
+  });
+
+  // Filter data based on selected corporate client
+  const filteredPrograms = selectedCorporateClient 
+    ? corporatePrograms?.filter((p: any) => p.corporate_client_id === selectedCorporateClient)
+    : corporatePrograms;
+
+  const filteredTrips = selectedCorporateClient
+    ? universalTrips?.filter((t: any) => t.program?.corporate_client_id === selectedCorporateClient)
+    : universalTrips;
+
+  const selectedCorporateClientData = selectedCorporateClient
+    ? corporateClients?.corporateClients?.find((c: any) => c.id === selectedCorporateClient)
+    : null;
+
+  // Get organization display name
+  const getOrganizationDisplayName = () => {
+    if (selectedProgram) {
+      return selectedProgram;
+    }
+    if (selectedCorporateClient) {
+      return `${selectedCorporateClient} Dashboard`;
+    }
+    return "MONARCH COMPETENCY DASHBOARD";
+  };
+
+  // Get role-based title
+  const getRoleBasedTitle = () => {
+    switch (userRole) {
+      case "super_admin":
+        return "SUPER ADMIN DASHBOARD";
+      case "corporate_admin":
+        return `${selectedCorporateClient || "CORPORATE"} ADMIN DASHBOARD`;
+      case "program_admin":
+        return `${selectedProgram || "PROGRAM"} ADMIN DASHBOARD`;
+      case "program_user":
+        return `${selectedProgram || "PROGRAM"} USER DASHBOARD`;
+      case "driver":
+        return "DRIVER DASHBOARD";
+      default:
+        return "DASHBOARD";
+    }
+  };
+
+  // Calculate dashboard stats
   const dashboardStats = {
-    todaysTrips: trips.filter(trip => 
-      trip.scheduled_pickup_time?.startsWith(today)
-    ).length,
-    completedTrips: trips.filter(trip => 
-      trip.status === "completed" && trip.scheduled_pickup_time?.startsWith(today)
-    ).length,
-    activeDrivers: drivers.filter(driver => driver.is_active).length,
-    totalClients: clients.length
+    totalTrips: tripsData?.length || 0,
+    activeDrivers: driversData?.filter((d: any) => d.is_active)?.length || 0,
+    totalClients: clientsData?.length || 0,
+    clientGroups: clientGroupsData?.length || 0,
+    scheduledTrips: tripsData?.filter((t: any) => t.status === "scheduled")?.length || 0,
+    inProgressTrips: tripsData?.filter((t: any) => t.status === "in_progress")?.length || 0,
+    completedTrips: tripsData?.filter((t: any) => t.status === "completed")?.length || 0,
+    cancelledTrips: tripsData?.filter((t: any) => t.status === "cancelled")?.length || 0,
   };
 
-  const getDashboardTitle = (role: string) => {
-    switch (role) {
-      case "organization_user":
-        return "Book Your Trip";
-      case "driver":
-        return "Driver Dashboard";
-      case "organization_admin":
-        return "Organization Dashboard";
-      case "monarch_owner":
-        return "Monarch Overview";
-      case "super_admin":
-        return "Dashboard";
-      default:
-        return "Dashboard";
-    }
-  };
+  const isLoading = tripsLoading || driversLoading || clientsLoading || clientGroupsLoading;
 
-  const getDashboardDescription = (role: string) => {
-    switch (role) {
-      case "organization_user":
-        return "Welcome! Book your transportation quickly and easily.";
-      case "driver":
-        return "View your scheduled trips and manage your availability.";
-      case "organization_admin":
-        return "Manage trips, clients, and drivers for your organization.";
-      case "monarch_owner":
-        return "Overview of all Monarch organizations and operations.";
-      case "super_admin":
-        return "";
-      default:
-        return "";
-    }
-  };
+  // Super Admin Corporate Dashboard
+  if (isSuperAdmin) {
+    // Show corporate client level view
+    if (!selectedCorporateClient) {
+      return (
+        <div className="space-y-6">
+          {/* Enhanced Trip Calendar for Super Admin */}
+          <EnhancedTripCalendar />
+          
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold">CORPORATE DASHBOARD</h1>
+            {/* Removed organization display name for super admin */}
+          </div>
 
-  const isKioskMode = userRole === "organization_user";
-  const isDriverMode = userRole === "driver";
-  const shouldShowCalendar = ['super_admin', 'monarch_owner', 'organization_admin'].includes(userRole);
-  const isLoading = tripsLoading || driversLoading || clientsLoading;
 
-  if (isLoading && !isKioskMode) {
-    return (
-      <div className="p-6 space-y-6">
-        <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-24 bg-gray-200 rounded animate-pulse"></div>
-          ))}
+          {/* Corporate Client Overview Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Corporate Clients</CardTitle>
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{corporateClients?.corporateClients?.length || 0}</div>
+                <p className="text-xs text-muted-foreground">
+                  Active corporate clients
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Drivers</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{corporateDriversData?.length || 0}</div>
+                <p className="text-xs text-muted-foreground">
+                  Drivers across all programs
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Fleet Size</CardTitle>
+                <Car className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{fleetData?.length || 0}</div>
+                <p className="text-xs text-muted-foreground">
+                  Vehicles in service
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Today's Trips</CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {universalTrips?.filter((trip: any) => {
+                    const today = new Date().toDateString();
+                    const tripDate = new Date(trip.scheduled_pickup_time).toDateString();
+                    return tripDate === today;
+                  }).length || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Trips scheduled today
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Corporate Client Selector */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <MapPin className="h-5 w-5 mr-2" />
+                Corporate Clients
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {corporateClientsLoading && <div>Loading corporate clients...</div>}
+                {corporateClientsError && <div>Error loading corporate clients: {corporateClientsError.message}</div>}
+                {corporateClients && corporateClients.corporateClients?.length === 0 && <div>No corporate clients found</div>}
+                {corporateClients?.corporateClients?.map((client: any) => {
+                  const clientPrograms = corporatePrograms?.filter((p: any) => p.corporate_client_id === client.id) || [];
+                  return (
+                    <Card 
+                      key={client.id} 
+                      className="hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => navigateToClient(client.id, client.name)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-semibold">{client.name}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {clientPrograms.length} program{clientPrograms.length !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigateToClient(client.id, client.name);
+                            }}
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="mt-2 text-xs text-muted-foreground">
+                          {client.is_active ? 'Active' : 'Inactive'}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Universal Calendar */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Calendar className="h-5 w-5 mr-2" />
+                Universal Calendar
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center text-gray-500 py-8">
+                <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <p>Calendar view will be available here</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recent Activity Across All Programs */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Badge className="h-5 w-5 mr-2" />
+                Recent Activity
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <RecentActivity />
+            </CardContent>
+          </Card>
+
+
+          {/* Floating Debug Button for Super Admin */}
+          <button
+            onClick={() => setShowDebugPanel(true)}
+            className="fixed bottom-4 right-4 z-40 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-colors"
+            title="Open Debug Panel"
+          >
+            <Bug className="h-5 w-5" />
+          </button>
+
+          {/* Debug Panel */}
+          <DebugPanel 
+            isOpen={showDebugPanel} 
+            onClose={() => setShowDebugPanel(false)} 
+          />
         </div>
-        <div className="h-64 bg-gray-200 rounded animate-pulse"></div>
+      );
+    }
+
+    // Show selected corporate client view
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigateToCorporate()}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Corporate
+            </Button>
+            <h1 className="text-3xl font-bold">{selectedCorporateClientData?.name} DASHBOARD</h1>
+          </div>
+          {/* Removed organization display name for super admin */}
+        </div>
+
+        {/* Floating Debug Button for Super Admin - Available in all views */}
+        <button
+          onClick={() => setShowDebugPanel(true)}
+          className="fixed bottom-4 right-4 z-40 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-colors"
+          title="Open Debug Panel"
+        >
+          <Bug className="h-5 w-5" />
+        </button>
+
+        {/* Debug Panel */}
+        <DebugPanel 
+          isOpen={showDebugPanel} 
+          onClose={() => setShowDebugPanel(false)} 
+        />
+
+        {/* Corporate Client Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Programs</CardTitle>
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{filteredPrograms?.length || 0}</div>
+              <p className="text-xs text-muted-foreground">
+                Programs under {selectedCorporateClientData?.name}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {filteredTrips?.reduce((acc: number, trip: any) => {
+                  return acc + (trip.client ? 1 : 0);
+                }, 0) || 0}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Residents across all programs
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Fleet Size</CardTitle>
+              <Car className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{fleetData?.length || 0}</div>
+              <p className="text-xs text-muted-foreground">
+                Vehicles in service
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Today's Trips</CardTitle>
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {filteredTrips?.filter((trip: any) => {
+                  const today = new Date().toDateString();
+                  const tripDate = new Date(trip.scheduled_pickup_time).toDateString();
+                  return tripDate === today;
+                }).length || 0}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Trips for {selectedCorporateClientData?.name}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Program Overview for Selected Corporate Client */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <MapPin className="h-5 w-5 mr-2" />
+              Programs
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredPrograms?.map((program: any) => (
+                <Card 
+                  key={program.id} 
+                  className="hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => navigateToProgram(program.id, program.name)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold">{program.name}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {program.description}
+                        </p>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigateToProgram(program.id, program.name);
+                        }}
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      {program.is_active ? 'Active' : 'Inactive'}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Calendar for Selected Corporate Client */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Calendar className="h-5 w-5 mr-2" />
+              {selectedCorporateClientData?.name} Calendar
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center text-gray-500 py-8">
+              <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+              <p>Calendar view will be available here</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Activity for Selected Corporate Client */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Badge className="h-5 w-5 mr-2" />
+              Recent Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RecentActivity />
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  return (
-    <div className="p-6 space-y-6" style={{ backgroundColor: 'var(--foundation-bg)' }}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className={`font-bold text-brutalist-h1 ${isKioskMode ? "text-mega" : ""}`} style={{ color: 'var(--foundation-text)' }}>
-            {getDashboardTitle(userRole).toUpperCase()}
-          </h1>
-          <p className={`mt-2 text-brutalist-body ${isKioskMode ? "text-brutalist-body" : ""}`} style={{ color: 'var(--foundation-text)' }}>
-            {getDashboardDescription(userRole)}
-          </p>
+  // Driver-specific dashboard
+  if (userRole === "driver") {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold">{getRoleBasedTitle()}</h1>
+          <div className="text-sm text-muted-foreground">
+            {getOrganizationDisplayName()}
+          </div>
         </div>
         
-        {/* Schedule Trip Button for admin roles */}
-        {shouldShowCalendar && (
-          <Link href="/trips">
-            <Button className="border-2 font-bold uppercase tracking-wide hover-darker hover-shadow transition-all duration-200" style={{
-              backgroundColor: 'var(--status-accent)',
-              borderColor: 'var(--foundation-border)',
-              color: 'var(--foundation-text)'
-            }}>
-              <Plus className="w-4 h-4 mr-2" />
-              SCHEDULE TRIP
-            </Button>
-          </Link>
-        )}
+        <DriverDashboard />
+      </div>
+    );
+  }
+
+  // Admin/User dashboard
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">{getRoleBasedTitle()}</h1>
+        <div className="text-sm text-muted-foreground">
+          {getOrganizationDisplayName()}
+        </div>
       </div>
 
-      {/* Role-specific dashboard content */}
-      {isKioskMode ? (
-        // Kiosk Mode - Simplified booking interface
-        <div className="max-w-2xl mx-auto">
-          <SimpleBookingForm />
-        </div>
-      ) : isDriverMode ? (
-        // Driver Mode - Trip management dashboard
-        <>
-          <DriverDashboard />
-        </>
-      ) : (
-        // Admin/Manager Mode - Full dashboard
-        <>
-          {/* Trip Calendar - positioned below header for admin roles */}
-          {shouldShowCalendar && <TripCalendar />}
-          
-          <DashboardStats 
-            todaysTrips={dashboardStats.todaysTrips}
-            completedTrips={dashboardStats.completedTrips}
-            activeDrivers={dashboardStats.activeDrivers}
-            totalClients={dashboardStats.totalClients}
-          />
-          <RecentActivity />
-        </>
-      )}
+      {/* Dashboard Stats */}
+      <DashboardStats 
+        todaysTrips={dashboardStats.scheduledTrips}
+        completedTrips={dashboardStats.completedTrips}
+        activeDrivers={dashboardStats.activeDrivers}
+        totalClients={dashboardStats.totalClients}
+      />
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Button asChild className="w-full">
+                <Link to="/trips/new">
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Trip
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="w-full">
+                <Link to="/clients/new">
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Client
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="w-full">
+                <Link to="/drivers/new">
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Driver
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="w-full">
+                <Link to="/client-groups/new">
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Group
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+
+        <EnhancedActivityFeed />
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Quick Booking</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <SimpleBookingForm />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Program Info - Moved above calendar */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Program Info</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 text-sm">
+            <div>
+              <span className="font-medium">Program:</span> {selectedProgram || "N/A"}
+            </div>
+            <div>
+              <span className="font-medium">Corporate Client:</span> {selectedCorporateClient || "N/A"}
+            </div>
+            <div>
+              <span className="font-medium">Level:</span> {level || "N/A"}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Enhanced Trip Calendar */}
+      <EnhancedTripCalendar />
+
+
+      {/* Floating Debug Button */}
+      <button
+        onClick={() => setShowDebugPanel(true)}
+        className="fixed bottom-4 right-4 z-40 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-colors"
+        title="Open Debug Panel"
+      >
+        <Bug className="h-5 w-5" />
+      </button>
+
+      {/* Debug Panel */}
+      <DebugPanel 
+        isOpen={showDebugPanel} 
+        onClose={() => setShowDebugPanel(false)} 
+      />
     </div>
   );
 }

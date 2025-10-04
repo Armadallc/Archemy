@@ -1,18 +1,19 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import React, { useState } from "react";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
 import { Upload, X, Image } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "../hooks/use-toast";
+import { apiRequest } from "../lib/queryClient";
 
 interface LogoUploadProps {
   organizationId: string;
   currentLogoUrl?: string | null;
   onLogoUpdate: (logoUrl: string | null) => void;
+  type?: 'corporate-client' | 'program';
 }
 
-export function LogoUpload({ organizationId, currentLogoUrl, onLogoUpdate }: LogoUploadProps) {
+export function LogoUpload({ organizationId, currentLogoUrl, onLogoUpdate, type = 'corporate-client' }: LogoUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
@@ -47,7 +48,11 @@ export function LogoUpload({ organizationId, currentLogoUrl, onLogoUpdate }: Log
       const formData = new FormData();
       formData.append('logo', file);
 
-      const response = await fetch(`/api/organizations/${organizationId}/logo`, {
+      const endpoint = type === 'program' 
+        ? `/api/programs/${organizationId}/logo`
+        : `/api/corporate-clients/${organizationId}/logo`;
+      
+      const response = await fetch(endpoint, {
         method: 'POST',
         body: formData,
         headers: {
@@ -83,7 +88,11 @@ export function LogoUpload({ organizationId, currentLogoUrl, onLogoUpdate }: Log
     setIsDeleting(true);
 
     try {
-      await apiRequest("DELETE", `/api/organizations/${organizationId}/logo`);
+      const endpoint = type === 'program' 
+        ? `/api/programs/${organizationId}/logo`
+        : `/api/corporate-clients/${organizationId}/logo`;
+      
+      await apiRequest("DELETE", endpoint);
       onLogoUpdate(null);
       
       toast({

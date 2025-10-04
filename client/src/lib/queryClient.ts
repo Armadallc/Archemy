@@ -12,8 +12,23 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  // Get auth token from localStorage for fallback authentication
-  const authToken = localStorage.getItem('auth_token') || localStorage.getItem('authToken');
+  // Get auth token from Supabase session
+  let authToken = null;
+  
+  // Try to get token from localStorage first (fallback)
+  authToken = localStorage.getItem('auth_token') || localStorage.getItem('authToken');
+  
+  // If no token in localStorage, try to get from Supabase session
+  if (!authToken) {
+    try {
+      // Import supabase client dynamically to avoid circular imports
+      const { supabase } = await import('../lib/supabase');
+      const { data: { session } } = await supabase.auth.getSession();
+      authToken = session?.access_token || null;
+    } catch (error) {
+      console.warn('Could not get Supabase session:', error);
+    }
+  }
   
   const headers: any = data ? { "Content-Type": "application/json" } : {};
   
@@ -22,7 +37,10 @@ export async function apiRequest(
     headers['Authorization'] = `Bearer ${authToken}`;
   }
   
-  const res = await fetch(url, {
+  // Add base URL if the URL doesn't start with http
+  const fullUrl = url.startsWith('http') ? url : `http://localhost:8081${url}`;
+  
+  const res = await fetch(fullUrl, {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
@@ -39,8 +57,23 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    // Get auth token from localStorage for fallback authentication
-    const authToken = localStorage.getItem('auth_token') || localStorage.getItem('authToken');
+    // Get auth token from Supabase session
+    let authToken = null;
+    
+    // Try to get token from localStorage first (fallback)
+    authToken = localStorage.getItem('auth_token') || localStorage.getItem('authToken');
+    
+    // If no token in localStorage, try to get from Supabase session
+    if (!authToken) {
+      try {
+        // Import supabase client dynamically to avoid circular imports
+        const { supabase } = await import('../lib/supabase');
+        const { data: { session } } = await supabase.auth.getSession();
+        authToken = session?.access_token || null;
+      } catch (error) {
+        console.warn('Could not get Supabase session:', error);
+      }
+    }
     
     const headers: any = {};
     
@@ -49,7 +82,10 @@ export const getQueryFn: <T>(options: {
       headers['Authorization'] = `Bearer ${authToken}`;
     }
     
-    const res = await fetch(queryKey[0] as string, {
+    // Add base URL if the URL doesn't start with http
+    const fullUrl = (queryKey[0] as string).startsWith('http') ? queryKey[0] as string : `http://localhost:8081${queryKey[0] as string}`;
+    
+    const res = await fetch(fullUrl, {
       credentials: "include",
       headers,
     });

@@ -1,22 +1,22 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Calendar, Clock, MapPin, ChevronDown } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
-import { useOrganization } from "@/hooks/useOrganization";
-import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "../../hooks/use-toast";
+import { useAuth } from "../../hooks/useAuth";
+import { useHierarchy } from "../../hooks/useHierarchy";
+import { apiRequest } from "../../lib/queryClient";
 
 function SimpleBookingForm() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { currentOrganization } = useOrganization();
+  const { level, selectedCorporateClient, selectedProgram } = useHierarchy();
 
   const [formData, setFormData] = useState({
     selectionType: "individual",
@@ -31,60 +31,100 @@ function SimpleBookingForm() {
     tripType: "one_way",
     isRecurring: false,
     frequency: "",
-    daysOfWeek: [],
+    daysOfWeek: [] as string[],
     duration: 4,
     tripNickname: ""
   });
 
-  // Fetch clients for current organization
+  // Fetch clients based on current hierarchy level
   const { data: clients = [] } = useQuery({
-    queryKey: ["/api/clients", currentOrganization?.id],
+    queryKey: ["/api/clients", level, selectedCorporateClient, selectedProgram],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/clients/organization/${currentOrganization?.id}`);
+      let endpoint = "/api/clients";
+      
+      if (level === 'program' && selectedProgram) {
+        endpoint = `/api/clients/program/${selectedProgram}`;
+      } else if (level === 'client' && selectedCorporateClient) {
+        endpoint = `/api/clients/corporate-client/${selectedCorporateClient}`;
+      }
+      
+      const response = await apiRequest("GET", endpoint);
       return await response.json();
     },
-    enabled: !!currentOrganization?.id,
+    enabled: !!(selectedProgram || selectedCorporateClient),
   });
 
-  // Fetch client groups for current organization
+  // Fetch client groups based on current hierarchy level
   const { data: clientGroups = [] } = useQuery({
-    queryKey: ["/api/client-groups", currentOrganization?.id],
+    queryKey: ["/api/client-groups", level, selectedCorporateClient, selectedProgram],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/client-groups/organization/${currentOrganization?.id}`);
+      let endpoint = "/api/client-groups";
+      
+      if (level === 'program' && selectedProgram) {
+        endpoint = `/api/client-groups/program/${selectedProgram}`;
+      } else if (level === 'client' && selectedCorporateClient) {
+        endpoint = `/api/client-groups/corporate-client/${selectedCorporateClient}`;
+      }
+      
+      const response = await apiRequest("GET", endpoint);
       return await response.json();
     },
-    enabled: !!currentOrganization?.id,
+    enabled: !!(selectedProgram || selectedCorporateClient),
   });
 
-  // Fetch drivers for current organization
+  // Fetch drivers based on current hierarchy level
   const { data: drivers = [] } = useQuery({
-    queryKey: ["/api/drivers", currentOrganization?.id],
+    queryKey: ["/api/drivers", level, selectedCorporateClient, selectedProgram],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/drivers/organization/${currentOrganization?.id}`);
+      let endpoint = "/api/drivers";
+      
+      if (level === 'program' && selectedProgram) {
+        endpoint = `/api/drivers/program/${selectedProgram}`;
+      } else if (level === 'client' && selectedCorporateClient) {
+        endpoint = `/api/drivers/corporate-client/${selectedCorporateClient}`;
+      }
+      
+      const response = await apiRequest("GET", endpoint);
       return await response.json();
     },
-    enabled: !!currentOrganization?.id,
+    enabled: !!(selectedProgram || selectedCorporateClient),
   });
 
-  // Fetch frequent locations for current organization
+  // Fetch frequent locations based on current hierarchy level
   const { data: frequentLocationsData = [], isLoading: frequentLocationsLoading } = useQuery({
-    queryKey: ["/api/frequentlocations", "organization", currentOrganization?.id],
+    queryKey: ["/api/frequent-locations", level, selectedCorporateClient, selectedProgram],
     queryFn: async () => {
-      if (!currentOrganization?.id) return [];
-      const response = await apiRequest("GET", `/api/frequentlocations/organization/${currentOrganization?.id}`);
+      if (!selectedProgram && !selectedCorporateClient) return [];
+      
+      let endpoint = "/api/frequent-locations";
+      if (level === 'program' && selectedProgram) {
+        endpoint = `/api/frequent-locations/program/${selectedProgram}`;
+      } else if (level === 'client' && selectedCorporateClient) {
+        endpoint = `/api/frequent-locations/corporate-client/${selectedCorporateClient}`;
+      }
+      
+      const response = await apiRequest("GET", endpoint);
       return await response.json();
     },
-    enabled: !!currentOrganization?.id,
+    enabled: !!(selectedProgram || selectedCorporateClient),
   });
 
-  // Fetch service areas for current organization
+  // Fetch locations based on current hierarchy level
   const { data: serviceAreasData = [] } = useQuery({
-    queryKey: ["/api/serviceareas", currentOrganization?.id],
+    queryKey: ["/api/locations", level, selectedCorporateClient, selectedProgram],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/serviceareas/organization/${currentOrganization?.id}`);
+      let endpoint = "/api/locations";
+      
+      if (level === 'program' && selectedProgram) {
+        endpoint = `/api/locations/program/${selectedProgram}`;
+      } else if (level === 'client' && selectedCorporateClient) {
+        endpoint = `/api/locations/corporate-client/${selectedCorporateClient}`;
+      }
+      
+      const response = await apiRequest("GET", endpoint);
       return await response.json();
     },
-    enabled: !!currentOrganization?.id,
+    enabled: !!(selectedProgram || selectedCorporateClient),
   });
 
   const frequentLocations = Array.isArray(frequentLocationsData) ? frequentLocationsData : [];
@@ -92,13 +132,13 @@ function SimpleBookingForm() {
 
 
 
-  // Get organization for selected client
+  // Get program for selected client
   const selectedClient = clients.find((client: any) => client.id === formData.clientId);
-  const clientOrganization = selectedClient?.organizationId;
+  const clientProgram = selectedClient?.program_id;
 
-  // Filter drivers by client's organization (they should all be from same org already)
+  // Filter drivers by client's program (they should all be from same program already)
   const availableDrivers = drivers.filter((driver: any) => 
-    driver.primary_organization_id === clientOrganization || driver.primary_organization_id === currentOrganization?.id
+    driver.program_id === clientProgram || driver.program_id === selectedProgram
   );
 
   // Create trip mutation
@@ -112,36 +152,36 @@ function SimpleBookingForm() {
       if (tripData.isRecurring) {
         // Create recurring trip
         const apiData = {
-          organizationId: currentOrganization?.id,
-          clientId: tripData.selectionType === "individual" ? tripData.clientId : undefined,
-          clientGroupId: tripData.selectionType === "group" ? tripData.clientGroupId : undefined,
-          driverId: tripData.driverId === "unassigned" ? null : tripData.driverId || null,
-          tripType: tripData.tripType,
-          pickupAddress: tripData.pickupAddress,
-          dropoffAddress: tripData.dropoffAddress,
-          scheduledTime: tripData.scheduledTime,
-          returnTime: tripData.tripType === "round_trip" ? tripData.returnTime : null,
+          program_id: selectedProgram,
+          client_id: tripData.selectionType === "individual" ? tripData.clientId : undefined,
+          client_group_id: tripData.selectionType === "group" ? tripData.clientGroupId : undefined,
+          driver_id: tripData.driverId === "unassigned" ? null : tripData.driverId || null,
+          trip_type: tripData.tripType,
+          pickup_address: tripData.pickupAddress,
+          dropoff_address: tripData.dropoffAddress,
+          scheduled_time: tripData.scheduledTime,
+          return_time: tripData.tripType === "round_trip" ? tripData.returnTime : null,
           frequency: tripData.frequency,
-          daysOfWeek: tripData.daysOfWeek,
+          days_of_week: tripData.daysOfWeek,
           duration: tripData.duration,
-          startDate: tripData.scheduledDate,
-          isActive: true
+          start_date: tripData.scheduledDate,
+          is_active: true
         };
         const response = await apiRequest("POST", "/api/recurring-trips", apiData);
         return response;
       } else {
         // Create regular trip
         const apiData = {
-          organizationId: currentOrganization?.id,
-          clientId: tripData.selectionType === "individual" ? tripData.clientId : undefined,
-          clientGroupId: tripData.selectionType === "group" ? tripData.clientGroupId : undefined,
-          driverId: tripData.driverId === "unassigned" ? null : tripData.driverId || null,
-          tripType: tripData.tripType,
-          pickupAddress: tripData.pickupAddress,
-          dropoffAddress: tripData.dropoffAddress,
-          scheduledPickupTime: scheduledPickupTime,
-          scheduledReturnTime: scheduledReturnTime,
-          passengerCount: 1,
+          program_id: selectedProgram,
+          client_id: tripData.selectionType === "individual" ? tripData.clientId : undefined,
+          client_group_id: tripData.selectionType === "group" ? tripData.clientGroupId : undefined,
+          driver_id: tripData.driverId === "unassigned" ? null : tripData.driverId || null,
+          trip_type: tripData.tripType,
+          pickup_address: tripData.pickupAddress,
+          dropoff_address: tripData.dropoffAddress,
+          scheduled_pickup_time: scheduledPickupTime,
+          scheduled_return_time: scheduledReturnTime,
+          passenger_count: 1,
           status: "scheduled"
         };
         
@@ -167,8 +207,9 @@ function SimpleBookingForm() {
         tripType: "one_way",
         isRecurring: false,
         frequency: "",
-        daysOfWeek: [],
-        duration: 4
+        daysOfWeek: [] as string[],
+        duration: 4,
+        tripNickname: ""
       });
       queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
       if (formData.isRecurring) {
@@ -323,7 +364,7 @@ function SimpleBookingForm() {
             </Select>
             {formData.clientId && availableDrivers.length === 0 && (
               <p className="text-sm text-gray-500 mt-1">
-                No drivers available for this organization. The trip will be created without a driver assigned.
+                No drivers available for this program. The trip will be created without a driver assigned.
               </p>
             )}
           </div>
@@ -530,6 +571,7 @@ function SimpleBookingForm() {
                 checked={formData.isRecurring}
                 onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
                 className="rounded border-gray-300"
+                aria-label="Enable recurring trip"
               />
               <span>Make this a recurring trip</span>
             </Label>

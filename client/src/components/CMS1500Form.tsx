@@ -1,19 +1,19 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Textarea } from '../components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Checkbox } from '../components/ui/checkbox';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../components/ui/form';
 import { FileText, Save, Download, Printer, ArrowLeft, Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '../hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useOrganization } from '@/hooks/useOrganization';
+import { useHierarchy } from '../hooks/useHierarchy';
 
 // Transport service codes for mental health transportation
 const TRANSPORT_CODES = [
@@ -237,18 +237,26 @@ export default function CMS1500Form({ onBack, initialData, formId, clientId, tri
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { currentOrganization } = useOrganization();
+  const { level, selectedProgram, selectedCorporateClient } = useHierarchy();
   
   // Load existing form data if editing
   const { data: existingForm, isLoading: isLoadingForm } = useQuery({
     queryKey: ['cms1500-form', formId],
     queryFn: async () => {
-      if (!formId || !currentOrganization?.id) return null;
-      const response = await fetch(`/api/cms1500/forms/${currentOrganization.id}/${formId}`);
+      if (!formId || (!selectedProgram && !selectedCorporateClient)) return null;
+      
+      let endpoint = `/api/cms1500/forms`;
+      if (level === 'program' && selectedProgram) {
+        endpoint = `/api/cms1500/forms/program/${selectedProgram}/${formId}`;
+      } else if (level === 'client' && selectedCorporateClient) {
+        endpoint = `/api/cms1500/forms/corporate-client/${selectedCorporateClient}/${formId}`;
+      }
+      
+      const response = await fetch(endpoint);
       if (!response.ok) throw new Error('Failed to load form');
       return response.json();
     },
-    enabled: !!formId && !!currentOrganization?.id,
+    enabled: !!formId && !!(selectedProgram || selectedCorporateClient),
   });
 
   const form = useForm<CMS1500FormData>({
@@ -339,7 +347,7 @@ export default function CMS1500Form({ onBack, initialData, formId, clientId, tri
   // Save form mutation
   const saveMutation = useMutation({
     mutationFn: async (data: CMS1500FormData) => {
-      if (!currentOrganization?.id) throw new Error('Organization not found');
+      if (!selectedProgram && !selectedCorporateClient) throw new Error('Program or Corporate Client not found');
       
       // Convert form data to database format
       const formDataForApi = {
@@ -389,8 +397,12 @@ export default function CMS1500Form({ onBack, initialData, formId, clientId, tri
       };
       
       const url = formId 
-        ? `/api/cms1500/forms/${currentOrganization.id}/${formId}`
-        : `/api/cms1500/forms/${currentOrganization.id}`;
+        ? (level === 'program' && selectedProgram 
+            ? `/api/cms1500/forms/program/${selectedProgram}/${formId}`
+            : `/api/cms1500/forms/corporate-client/${selectedCorporateClient}/${formId}`)
+        : (level === 'program' && selectedProgram 
+            ? `/api/cms1500/forms/program/${selectedProgram}`
+            : `/api/cms1500/forms/corporate-client/${selectedCorporateClient}`);
       
       const response = await fetch(url, {
         method: formId ? 'PUT' : 'POST',

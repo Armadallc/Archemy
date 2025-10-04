@@ -1,6 +1,6 @@
 // Trip tracking service with location-aware functionality
-import { apiRequest } from '@/lib/queryClient';
-import { getCurrentLocation, calculateDistance, openMapApp, LocationError } from '@/lib/location';
+import { apiRequest } from '../lib/queryClient';
+import { getCurrentLocation, calculateDistance, openMapApp, LocationError } from '../lib/location';
 
 export interface TripTrackingData {
   start_latitude?: number;

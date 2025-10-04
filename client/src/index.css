@@ -254,26 +254,98 @@
 }
 
 :root {
-  --background: hsl(0, 0%, 100%);
-  --foreground: hsl(20, 14.3%, 4.1%);
-  --muted: hsl(60, 4.8%, 95.9%);
-  --muted-foreground: hsl(25, 5.3%, 44.7%);
-  --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(20, 14.3%, 4.1%);
-  --card: hsl(0, 0%, 100%);
-  --card-foreground: hsl(20, 14.3%, 4.1%);
-  --border: hsl(20, 5.9%, 90%);
-  --input: hsl(20, 5.9%, 90%);
-  --primary: hsl(207, 90%, 54%);
-  --primary-foreground: hsl(211, 100%, 99%);
-  --secondary: hsl(60, 4.8%, 95.9%);
-  --secondary-foreground: hsl(24, 9.8%, 10%);
-  --accent: hsl(60, 4.8%, 95.9%);
-  --accent-foreground: hsl(24, 9.8%, 10%);
+  /* Radix UI Custom Palette - Light Mode */
+  --background: #F8F8F8;
+  --foreground: #2A2B26;
+  --muted: #F8F8F8;
+  --muted-foreground: #9B9B9B;
+  --popover: #F8F8F8;
+  --popover-foreground: #2A2B26;
+  --card: #F8F8F8;
+  --card-foreground: #2A2B26;
+  --border: #9B9B9B;
+  --input: #F8F8F8;
+  --primary: #C4E98C;
+  --primary-foreground: #2A2B26;
+  --secondary: #F8F8F8;
+  --secondary-foreground: #2A2B26;
+  --accent: #C4E98C;
+  --accent-foreground: #2A2B26;
   --destructive: hsl(0, 84.2%, 60.2%);
-  --destructive-foreground: hsl(60, 9.1%, 97.8%);
-  --ring: hsl(20, 14.3%, 4.1%);
+  --destructive-foreground: #F8F8F8;
+  --ring: #C4E98C;
   --radius: 0.5rem;
+
+  /* Radix UI 12-Step Color Scales - Light Mode */
+  /* Background Scale */
+  --background-1: #F8F8F8;
+  --background-2: #F5F5F5;
+  --background-3: #F0F0F0;
+  --background-4: #EBEBEB;
+  --background-5: #E5E5E5;
+  --background-6: #E0E0E0;
+  --background-7: #D5D5D5;
+  --background-8: #CACACA;
+  --background-9: #BFBFBF;
+  --background-10: #B4B4B4;
+  --background-11: #A9A9A9;
+  --background-12: #9B9B9B;
+
+  /* Interactive Components Scale */
+  --interactive-1: #F8F8F8;
+  --interactive-2: #F3F3F3;
+  --interactive-3: #EDEDED;
+  --interactive-4: #E7E7E7;
+  --interactive-5: #E1E1E1;
+  --interactive-6: #DBDBDB;
+  --interactive-7: #D0D0D0;
+  --interactive-8: #C5C5C5;
+  --interactive-9: #BABABA;
+  --interactive-10: #AFAFAF;
+  --interactive-11: #A4A4A4;
+  --interactive-12: #9B9B9B;
+
+  /* Borders and Separators Scale */
+  --border-1: #F8F8F8;
+  --border-2: #F0F0F0;
+  --border-3: #E8E8E8;
+  --border-4: #E0E0E0;
+  --border-5: #D8D8D8;
+  --border-6: #D0D0D0;
+  --border-7: #C8C8C8;
+  --border-8: #C0C0C0;
+  --border-9: #B8B8B8;
+  --border-10: #B0B0B0;
+  --border-11: #A8A8A8;
+  --border-12: #9B9B9B;
+
+  /* Solid Colors Scale (Accent Green) */
+  --solid-1: #2A2B26;
+  --solid-2: #3A3B36;
+  --solid-3: #4A4B46;
+  --solid-4: #5A5B56;
+  --solid-5: #6A6B66;
+  --solid-6: #7A7B76;
+  --solid-7: #8A8B86;
+  --solid-8: #9A9B96;
+  --solid-9: #A4B7BB;
+  --solid-10: #B4C7BB;
+  --solid-11: #C4E98C;
+  --solid-12: #E4F9AC;
+
+  /* Accessible Text Scale */
+  --text-1: #2A2B26;
+  --text-2: #3A3B36;
+  --text-3: #4A4B46;
+  --text-4: #5A5B56;
+  --text-5: #6A6B66;
+  --text-6: #7A7B76;
+  --text-7: #8A8B86;
+  --text-8: #9A9B96;
+  --text-9: #A4A4A4;
+  --text-10: #B4B4B4;
+  --text-11: #C4C4C4;
+  --text-12: #F8F8F8;
 
   /* Trip status colors */
   --scheduled: hsl(45, 100%, 51%);
@@ -387,25 +459,97 @@
 }
 
 .dark {
-  --background: hsl(0, 0%, 4%);
-  --foreground: hsl(0, 0%, 94%);
-  --muted: hsl(0, 0%, 8%);
-  --muted-foreground: hsl(195, 12%, 72%);
-  --popover: hsl(0, 0%, 4%);
-  --popover-foreground: hsl(0, 0%, 94%);
-  --card: hsl(0, 0%, 6%);
-  --card-foreground: hsl(0, 0%, 94%);
-  --border: hsl(0, 0%, 12%);
-  --input: hsl(0, 0%, 10%);
-  --primary: hsl(4, 90%, 58%);
-  --primary-foreground: hsl(0, 0%, 100%);
-  --secondary: hsl(0, 0%, 10%);
-  --secondary-foreground: hsl(0, 0%, 94%);
-  --accent: hsl(0, 0%, 10%);
-  --accent-foreground: hsl(0, 0%, 94%);
+  /* Radix UI Custom Palette - Dark Mode */
+  --background: #2A2B26;
+  --foreground: #F8F8F8;
+  --muted: #2A2B26;
+  --muted-foreground: #9B9B9B;
+  --popover: #2A2B26;
+  --popover-foreground: #F8F8F8;
+  --card: #2A2B26;
+  --card-foreground: #F8F8F8;
+  --border: #9B9B9B;
+  --input: #2A2B26;
+  --primary: #C4E98C;
+  --primary-foreground: #2A2B26;
+  --secondary: #2A2B26;
+  --secondary-foreground: #F8F8F8;
+  --accent: #C4E98C;
+  --accent-foreground: #2A2B26;
   --destructive: hsl(0, 84.2%, 60.2%);
-  --destructive-foreground: hsl(0, 0%, 98%);
-  --ring: hsl(4, 90%, 58%);
+  --destructive-foreground: #F8F8F8;
+  --ring: #C4E98C;
+
+  /* Radix UI 12-Step Color Scales - Dark Mode */
+  /* Background Scale (inverted) */
+  --background-1: #2A2B26;
+  --background-2: #2F302B;
+  --background-3: #343530;
+  --background-4: #393A35;
+  --background-5: #3E3F3A;
+  --background-6: #43443F;
+  --background-7: #4E4F4A;
+  --background-8: #595A55;
+  --background-9: #646560;
+  --background-10: #6F706B;
+  --background-11: #7A7B76;
+  --background-12: #9B9B9B;
+
+  /* Interactive Components Scale (inverted) */
+  --interactive-1: #2A2B26;
+  --interactive-2: #2D2E29;
+  --interactive-3: #31322D;
+  --interactive-4: #353631;
+  --interactive-5: #393A35;
+  --interactive-6: #3D3E39;
+  --interactive-7: #484944;
+  --interactive-8: #53544F;
+  --interactive-9: #5E5F5A;
+  --interactive-10: #696A65;
+  --interactive-11: #747570;
+  --interactive-12: #9B9B9B;
+
+  /* Borders and Separators Scale (inverted) */
+  --border-1: #2A2B26;
+  --border-2: #32332E;
+  --border-3: #3A3B36;
+  --border-4: #42433E;
+  --border-5: #4A4B46;
+  --border-6: #52534E;
+  --border-7: #5A5B56;
+  --border-8: #62635E;
+  --border-9: #6A6B66;
+  --border-10: #72736E;
+  --border-11: #7A7B76;
+  --border-12: #9B9B9B;
+
+  /* Solid Colors Scale (Accent Green - same as light) */
+  --solid-1: #2A2B26;
+  --solid-2: #3A3B36;
+  --solid-3: #4A4B46;
+  --solid-4: #5A5B56;
+  --solid-5: #6A6B66;
+  --solid-6: #7A7B76;
+  --solid-7: #8A8B86;
+  --solid-8: #9A9B96;
+  --solid-9: #A4B7BB;
+  --solid-10: #B4C7BB;
+  --solid-11: #C4E98C;
+  --solid-12: #E4F9AC;
+
+  /* Accessible Text Scale (inverted) */
+  --text-1: #F8F8F8;
+  --text-2: #E8E8E8;
+  --text-3: #D8D8D8;
+  --text-4: #C8C8C8;
+  --text-5: #B8B8B8;
+  --text-6: #A8A8A8;
+  --text-7: #989898;
+  --text-8: #888888;
+  --text-9: #787878;
+  --text-10: #686868;
+  --text-11: #585858;
+  --text-12: #2A2B26;
 
   /* Trip status colors for dark mode */
   --scheduled: hsl(45, 100%, 51%);
@@ -470,11 +614,13 @@
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-gray-200;
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased;
+    background-color: var(--background);
+    color: var(--foreground);
     font-family: 'Inter', sans-serif;
   }
 }
@@ -868,4 +1014,90 @@
   .list-item-active { background-color: var(--list-item-active); }
   .list-header-bg { background-color: var(--list-header-bg); }
   .list-divider { border-color: var(--list-divider); }
+
+  /* Radix UI Custom Palette Utilities */
+  /* Background Scale Utilities */
+  .bg-radix-1 { background-color: var(--background-1); }
+  .bg-radix-2 { background-color: var(--background-2); }
+  .bg-radix-3 { background-color: var(--background-3); }
+  .bg-radix-4 { background-color: var(--background-4); }
+  .bg-radix-5 { background-color: var(--background-5); }
+  .bg-radix-6 { background-color: var(--background-6); }
+  .bg-radix-7 { background-color: var(--background-7); }
+  .bg-radix-8 { background-color: var(--background-8); }
+  .bg-radix-9 { background-color: var(--background-9); }
+  .bg-radix-10 { background-color: var(--background-10); }
+  .bg-radix-11 { background-color: var(--background-11); }
+  .bg-radix-12 { background-color: var(--background-12); }
+
+  /* Interactive Scale Utilities */
+  .bg-interactive-1 { background-color: var(--interactive-1); }
+  .bg-interactive-2 { background-color: var(--interactive-2); }
+  .bg-interactive-3 { background-color: var(--interactive-3); }
+  .bg-interactive-4 { background-color: var(--interactive-4); }
+  .bg-interactive-5 { background-color: var(--interactive-5); }
+  .bg-interactive-6 { background-color: var(--interactive-6); }
+  .bg-interactive-7 { background-color: var(--interactive-7); }
+  .bg-interactive-8 { background-color: var(--interactive-8); }
+  .bg-interactive-9 { background-color: var(--interactive-9); }
+  .bg-interactive-10 { background-color: var(--interactive-10); }
+  .bg-interactive-11 { background-color: var(--interactive-11); }
+  .bg-interactive-12 { background-color: var(--interactive-12); }
+
+  /* Border Scale Utilities */
+  .border-radix-1 { border-color: var(--border-1); }
+  .border-radix-2 { border-color: var(--border-2); }
+  .border-radix-3 { border-color: var(--border-3); }
+  .border-radix-4 { border-color: var(--border-4); }
+  .border-radix-5 { border-color: var(--border-5); }
+  .border-radix-6 { border-color: var(--border-6); }
+  .border-radix-7 { border-color: var(--border-7); }
+  .border-radix-8 { border-color: var(--border-8); }
+  .border-radix-9 { border-color: var(--border-9); }
+  .border-radix-10 { border-color: var(--border-10); }
+  .border-radix-11 { border-color: var(--border-11); }
+  .border-radix-12 { border-color: var(--border-12); }
+
+  /* Solid Color Scale Utilities (Accent Green) */
+  .bg-solid-1 { background-color: var(--solid-1); }
+  .bg-solid-2 { background-color: var(--solid-2); }
+  .bg-solid-3 { background-color: var(--solid-3); }
+  .bg-solid-4 { background-color: var(--solid-4); }
+  .bg-solid-5 { background-color: var(--solid-5); }
+  .bg-solid-6 { background-color: var(--solid-6); }
+  .bg-solid-7 { background-color: var(--solid-7); }
+  .bg-solid-8 { background-color: var(--solid-8); }
+  .bg-solid-9 { background-color: var(--solid-9); }
+  .bg-solid-10 { background-color: var(--solid-10); }
+  .bg-solid-11 { background-color: var(--solid-11); }
+  .bg-solid-12 { background-color: var(--solid-12); }
+
+  /* Text Scale Utilities */
+  .text-radix-1 { color: var(--text-1); }
+  .text-radix-2 { color: var(--text-2); }
+  .text-radix-3 { color: var(--text-3); }
+  .text-radix-4 { color: var(--text-4); }
+  .text-radix-5 { color: var(--text-5); }
+  .text-radix-6 { color: var(--text-6); }
+  .text-radix-7 { color: var(--text-7); }
+  .text-radix-8 { color: var(--text-8); }
+  .text-radix-9 { color: var(--text-9); }
+  .text-radix-10 { color: var(--text-10); }
+  .text-radix-11 { color: var(--text-11); }
+  .text-radix-12 { color: var(--text-12); }
+
+  /* Accent Color Utilities */
+  .bg-accent { background-color: var(--accent); }
+  .text-accent { color: var(--accent); }
+  .border-accent { border-color: var(--accent); }
+  .ring-accent { --tw-ring-color: var(--accent); }
+
+  /* Hover States with Radix Colors */
+  .hover-bg-radix-2:hover { background-color: var(--background-2); }
+  .hover-bg-radix-3:hover { background-color: var(--background-3); }
+  .hover-bg-interactive-2:hover { background-color: var(--interactive-2); }
+  .hover-bg-interactive-3:hover { background-color: var(--interactive-3); }
+  .hover-bg-solid-11:hover { background-color: var(--solid-11); }
+  .hover-text-accent:hover { color: var(--accent); }
+  .hover-border-accent:hover { border-color: var(--accent); }
 }

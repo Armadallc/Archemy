@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
 import { 
   Shield, 
   FileText, 
@@ -18,16 +18,16 @@ import {
   Settings,
   Plus
 } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
-import { useOrganization } from '@/hooks/useOrganization';
-import { apiRequest } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
-import BillingPinSetup from '@/components/BillingPinSetup';
-import CMS1500Form from '@/components/CMS1500Form';
+import { useAuth } from '../hooks/useAuth';
+import { useHierarchy } from '../hooks/useHierarchy';
+import { apiRequest } from '../lib/queryClient';
+import { useToast } from '../hooks/use-toast';
+import BillingPinSetup from '../components/BillingPinSetup';
+import CMS1500Form from '../components/CMS1500Form';
 
 export default function BillingPage() {
   const { user } = useAuth();
-  const { organization } = useOrganization();
+  const { level, selectedProgram, selectedCorporateClient } = useHierarchy();
   const [billingAccess, setBillingAccess] = useState(false);
   const [pin, setPin] = useState('');
   const [pinError, setPinError] = useState('');
@@ -36,10 +36,10 @@ export default function BillingPage() {
   const { toast } = useToast();
 
   // Check if user has billing permissions
-  const hasBillingAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
+  const hasBillingAccess = user?.role === 'super_admin' || user?.role === 'program_admin' || user?.role === 'corporate_admin';
 
-  // Check if user has a billing PIN set
-  const userHasBillingPin = user?.billing_pin !== null && user?.billing_pin !== undefined;
+  // Check if user has a billing PIN set (placeholder - billing_pin field removed)
+  const userHasBillingPin = false;
 
   const validatePinMutation = useMutation({
     mutationFn: async (pinData: { pin: string }) => {
@@ -74,14 +74,14 @@ export default function BillingPage() {
 
   // Fetch billing data
   const { data: billingStats } = useQuery({
-    queryKey: ['/api/billing/stats', organization?.id],
-    enabled: billingAccess && !!organization?.id,
+    queryKey: ['/api/billing/stats', level, selectedProgram, selectedCorporateClient],
+    enabled: billingAccess && !!(selectedProgram || selectedCorporateClient),
     staleTime: 0,
   });
 
   const { data: recentClaims } = useQuery({
-    queryKey: ['/api/billing/claims', organization?.id],
-    enabled: billingAccess && !!organization?.id,
+    queryKey: ['/api/billing/claims', level, selectedProgram, selectedCorporateClient],
+    enabled: billingAccess && !!(selectedProgram || selectedCorporateClient),
     staleTime: 0,
   });
 

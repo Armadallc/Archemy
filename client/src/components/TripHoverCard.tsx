@@ -1,10 +1,11 @@
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import React, { useState, useEffect } from "react";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "./ui/hover-card";
+import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
+import { Separator } from "./ui/separator";
+import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
+import { Label } from "./ui/label";
 import { 
   Clock, 
   MapPin, 
@@ -27,18 +28,18 @@ import { useLocation } from "wouter";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { TripTracker } from "@/services/tripTracking";
-import { checkLocationPermission, LocationError, type LocationPermissionState } from "@/lib/location";
-import { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "../hooks/use-toast";
+import { apiRequest } from "../lib/queryClient";
+import { TripTracker } from "../services/tripTracking";
+import { checkLocationPermission, LocationError, type LocationPermissionState } from "../lib/location";
+import { useAuth } from "../hooks/useAuth";
+import { useHierarchy } from "../hooks/useHierarchy";
 
 interface Trip {
   id: string;
-  organization_id: string;
+  program_id: string; // Updated from organization_id
   client_id: string;
-  driver_id: string;
+  driver_id?: string; // Made optional
   pickup_address: string;
   dropoff_address: string;
   scheduled_pickup_time: string;
@@ -48,18 +49,14 @@ interface Trip {
   notes?: string;
   trip_type: string;
   special_requirements?: string;
-  clients?: {
-    first_name: string;
-    last_name: string;
-    phone?: string;
-  };
-  drivers?: {
-    users: {
-      user_name: string;
-    };
-    license_number?: string;
-    vehicle_info?: string;
-  };
+  // Updated client data structure for hierarchy
+  client_first_name?: string;
+  client_last_name?: string;
+  client_phone?: string;
+  // Updated driver data structure for hierarchy
+  driver_name?: string;
+  driver_license?: string;
+  vehicle_info?: string;
   recurring_trip_id?: string;
   // Trip tracking fields
   start_latitude?: number;
@@ -91,6 +88,7 @@ export function TripHoverCard({ trip, children }: TripHoverCardProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { level, selectedProgram, selectedCorporateClient } = useHierarchy();
 
   // Trip tracking state
   const [locationPermission, setLocationPermission] = useState<LocationPermissionState>('unknown');
@@ -128,11 +126,16 @@ export function TripHoverCard({ trip, children }: TripHoverCardProps) {
       }
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ 
-        predicate: (query) => {
-          const key = query.queryKey[0];
-          return typeof key === 'string' && key.includes('/api/trips');
-        }
+      // Invalidate trips queries based on hierarchy level
+      const queryKeys = ["/api/trips"];
+      if (level === 'program' && selectedProgram) {
+        queryKeys.push(`/api/trips/program/${selectedProgram}`);
+      } else if (level === 'client' && selectedCorporateClient) {
+        queryKeys.push(`/api/trips/corporate-client/${selectedCorporateClient}`);
+      }
+      
+      queryKeys.forEach(key => {
+        queryClient.invalidateQueries({ queryKey: [key] });
       });
       
       toast({
@@ -165,11 +168,16 @@ export function TripHoverCard({ trip, children }: TripHoverCardProps) {
       return await TripTracker.startTripManual(trip.id, manualLocation);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        predicate: (query) => {
-          const key = query.queryKey[0];
-          return typeof key === 'string' && key.includes('/api/trips');
-        }
+      // Invalidate trips queries based on hierarchy level
+      const queryKeys = ["/api/trips"];
+      if (level === 'program' && selectedProgram) {
+        queryKeys.push(`/api/trips/program/${selectedProgram}`);
+      } else if (level === 'client' && selectedCorporateClient) {
+        queryKeys.push(`/api/trips/corporate-client/${selectedCorporateClient}`);
+      }
+      
+      queryKeys.forEach(key => {
+        queryClient.invalidateQueries({ queryKey: [key] });
       });
       
       toast({
@@ -208,11 +216,16 @@ export function TripHoverCard({ trip, children }: TripHoverCardProps) {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        predicate: (query) => {
-          const key = query.queryKey[0];
-          return typeof key === 'string' && key.includes('/api/trips');
-        }
+      // Invalidate trips queries based on hierarchy level
+      const queryKeys = ["/api/trips"];
+      if (level === 'program' && selectedProgram) {
+        queryKeys.push(`/api/trips/program/${selectedProgram}`);
+      } else if (level === 'client' && selectedCorporateClient) {
+        queryKeys.push(`/api/trips/corporate-client/${selectedCorporateClient}`);
+      }
+      
+      queryKeys.forEach(key => {
+        queryClient.invalidateQueries({ queryKey: [key] });
       });
       
       toast({
@@ -253,11 +266,15 @@ export function TripHoverCard({ trip, children }: TripHoverCardProps) {
     },
     onSuccess: (data, variables) => {
       // Invalidate all trip-related queries with specific patterns
-      queryClient.invalidateQueries({ 
-        predicate: (query) => {
-          const key = query.queryKey[0];
-          return typeof key === 'string' && key.includes('/api/trips');
-        }
+      const queryKeys = ["/api/trips"];
+      if (level === 'program' && selectedProgram) {
+        queryKeys.push(`/api/trips/program/${selectedProgram}`);
+      } else if (level === 'client' && selectedCorporateClient) {
+        queryKeys.push(`/api/trips/corporate-client/${selectedCorporateClient}`);
+      }
+      
+      queryKeys.forEach(key => {
+        queryClient.invalidateQueries({ queryKey: [key] });
       });
       
       queryClient.invalidateQueries({ 
@@ -290,9 +307,9 @@ export function TripHoverCard({ trip, children }: TripHoverCardProps) {
   // Check if user can start trips (only drivers and super admins)
   const canStartTrips = user?.role === 'driver' || user?.role === 'super_admin';
 
-  // Get client display name
-  const clientName = trip.clients 
-    ? `${trip.clients.first_name} ${trip.clients.last_name}`.trim()
+  // Get client display name - updated for hierarchy system
+  const clientName = trip.client_first_name && trip.client_last_name
+    ? `${trip.client_first_name} ${trip.client_last_name}`.trim()
     : 'Unknown Client';
   
   // Format pickup time
@@ -305,8 +322,8 @@ export function TripHoverCard({ trip, children }: TripHoverCardProps) {
       <HoverCardTrigger asChild>
         {children}
       </HoverCardTrigger>
-      <HoverCardContent className="w-[400px] p-0" side="right" align="start">
-        <div className="space-y-4 p-4">
+      <HoverCardContent className="w-[400px] p-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-lg" side="right" align="start">
+        <div className="space-y-4 p-4 bg-white dark:bg-gray-900">
           {/* Header */}
           <div className="flex items-start justify-between">
             <div className="space-y-1">
@@ -346,22 +363,22 @@ export function TripHoverCard({ trip, children }: TripHoverCardProps) {
             </span>
           </div>
 
-          {/* Client Contact */}
-          {trip.clients?.phone && (
+          {/* Client Contact - updated for hierarchy system */}
+          {trip.client_phone && (
             <div className="flex items-center gap-2">
               <Phone className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">{trip.clients.phone}</span>
+              <span className="text-sm">{trip.client_phone}</span>
             </div>
           )}
 
-          {/* Driver Info */}
-          {trip.drivers && (
+          {/* Driver Info - updated for hierarchy system */}
+          {trip.driver_name && (
             <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-muted-foreground" />
               <div className="text-sm">
-                <span className="font-medium">{trip.drivers.users.user_name}</span>
-                {trip.drivers.vehicle_info && (
-                  <span className="text-muted-foreground ml-1">({trip.drivers.vehicle_info})</span>
+                <span className="font-medium">{trip.driver_name}</span>
+                {trip.vehicle_info && (
+                  <span className="text-muted-foreground ml-1">({trip.vehicle_info})</span>
                 )}
               </div>
             </div>

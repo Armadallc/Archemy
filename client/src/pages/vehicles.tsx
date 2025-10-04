@@ -1,48 +1,83 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Car, Plus, Edit, Trash2, Calendar, Settings } from "lucide-react";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { useOrganization } from "@/hooks/useOrganization";
-import { useAuth } from "@/hooks/useAuth";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Badge } from "../components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
+import { Car, Plus, Edit, Trash2, Calendar, Settings, Users, Building2 } from "lucide-react";
+import { apiRequest, queryClient } from "../lib/queryClient";
+import { useToast } from "../hooks/use-toast";
+import { useHierarchy } from "../hooks/useHierarchy";
+import { useAuth } from "../hooks/useAuth";
 
 interface Vehicle {
   id: string;
-  organization_id: string;
-  year: number;
+  program_id: string;
   make: string;
   model: string;
-  color: string;
+  year: number;
   license_plate: string;
+  vin?: string;
+  color: string;
+  capacity: number;
+  vehicle_type: 'sedan' | 'suv' | 'van' | 'bus' | 'wheelchair_accessible';
+  fuel_type: 'gasoline' | 'diesel' | 'electric' | 'hybrid';
   is_active: boolean;
+  current_driver_id?: string;
+  notes?: string;
   created_at: string;
   updated_at: string;
+  
+  // Related data
+  program?: {
+    id: string;
+    name: string;
+    corporate_client_id: string;
+    corporateClient?: {
+      id: string;
+      name: string;
+    };
+  };
+  current_driver?: {
+    id: string;
+    user_id: string;
+    users?: {
+      user_name: string;
+      email: string;
+    };
+  };
 }
 
 interface VehicleFormData {
-  organization_id: string;
-  year: string;
+  program_id: string;
   make: string;
   model: string;
-  color: string;
+  year: string;
   license_plate: string;
+  vin?: string;
+  color: string;
+  capacity: string;
+  vehicle_type: 'sedan' | 'suv' | 'van' | 'bus' | 'wheelchair_accessible';
+  fuel_type: 'gasoline' | 'diesel' | 'electric' | 'hybrid';
+  notes?: string;
 }
 
 const initialFormData: VehicleFormData = {
-  organization_id: "",
-  year: "",
+  program_id: "",
   make: "",
   model: "",
-  color: "",
+  year: "",
   license_plate: "",
+  vin: "",
+  color: "",
+  capacity: "",
+  vehicle_type: 'sedan',
+  fuel_type: 'gasoline',
+  notes: "",
 };
 
 export default function Vehicles() {
@@ -52,40 +87,39 @@ export default function Vehicles() {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [formData, setFormData] = useState<VehicleFormData>(initialFormData);
   const { toast } = useToast();
-  const { currentOrganization } = useOrganization();
+  const { level, selectedCorporateClient, selectedProgram, getFilterParams, getPageTitle } = useHierarchy();
   const { user } = useAuth();
 
-  // Fetch all organizations for assignment dropdown
-  const { data: organizations } = useQuery({
-    queryKey: ["/api/super-admin/organizations"],
+  // Get filter parameters based on current hierarchy level
+  const filterParams = getFilterParams();
+
+  // Fetch programs for assignment dropdown (for super admins)
+  const { data: programs } = useQuery({
+    queryKey: ["/api/programs"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "/api/super-admin/organizations");
+      const response = await apiRequest("GET", "/api/programs");
       return await response.json();
     },
-    enabled: user?.role === 'super_admin' || user?.role === 'monarch_owner',
+    enabled: user?.role === 'super_admin',
   });
 
-  // Fetch vehicles - use super admin endpoint if user is super admin
+  // Fetch vehicles based on current hierarchy level
   const { data: vehiclesData, isLoading: vehiclesLoading } = useQuery({
-    queryKey: user?.role === 'super_admin' ? ["/api/super-admin/vehicles", currentOrganization?.id] : ["/api/vehicles", currentOrganization?.id],
+    queryKey: ["/api/vehicles", level, selectedCorporateClient, selectedProgram],
     queryFn: async () => {
-      if (user?.role === 'super_admin') {
-        const response = await apiRequest("GET", `/api/super-admin/vehicles`);
-        const allData = await response.json();
-        
-        // Filter by current organization if one is selected
-        if (currentOrganization?.id) {
-          return allData.filter((vehicle: any) => vehicle.organization_id === currentOrganization.id);
-        } else {
-          return allData;
-        }
-      } else {
-        if (!currentOrganization?.id) return [];
-        const response = await apiRequest("GET", `/api/vehicles/organization/${currentOrganization.id}`);
-        return await response.json();
+      let endpoint = "/api/vehicles";
+      
+      // Build endpoint based on hierarchy level
+      if (level === 'program' && selectedProgram) {
+        endpoint = `/api/vehicles/program/${selectedProgram}`;
+      } else if (level === 'client' && selectedCorporateClient) {
+        endpoint = `/api/vehicles/corporate-client/${selectedCorporateClient}`;
       }
+      
+      const response = await apiRequest("GET", endpoint);
+      return await response.json();
     },
-    enabled: user?.role === 'super_admin' || !!currentOrganization?.id,
+    enabled: true,
   });
 
   const vehicles: Vehicle[] = Array.isArray(vehiclesData) ? vehiclesData : [];
@@ -94,7 +128,8 @@ export default function Vehicles() {
   const filteredVehicles = vehicles.filter((vehicle) =>
     `${vehicle.year} ${vehicle.make} ${vehicle.model}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
     vehicle.license_plate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    vehicle.color.toLowerCase().includes(searchTerm.toLowerCase())
+    vehicle.color.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    vehicle.vehicle_type.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Create vehicle mutation
@@ -103,7 +138,8 @@ export default function Vehicles() {
       return apiRequest("POST", "/api/vehicles", {
         ...data,
         year: parseInt(data.year),
-        organization_id: data.organization_id || currentOrganization?.id,
+        capacity: parseInt(data.capacity),
+        program_id: data.program_id || selectedProgram || '',
       });
     },
     onSuccess: () => {
@@ -111,9 +147,7 @@ export default function Vehicles() {
         title: "Vehicle Created",
         description: "Vehicle has been successfully created.",
       });
-      // Invalidate all vehicle-related queries for real-time updates
       queryClient.invalidateQueries({ queryKey: ["/api/vehicles"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/vehicles"] });
       setIsCreateDialogOpen(false);
       setFormData(initialFormData);
     },
@@ -133,6 +167,9 @@ export default function Vehicles() {
       if (updates.year) {
         updates.year = parseInt(updates.year as string) as any;
       }
+      if (updates.capacity) {
+        updates.capacity = parseInt(updates.capacity as string) as any;
+      }
       return apiRequest("PATCH", `/api/vehicles/${data.id}`, updates);
     },
     onSuccess: () => {
@@ -140,9 +177,7 @@ export default function Vehicles() {
         title: "Vehicle Updated",
         description: "Vehicle has been successfully updated.",
       });
-      // Invalidate all vehicle-related queries for real-time updates
       queryClient.invalidateQueries({ queryKey: ["/api/vehicles"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/vehicles"] });
       setIsEditDialogOpen(false);
       setSelectedVehicle(null);
       setFormData(initialFormData);
@@ -166,9 +201,7 @@ export default function Vehicles() {
         title: "Vehicle Deleted",
         description: "Vehicle has been successfully deleted.",
       });
-      // Invalidate all vehicle-related queries for real-time updates
       queryClient.invalidateQueries({ queryKey: ["/api/vehicles"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/vehicles"] });
     },
     onError: () => {
       toast({
@@ -181,10 +214,9 @@ export default function Vehicles() {
 
   const handleCreateVehicle = (e: React.FormEvent) => {
     e.preventDefault();
-    // Set default organization if not specified
     const finalFormData = {
       ...formData,
-      organization_id: formData.organization_id || currentOrganization?.id || ''
+      program_id: formData.program_id || selectedProgram || ''
     };
     createVehicleMutation.mutate(finalFormData);
   };
@@ -202,12 +234,17 @@ export default function Vehicles() {
   const handleEditVehicle = (vehicle: Vehicle) => {
     setSelectedVehicle(vehicle);
     setFormData({
-      organization_id: vehicle.organization_id,
-      year: vehicle.year.toString(),
+      program_id: vehicle.program_id,
       make: vehicle.make,
       model: vehicle.model,
-      color: vehicle.color,
+      year: vehicle.year.toString(),
       license_plate: vehicle.license_plate,
+      vin: vehicle.vin || "",
+      color: vehicle.color,
+      capacity: vehicle.capacity.toString(),
+      vehicle_type: vehicle.vehicle_type,
+      fuel_type: vehicle.fuel_type,
+      notes: vehicle.notes || "",
     });
     setIsEditDialogOpen(true);
   };
@@ -235,6 +272,7 @@ export default function Vehicles() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">FLEET MANAGEMENT</h1>
+          <p className="text-gray-600 mt-1">{getPageTitle()}</p>
         </div>
         
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -244,7 +282,7 @@ export default function Vehicles() {
               Add Vehicle
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Vehicle</DialogTitle>
             </DialogHeader>
@@ -297,31 +335,106 @@ export default function Vehicles() {
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="license_plate">License Plate</Label>
-                <Input
-                  id="license_plate"
-                  value={formData.license_plate}
-                  onChange={(e) => setFormData({...formData, license_plate: e.target.value})}
-                  placeholder="ABC-1234"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="license_plate">License Plate *</Label>
+                  <Input
+                    id="license_plate"
+                    value={formData.license_plate}
+                    onChange={(e) => setFormData({...formData, license_plate: e.target.value})}
+                    placeholder="ABC-1234"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="vin">VIN</Label>
+                  <Input
+                    id="vin"
+                    value={formData.vin}
+                    onChange={(e) => setFormData({...formData, vin: e.target.value})}
+                    placeholder="17-character VIN"
+                  />
+                </div>
               </div>
 
-              {/* Organization Assignment - show for super admins and monarch owners */}
-              {(user?.role === 'super_admin' || user?.role === 'monarch_owner') && organizations && (
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="organization_id">Organization *</Label>
+                  <Label htmlFor="capacity">Capacity *</Label>
+                  <Input
+                    id="capacity"
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={formData.capacity}
+                    onChange={(e) => setFormData({...formData, capacity: e.target.value})}
+                    placeholder="Number of passengers"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="vehicle_type">Vehicle Type *</Label>
                   <Select 
-                    value={formData.organization_id || currentOrganization?.id || ''} 
-                    onValueChange={(value) => setFormData({...formData, organization_id: value})}
+                    value={formData.vehicle_type} 
+                    onValueChange={(value: any) => setFormData({...formData, vehicle_type: value})}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select organization" />
+                      <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {organizations.map((org: any) => (
-                        <SelectItem key={org.id} value={org.id}>
-                          {org.name}
+                      <SelectItem value="sedan">Sedan</SelectItem>
+                      <SelectItem value="suv">SUV</SelectItem>
+                      <SelectItem value="van">Van</SelectItem>
+                      <SelectItem value="bus">Bus</SelectItem>
+                      <SelectItem value="wheelchair_accessible">Wheelchair Accessible</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="fuel_type">Fuel Type *</Label>
+                  <Select 
+                    value={formData.fuel_type} 
+                    onValueChange={(value: any) => setFormData({...formData, fuel_type: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select fuel type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gasoline">Gasoline</SelectItem>
+                      <SelectItem value="diesel">Diesel</SelectItem>
+                      <SelectItem value="electric">Electric</SelectItem>
+                      <SelectItem value="hybrid">Hybrid</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="notes">Notes</Label>
+                  <Input
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                    placeholder="Additional notes..."
+                  />
+                </div>
+              </div>
+
+              {/* Program Assignment - show for super admins */}
+              {user?.role === 'super_admin' && programs && (
+                <div>
+                  <Label htmlFor="program_id">Program *</Label>
+                  <Select 
+                    value={formData.program_id || selectedProgram || ''} 
+                    onValueChange={(value) => setFormData({...formData, program_id: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select program" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {programs.map((program: any) => (
+                        <SelectItem key={program.id} value={program.id}>
+                          {program.name} ({program.corporateClient?.name || 'Unknown Client'})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -390,7 +503,9 @@ export default function Vehicles() {
                   <TableHead>Vehicle</TableHead>
                   <TableHead>Year</TableHead>
                   <TableHead>License Plate</TableHead>
-                  <TableHead>Color</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Capacity</TableHead>
+                  <TableHead>Program</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -403,17 +518,36 @@ export default function Vehicles() {
                         <Car className="w-5 h-5 mr-3 text-gray-400" />
                         <div>
                           <div className="font-medium">{vehicle.make} {vehicle.model}</div>
-                          <div className="text-sm text-gray-500">{vehicle.id}</div>
+                          <div className="text-sm text-gray-500">{vehicle.color}</div>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>{vehicle.year}</TableCell>
                     <TableCell>
                       <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
-                        {vehicle.license_plate || 'Not set'}
+                        {vehicle.license_plate}
                       </span>
                     </TableCell>
-                    <TableCell>{vehicle.color}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {vehicle.vehicle_type.replace('_', ' ').toUpperCase()}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <Users className="w-4 h-4 mr-1 text-gray-400" />
+                        {vehicle.capacity}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <Building2 className="w-4 h-4 mr-1 text-gray-400" />
+                        <div>
+                          <div className="text-sm font-medium">{vehicle.program?.name || 'Unknown'}</div>
+                          <div className="text-xs text-gray-500">{vehicle.program?.corporateClient?.name || ''}</div>
+                        </div>
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <Badge variant={vehicle.is_active ? "default" : "secondary"}>
                         {vehicle.is_active ? "Active" : "Inactive"}
@@ -448,7 +582,7 @@ export default function Vehicles() {
 
       {/* Edit Vehicle Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Vehicle</DialogTitle>
           </DialogHeader>
@@ -498,30 +632,102 @@ export default function Vehicles() {
               </div>
             </div>
 
-            <div>
-              <Label htmlFor="edit-license_plate">License Plate</Label>
-              <Input
-                id="edit-license_plate"
-                value={formData.license_plate}
-                onChange={(e) => setFormData({...formData, license_plate: e.target.value})}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-license_plate">License Plate *</Label>
+                <Input
+                  id="edit-license_plate"
+                  value={formData.license_plate}
+                  onChange={(e) => setFormData({...formData, license_plate: e.target.value})}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-vin">VIN</Label>
+                <Input
+                  id="edit-vin"
+                  value={formData.vin}
+                  onChange={(e) => setFormData({...formData, vin: e.target.value})}
+                />
+              </div>
             </div>
 
-            {/* Organization Assignment - show for super admins and monarch owners */}
-            {(user?.role === 'super_admin' || user?.role === 'monarch_owner') && organizations && (
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="edit-organization_id">Organization *</Label>
+                <Label htmlFor="edit-capacity">Capacity *</Label>
+                <Input
+                  id="edit-capacity"
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={formData.capacity}
+                  onChange={(e) => setFormData({...formData, capacity: e.target.value})}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-vehicle_type">Vehicle Type *</Label>
                 <Select 
-                  value={formData.organization_id} 
-                  onValueChange={(value) => setFormData({...formData, organization_id: value})}
+                  value={formData.vehicle_type} 
+                  onValueChange={(value: any) => setFormData({...formData, vehicle_type: value})}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select organization" />
+                    <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {organizations.map((org: any) => (
-                      <SelectItem key={org.id} value={org.id}>
-                        {org.name}
+                    <SelectItem value="sedan">Sedan</SelectItem>
+                    <SelectItem value="suv">SUV</SelectItem>
+                    <SelectItem value="van">Van</SelectItem>
+                    <SelectItem value="bus">Bus</SelectItem>
+                    <SelectItem value="wheelchair_accessible">Wheelchair Accessible</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-fuel_type">Fuel Type *</Label>
+                <Select 
+                  value={formData.fuel_type} 
+                  onValueChange={(value: any) => setFormData({...formData, fuel_type: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select fuel type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="gasoline">Gasoline</SelectItem>
+                    <SelectItem value="diesel">Diesel</SelectItem>
+                    <SelectItem value="electric">Electric</SelectItem>
+                    <SelectItem value="hybrid">Hybrid</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit-notes">Notes</Label>
+                <Input
+                  id="edit-notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                />
+              </div>
+            </div>
+
+            {/* Program Assignment - show for super admins */}
+            {user?.role === 'super_admin' && programs && (
+              <div>
+                <Label htmlFor="edit-program_id">Program *</Label>
+                <Select 
+                  value={formData.program_id} 
+                  onValueChange={(value) => setFormData({...formData, program_id: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select program" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {programs.map((program: any) => (
+                      <SelectItem key={program.id} value={program.id}>
+                        {program.name} ({program.corporateClient?.name || 'Unknown Client'})
                       </SelectItem>
                     ))}
                   </SelectContent>

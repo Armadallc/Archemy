@@ -1,5 +1,6 @@
+import React from "react";
 import { useLocation } from "wouter";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "../hooks/useAuth";
 import { 
   Home, 
   Calendar, 
@@ -7,7 +8,12 @@ import {
   Users, 
   Plus,
   Settings,
-  User
+  User,
+  MapPin,
+  Building,
+  Building2,
+  Users2,
+  Shield
 } from "lucide-react";
 
 interface NavItem {
@@ -19,34 +25,58 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
-    path: "/dashboard",
+    path: "/",
     icon: Home,
     label: "Dashboard",
-    roles: ["driver", "organization_admin", "organization_user", "super_admin", "monarch_owner"]
+    roles: ["driver", "program_admin", "program_user", "super_admin", "corporate_admin"]
   },
   {
     path: "/trips",
     icon: Calendar,
     label: "Trips",
-    roles: ["organization_admin", "organization_user", "super_admin", "monarch_owner"]
-  },
-  {
-    path: "/trips/new",
-    icon: Plus,
-    label: "New Trip",
-    roles: ["organization_admin", "organization_user", "super_admin", "monarch_owner"]
-  },
-  {
-    path: "/drivers",
-    icon: Truck,
-    label: "Drivers",
-    roles: ["organization_admin", "super_admin", "monarch_owner"]
+    roles: ["program_admin", "program_user", "super_admin", "corporate_admin"]
   },
   {
     path: "/clients",
     icon: Users,
     label: "Clients",
-    roles: ["organization_admin", "organization_user", "super_admin", "monarch_owner"]
+    roles: ["program_admin", "program_user", "super_admin", "corporate_admin"]
+  },
+  {
+    path: "/client-groups",
+    icon: Users2,
+    label: "Groups",
+    roles: ["program_admin", "program_user", "super_admin", "corporate_admin"]
+  },
+  {
+    path: "/drivers",
+    icon: Truck,
+    label: "Drivers",
+    roles: ["program_admin", "super_admin", "corporate_admin"]
+  },
+  {
+    path: "/locations",
+    icon: MapPin,
+    label: "Locations",
+    roles: ["program_admin", "super_admin", "corporate_admin"]
+  },
+  {
+    path: "/programs",
+    icon: Building,
+    label: "Programs",
+    roles: ["super_admin", "corporate_admin"]
+  },
+  {
+    path: "/corporate-clients",
+    icon: Building2,
+    label: "Clients",
+    roles: ["super_admin"]
+  },
+  {
+    path: "/permissions",
+    icon: Shield,
+    label: "Permissions",
+    roles: ["super_admin"]
   }
 ];
 
@@ -54,21 +84,26 @@ export default function MobileNavigation() {
   const [location, navigate] = useLocation();
   const { user } = useAuth();
 
+  // Only render on mobile devices
+  if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+    return null;
+  }
+
   if (!user) return null;
 
   const filteredNavItems = navItems.filter(item => 
     item.roles.includes(user.role)
   );
 
-  // Show profile/settings as last item for all users
-  const profileItem = {
-    path: "/profile",
-    icon: User,
-    label: "Profile",
-    roles: ["driver", "organization_admin", "organization_user", "super_admin", "monarch_owner"]
+  // Show settings as last item for all users
+  const settingsItem = {
+    path: "/settings",
+    icon: Settings,
+    label: "Settings",
+    roles: ["driver", "program_admin", "program_user", "super_admin", "corporate_admin"]
   };
 
-  const allItems = [...filteredNavItems, profileItem];
+  const allItems = [...filteredNavItems, settingsItem];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 md:hidden">
@@ -76,7 +111,7 @@ export default function MobileNavigation() {
         {allItems.map((item) => {
           const Icon = item.icon;
           const isActive = location === item.path || 
-            (item.path === "/dashboard" && location === "/");
+            (item.path === "/" && location === "/");
           
           return (
             <button

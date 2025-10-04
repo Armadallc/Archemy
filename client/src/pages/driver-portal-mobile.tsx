@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
 import { Clock, MapPin, Phone, User, Calendar, CheckCircle, PlayCircle, XCircle, Navigation, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest } from '../lib/queryClient';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addWeeks, subWeeks, addMonths, subMonths, isSameMonth } from 'date-fns';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '../hooks/useAuth';
 
 function DriverLogin() {
   const { login } = useAuth();
@@ -45,6 +45,8 @@ function DriverLogin() {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-3 py-2 border border-stone-300 focus:outline-none focus:border-orange-400"
               disabled={isLogging}
+              placeholder="Enter your email"
+              aria-label="Email address"
             />
           </div>
           
@@ -56,6 +58,8 @@ function DriverLogin() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-3 py-2 border border-stone-300 focus:outline-none focus:border-orange-400"
               disabled={isLogging}
+              placeholder="Enter your password"
+              aria-label="Password"
             />
           </div>
           
@@ -502,6 +506,8 @@ export default function DriverPortalMobile() {
                               openNavigation(trip.dropoffLocation);
                             }}
                             className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 transition-colors"
+                            title="Open navigation to dropoff location"
+                            aria-label="Open navigation to dropoff location"
                           >
                             <div className="w-4 h-4 bg-white"></div>
                           </button>
@@ -514,6 +520,8 @@ export default function DriverPortalMobile() {
                                 setShowCancelConfirm(trip.id);
                               }}
                               className="bg-orange-400 hover:bg-orange-500 text-white font-semibold py-3 px-4 transition-colors"
+                              title="Cancel trip"
+                              aria-label="Cancel trip"
                             >
                               <div className="w-4 h-1 bg-white"></div>
                             </button>
@@ -535,6 +543,8 @@ export default function DriverPortalMobile() {
                 <button
                   onClick={() => navigateCalendar('prev')}
                   className="bg-stone-300 hover:bg-stone-400 text-stone-800 font-medium p-2 transition-colors"
+                  title="Previous month"
+                  aria-label="Previous month"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
@@ -547,6 +557,8 @@ export default function DriverPortalMobile() {
                 <button
                   onClick={() => navigateCalendar('next')}
                   className="bg-stone-300 hover:bg-stone-400 text-stone-800 font-medium p-2 transition-colors"
+                  title="Next month"
+                  aria-label="Next month"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>

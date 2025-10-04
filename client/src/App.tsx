@@ -1,15 +1,18 @@
+import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
+// import { Toaster } from "../components/ui/toaster";
 import { Switch, Route, Redirect } from "wouter";
-import { AuthProvider, useAuth } from "@/hooks/useAuth";
-import { OrganizationProvider } from "@/hooks/useOrganization";
-import { ThemeProvider } from "@/components/theme-provider";
-import { EnvironmentBanner } from "@/components/EnvironmentBanner";
-import MainLayout from "@/components/layout/main-layout";
-import MobileNavigation from "@/components/MobileNavigation";
-import Login from "@/pages/login";
-import Register from "@/pages/register";
-import DriverPortalMobile from "@/pages/driver-portal-mobile";
+import { AuthProvider, useAuth } from "./hooks/useAuth";
+import { HierarchyProvider } from "./hooks/useHierarchy";
+import { ThemeProvider } from "./components/theme-provider";
+import { EnvironmentBanner } from "./components/EnvironmentBanner";
+import MainLayout from "./components/layout/main-layout";
+import MobileNavigation from "./components/MobileNavigation";
+import Login from "./pages/login";
+import Register from "./pages/register";
+import DriverPortalMobile from "./pages/driver-portal-mobile";
+import { clickTracker } from "./lib/clickTracker";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const queryClient = new QueryClient();
 
@@ -57,19 +60,21 @@ function AppContent() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <AuthProvider>
-          <OrganizationProvider>
-            <div className="min-h-screen">
-              <EnvironmentBanner />
-              <AppContent />
-            </div>
-            <Toaster />
-          </OrganizationProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <AuthProvider>
+            <HierarchyProvider>
+              <div className="min-h-screen">
+                <EnvironmentBanner />
+                <AppContent />
+              </div>
+              {/* <Toaster /> */}
+            </HierarchyProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -1,14 +1,14 @@
-import { useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import React, { useState } from "react";
+import { useAuth } from "../hooks/useAuth";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { Alert, AlertDescription } from "../components/ui/alert";
 import { Loader2 } from "lucide-react";
 
 export default function Login() {
-  const { login, demoLogin, superAdminLogin } = useAuth();
+  const { login, superAdminLogin } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -33,53 +33,14 @@ export default function Login() {
     setIsLoading(false);
   };
 
-  const handleDemoLogin = async () => {
-    setIsLoading(true);
-    setError("");
-
-    const result = await demoLogin();
-    
-    if (!result.success) {
-      setError(result.error || "Demo login failed");
-    }
-    
-    setIsLoading(false);
-  };
-
   const handleSuperAdminLogin = async () => {
     setIsLoading(true);
     setError("");
 
-    const result = await superAdminLogin();
+    const result = await superAdminLogin("admin123");
     
     if (!result.success) {
       setError(result.error || "Super admin login failed");
-    }
-    
-    setIsLoading(false);
-  };
-
-  const handleBookingKioskLogin = async () => {
-    setIsLoading(true);
-    setError("");
-
-    const result = await demoLogin("booking_kiosk");
-    
-    if (!result.success) {
-      setError(result.error || "Booking kiosk login failed");
-    }
-    
-    setIsLoading(false);
-  };
-
-  const handleDriverLogin = async () => {
-    setIsLoading(true);
-    setError("");
-
-    const result = await login("alex@monarch.com", "drive123");
-    
-    if (!result.success) {
-      setError(result.error || "Driver login failed");
     }
     
     setIsLoading(false);
@@ -89,9 +50,9 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Welcome to Amish Limo Service</CardTitle>
+          <CardTitle>Welcome to HALCYON NMT</CardTitle>
           <CardDescription>
-            Please sign in to continue
+            Private Transportation Management System
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -153,57 +114,6 @@ export default function Login() {
               variant="outline" 
               className="w-full mt-4" 
               disabled={isLoading}
-              onClick={handleDemoLogin}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Logging in...
-                </>
-              ) : (
-                "Demo Login (Admin Access)"
-              )}
-            </Button>
-            
-            <Button 
-              type="button" 
-              variant="outline" 
-              className="w-full mt-2" 
-              disabled={isLoading}
-              onClick={handleBookingKioskLogin}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Logging in...
-                </>
-              ) : (
-                "Booking Kiosk (Cross-Org Access)"
-              )}
-            </Button>
-            
-            <Button 
-              type="button" 
-              variant="outline" 
-              className="w-full mt-2" 
-              disabled={isLoading}
-              onClick={handleDriverLogin}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Logging in...
-                </>
-              ) : (
-                "Driver Portal (Alex)"
-              )}
-            </Button>
-            
-            <Button 
-              type="button" 
-              variant="outline" 
-              className="w-full mt-2" 
-              disabled={isLoading}
               onClick={handleSuperAdminLogin}
             >
               {isLoading ? (
@@ -212,53 +122,17 @@ export default function Login() {
                   Logging in...
                 </>
               ) : (
-                "Super Admin Access"
+                "Super Admin (admin@monarch.com)"
               )}
             </Button>
           </div>
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              New organization?{" "}
-              <a href="/register" className="text-blue-600 hover:text-blue-500 font-medium">
-                Register here
-              </a>
+              Need access? Contact your system administrator
             </p>
           </div>
 
-          <div className="mt-6 space-y-3">
-            <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Demo Accounts:</p>
-            
-            <div className="space-y-2 text-xs">
-              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded border">
-                <strong>Organization Admin:</strong><br />
-                Email: john@monarch.com<br />
-                Password: password123<br />
-                <span className="text-blue-600 dark:text-blue-400">Access: Monarch Competency Center only</span>
-              </div>
-              
-              <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded border">
-                <strong>Monarch Owner:</strong><br />
-                Email: sarah@monarch.com<br />
-                Password: password123<br />
-                <span className="text-green-600 dark:text-green-400">Access: All Monarch Organizations</span>
-              </div>
-              
-              <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded border">
-                <strong>Organization User (Kiosk):</strong><br />
-                Email: lisa@monarch.com<br />
-                Password: password123<br />
-                <span className="text-purple-600 dark:text-purple-400">Access: Competency Center (Kiosk Mode)</span>
-              </div>
-
-              <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded border">
-                <strong>Driver (Cross-Org):</strong><br />
-                Email: mike@monarch.com<br />
-                Password: password123<br />
-                <span className="text-orange-600 dark:text-orange-400">Access: Competency + Mental Health</span>
-              </div>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

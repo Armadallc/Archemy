@@ -1,14 +1,33 @@
-import { useState, useEffect, createContext, useContext, type ReactNode } from 'react';
+import React, { useState, useEffect, createContext, useContext, type ReactNode } from 'react';
 import { useLocation } from 'wouter';
+import { createClient } from '@supabase/supabase-js';
+
+// Supabase client
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://iuawurdssgbkbavyyvbs.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1YXd1cmRzc2dia2Jhdnl5dmJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NDU1MzEsImV4cCI6MjA3NDQyMTUzMX0.JLcuSTI1mfEMGu_mP9UBnGQyG33vcoU2SzvKo8olkL4';
+
+if (!supabaseAnonKey || supabaseAnonKey.includes('placeholder')) {
+  console.warn('⚠️ Using placeholder Supabase anon key. Please set VITE_SUPABASE_ANON_KEY in your .env file.');
+}
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export interface User {
-  userId: string;
-  userName: string;
+  user_id: string;
+  user_name: string;
   email: string;
-  role: 'super_admin' | 'monarch_owner' | 'organization_admin' | 'organization_user' | 'driver';
-  primaryOrganizationId?: string;
-  authorizedOrganizations?: string[];
-  avatarUrl?: string;
+  role: 'super_admin' | 'corporate_admin' | 'program_admin' | 'program_user' | 'driver';
+  primary_program_id?: string;
+  authorized_programs?: string[];
+  avatar_url?: string;
+  program?: {
+    id: string;
+    name: string;
+    corporateClient?: {
+      id: string;
+      name: string;
+    };
+  };
 }
 
 interface AuthContextType {
@@ -16,8 +35,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  demoLogin: (userType?: string) => Promise<{ success: boolean; error?: string }>;
-  superAdminLogin: () => Promise<{ success: boolean; error?: string }>;
+  superAdminLogin: (password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
 }
 
@@ -36,240 +54,191 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [, setLocation] = useLocation();
 
-  const checkAuth = async () => {
-    console.log('🔍 Checking auth status...');
-    console.log('🍪 Current cookies:', document.cookie);
-    
+  // Fetch user data from our backend using Supabase JWT
+  const fetchUserData = async (supabaseUser: any, session?: any) => {
     try {
-      const headers: any = {
-        'Cache-Control': 'no-cache'
-      };
+      // Use the session passed in, or get it from Supabase
+      let currentSession = session;
+      if (!currentSession) {
+        const { data: { session: newSession } } = await supabase.auth.getSession();
+        currentSession = newSession;
+      }
       
-      // Add Bearer token for development persistence
-      const authToken = localStorage.getItem('auth_token');
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-        console.log('🔑 Using stored auth token for persistent login');
+      if (!currentSession?.access_token) {
+        console.log('❌ No access token found');
+        return null;
       }
 
-      const response = await fetch('/api/auth/user', {
-        credentials: 'include',
-        headers
+      console.log('🔍 Making request to /api/auth/user with token:', currentSession.access_token.substring(0, 20) + '...');
+      
+      const response = await fetch('http://localhost:8081/api/auth/user', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${currentSession.access_token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
-      console.log('🌐 Auth response status:', response.status);
-      console.log('🌐 Auth response headers:', Object.fromEntries(response.headers.entries()));
-
+      console.log('📡 Response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
-        const userData = data.user || data;
-        
-        // Map snake_case to camelCase for consistent frontend usage
-        const mappedUser = {
-          ...userData,
-          userId: userData.user_id,
-          userName: userData.user_name,
-          primaryOrganizationId: userData.primary_organization_id,
-          authorizedOrganizations: userData.authorized_organizations,
-          isActive: userData.is_active,
-          avatarUrl: userData.avatar_url
-        };
-        
-        setUser(mappedUser);
-        console.log('✅ User authenticated:', mappedUser.email);
+        console.log('✅ User data received:', data);
+        return data.user;
       } else {
-        const errorData = await response.text();
-        console.log('❌ Auth failed with response:', errorData);
+        const errorText = await response.text();
+        console.log('❌ API error:', response.status, errorText);
+        return null;
+      }
+    } catch (error) {
+      console.error('❌ Error fetching user data:', error);
+      return null;
+    }
+  };
+
+  const checkAuth = async () => {
+    try {
+      console.log('🔍 Starting auth check...');
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        console.log('🔍 Supabase session found:', session.user.email);
+        console.log('🔍 Calling fetchUserData...');
+        const userData = await fetchUserData(session.user, session);
+        if (userData) {
+          setUser(userData);
+          console.log('✅ User authenticated:', userData.email);
+        } else {
+          console.log('❌ Failed to fetch user data');
+          setUser(null);
+        }
+      } else {
+        console.log('❌ No Supabase session');
         setUser(null);
       }
     } catch (error) {
-      console.error('❌ Auth check failed:', error);
+      console.error('❌ Auth check error:', error);
       setUser(null);
     } finally {
+      console.log('🔍 Setting isLoading to false');
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
 
   const login = async (email: string, password: string) => {
-    setIsLoading(true);
-    console.log('Login attempt:', { email, passwordLength: password.length });
-    console.log('🔐 Attempting login for:', email);
-    
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password })
+      console.log('🔐 Attempting Supabase login for:', email);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        const userData = data.user;
-        
-        // Map snake_case to camelCase for consistent frontend usage
-        const mappedUser = {
-          ...userData,
-          userId: userData.user_id,
-          userName: userData.user_name,
-          primaryOrganizationId: userData.primary_organization_id,
-          authorizedOrganizations: userData.authorized_organizations,
-          isActive: userData.is_active,
-          avatarUrl: userData.avatar_url
-        };
-        
-        setUser(mappedUser);
-        
-        // Store auth token for API requests - use user email as token for development persistence
-        const authToken = data.token || mappedUser.email;
-        localStorage.setItem('auth_token', authToken);
-        console.log('🔑 Auth token stored for API requests');
-        
-        console.log('✅ Login successful:', mappedUser.email);
-        console.log('🏢 User organization:', mappedUser.primaryOrganizationId);
-        
-        // Navigate to dashboard for all users
-        setLocation('/');
-        
-        return { success: true };
-      } else {
-        const errorData = await response.json();
-        console.error('❌ Login failed:', errorData.message);
-        return { success: false, error: errorData.message };
+      if (error) {
+        console.log('❌ Supabase login failed:', error.message);
+        return { success: false, error: error.message };
       }
+
+      if (data.user) {
+        console.log('✅ Supabase login successful');
+        const userData = await fetchUserData(data.user);
+        if (userData) {
+          setUser(userData);
+          return { success: true };
+        } else {
+          return { success: false, error: 'Failed to fetch user data' };
+        }
+      }
+
+      return { success: false, error: 'Login failed' };
     } catch (error) {
-      console.error('❌ Login network error:', error);
-      return { success: false, error: 'Network error during login' };
-    } finally {
-      setIsLoading(false);
+      console.error('❌ Login error:', error);
+      return { success: false, error: 'Network error' };
     }
   };
 
-  const demoLogin = async (userType?: string) => {
-    setIsLoading(true);
-    
+  const superAdminLogin = async (password: string) => {
     try {
-      const response = await fetch('/api/auth/demo-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ userType })
+      console.log('🔐 Attempting super admin login via Supabase');
+      
+      // Use the super admin email with the provided password
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: 'admin@monarch.com',
+        password
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        const userData = data.user;
-        
-        // Map snake_case to camelCase for consistent frontend usage
-        const mappedUser = {
-          ...userData,
-          userId: userData.user_id,
-          userName: userData.user_name,
-          primaryOrganizationId: userData.primary_organization_id,
-          authorizedOrganizations: userData.authorized_organizations,
-          isActive: userData.is_active,
-          avatarUrl: userData.avatar_url
-        };
-        
-        setUser(mappedUser);
-        
-        // Store auth token for session persistence
-        if (data.token) {
-          localStorage.setItem('auth_token', data.token);
-        }
-        
-        setLocation('/');
-        return { success: true };
-      } else {
-        const errorData = await response.json();
-        return { success: false, error: errorData.message };
+      if (error) {
+        console.log('❌ Super admin login failed:', error.message);
+        return { success: false, error: error.message };
       }
-    } catch (error) {
-      console.error('Demo login error:', error);
-      return { success: false, error: 'Failed to demo login' };
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  const superAdminLogin = async () => {
-    setIsLoading(true);
-    
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ 
-          email: 'superadmin@monarch.com', 
-          password: '7bPHY^rXCNS%2#g' 
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const userData = data.user;
-        
-        // Map snake_case to camelCase for consistent frontend usage
-        const mappedUser = {
-          ...userData,
-          userId: userData.user_id,
-          userName: userData.user_name,
-          primaryOrganizationId: userData.primary_organization_id,
-          authorizedOrganizations: userData.authorized_organizations,
-          isActive: userData.is_active,
-          avatarUrl: userData.avatar_url
-        };
-        
-        setUser(mappedUser);
-        
-        // Store auth token for session persistence
-        if (data.token) {
-          localStorage.setItem('auth_token', data.token);
+      if (data.user) {
+        console.log('✅ Super admin login successful');
+        const userData = await fetchUserData(data.user);
+        if (userData) {
+          setUser(userData);
+          return { success: true };
+        } else {
+          return { success: false, error: 'Failed to fetch user data' };
         }
-        
-        setLocation('/');
-        return { success: true };
-      } else {
-        const errorData = await response.json();
-        return { success: false, error: errorData.message };
       }
+
+      return { success: false, error: 'Super admin login failed' };
     } catch (error) {
-      console.error('Super admin login error:', error);
-      return { success: false, error: 'Failed to login as super admin' };
-    } finally {
-      setIsLoading(false);
+      console.error('❌ Super admin login error:', error);
+      return { success: false, error: 'Network error' };
     }
   };
 
   const logout = async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include'
-      });
+      console.log('🚪 Logging out...');
       
-      setUser(null);
-      localStorage.removeItem('auth_token');
-      console.log('✅ Logout successful');
-      setLocation('/login');
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.log('⚠️ Supabase logout error:', error.message);
+      } else {
+        console.log('✅ Logout successful');
+      }
     } catch (error) {
       console.error('❌ Logout error:', error);
+    } finally {
       setUser(null);
       setLocation('/login');
     }
   };
 
-  const value = {
+  useEffect(() => {
+    checkAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔄 Auth state changed:', event, session?.user?.email);
+      
+      if (event === 'SIGNED_IN' && session?.user) {
+        console.log('🔍 SIGNED_IN event - calling fetchUserData...');
+        const userData = await fetchUserData(session.user, session);
+        if (userData) {
+          console.log('✅ User data received in onAuthStateChange:', userData);
+          setUser(userData);
+        } else {
+          console.log('❌ Failed to fetch user data in onAuthStateChange');
+        }
+      } else if (event === 'SIGNED_OUT') {
+        console.log('🔍 SIGNED_OUT event');
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const value: AuthContextType = {
     user,
     isLoading,
     isAuthenticated: !!user,
     login,
-    demoLogin,
     superAdminLogin,
     logout
   };

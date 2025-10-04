@@ -1,19 +1,19 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Calendar, Clock } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/useAuth";
-import { useOrganization } from "@/hooks/useOrganization";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "../../hooks/useAuth";
+import { useHierarchy } from "../../hooks/useHierarchy";
+import { useToast } from "../../hooks/use-toast";
+import { apiRequest } from "../../lib/queryClient";
 
 function QuickBookingForm() {
   const { user } = useAuth();
-  const { currentOrganization } = useOrganization();
+  const { level, selectedCorporateClient, selectedProgram } = useHierarchy();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -26,14 +26,22 @@ function QuickBookingForm() {
     tripType: "one_way"
   });
 
-  // Fetch clients for the dropdown
+  // Fetch clients based on current hierarchy level
   const { data: clients = [] } = useQuery({
-    queryKey: ["/api/clients", currentOrganization?.id],
+    queryKey: ["/api/clients", level, selectedCorporateClient, selectedProgram],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/clients/organization/${currentOrganization?.id}`);
+      let endpoint = "/api/clients";
+      
+      if (level === 'program' && selectedProgram) {
+        endpoint = `/api/clients/program/${selectedProgram}`;
+      } else if (level === 'client' && selectedCorporateClient) {
+        endpoint = `/api/clients/corporate-client/${selectedCorporateClient}`;
+      }
+      
+      const response = await apiRequest("GET", endpoint);
       return await response.json();
     },
-    enabled: !!currentOrganization?.id,
+    enabled: !!(selectedProgram || selectedCorporateClient),
   });
 
   // Create trip mutation
@@ -42,13 +50,13 @@ function QuickBookingForm() {
       const scheduledPickupTime = `${tripData.scheduledDate}T${tripData.scheduledTime}:00`;
       
       const apiData = {
-        organizationId: currentOrganization?.id,
-        clientId: tripData.clientId,
-        tripType: tripData.tripType,
-        pickupAddress: tripData.pickupAddress,
-        dropoffAddress: tripData.dropoffAddress,
-        scheduledPickupTime: scheduledPickupTime,
-        passengerCount: 1,
+        program_id: selectedProgram,
+        client_id: tripData.clientId,
+        trip_type: tripData.tripType,
+        pickup_address: tripData.pickupAddress,
+        dropoff_address: tripData.dropoffAddress,
+        scheduled_pickup_time: scheduledPickupTime,
+        passenger_count: 1,
         status: "scheduled"
       };
       

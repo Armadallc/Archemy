@@ -1,11 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
+import { useHierarchy } from './useHierarchy';
 
-export function usePermission(permission: string, organizationId?: string) {
+export function usePermission(permission: string) {
+  const { level, selectedProgram, selectedCorporateClient } = useHierarchy();
+  
   const { data: permissionCheck, isLoading } = useQuery({
-    queryKey: ['permission-check', permission, organizationId],
+    queryKey: ['permission-check', permission, level, selectedProgram, selectedCorporateClient],
     queryFn: async () => {
-      const params = organizationId ? `?organizationId=${organizationId}` : '';
-      const response = await fetch(`/api/permissions/check/${permission}${params}`);
+      let endpoint = `/api/permissions/check/${permission}`;
+      
+      // Add hierarchy-specific parameters
+      if (level === 'program' && selectedProgram) {
+        endpoint += `?programId=${selectedProgram}`;
+      } else if (level === 'client' && selectedCorporateClient) {
+        endpoint += `?corporateClientId=${selectedCorporateClient}`;
+      }
+      
+      const response = await fetch(endpoint);
       
       if (!response.ok) {
         return { hasPermission: false };
@@ -23,12 +34,22 @@ export function usePermission(permission: string, organizationId?: string) {
   };
 }
 
-export function useFeatureFlag(flagName: string, organizationId?: string) {
+export function useFeatureFlag(flagName: string) {
+  const { level, selectedProgram, selectedCorporateClient } = useHierarchy();
+  
   const { data: flagCheck, isLoading } = useQuery({
-    queryKey: ['feature-flag', flagName, organizationId],
+    queryKey: ['feature-flag', flagName, level, selectedProgram, selectedCorporateClient],
     queryFn: async () => {
-      const params = organizationId ? `?organizationId=${organizationId}` : '';
-      const response = await fetch(`/api/feature-flags/check/${flagName}${params}`);
+      let endpoint = `/api/feature-flags/check/${flagName}`;
+      
+      // Add hierarchy-specific parameters
+      if (level === 'program' && selectedProgram) {
+        endpoint += `?programId=${selectedProgram}`;
+      } else if (level === 'client' && selectedCorporateClient) {
+        endpoint += `?corporateClientId=${selectedCorporateClient}`;
+      }
+      
+      const response = await fetch(endpoint);
       
       if (!response.ok) {
         return { isEnabled: false };
@@ -47,10 +68,21 @@ export function useFeatureFlag(flagName: string, organizationId?: string) {
 }
 
 export function useEffectivePermissions() {
+  const { level, selectedProgram, selectedCorporateClient } = useHierarchy();
+  
   const { data: permissions, isLoading } = useQuery({
-    queryKey: ['effective-permissions'],
+    queryKey: ['effective-permissions', level, selectedProgram, selectedCorporateClient],
     queryFn: async () => {
-      const response = await fetch('/api/permissions/effective');
+      let endpoint = '/api/permissions/effective';
+      
+      // Add hierarchy-specific parameters
+      if (level === 'program' && selectedProgram) {
+        endpoint += `?programId=${selectedProgram}`;
+      } else if (level === 'client' && selectedCorporateClient) {
+        endpoint += `?corporateClientId=${selectedCorporateClient}`;
+      }
+      
+      const response = await fetch(endpoint);
       
       if (!response.ok) {
         return {};

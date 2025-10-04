@@ -1,36 +1,48 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Switch } from "@/components/ui/switch";
-import { MapPin, Plus, Search, Edit, Trash2, Building, Globe, Star } from "lucide-react";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { useOrganization } from "@/hooks/useOrganization";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Badge } from "../components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/dialog";
+import { Textarea } from "../components/ui/textarea";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
+import { Switch } from "../components/ui/switch";
+import { MapPin, Plus, Search, Edit, Trash2, Building2, Globe, Star, Users, Phone } from "lucide-react";
+import { apiRequest, queryClient } from "../lib/queryClient";
+import { useToast } from "../hooks/use-toast";
+import { useAuth } from "../hooks/useAuth";
+import { useHierarchy } from "../hooks/useHierarchy";
 import { format } from "date-fns";
 
 interface FrequentLocation {
   id: string;
-  organization_id: string;
+  program_id: string;
   name: string;
-  description?: string | null;
+  description?: string;
   street_address: string;
   city: string;
   state: string;
-  zip_code?: string | null;
+  zip_code?: string;
   full_address: string;
   location_type: string;
   usage_count: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  
+  // Related data
+  program?: {
+    id: string;
+    name: string;
+    corporate_client_id: string;
+    corporateClient?: {
+      id: string;
+      name: string;
+    };
+  };
 }
 
 interface LocationFormData {
@@ -72,17 +84,39 @@ export default function FrequentLocations() {
   const [selectedLocation, setSelectedLocation] = useState<FrequentLocation | null>(null);
 
   const { toast } = useToast();
-  const { currentOrganization } = useOrganization();
+  const { user } = useAuth();
+  const { level, selectedCorporateClient, selectedProgram, getFilterParams, getPageTitle } = useHierarchy();
 
-  // Fetch frequent locations
-  const { data: locationsData, isLoading } = useQuery({
-    queryKey: ["/api/frequentlocations", "organization", currentOrganization?.id],
+  // Get filter parameters based on current hierarchy level
+  const filterParams = getFilterParams();
+
+  // Fetch programs for assignment dropdown (for super admins)
+  const { data: programs } = useQuery({
+    queryKey: ["/api/programs"],
     queryFn: async () => {
-      if (!currentOrganization?.id) return [];
-      const response = await apiRequest("GET", `/api/frequentlocations/organization/${currentOrganization.id}`);
+      const response = await apiRequest("GET", "/api/programs");
       return await response.json();
     },
-    enabled: !!currentOrganization?.id,
+    enabled: user?.role === 'super_admin',
+  });
+
+  // Fetch frequent locations based on current hierarchy level
+  const { data: locationsData, isLoading } = useQuery({
+    queryKey: ["/api/frequent-locations", level, selectedCorporateClient, selectedProgram],
+    queryFn: async () => {
+      let endpoint = "/api/frequent-locations";
+      
+      // Build endpoint based on hierarchy level
+      if (level === 'program' && selectedProgram) {
+        endpoint = `/api/frequent-locations/program/${selectedProgram}`;
+      } else if (level === 'client' && selectedCorporateClient) {
+        endpoint = `/api/frequent-locations/corporate-client/${selectedCorporateClient}`;
+      }
+      
+      const response = await apiRequest("GET", endpoint);
+      return await response.json();
+    },
+    enabled: true,
   });
 
   const locations = Array.isArray(locationsData) ? locationsData : [];
@@ -90,7 +124,8 @@ export default function FrequentLocations() {
   // Filter locations
   const filteredLocations = locations.filter((location: FrequentLocation) => {
     const matchesSearch = location.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         location.full_address.toLowerCase().includes(searchTerm.toLowerCase());
+                         location.full_address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         location.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = typeFilter === "all" || location.location_type === typeFilter;
     return matchesSearch && matchesType;
   });
@@ -101,18 +136,18 @@ export default function FrequentLocations() {
       const fullAddress = `${locationData.street_address}, ${locationData.city}, ${locationData.state} ${locationData.zip_code}`.trim();
       
       const apiData = {
-        organizationId: currentOrganization?.id,
+        program_id: selectedProgram || '',
         name: locationData.name,
         description: locationData.description || undefined,
-        streetAddress: locationData.street_address,
+        street_address: locationData.street_address,
         city: locationData.city,
         state: locationData.state,
-        zipCode: locationData.zip_code,
-        fullAddress: fullAddress,
-        locationType: locationData.location_type,
-        isActive: locationData.is_active
+        zip_code: locationData.zip_code,
+        full_address: fullAddress,
+        location_type: locationData.location_type,
+        is_active: locationData.is_active
       };
-      return apiRequest("POST", "/api/frequentlocations", apiData);
+      return apiRequest("POST", "/api/frequent-locations", apiData);
     },
     onSuccess: () => {
       toast({
@@ -121,7 +156,7 @@ export default function FrequentLocations() {
       });
       setIsCreateDialogOpen(false);
       setFormData(initialFormData);
-      queryClient.invalidateQueries({ queryKey: ["/api/frequentlocations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/frequent-locations"] });
     },
     onError: () => {
       toast({
@@ -137,9 +172,9 @@ export default function FrequentLocations() {
     mutationFn: async ({ id, ...locationData }: any) => {
       const fullAddress = `${locationData.street_address}, ${locationData.city}, ${locationData.state} ${locationData.zip_code}`.trim();
       
-      return apiRequest("PUT", `/api/frequentlocations/${id}`, {
+      return apiRequest("PATCH", `/api/frequent-locations/${id}`, {
         ...locationData,
-        fullAddress: fullAddress,
+        full_address: fullAddress,
       });
     },
     onSuccess: () => {
@@ -149,7 +184,7 @@ export default function FrequentLocations() {
       });
       setIsEditDialogOpen(false);
       setSelectedLocation(null);
-      queryClient.invalidateQueries({ queryKey: ["/api/frequentlocations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/frequent-locations"] });
     },
     onError: () => {
       toast({
@@ -162,15 +197,15 @@ export default function FrequentLocations() {
 
   // Delete location mutation
   const deleteLocationMutation = useMutation({
-    mutationFn: async (id: string) => {
-      return apiRequest("DELETE", `/api/frequentlocations/${id}`);
+    mutationFn: async (locationId: string) => {
+      return apiRequest("DELETE", `/api/frequent-locations/${locationId}`);
     },
     onSuccess: () => {
       toast({
         title: "Location Deleted",
         description: "Frequent location has been successfully deleted.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/frequentlocations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/frequent-locations"] });
     },
     onError: () => {
       toast({
@@ -183,15 +218,17 @@ export default function FrequentLocations() {
 
   const handleCreateLocation = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.street_address.trim() || !formData.city.trim() || !formData.state.trim()) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields (name, street address, city, state).",
-        variant: "destructive",
-      });
-      return;
-    }
     createLocationMutation.mutate(formData);
+  };
+
+  const handleUpdateLocation = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedLocation) {
+      updateLocationMutation.mutate({
+        id: selectedLocation.id,
+        ...formData,
+      });
+    }
   };
 
   const handleEditLocation = (location: FrequentLocation) => {
@@ -209,25 +246,47 @@ export default function FrequentLocations() {
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdateLocation = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedLocation) return;
-    updateLocationMutation.mutate({ id: selectedLocation.id, ...formData });
-  };
-
-  const handleDeleteLocation = (id: string) => {
+  const handleDeleteLocation = (locationId: string) => {
     if (confirm("Are you sure you want to delete this frequent location?")) {
-      deleteLocationMutation.mutate(id);
+      deleteLocationMutation.mutate(locationId);
     }
   };
 
-  // Calculate stats
-  const activeLocations = locations.filter((loc: FrequentLocation) => loc.is_active).length;
-  const totalUsage = locations.reduce((sum: number, loc: FrequentLocation) => sum + (loc.usage_count || 0), 0);
-  const popularLocations = locations.filter((loc: FrequentLocation) => (loc.usage_count || 0) > 5).length;
+  const getLocationTypeIcon = (type: string) => {
+    switch (type) {
+      case "medical":
+        return <Building2 className="w-4 h-4 text-red-500" />;
+      case "commercial":
+        return <Globe className="w-4 h-4 text-blue-500" />;
+      case "service_area":
+        return <MapPin className="w-4 h-4 text-green-500" />;
+      default:
+        return <Star className="w-4 h-4 text-yellow-500" />;
+    }
+  };
+
+  const getLocationTypeColor = (type: string) => {
+    switch (type) {
+      case "medical":
+        return "bg-red-50 text-red-700 border-red-200";
+      case "commercial":
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      case "service_area":
+        return "bg-green-50 text-green-700 border-green-200";
+      default:
+        return "bg-yellow-50 text-yellow-700 border-yellow-200";
+    }
+  };
 
   if (isLoading) {
-    return <div className="p-6">Loading frequent locations...</div>;
+    return (
+      <div className="p-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-64 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -235,327 +294,191 @@ export default function FrequentLocations() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">FREQUENT LOCATIONS</h1>
+          <h1 className="text-3xl font-bold text-gray-900">FREQUENT LOCATIONS</h1>
+          <p className="text-gray-600 mt-1">{getPageTitle()}</p>
         </div>
+        
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-green-600 hover:bg-green-700 text-white shadow-sm">
+            <Button className="bg-blue-600 hover:bg-blue-700">
               <Plus className="w-4 h-4 mr-2" />
               Add Location
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-semibold">Add Frequent Location</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleCreateLocation} className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name" className="text-sm font-medium">Location Name *</Label>
-                  <Input
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    placeholder="e.g., Harris Teeter Downtown"
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="location_type" className="text-sm font-medium">Location Type</Label>
-                  <Select value={formData.location_type} onValueChange={(value) => setFormData({...formData, location_type: value})}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {locationTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="description" className="text-sm font-medium">Description</Label>
-                <Textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  placeholder="Additional details about this location"
-                  className="mt-1"
-                  rows={2}
-                />
-              </div>
-
-              <div className="border-t pt-4">
-                <h4 className="text-sm font-medium text-gray-900 mb-3">Address Details</h4>
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <Label htmlFor="street_address" className="text-sm font-medium">Street Address *</Label>
-                    <Input
-                      value={formData.street_address}
-                      onChange={(e) => setFormData({...formData, street_address: e.target.value})}
-                      placeholder="123 Main Street"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="city" className="text-sm font-medium">City *</Label>
-                      <Input
-                        value={formData.city}
-                        onChange={(e) => setFormData({...formData, city: e.target.value})}
-                        placeholder="Charlotte"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="state" className="text-sm font-medium">State *</Label>
-                      <Input
-                        value={formData.state}
-                        onChange={(e) => setFormData({...formData, state: e.target.value})}
-                        placeholder="NC"
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="zip_code" className="text-sm font-medium">ZIP Code</Label>
-                    <Input
-                      value={formData.zip_code}
-                      onChange={(e) => setFormData({...formData, zip_code: e.target.value})}
-                      placeholder="28201"
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  checked={formData.is_active}
-                  onCheckedChange={(checked) => setFormData({...formData, is_active: checked})}
-                />
-                <Label htmlFor="is_active" className="text-sm font-medium">Active Location</Label>
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={createLocationMutation.isPending} className="bg-green-600 hover:bg-green-700">
-                  {createLocationMutation.isPending ? "Adding..." : "Add Location"}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
         </Dialog>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="border-0 shadow-sm bg-gradient-to-br from-green-50 to-green-100">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-900">Active Locations</CardTitle>
-            <MapPin className="h-5 w-5 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-900">{activeLocations}</div>
-            <p className="text-xs text-green-600 mt-1">Available for trips</p>
-          </CardContent>
-        </Card>
+      {/* Search and Filters */}
+      <div className="flex items-center space-x-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            placeholder="Search locations..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
         
-        <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-900">Total Usage</CardTitle>
-            <Globe className="h-5 w-5 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-900">{totalUsage}</div>
-            <p className="text-xs text-blue-600 mt-1">Times used in trips</p>
-          </CardContent>
-        </Card>
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Filter by type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            {locationTypes.map((type) => (
+              <SelectItem key={type.value} value={type.value}>
+                {type.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         
-        <Card className="border-0 shadow-sm bg-gradient-to-br from-yellow-50 to-yellow-100">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-yellow-900">Popular Locations</CardTitle>
-            <Star className="h-5 w-5 text-yellow-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-900">{popularLocations}</div>
-            <p className="text-xs text-yellow-600 mt-1">Used 5+ times</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-sm bg-gradient-to-br from-purple-50 to-purple-100">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-purple-900">Total Locations</CardTitle>
-            <Building className="h-5 w-5 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-900">{locations.length}</div>
-            <p className="text-xs text-purple-600 mt-1">All destinations</p>
-          </CardContent>
-        </Card>
+        <div className="flex items-center space-x-4 text-sm text-gray-600">
+          <span className="flex items-center">
+            <MapPin className="w-4 h-4 mr-1" />
+            {filteredLocations.length} locations
+          </span>
+        </div>
       </div>
 
-      {/* Filters */}
-      <Card className="shadow-sm">
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search locations by name or address..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  {locationTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Locations Table */}
-      <Card className="shadow-sm">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">All Frequent Locations ({filteredLocations.length})</CardTitle>
+          <CardTitle className="flex items-center">
+            <MapPin className="w-5 h-5 mr-2" />
+            Frequent Locations
+          </CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
+        <CardContent>
+          {filteredLocations.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <MapPin className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>No frequent locations found</p>
+              <p className="text-sm">Add locations to start building your frequent destinations</p>
+            </div>
+          ) : (
             <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead className="font-semibold">Location</TableHead>
-                  <TableHead className="font-semibold">Address</TableHead>
-                  <TableHead className="font-semibold">Type</TableHead>
-                  <TableHead className="font-semibold">Usage</TableHead>
-                  <TableHead className="font-semibold">Status</TableHead>
-                  <TableHead className="font-semibold">Created</TableHead>
-                  <TableHead className="text-right font-semibold">Actions</TableHead>
+                <TableRow>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Address</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Usage</TableHead>
+                  <TableHead>Program</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredLocations.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-12 text-gray-500">
-                      <div className="flex flex-col items-center">
-                        <MapPin className="w-8 h-8 text-gray-400 mb-2" />
-                        <p>No frequent locations found</p>
-                        <p className="text-sm">Try adjusting your search or filters</p>
+                {filteredLocations.map((location) => (
+                  <TableRow key={location.id}>
+                    <TableCell>
+                      <div className="flex items-center">
+                        {getLocationTypeIcon(location.location_type)}
+                        <div className="ml-3">
+                          <div className="font-medium">{location.name}</div>
+                          {location.description && (
+                            <div className="text-sm text-gray-500">{location.description}</div>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <div className="font-medium">{location.full_address}</div>
+                        <div className="text-gray-500">
+                          {location.city}, {location.state} {location.zip_code}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant="outline" 
+                        className={getLocationTypeColor(location.location_type)}
+                      >
+                        {locationTypes.find(t => t.value === location.location_type)?.label || location.location_type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <Users className="w-4 h-4 mr-1 text-gray-400" />
+                        {location.usage_count || 0}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <Building2 className="w-4 h-4 mr-1 text-gray-400" />
+                        <div>
+                          <div className="text-sm font-medium">{location.program?.name || 'Unknown'}</div>
+                          <div className="text-xs text-gray-500">{location.program?.corporateClient?.name || ''}</div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={location.is_active ? "default" : "secondary"}>
+                        {location.is_active ? "Active" : "Inactive"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditLocation(location)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteLocation(location.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
-                ) : (
-                  filteredLocations.map((location: FrequentLocation) => (
-                    <TableRow key={location.id} className="hover:bg-gray-50">
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                            <MapPin className="w-5 h-5 text-green-600" />
-                          </div>
-                          <div>
-                            <div className="font-medium">{location.name}</div>
-                            <div className="text-sm text-gray-500">{location.description}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-xs">
-                          <p className="text-sm text-gray-900 font-medium">{location.street_address}</p>
-                          <p className="text-xs text-gray-500">{location.city}, {location.state} {location.zip_code}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">
-                          {locationTypes.find(t => t.value === location.location_type)?.label || location.location_type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Star className="w-4 h-4 text-yellow-400" />
-                          <span>{location.usage_count || 0} times</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={location.is_active ? "default" : "secondary"} className="text-xs">
-                          {location.is_active ? "Active" : "Inactive"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm text-gray-600">
-                          {format(new Date(location.created_at), "MMM dd, yyyy")}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditLocation(location)}
-                            className="hover:bg-gray-100"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteLocation(location.id)}
-                            className="hover:bg-red-50 hover:text-red-600"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
+                ))}
               </TableBody>
             </Table>
-          </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
+      {/* Create Location Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold">Edit Frequent Location</DialogTitle>
+            <DialogTitle>Add New Frequent Location</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleUpdateLocation} className="space-y-6">
-            {/* Same form fields as create dialog */}
+          <form onSubmit={handleCreateLocation} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="name" className="text-sm font-medium">Location Name *</Label>
+                <Label htmlFor="name">Location Name *</Label>
                 <Input
+                  id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  placeholder="e.g., Harris Teeter Downtown"
-                  className="mt-1"
+                  placeholder="Hospital, Mall, Office, etc."
+                  required
                 />
               </div>
               <div>
-                <Label htmlFor="location_type" className="text-sm font-medium">Location Type</Label>
-                <Select value={formData.location_type} onValueChange={(value) => setFormData({...formData, location_type: value})}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
+                <Label htmlFor="location_type">Location Type *</Label>
+                <Select 
+                  value={formData.location_type} 
+                  onValueChange={(value) => setFormData({...formData, location_type: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
                     {locationTypes.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -563,73 +486,200 @@ export default function FrequentLocations() {
             </div>
 
             <div>
-              <Label htmlFor="description" className="text-sm font-medium">Description</Label>
+              <Label htmlFor="description">Description</Label>
               <Textarea
+                id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
-                placeholder="Additional details about this location"
-                className="mt-1"
-                rows={2}
+                placeholder="Brief description of this location..."
+                rows={3}
               />
             </div>
 
-            <div className="border-t pt-4">
-              <h4 className="text-sm font-medium text-gray-900 mb-3">Address Details</h4>
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <Label htmlFor="street_address" className="text-sm font-medium">Street Address *</Label>
-                  <Input
-                    value={formData.street_address}
-                    onChange={(e) => setFormData({...formData, street_address: e.target.value})}
-                    placeholder="123 Main Street"
-                    className="mt-1"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="city" className="text-sm font-medium">City *</Label>
-                    <Input
-                      value={formData.city}
-                      onChange={(e) => setFormData({...formData, city: e.target.value})}
-                      placeholder="Charlotte"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="state" className="text-sm font-medium">State *</Label>
-                    <Input
-                      value={formData.state}
-                      onChange={(e) => setFormData({...formData, state: e.target.value})}
-                      placeholder="NC"
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="zip_code" className="text-sm font-medium">ZIP Code</Label>
-                  <Input
-                    value={formData.zip_code}
-                    onChange={(e) => setFormData({...formData, zip_code: e.target.value})}
-                    placeholder="28201"
-                    className="mt-1"
-                  />
-                </div>
+            <div>
+              <Label htmlFor="street_address">Street Address *</Label>
+              <Input
+                id="street_address"
+                value={formData.street_address}
+                onChange={(e) => setFormData({...formData, street_address: e.target.value})}
+                placeholder="123 Main Street"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="city">City *</Label>
+                <Input
+                  id="city"
+                  value={formData.city}
+                  onChange={(e) => setFormData({...formData, city: e.target.value})}
+                  placeholder="City"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="state">State *</Label>
+                <Input
+                  id="state"
+                  value={formData.state}
+                  onChange={(e) => setFormData({...formData, state: e.target.value})}
+                  placeholder="State"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="zip_code">ZIP Code</Label>
+                <Input
+                  id="zip_code"
+                  value={formData.zip_code}
+                  onChange={(e) => setFormData({...formData, zip_code: e.target.value})}
+                  placeholder="12345"
+                />
               </div>
             </div>
 
             <div className="flex items-center space-x-2">
               <Switch
+                id="is_active"
                 checked={formData.is_active}
                 onCheckedChange={(checked) => setFormData({...formData, is_active: checked})}
               />
-              <Label htmlFor="is_active" className="text-sm font-medium">Active Location</Label>
+              <Label htmlFor="is_active">Active</Label>
             </div>
 
-            <div className="flex justify-end space-x-3 pt-4 border-t">
-              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setIsCreateDialogOpen(false)}
+              >
                 Cancel
               </Button>
-              <Button type="submit" disabled={updateLocationMutation.isPending} className="bg-green-600 hover:bg-green-700">
+              <Button 
+                type="submit" 
+                disabled={createLocationMutation.isPending}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {createLocationMutation.isPending ? "Adding..." : "Add Location"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Location Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Frequent Location</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleUpdateLocation} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-name">Location Name *</Label>
+                <Input
+                  id="edit-name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-location_type">Location Type *</Label>
+                <Select 
+                  value={formData.location_type} 
+                  onValueChange={(value) => setFormData({...formData, location_type: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {locationTypes.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                rows={3}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="edit-street_address">Street Address *</Label>
+              <Input
+                id="edit-street_address"
+                value={formData.street_address}
+                onChange={(e) => setFormData({...formData, street_address: e.target.value})}
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="edit-city">City *</Label>
+                <Input
+                  id="edit-city"
+                  value={formData.city}
+                  onChange={(e) => setFormData({...formData, city: e.target.value})}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-state">State *</Label>
+                <Input
+                  id="edit-state"
+                  value={formData.state}
+                  onChange={(e) => setFormData({...formData, state: e.target.value})}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-zip_code">ZIP Code</Label>
+                <Input
+                  id="edit-zip_code"
+                  value={formData.zip_code}
+                  onChange={(e) => setFormData({...formData, zip_code: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="edit-is_active"
+                checked={formData.is_active}
+                onCheckedChange={(checked) => setFormData({...formData, is_active: checked})}
+              />
+              <Label htmlFor="edit-is_active">Active</Label>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setIsEditDialogOpen(false);
+                  setSelectedLocation(null);
+                  setFormData(initialFormData);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={updateLocationMutation.isPending}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
                 {updateLocationMutation.isPending ? "Updating..." : "Update Location"}
               </Button>
             </div>

@@ -1,29 +1,32 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Edit, Trash2, User, Phone, Car, Calendar } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../components/ui/form";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { Switch } from "../components/ui/switch";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
-import { apiRequest } from "@/lib/queryClient";
-import { useOrganization } from "@/hooks/useOrganization";
+import { useToast } from "../hooks/use-toast";
+import { useAuth } from "../hooks/useAuth";
+import { apiRequest } from "../lib/queryClient";
+import { useHierarchy } from "../hooks/useHierarchy";
+import { getUserDisplayName } from "../lib/displayNames";
 
 interface Driver {
   id: string;
   user_id: string;
   user_name: string;
+  first_name?: string;
+  last_name?: string;
   email: string;
-  primary_organization_id: string;
+  primary_program_id: string;
   authorized_organizations?: string[];
   license_number: string;
   license_expiry?: string | null;
@@ -39,7 +42,7 @@ interface Driver {
 
 const driverFormSchema = z.object({
   user_id: z.string().min(1, "User ID is required"),
-  primary_organization_id: z.string().min(1, "Organization is required"),
+  primary_program_id: z.string().min(1, "Organization is required"),
   license_number: z.string().min(1, "License number is required"),
   license_expiry: z.string().optional(),
   vehicle_info: z.string().optional(),
@@ -52,24 +55,32 @@ const driverFormSchema = z.object({
 
 type DriverFormData = z.infer<typeof driverFormSchema>;
 
-export default function DriversPage() {
+export default function Drivers() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { currentOrganization } = useOrganization();
+  const { level, selectedProgram, selectedCorporateClient } = useHierarchy();
 
   // Fetch drivers for current organization
   const { data: driversData = [], isLoading } = useQuery({
-    queryKey: ["/api/drivers", currentOrganization?.id],
+    queryKey: ["/api/drivers", level, selectedProgram, selectedCorporateClient],
     queryFn: async () => {
-      if (!currentOrganization?.id) return [];
-      const response = await apiRequest("GET", `/api/drivers/organization/${currentOrganization?.id}`);
+      if (!selectedProgram && !selectedCorporateClient) return [];
+      
+      let endpoint = "/api/drivers";
+      if (level === 'program' && selectedProgram) {
+        endpoint = `/api/drivers/program/${selectedProgram}`;
+      } else if (level === 'client' && selectedCorporateClient) {
+        endpoint = `/api/drivers/corporate-client/${selectedCorporateClient}`;
+      }
+      
+      const response = await apiRequest("GET", endpoint);
       return await response.json();
     },
-    enabled: !!currentOrganization?.id,
+    enabled: !!(selectedProgram || selectedCorporateClient),
   });
 
   const drivers = Array.isArray(driversData) ? driversData : [];
@@ -83,7 +94,7 @@ export default function DriversPage() {
     resolver: zodResolver(driverFormSchema),
     defaultValues: {
       user_id: "",
-      primary_organization_id: currentOrganization?.id || user?.primaryOrganizationId || "",
+      primary_program_id: selectedProgram || user?.primary_program_id || "",
       license_number: "",
       license_expiry: "",
       vehicle_info: "",
@@ -191,7 +202,7 @@ export default function DriversPage() {
     setSelectedDriver(driver);
     form.reset({
       user_id: driver.user_id,
-      primary_organization_id: driver.primary_organization_id,
+      primary_program_id: driver.primary_program_id,
       license_number: driver.license_number,
       license_expiry: driver.license_expiry || "",
       vehicle_info: driver.vehicle_info || "",
@@ -212,7 +223,7 @@ export default function DriversPage() {
     setSelectedDriver(null);
     form.reset({
       user_id: "",
-      primary_organization_id: currentOrganization?.id || user?.primaryOrganizationId || "",
+      primary_program_id: selectedProgram || user?.primary_program_id || "",
       license_number: "",
       license_expiry: "",
       vehicle_info: "",
@@ -230,11 +241,14 @@ export default function DriversPage() {
     driver.vehicle_info?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     driver.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     driver.user_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    driver.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    driver.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    `${driver.first_name || ''} ${driver.last_name || ''}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
     driver.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Show loading if data is loading or organization is not ready
-  if (isLoading || (!currentOrganization && !user?.primaryOrganizationId)) {
+  if (isLoading || (!selectedProgram && !user?.primary_program_id)) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
@@ -279,7 +293,7 @@ export default function DriversPage() {
                   />
                   <FormField
                     control={form.control}
-                    name="primary_organization_id"
+                    name="primary_program_id"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Organization</FormLabel>
@@ -450,7 +464,9 @@ export default function DriversPage() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg flex items-center">
                   <User className="h-5 w-5 mr-2" />
-                  {driver.user_name || driver.email || 'Unknown Driver'}
+                  {driver.first_name && driver.last_name 
+                    ? `${driver.first_name} ${driver.last_name}` 
+                    : driver.email || 'Unknown Driver'}
                 </CardTitle>
                 <div className="flex space-x-1">
                   <Button
