@@ -1,14 +1,15 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { Plus, Building2, Users, Car, Calendar, MapPin, Badge, ChevronDown, ArrowLeft, Bug } from "lucide-react";
+import { Badge } from "../components/ui/badge";
+import { Plus, Building2, Users, Car, Calendar, MapPin, ChevronDown, ArrowLeft, Bug } from "lucide-react";
 import DashboardStats from "../components/stats/dashboard-stats";
 import SimpleBookingForm from "../components/booking/simple-booking-form";
 import DriverDashboard from "../components/DriverDashboard";
 import RecentActivity from "../components/RecentActivity";
 import DebugPanel from "../components/DebugPanel";
 import EnhancedActivityFeed from "../components/EnhancedActivityFeed";
-import EnhancedTripCalendar from "../components/EnhancedTripCalendar";
+// EnhancedTripCalendar moved to dedicated calendar page
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "../lib/queryClient";
 import { useAuth } from "../hooks/useAuth";
@@ -206,8 +207,7 @@ export default function Dashboard({
     if (!selectedCorporateClient) {
       return (
         <div className="space-y-6">
-          {/* Enhanced Trip Calendar for Super Admin */}
-          <EnhancedTripCalendar />
+          {/* Corporate Dashboard Content */}
           
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold">CORPORATE DASHBOARD</h1>
@@ -653,8 +653,58 @@ export default function Dashboard({
         </CardContent>
       </Card>
 
-      {/* Enhanced Trip Calendar */}
-      <EnhancedTripCalendar />
+      {/* Upcoming Trips Preview */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Calendar className="h-5 w-5 mr-2" />
+              Upcoming Trips
+            </div>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/calendar">
+                View Full Calendar
+              </Link>
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {tripsData?.slice(0, 5).map((trip: any) => (
+              <div key={trip.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                <div className="flex items-center space-x-3">
+                  <div className={`w-3 h-3 rounded-full ${
+                    trip.status === 'scheduled' ? 'bg-blue-500' :
+                    trip.status === 'in_progress' ? 'bg-yellow-500' :
+                    trip.status === 'completed' ? 'bg-green-500' : 'bg-gray-500'
+                  }`} />
+                  <div>
+                    <div className="font-medium text-sm">
+                      {trip.client?.first_name} {trip.client?.last_name}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {new Date(trip.scheduled_pickup_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    </div>
+                  </div>
+                </div>
+                <Badge variant={
+                  trip.status === 'scheduled' ? 'default' :
+                  trip.status === 'in_progress' ? 'secondary' :
+                  trip.status === 'completed' ? 'outline' : 'destructive'
+                }>
+                  {trip.status.replace('_', ' ')}
+                </Badge>
+              </div>
+            ))}
+            {(!tripsData || tripsData.length === 0) && (
+              <div className="text-center text-gray-500 py-4">
+                <Calendar className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                <p className="text-sm">No upcoming trips</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
 
       {/* Floating Debug Button */}

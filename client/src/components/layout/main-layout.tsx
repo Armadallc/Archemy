@@ -21,6 +21,7 @@ import Settings from "../../pages/settings";
 import PermissionsPage from "../../pages/permissions";
 import Programs from "../../pages/programs";
 import CorporateClients from "../../pages/corporate-clients";
+import CalendarPage from "../../pages/calendar";
 // Removed integrations page - was deleted
 import NotFound from "../../pages/not-found";
 import MobileBottomNav from "../MobileBottomNav";
@@ -156,7 +157,7 @@ export default function MainLayout({
                 <Clients />
               </Route>
               <Route path="/calendar">
-                <Dashboard />
+                <CalendarPage />
               </Route>
               <Route path="/programs">
                 <Programs />
