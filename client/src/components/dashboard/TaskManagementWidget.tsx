@@ -3,20 +3,14 @@ import { CheckSquare, Clock, AlertTriangle, Plus, Filter } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import Widget from "./Widget";
+import { useTaskData } from "../../hooks/useRealtimeData";
 
 interface TaskManagementWidgetProps {
   className?: string;
 }
 
 export default function TaskManagementWidget({ className }: TaskManagementWidgetProps) {
-  // Mock data - in real implementation, this would come from API
-  const tasks = [
-    { id: 1, title: "Review driver performance reports", priority: "high", due: "2 hours", status: "pending", type: "review" },
-    { id: 2, title: "Approve new client registration", priority: "medium", due: "1 day", status: "pending", type: "approval" },
-    { id: 3, title: "Update fleet maintenance schedule", priority: "low", due: "3 days", status: "in_progress", type: "maintenance" },
-    { id: 4, title: "Process billing for completed trips", priority: "high", due: "4 hours", status: "pending", type: "billing" },
-    { id: 5, title: "Schedule driver training session", priority: "medium", due: "1 week", status: "completed", type: "training" },
-  ];
+  const { data: tasks, isLoading, error } = useTaskData();
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -66,6 +60,8 @@ export default function TaskManagementWidget({ className }: TaskManagementWidget
       icon={<CheckSquare className="h-5 w-5" />}
       size="medium"
       className={className}
+      loading={isLoading}
+      error={error ? 'Failed to load task data' : undefined}
       actions={
         <div className="flex items-center space-x-1">
           <Button variant="outline" size="sm">
@@ -96,7 +92,7 @@ export default function TaskManagementWidget({ className }: TaskManagementWidget
 
         {/* Task List */}
         <div className="space-y-2">
-          {tasks.slice(0, 4).map((task) => (
+          {tasks?.slice(0, 4).map((task) => (
             <div key={task.id} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center space-x-2">

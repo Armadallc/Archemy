@@ -2,19 +2,14 @@ import React from "react";
 import { BarChart3, Target, Clock, Users, CheckCircle, AlertCircle } from "lucide-react";
 import { Badge } from "../ui/badge";
 import Widget from "./Widget";
+import { usePerformanceMetrics } from "../../hooks/useRealtimeData";
 
 interface PerformanceMetricsWidgetProps {
   className?: string;
 }
 
 export default function PerformanceMetricsWidget({ className }: PerformanceMetricsWidgetProps) {
-  // Mock data - in real implementation, this would come from API
-  const metrics = {
-    completionRate: { value: 94.2, target: 95, trend: 'up' },
-    onTimeRate: { value: 87.5, target: 90, trend: 'down' },
-    customerSatisfaction: { value: 4.6, target: 4.5, trend: 'up' },
-    driverUtilization: { value: 78.3, target: 80, trend: 'up' }
-  };
+  const { data: metrics, isLoading, error } = usePerformanceMetrics();
 
   const getTrendIcon = (trend: string) => {
     return trend === 'up' ? 
@@ -43,39 +38,41 @@ export default function PerformanceMetricsWidget({ className }: PerformanceMetri
       icon={<BarChart3 className="h-5 w-5" />}
       size="medium"
       className={className}
+      loading={isLoading}
+      error={error ? 'Failed to load performance data' : undefined}
     >
       <div className="space-y-6">
-        {Object.entries(metrics).map(([key, data]) => (
+        {[
+          { key: 'completionRate', label: 'Completion Rate', icon: <Target className="h-4 w-4 text-muted-foreground" />, value: metrics?.completionRate || 0, target: 95, isPercentage: true },
+          { key: 'onTimeRate', label: 'On Time Rate', icon: <Clock className="h-4 w-4 text-muted-foreground" />, value: metrics?.onTimeRate || 0, target: 90, isPercentage: true },
+          { key: 'customerSatisfaction', label: 'Customer Satisfaction', icon: <Users className="h-4 w-4 text-muted-foreground" />, value: metrics?.customerSatisfaction || 0, target: 4.5, isPercentage: false },
+          { key: 'driverUtilization', label: 'Driver Utilization', icon: <BarChart3 className="h-4 w-4 text-muted-foreground" />, value: metrics?.driverUtilization || 0, target: 80, isPercentage: true }
+        ].map(({ key, label, icon, value, target, isPercentage }) => (
           <div key={key} className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                {key === 'completionRate' && <Target className="h-4 w-4 text-muted-foreground" />}
-                {key === 'onTimeRate' && <Clock className="h-4 w-4 text-muted-foreground" />}
-                {key === 'customerSatisfaction' && <Users className="h-4 w-4 text-muted-foreground" />}
-                {key === 'driverUtilization' && <BarChart3 className="h-4 w-4 text-muted-foreground" />}
-                <span className="text-sm font-medium capitalize">
-                  {key.replace(/([A-Z])/g, ' $1').trim()}
-                </span>
+                {icon}
+                <span className="text-sm font-medium">{label}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-bold">
-                  {key === 'customerSatisfaction' ? data.value.toFixed(1) : `${data.value}%`}
+                  {isPercentage ? `${value.toFixed(1)}%` : value.toFixed(1)}
                 </span>
-                <div className={`flex items-center ${getTrendColor(data.trend)}`}>
-                  {getTrendIcon(data.trend)}
+                <div className={`flex items-center ${getTrendColor(value >= target ? 'up' : 'down')}`}>
+                  {getTrendIcon(value >= target ? 'up' : 'down')}
                 </div>
               </div>
             </div>
             
             <div className="space-y-1">
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Target: {key === 'customerSatisfaction' ? data.target.toFixed(1) : `${data.target}%`}</span>
-                <span>{getProgressWidth(data.value, data.target).toFixed(1)}%</span>
+                <span>Target: {isPercentage ? `${target}%` : target}</span>
+                <span>{getProgressWidth(value, target).toFixed(1)}%</span>
               </div>
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div 
-                  className={`h-2 rounded-full ${getProgressColor(data.value, data.target)}`}
-                  style={{ width: `${getProgressWidth(data.value, data.target)}%` }}
+                  className={`h-2 rounded-full ${getProgressColor(value, target)}`}
+                  style={{ width: `${getProgressWidth(value, target)}%` }}
                 />
               </div>
             </div>
@@ -87,11 +84,11 @@ export default function PerformanceMetricsWidget({ className }: PerformanceMetri
           <h4 className="text-sm font-medium text-muted-foreground mb-3">Today's Summary</h4>
           <div className="grid grid-cols-2 gap-4">
             <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">47</div>
+              <div className="text-2xl font-bold text-green-600">{metrics?.completedTrips || 0}</div>
               <div className="text-xs text-muted-foreground">Trips Completed</div>
             </div>
             <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">3.2</div>
+              <div className="text-2xl font-bold text-blue-600">{metrics?.customerSatisfaction?.toFixed(1) || '0.0'}</div>
               <div className="text-xs text-muted-foreground">Avg Rating</div>
             </div>
           </div>
