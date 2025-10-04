@@ -50,9 +50,9 @@ export default function TaskManagementWidget({ className }: TaskManagementWidget
     }
   };
 
-  const pendingTasks = tasks.filter(task => task.status === 'pending');
-  const inProgressTasks = tasks.filter(task => task.status === 'in_progress');
-  const completedTasks = tasks.filter(task => task.status === 'completed');
+  const pendingTasks = tasks?.filter(task => task.status === 'pending') || [];
+  const inProgressTasks = tasks?.filter(task => task.status === 'in_progress') || [];
+  const completedTasks = tasks?.filter(task => task.status === 'completed') || [];
 
   return (
     <Widget
@@ -92,7 +92,7 @@ export default function TaskManagementWidget({ className }: TaskManagementWidget
 
         {/* Task List */}
         <div className="space-y-2">
-          {tasks?.slice(0, 4).map((task) => (
+          {tasks && tasks.length > 0 ? tasks.slice(0, 4).map((task) => (
             <div key={task.id} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center space-x-2">
@@ -113,7 +113,12 @@ export default function TaskManagementWidget({ className }: TaskManagementWidget
                 {getStatusBadge(task.status)}
               </div>
             </div>
-          ))}
+          )) : (
+            <div className="text-center text-gray-500 py-4">
+              <CheckSquare className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+              <p className="text-sm">No tasks available</p>
+            </div>
+          )}
         </div>
 
         {/* Quick Actions */}
