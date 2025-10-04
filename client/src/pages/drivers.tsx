@@ -42,7 +42,7 @@ interface Driver {
 
 const driverFormSchema = z.object({
   user_id: z.string().min(1, "User ID is required"),
-  primary_program_id: z.string().min(1, "Organization is required"),
+  primary_program_id: z.string().min(1, "Program is required"),
   license_number: z.string().min(1, "License number is required"),
   license_expiry: z.string().optional(),
   vehicle_info: z.string().optional(),
@@ -64,30 +64,33 @@ export default function Drivers() {
   const { user } = useAuth();
   const { level, selectedProgram, selectedCorporateClient } = useHierarchy();
 
-  // Fetch drivers for current organization
+  // Fetch drivers for current hierarchy level
   const { data: driversData = [], isLoading } = useQuery({
     queryKey: ["/api/drivers", level, selectedProgram, selectedCorporateClient],
     queryFn: async () => {
-      if (!selectedProgram && !selectedCorporateClient) return [];
-      
       let endpoint = "/api/drivers";
       if (level === 'program' && selectedProgram) {
         endpoint = `/api/drivers/program/${selectedProgram}`;
       } else if (level === 'client' && selectedCorporateClient) {
         endpoint = `/api/drivers/corporate-client/${selectedCorporateClient}`;
       }
+      // For super admin (corporate level), use the base endpoint
       
       const response = await apiRequest("GET", endpoint);
       return await response.json();
     },
-    enabled: !!(selectedProgram || selectedCorporateClient),
+    enabled: true, // Always enabled - let the API handle permissions
   });
 
   const drivers = Array.isArray(driversData) ? driversData : [];
 
-  // Fetch organizations for form
-  const { data: organizations = [] } = useQuery({
-    queryKey: ["/api/organizations"]
+  // Fetch programs for form
+  const { data: programs = [] } = useQuery({
+    queryKey: ["/api/programs"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/programs");
+      return await response.json();
+    },
   });
 
   const form = useForm<DriverFormData>({
@@ -296,17 +299,17 @@ export default function Drivers() {
                     name="primary_program_id"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Organization</FormLabel>
+                        <FormLabel>Program</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select organization" />
+                              <SelectValue placeholder="Select program" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {(organizations as any[]).map((org: any) => (
-                              <SelectItem key={org.id} value={org.id}>
-                                {org.name}
+                            {(programs as any[]).map((program: any) => (
+                              <SelectItem key={program.id} value={program.id}>
+                                {program.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
