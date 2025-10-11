@@ -1,7 +1,0 @@
-         id         |           user_id           | primary_organization_id | license_number |  phone   | is_active 
---------------------+-----------------------------+-------------------------+----------------+----------+-----------
- driver_sarah_001   | driver_sarah_williams       | monarch_competency      | NC123789456    | 555-2101 | t
- driver_michael_001 | driver_michael_brown        | monarch_competency      | NC789456123    | 555-2201 | t
- driver_alex_001    | alex_monarch_competency_001 | monarch_competency      | NC456789012    | 555-3101 | t
-(3 rows)
-

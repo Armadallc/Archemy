@@ -1,7 +1,7 @@
 {
-  "name": "Amish Limo Service",
-  "short_name": "Amish Limo",
-  "description": "Limo service management system for drivers and administrators",
+  "name": "HALCYON Transport Management",
+  "short_name": "HALCYON",
+  "description": "Hierarchical transport management system for corporate clients, programs, and locations",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -60,17 +60,24 @@
   ],
   "shortcuts": [
     {
-      "name": "Driver Dashboard",
+      "name": "Dashboard",
       "short_name": "Dashboard",
-      "description": "View and manage your assigned trips",
+      "description": "View hierarchical dashboard and manage transport operations",
       "url": "/dashboard",
       "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
     },
     {
-      "name": "Create Trip",
-      "short_name": "New Trip",
-      "description": "Schedule a new trip",
-      "url": "/trips/new",
+      "name": "Trips",
+      "short_name": "Trips",
+      "description": "Manage trips across programs and locations",
+      "url": "/trips",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Clients",
+      "short_name": "Clients",
+      "description": "Manage clients and client groups",
+      "url": "/clients",
       "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
     }
   ],

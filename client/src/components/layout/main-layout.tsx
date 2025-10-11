@@ -2,13 +2,10 @@ import React, { ReactNode, useState } from "react";
 import { Switch, Route } from "wouter";
 import Sidebar from "./sidebar";
 import Header from "./header";
-import { HierarchicalSidebar } from "../HierarchicalSidebar";
 import { HierarchyProvider } from "../../hooks/useHierarchy";
-import Dashboard from "../../pages/dashboard";
 import Clients from "../../pages/clients";
 import Drivers from "../../pages/drivers";
 import Vehicles from "../../pages/vehicles";
-import EditTrip from "../../pages/edit-trip";
 import BillingPage from "../../pages/billing";
 import EmptyUniversalCalendar from "../EmptyUniversalCalendar";
 
@@ -22,6 +19,12 @@ import PermissionsPage from "../../pages/permissions";
 import Programs from "../../pages/programs";
 import CorporateClients from "../../pages/corporate-clients";
 import CalendarPage from "../../pages/calendar";
+import CalendarExperiment from "../../pages/calendar-experiment";
+import Playground from "../../pages/playground";
+import ShadcnDashboard from "../../pages/shadcn-dashboard";
+import ShadcnDashboardMigrated from "../../pages/shadcn-dashboard-migrated";
+import { SimpleBookingForm } from "../../components/booking/simple-booking-form";
+import EditTrip from "../../pages/edit-trip";
 // Removed integrations page - was deleted
 import NotFound from "../../pages/not-found";
 import MobileBottomNav from "../MobileBottomNav";
@@ -68,19 +71,12 @@ export default function MainLayout({
       <div className="flex h-screen bg-background">
         {/* Desktop Sidebar - hidden on mobile */}
         <div className="hidden md:block">
-          {user?.role === 'super_admin' ? (
-            <HierarchicalSidebar 
-              isCollapsed={sidebarCollapsed}
-              onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-            />
-          ) : (
-            <Sidebar 
-              currentProgram={currentProgramId}
-              setCurrentProgram={setCurrentProgram}
-              isCollapsed={sidebarCollapsed}
-              setIsCollapsed={setSidebarCollapsed}
-            />
-          )}
+          <Sidebar 
+            currentProgram={currentProgramId}
+            setCurrentProgram={setCurrentProgram}
+            isCollapsed={sidebarCollapsed}
+            setIsCollapsed={setSidebarCollapsed}
+          />
         </div>
       
       <main className="flex-1 flex flex-col overflow-hidden">
@@ -111,12 +107,10 @@ export default function MainLayout({
               <Route path="/">
                 {() => {
                   if (process.env.NODE_ENV === 'development') {
-                    console.log('📍 Rendering Dashboard route for user:', user?.email, 'role:', user?.role);
+                    // console.log('📍 Rendering Migrated Dashboard route for user:', user?.email, 'role:', user?.role);
                   }
                   return (
-                    <Dashboard 
-                      currentProgram={currentProgramId} 
-                    />
+                    <ShadcnDashboardMigrated />
                   );
                 }}
               </Route>
@@ -158,6 +152,28 @@ export default function MainLayout({
               </Route>
               <Route path="/calendar">
                 <CalendarPage />
+              </Route>
+              <Route path="/calendar-experiment">
+                <CalendarExperiment />
+              </Route>
+        <Route path="/playground">
+          <Playground />
+        </Route>
+        <Route path="/shadcn-dashboard">
+          <ShadcnDashboard />
+        </Route>
+              <Route path="/shadcn-dashboard-migrated">
+                <ShadcnDashboardMigrated />
+              </Route>
+              <Route path="/trips/new">
+                <div className="p-6">
+                  <div className="max-w-2xl mx-auto">
+                    <SimpleBookingForm />
+                  </div>
+                </div>
+              </Route>
+              <Route path="/trips/edit/:tripId">
+                <EditTrip />
               </Route>
               <Route path="/programs">
                 <Programs />

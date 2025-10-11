@@ -52,9 +52,9 @@ export async function processAvatar(buffer: Buffer, userId: string): Promise<str
   return `/uploads/avatars/${filename}`;
 }
 
-// Process and save organization logo
-export async function processLogo(buffer: Buffer, organizationId: string): Promise<string> {
-  console.log(`📋 Processing logo for organization: ${organizationId}`);
+// Process and save program or corporate client logo
+export async function processLogo(buffer: Buffer, entityId: string): Promise<string> {
+  console.log(`📋 Processing logo for entity: ${entityId}`);
   console.log(`📋 Buffer size: ${buffer.length} bytes`);
   
   // Check if file is SVG by looking at the buffer content
@@ -64,7 +64,7 @@ export async function processLogo(buffer: Buffer, organizationId: string): Promi
   
   if (isSVG) {
     // Handle SVG files directly without Sharp processing
-    const filename = `logo-${organizationId}-${nanoid()}.svg`;
+    const filename = `logo-${entityId}-${nanoid()}.svg`;
     const filepath = path.join(logosDir, filename);
     
     console.log(`📋 Saving SVG file to: ${filepath}`);
@@ -82,7 +82,7 @@ export async function processLogo(buffer: Buffer, organizationId: string): Promi
     return `/uploads/logos/${filename}`;
   } else {
     // Process other image formats with Sharp
-    const filename = `logo-${organizationId}-${nanoid()}.png`;
+    const filename = `logo-${entityId}-${nanoid()}.png`;
     const filepath = path.join(logosDir, filename);
     
     console.log(`📋 Processing image file to: ${filepath}`);

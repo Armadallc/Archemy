@@ -38,7 +38,7 @@
             <div id="loginSection" class="login-form">
                 <div class="header">
                     <h1>🚗 Aethr Transport Management</h1>
-                    <p style="color: #6b7280; margin-top: 8px;">Monarch Organization Portal</p>
+                    <p style="color: #6b7280; margin-top: 8px;">Monarch Program Portal</p>
                 </div>
                 <form id="loginForm">
                     <div class="form-group">
@@ -128,7 +128,7 @@
             const tripCount = document.getElementById('tripCount');
             
             try {
-                const response = await fetch('/api/trips/organization/monarch_competency', {
+                const response = await fetch('/api/trips/program/monarch_competency', {
                     credentials: 'include'
                 });
                 

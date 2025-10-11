@@ -61,6 +61,7 @@ const allNavigationItems = [
   { path: "/programs", label: "Programs", icon: Building, roles: ["super_admin", "corporate_admin"] },
   { path: "/corporate-clients", label: "Corporate Clients", icon: Building2, roles: ["super_admin"] },
   { path: "/calendar", label: "Calendar", icon: Calendar, roles: ["super_admin", "corporate_admin", "program_admin", "program_user", "driver"] },
+  { path: "/calendar-experiment", label: "Experiment", icon: Calendar, roles: ["super_admin", "corporate_admin", "program_admin"] },
   { path: "/users", label: "Users", icon: UserCheck, roles: ["super_admin", "corporate_admin", "program_admin"] },
   { path: "/mobile", label: "Mobile App", icon: Smartphone, roles: ["super_admin", "corporate_admin", "program_admin", "program_user", "driver"] },
   { path: "/permissions", label: "Permissions", icon: Shield, roles: ["super_admin"] },

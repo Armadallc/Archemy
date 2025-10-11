@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // import { Toaster } from "../components/ui/toaster";
 import { Switch, Route, Redirect } from "wouter";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
+import { MockAuthProvider } from "./hooks/useMockAuth";
 import { HierarchyProvider } from "./hooks/useHierarchy";
 import { ThemeProvider } from "./components/theme-provider";
 import { EnvironmentBanner } from "./components/EnvironmentBanner";
@@ -21,6 +22,7 @@ function AppContent() {
 
   // Debug authentication state
   console.log('🔍 App auth state:', { user: user?.email, role: user?.role, isLoading });
+  console.log('🔴 APP COMPONENT IS RENDERING - CHECK AUTH STATE');
 
   if (isLoading) {
     return (
@@ -64,13 +66,15 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
-            <HierarchyProvider>
-              <div className="min-h-screen">
-                <EnvironmentBanner />
-                <AppContent />
-              </div>
-              {/* <Toaster /> */}
-            </HierarchyProvider>
+            <MockAuthProvider>
+              <HierarchyProvider>
+                <div className="min-h-screen">
+                  <EnvironmentBanner />
+                  <AppContent />
+                </div>
+                {/* <Toaster /> */}
+              </HierarchyProvider>
+            </MockAuthProvider>
           </AuthProvider>
         </ThemeProvider>
       </QueryClientProvider>

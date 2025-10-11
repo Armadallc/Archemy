@@ -5,16 +5,17 @@
  * Run this before making any changes to verify system stability
  */
 
-const https = require('https');
-const http = require('http');
+import https from 'https';
+import http from 'http';
 
 const BASE_URL = process.env.NODE_ENV === 'production' 
   ? 'https://your-app.replit.app' 
-  : 'http://localhost:5000';
+  : 'http://localhost:8081';
 
 // Test configuration
 const SUPER_ADMIN_TOKEN = 'super_admin_development_token_monarch_2024';
-const TEST_ORG = 'monarch_competency';
+const TEST_PROGRAM = 'monarch_competency';
+const TEST_CORPORATE_CLIENT = 'monarch';
 
 const tests = [];
 let passedTests = 0;
@@ -84,7 +85,12 @@ addTest('Authentication - Super Admin Token', async () => {
 });
 
 addTest('Dashboard API - Clients Endpoint', async () => {
-  const response = await makeRequest(`/api/clients/organization/${TEST_ORG}`);
+  const response = await makeRequest(`/api/clients/program/${TEST_PROGRAM}`, {
+    headers: {
+      'Authorization': `Bearer ${SUPER_ADMIN_TOKEN}`,
+      'Content-Type': 'application/json'
+    }
+  });
   if (response.status !== 200) {
     throw new Error(`Clients API failed: ${response.status} - ${JSON.stringify(response.data)}`);
   }
@@ -94,7 +100,12 @@ addTest('Dashboard API - Clients Endpoint', async () => {
 });
 
 addTest('Dashboard API - Drivers Endpoint', async () => {
-  const response = await makeRequest(`/api/drivers/organization/${TEST_ORG}`);
+  const response = await makeRequest(`/api/drivers/program/${TEST_PROGRAM}`, {
+    headers: {
+      'Authorization': `Bearer ${SUPER_ADMIN_TOKEN}`,
+      'Content-Type': 'application/json'
+    }
+  });
   if (response.status !== 200) {
     throw new Error(`Drivers API failed: ${response.status} - ${JSON.stringify(response.data)}`);
   }
@@ -104,7 +115,12 @@ addTest('Dashboard API - Drivers Endpoint', async () => {
 });
 
 addTest('Dashboard API - Trips Endpoint', async () => {
-  const response = await makeRequest(`/api/trips/organization/${TEST_ORG}`);
+  const response = await makeRequest(`/api/trips/program/${TEST_PROGRAM}`, {
+    headers: {
+      'Authorization': `Bearer ${SUPER_ADMIN_TOKEN}`,
+      'Content-Type': 'application/json'
+    }
+  });
   if (response.status !== 200) {
     throw new Error(`Trips API failed: ${response.status} - ${JSON.stringify(response.data)}`);
   }
@@ -113,22 +129,27 @@ addTest('Dashboard API - Trips Endpoint', async () => {
   }
 });
 
-addTest('Dashboard API - Organization Endpoint', async () => {
-  const response = await makeRequest(`/api/organizations/${TEST_ORG}`);
+addTest('Dashboard API - Program Endpoint', async () => {
+  const response = await makeRequest(`/api/programs/${TEST_PROGRAM}`, {
+    headers: {
+      'Authorization': `Bearer ${SUPER_ADMIN_TOKEN}`,
+      'Content-Type': 'application/json'
+    }
+  });
   if (response.status !== 200) {
-    throw new Error(`Organization API failed: ${response.status} - ${JSON.stringify(response.data)}`);
+    throw new Error(`Program API failed: ${response.status} - ${JSON.stringify(response.data)}`);
   }
   if (!response.data || !response.data.id) {
-    throw new Error('Organization API should return organization object with id');
+    throw new Error('Program API should return program object with id');
   }
 });
 
 addTest('Database Schema - Snake Case Fields', async () => {
-  const response = await makeRequest(`/api/clients/organization/${TEST_ORG}`);
+  const response = await makeRequest(`/api/clients/program/${TEST_PROGRAM}`);
   if (response.status === 200 && response.data.length > 0) {
     const client = response.data[0];
     // Check that we get snake_case from API (not camelCase)
-    const hasSnakeCase = 'organization_id' in client || 'first_name' in client;
+    const hasSnakeCase = 'program_id' in client || 'first_name' in client;
     if (!hasSnakeCase) {
       throw new Error('API should return snake_case field names from database');
     }
@@ -139,7 +160,8 @@ addTest('Database Schema - Snake Case Fields', async () => {
 async function main() {
   console.log('🚀 Starting System Health Check...');
   console.log(`📍 Testing against: ${BASE_URL}`);
-  console.log(`🏢 Test Organization: ${TEST_ORG}`);
+  console.log(`🏢 Test Program: ${TEST_PROGRAM}`);
+  console.log(`🏢 Test Corporate Client: ${TEST_CORPORATE_CLIENT}`);
   
   for (const test of tests) {
     await runTest(test);
@@ -165,6 +187,5 @@ process.on('unhandledRejection', (error) => {
   process.exit(1);
 });
 
-if (require.main === module) {
-  main();
-}
+// Run the main function
+main();

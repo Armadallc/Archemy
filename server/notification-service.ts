@@ -6,7 +6,7 @@ interface NotificationData {
   recipientId: string;
   recipientType: 'driver' | 'user' | 'dispatcher' | 'admin';
   tripId: string;
-  organizationId: string;
+  programId: string;
   type: 'trip_assigned' | 'trip_confirmed' | 'trip_started' | 'trip_completed' | 'trip_cancelled' | 'status_update';
   title: string;
   message: string;
@@ -22,7 +22,7 @@ interface TripStatusNotification {
   previousStatus?: string;
   driverId?: string;
   userId?: string;
-  organizationId: string;
+  programId: string;
   timestamp: string;
   location?: { latitude: number; longitude: number };
   notes?: string;
@@ -97,7 +97,7 @@ class NotificationService {
 
   // Handle trip lifecycle notifications
   async handleTripStatusChange(statusData: TripStatusNotification) {
-    const { tripId, status, previousStatus, driverId, userId, organizationId, timestamp, location, notes } = statusData;
+    const { tripId, status, previousStatus, driverId, userId, programId, timestamp, location, notes } = statusData;
 
     switch (status) {
       case 'scheduled':
@@ -108,7 +108,7 @@ class NotificationService {
             recipientId: driverId,
             recipientType: 'driver',
             tripId,
-            organizationId,
+            programId,
             type: 'trip_assigned',
             title: 'New Trip Assignment',
             message: `You have been assigned a new trip. Please confirm your availability.`,
@@ -128,7 +128,7 @@ class NotificationService {
             recipientId: userId,
             recipientType: 'user',
             tripId,
-            organizationId,
+            programId,
             type: 'trip_confirmed',
             title: 'Trip Confirmed',
             message: `Your trip has been confirmed by the driver. The driver is ready for pickup.`,
@@ -139,11 +139,11 @@ class NotificationService {
           });
 
           // Also notify dispatchers
-          await this.notifyDispatchers(organizationId, {
+          await this.notifyDispatchers(programId, {
             id: `dispatch_trip_confirmed_${tripId}_${Date.now()}`,
             recipientType: 'dispatcher',
             tripId,
-            organizationId,
+            programId,
             type: 'trip_confirmed',
             title: 'Trip Confirmed',
             message: `Driver has confirmed trip ${tripId}`,
@@ -163,7 +163,7 @@ class NotificationService {
             recipientId: userId,
             recipientType: 'user',
             tripId,
-            organizationId,
+            programId,
             type: 'trip_started',
             title: 'Trip Started',
             message: `Your driver is on the way. Trip is now in progress.`,
@@ -174,11 +174,11 @@ class NotificationService {
           });
         }
 
-        await this.notifyDispatchers(organizationId, {
+        await this.notifyDispatchers(programId, {
           id: `dispatch_trip_started_${tripId}_${Date.now()}`,
           recipientType: 'dispatcher',
           tripId,
-          organizationId,
+          programId,
           type: 'trip_started',
           title: 'Trip In Progress',
           message: `Trip ${tripId} has started`,
@@ -197,7 +197,7 @@ class NotificationService {
             recipientId: userId,
             recipientType: 'user',
             tripId,
-            organizationId,
+            programId,
             type: 'trip_completed',
             title: 'Trip Completed',
             message: `Your trip has been completed successfully. Thank you for using our service.`,
@@ -208,11 +208,11 @@ class NotificationService {
           });
         }
 
-        await this.notifyDispatchers(organizationId, {
+        await this.notifyDispatchers(programId, {
           id: `dispatch_trip_completed_${tripId}_${Date.now()}`,
           recipientType: 'dispatcher',
           tripId,
-          organizationId,
+          programId,
           type: 'trip_completed',
           title: 'Trip Completed',
           message: `Trip ${tripId} has been completed`,
@@ -234,7 +234,7 @@ class NotificationService {
             recipientId: recipientId!,
             recipientType: driverId ? 'user' : 'driver',
             tripId,
-            organizationId,
+            programId,
             type: 'trip_cancelled',
             title: 'Trip Cancelled',
             message: `Trip has been cancelled by ${cancelledBy}. ${notes || 'No additional details provided.'}`,
@@ -245,11 +245,11 @@ class NotificationService {
           });
         }
 
-        await this.notifyDispatchers(organizationId, {
+        await this.notifyDispatchers(programId, {
           id: `dispatch_trip_cancelled_${tripId}_${Date.now()}`,
           recipientType: 'dispatcher',
           tripId,
-          organizationId,
+          programId,
           type: 'trip_cancelled',
           title: 'Trip Cancelled',
           message: `Trip ${tripId} has been cancelled by ${cancelledBy}`,
@@ -262,11 +262,11 @@ class NotificationService {
     }
   }
 
-  // Notify all dispatchers for an organization
-  private async notifyDispatchers(organizationId: string, baseNotification: Omit<NotificationData, 'recipientId'>) {
-    // In a real system, you'd query for dispatchers by organization
+  // Notify all dispatchers for a program
+  private async notifyDispatchers(programId: string, baseNotification: Omit<NotificationData, 'recipientId'>) {
+    // In a real system, you'd query for dispatchers by program
     // For now, we'll simulate dispatcher notifications
-    const dispatcherIds = [`dispatcher_${organizationId}`, 'super_admin_dispatcher'];
+    const dispatcherIds = [`dispatcher_${programId}`, 'super_admin_dispatcher'];
     
     for (const dispatcherId of dispatcherIds) {
       await this.sendNotification({
@@ -277,12 +277,12 @@ class NotificationService {
   }
 
   // Handle driver confirmation of trip assignment
-  async confirmTripAssignment(tripId: string, driverId: string, organizationId: string) {
+  async confirmTripAssignment(tripId: string, driverId: string, programId: string) {
     await this.handleTripStatusChange({
       tripId,
       status: 'confirmed',
       driverId,
-      organizationId,
+      programId,
       timestamp: new Date().toISOString()
     });
   }

@@ -21,6 +21,8 @@ import { apiRequest } from "../lib/queryClient";
 import { useHierarchy } from "../hooks/useHierarchy";
 import { useAuth } from "../hooks/useAuth";
 import { format, parseISO, isToday, isTomorrow, isYesterday } from "date-fns";
+import ExportButton from "./export/ExportButton";
+import { useLocation } from "wouter";
 
 interface Trip {
   id: string;
@@ -80,6 +82,7 @@ interface Trip {
 export default function HierarchicalTripsPage() {
   const { user } = useAuth();
   const { level, selectedCorporateClient, selectedProgram, getFilterParams } = useHierarchy();
+  const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>("all");
@@ -201,10 +204,35 @@ export default function HierarchicalTripsPage() {
           <h1 className="text-3xl font-bold">{getPageTitle()}</h1>
           <p className="text-gray-600 mt-1">{getTripCount()}</p>
         </div>
-        <Button className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          New Trip
-        </Button>
+        <div className="flex items-center gap-3">
+          <ExportButton
+            data={filteredTrips}
+            columns={[
+              { key: 'id', label: 'Trip ID' },
+              { key: 'client_name', label: 'Client Name', formatter: (trip) => `${trip.client?.first_name || ''} ${trip.client?.last_name || ''}`.trim() },
+              { key: 'pickup_address', label: 'Pickup Address' },
+              { key: 'dropoff_address', label: 'Dropoff Address' },
+              { key: 'scheduled_pickup_time', label: 'Scheduled Pickup', formatter: (value) => value ? format(parseISO(value), 'MMM dd, yyyy HH:mm') : '' },
+              { key: 'actual_pickup_time', label: 'Actual Pickup', formatter: (value) => value ? format(parseISO(value), 'MMM dd, yyyy HH:mm') : '' },
+              { key: 'status', label: 'Status' },
+              { key: 'driver_name', label: 'Driver', formatter: (trip) => trip.driver?.license_number || 'Unassigned' },
+              { key: 'program_name', label: 'Program', formatter: (trip) => trip.program?.name || 'Unknown' },
+              { key: 'corporate_client_name', label: 'Corporate Client', formatter: (trip) => trip.corporate_client?.name || 'N/A' },
+              { key: 'created_at', label: 'Created', formatter: (value) => value ? format(parseISO(value), 'MMM dd, yyyy') : '' }
+            ]}
+            filename={`trips-${level}-${format(new Date(), 'yyyy-MM-dd')}`}
+            onExportStart={() => console.log('Starting trip export...')}
+            onExportComplete={() => console.log('Trip export completed!')}
+            onExportError={(error) => console.error('Trip export failed:', error)}
+          />
+          <Button 
+            className="flex items-center gap-2"
+            onClick={() => setLocation("/trips/new")}
+          >
+            <Plus className="h-4 w-4" />
+            New Trip
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -343,13 +371,24 @@ export default function HierarchicalTripsPage() {
                   </div>
 
                   <div className="flex items-center gap-2 ml-4">
-                    <Button variant="outline" size="sm">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setLocation(`/trips/edit/${trip.id}`)}
+                    >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-red-600 hover:text-red-700"
+                      onClick={() => {
+                        if (confirm('Are you sure you want to delete this trip?')) {
+                          // TODO: Implement trip deletion
+                          console.log('Delete trip:', trip.id);
+                        }
+                      }}
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>

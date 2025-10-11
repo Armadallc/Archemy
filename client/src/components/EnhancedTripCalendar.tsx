@@ -257,10 +257,6 @@ export default function EnhancedTripCalendar() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Trip Calendar
-          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
@@ -276,10 +272,6 @@ export default function EnhancedTripCalendar() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Trip Calendar
-          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-red-600">
@@ -294,10 +286,6 @@ export default function EnhancedTripCalendar() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Trip Calendar
-          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-gray-500">
@@ -311,11 +299,7 @@ export default function EnhancedTripCalendar() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Trip Calendar
-          </CardTitle>
+        <div className="flex justify-end items-center">
           <div className="flex items-center gap-2">
             <Button 
               variant="outline" 

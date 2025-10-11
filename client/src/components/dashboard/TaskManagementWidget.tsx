@@ -77,15 +77,15 @@ export default function TaskManagementWidget({ className }: TaskManagementWidget
         {/* Task Summary */}
         <div className="grid grid-cols-3 gap-4">
           <div className="text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-            <div className="text-2xl font-bold text-red-600">{pendingTasks.length}</div>
+            <div className="text-2xl font-bold text-red-600 dark:text-red-400">{pendingTasks.length}</div>
             <div className="text-xs text-muted-foreground">Pending</div>
           </div>
           <div className="text-center p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-            <div className="text-2xl font-bold text-yellow-600">{inProgressTasks.length}</div>
+            <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{inProgressTasks.length}</div>
             <div className="text-xs text-muted-foreground">In Progress</div>
           </div>
           <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-            <div className="text-2xl font-bold text-green-600">{completedTasks.length}</div>
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">{completedTasks.length}</div>
             <div className="text-xs text-muted-foreground">Completed</div>
           </div>
         </div>
@@ -97,7 +97,7 @@ export default function TaskManagementWidget({ className }: TaskManagementWidget
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center space-x-2">
                   {getTypeIcon(task.type)}
-                  <span className="text-sm font-medium">{task.title}</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{task.title}</span>
                 </div>
                 <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs ${getPriorityColor(task.priority)}`}>
                   {getPriorityIcon(task.priority)}
@@ -114,9 +114,9 @@ export default function TaskManagementWidget({ className }: TaskManagementWidget
               </div>
             </div>
           )) : (
-            <div className="text-center text-gray-500 py-4">
+            <div className="text-center text-gray-500 dark:text-gray-400 py-4">
               <CheckSquare className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-              <p className="text-sm">No tasks available</p>
+              <p className="text-sm text-gray-900 dark:text-gray-100">No tasks available</p>
             </div>
           )}
         </div>

@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "../ui/button";
-import { Plus, Monitor, LogOut, User, Building, Building2, MapPin } from "lucide-react";
+import { Plus, Monitor, LogOut, User, Building, Building2, MapPin, Search } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { useHierarchy } from "../../hooks/useHierarchy";
+import { useMockAuth } from "../../hooks/useMockAuth";
 import { ThemeToggle } from "../theme-toggle";
+import EnhancedNotificationCenter from "../notifications/EnhancedNotificationCenter";
+import GlobalSearch from "../search/GlobalSearch";
+import { useGlobalSearch } from "../../hooks/useGlobalSearch";
+import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
+import RoleToggle from "../RoleToggle";
 
 interface Program {
   id: string;
@@ -61,7 +67,33 @@ const programNames: Record<string, string> = {
 export default function Header({ currentProgram, kioskMode, setKioskMode }: HeaderProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const { user, logout } = useAuth();
+  const { mockUser, setMockUser, isMockMode } = useMockAuth();
   const { level, selectedProgram, selectedCorporateClient } = useHierarchy();
+  const { isOpen, openSearch, closeSearch, handleResultSelect } = useGlobalSearch();
+
+  // Get current user (real or mock)
+  const currentUser = isMockMode && mockUser ? mockUser : user;
+  const currentRole = currentUser?.role || 'program_admin';
+
+  // Handle role change for testing
+  const handleRoleChange = (role: string, userContext: any) => {
+    setMockUser(userContext);
+  };
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts([
+    {
+      key: 'k',
+      metaKey: true,
+      callback: openSearch,
+      description: 'Open global search'
+    },
+    {
+      key: 'Escape',
+      callback: closeSearch,
+      description: 'Close global search'
+    }
+  ]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -161,14 +193,31 @@ export default function Header({ currentProgram, kioskMode, setKioskMode }: Head
 
         {/* Right side - User actions */}
         <div className="flex items-center space-x-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={openSearch}
+            className="flex items-center space-x-2"
+          >
+            <Search className="w-4 h-4" />
+            <span>Search</span>
+          </Button>
+          <EnhancedNotificationCenter />
           <ThemeToggle />
           
-          {user && (
+          {/* Role Toggle for Development Testing */}
+          <RoleToggle 
+            currentRole={currentRole}
+            onRoleChange={handleRoleChange}
+            isDevelopment={import.meta.env.DEV}
+          />
+          
+          {currentUser && (
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                {user.avatar_url ? (
+                {(currentUser as any).avatar_url ? (
                   <img 
-                    src={user.avatar_url} 
+                    src={(currentUser as any).avatar_url} 
                     alt="Avatar" 
                     className="w-8 h-8 rounded-full"
                     onError={(e) => {
@@ -180,17 +229,17 @@ export default function Header({ currentProgram, kioskMode, setKioskMode }: Head
                     }}
                   />
                 ) : null}
-                <span className={`text-sm font-medium text-white ${user.avatar_url ? 'hidden' : ''}`}>
-                  {user.user_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
+                <span className={`text-sm font-medium text-white ${(currentUser as any).avatar_url ? 'hidden' : ''}`}>
+                  {currentUser.user_name?.charAt(0).toUpperCase() || currentUser.email?.charAt(0).toUpperCase() || 'U'}
                 </span>
               </div>
               
               <div className="text-sm">
                 <div className="font-medium text-gray-900">
-                  {user.user_name || user.email}
+                  {currentUser.user_name || currentUser.email}
                 </div>
                 <div className="text-gray-500 capitalize">
-                  {user.role?.replace('_', ' ')}
+                  {currentUser.role?.replace('_', ' ')}
                 </div>
               </div>
             </div>
@@ -207,6 +256,13 @@ export default function Header({ currentProgram, kioskMode, setKioskMode }: Head
           </Button>
         </div>
       </div>
+      
+      {/* Global Search Modal */}
+      <GlobalSearch
+        isOpen={isOpen}
+        onClose={closeSearch}
+        onResultSelect={handleResultSelect}
+      />
     </header>
   );
 }

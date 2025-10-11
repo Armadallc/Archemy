@@ -22,6 +22,7 @@ import { z } from "zod";
 import { Plus, Search, Edit, Trash2, Phone, Mail, MapPin, Users, Building2, Calendar, UserPlus, UserMinus, Filter, Download, Upload, AlertTriangle, ArrowLeft, User, Heart, Shield, Star, UserCheck } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { apiRequest } from "../lib/queryClient";
+import ExportButton from "../components/export/ExportButton";
 
 // Zod schema for client validation
 const clientFormSchema = z.object({
@@ -429,6 +430,7 @@ export default function Clients() {
       billing_pin: client.billing_pin || "",
       medical_notes: client.medical_notes || "",
       mobility_requirements: client.mobility_requirements || "",
+      is_active: client.is_active,
     });
     setIsEditDialogOpen(true);
   };
@@ -470,6 +472,24 @@ export default function Clients() {
         </div>
         
         <div className="flex space-x-2">
+          <ExportButton
+            data={filteredClients}
+            columns={[
+              { key: 'id', label: 'Client ID' },
+              { key: 'name', label: 'Name', formatter: (client) => `${client.first_name} ${client.last_name}` },
+              { key: 'email', label: 'Email' },
+              { key: 'phone', label: 'Phone' },
+              { key: 'address', label: 'Address' },
+              { key: 'is_active', label: 'Status', formatter: (value) => value ? 'Active' : 'Inactive' },
+              { key: 'emergency_contact_name', label: 'Emergency Contact' },
+              { key: 'emergency_contact_phone', label: 'Emergency Phone' },
+              { key: 'created_at', label: 'Created', formatter: (value) => value ? format(new Date(value), 'MMM dd, yyyy') : '' }
+            ]}
+            filename={`clients-${format(new Date(), 'yyyy-MM-dd')}`}
+            onExportStart={() => console.log('Starting client export...')}
+            onExportComplete={() => console.log('Client export completed!')}
+            onExportError={(error) => console.error('Client export failed:', error)}
+          />
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" className="text-red-600 hover:text-red-700">
@@ -1031,14 +1051,17 @@ export default function Clients() {
 
       {/* Create Client Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add New Client</DialogTitle>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
+          <DialogHeader className="bg-white">
+            <DialogTitle className="text-gray-900">Add New Client</DialogTitle>
           </DialogHeader>
           <Form {...createForm}>
-            <form onSubmit={createForm.handleSubmit(handleCreateClient)} className="space-y-6">
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              createForm.handleSubmit(handleCreateClient)(e);
+            }} className="space-y-6 bg-white">
             {/* Personal Information Section */}
-            <div className="border-t pt-4">
+            <div className="border-t pt-4 bg-white">
               <h4 className="text-sm font-medium text-gray-900 mb-3">Personal Information</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
@@ -1079,207 +1102,297 @@ export default function Clients() {
             </div>
 
             {/* Contact Information Section */}
-            <div className="border-t pt-4">
+            <div className="border-t pt-4 bg-white">
               <h4 className="text-sm font-medium text-gray-900 mb-3">Contact Information</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="phone" className="text-sm font-medium">Phone</Label>
-                  <Input
-                    id="phone"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    placeholder="(555) 123-4567"
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    placeholder="client@email.com"
-                    className="mt-1"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Address Section */}
-            <div className="border-t pt-4">
-              <h4 className="text-sm font-medium text-gray-900 mb-3">Address Information</h4>
-              <div>
-                <Label htmlFor="address" className="text-sm font-medium">Address</Label>
-                <Textarea
-                  id="address"
-                  value={formData.address}
-                  onChange={(e) => setFormData({...formData, address: e.target.value})}
-                  placeholder="123 Main Street, City, State 12345"
-                  className="mt-1"
+                <FormField
+                  control={createForm.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Phone</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="(555) 123-4567"
+                          className="mt-1"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={createForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Email</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          placeholder="client@email.com"
+                          className="mt-1"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
             </div>
 
+            {/* Address Section */}
+            <div className="border-t pt-4 bg-white">
+              <h4 className="text-sm font-medium text-gray-900 mb-3">Address Information</h4>
+              <FormField
+                control={createForm.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">Address</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="123 Main Street, City, State 12345"
+                        className="mt-1"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             {/* Personal Details Section */}
-            <div className="border-t pt-4">
+            <div className="border-t pt-4 bg-white">
               <h4 className="text-sm font-medium text-gray-900 mb-3">Personal Details</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="date_of_birth" className="text-sm font-medium">Date of Birth</Label>
-                  <Input
-                    id="date_of_birth"
-                    type="date"
-                    value={formData.date_of_birth}
-                    onChange={(e) => setFormData({...formData, date_of_birth: e.target.value})}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="billing_pin" className="text-sm font-medium">Billing PIN</Label>
-                  <Input
-                    id="billing_pin"
-                    value={formData.billing_pin}
-                    onChange={(e) => setFormData({...formData, billing_pin: e.target.value})}
-                    placeholder="Optional billing PIN"
-                    className="mt-1"
-                  />
-                </div>
+                <FormField
+                  control={createForm.control}
+                  name="date_of_birth"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Date of Birth</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          className="mt-1"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={createForm.control}
+                  name="billing_pin"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Billing PIN</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Optional billing PIN"
+                          className="mt-1"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </div>
 
             {/* Emergency Contact Section */}
-            <div className="border-t pt-4">
+            <div className="border-t pt-4 bg-white">
               <h4 className="text-sm font-medium text-gray-900 mb-3">Emergency Contact</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="emergency_contact_name" className="text-sm font-medium">Emergency Contact Name</Label>
-                  <Input
-                    id="emergency_contact_name"
-                    value={formData.emergency_contact_name}
-                    onChange={(e) => setFormData({...formData, emergency_contact_name: e.target.value})}
-                    placeholder="Emergency contact name"
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="emergency_contact_phone" className="text-sm font-medium">Emergency Contact Phone</Label>
-                  <Input
-                    id="emergency_contact_phone"
-                    value={formData.emergency_contact_phone}
-                    onChange={(e) => setFormData({...formData, emergency_contact_phone: e.target.value})}
-                    placeholder="(555) 987-6543"
-                    className="mt-1"
-                  />
-                </div>
+                <FormField
+                  control={createForm.control}
+                  name="emergency_contact_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Emergency Contact Name</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Emergency contact name"
+                          className="mt-1"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={createForm.control}
+                  name="emergency_contact_phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Emergency Contact Phone</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="(555) 987-6543"
+                          className="mt-1"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </div>
 
               {/* Medical Information Section */}
-              <div className="border-t pt-4">
+              <div className="border-t pt-4 bg-white">
                 <h4 className="text-sm font-medium text-gray-900 mb-3">Medical & Trip Information</h4>
               <div className="space-y-4">
-                <div>
-                  <Label htmlFor="medical_conditions" className="text-sm font-medium">Medical Conditions</Label>
-                  <Textarea
-                    id="medical_conditions"
-                    value={formData.medical_conditions}
-                    onChange={(e) => setFormData({...formData, medical_conditions: e.target.value})}
-                    placeholder="List any medical conditions"
-                    className="mt-1"
-                  />
-                </div>
+                <FormField
+                  control={createForm.control}
+                  name="medical_conditions"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Medical Conditions</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="List any medical conditions"
+                          className="mt-1"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                  <div>
-                    <Label htmlFor="medical_notes" className="text-sm font-medium">Trip Notes</Label>
-                    <Textarea
-                      id="medical_notes"
-                      value={formData.medical_notes}
-                      onChange={(e) => setFormData({...formData, medical_notes: e.target.value})}
-                      placeholder="Notes for drivers about this client (pickup instructions, special needs, etc.)"
-                      className="mt-1"
-                    />
-                  </div>
+                <FormField
+                  control={createForm.control}
+                  name="medical_notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Trip Notes</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Notes for drivers about this client (pickup instructions, special needs, etc.)"
+                          className="mt-1"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                <div>
-                  <Label htmlFor="special_requirements" className="text-sm font-medium">Special Requirements</Label>
-                  <Textarea
-                    id="special_requirements"
-                    value={formData.special_requirements}
-                    onChange={(e) => setFormData({...formData, special_requirements: e.target.value})}
-                    placeholder="Accessibility needs, special equipment, etc."
-                    className="mt-1"
-                  />
-                </div>
+                <FormField
+                  control={createForm.control}
+                  name="special_requirements"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Special Requirements</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Accessibility needs, special equipment, etc."
+                          className="mt-1"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                <div>
-                  <Label htmlFor="mobility_requirements" className="text-sm font-medium">Mobility Requirements</Label>
-                  <Textarea
-                    id="mobility_requirements"
-                    value={formData.mobility_requirements}
-                    onChange={(e) => setFormData({...formData, mobility_requirements: e.target.value})}
-                    placeholder="Wheelchair, walker, assistance needed, etc."
-                    className="mt-1"
-                  />
-                </div>
+                <FormField
+                  control={createForm.control}
+                  name="mobility_requirements"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Mobility Requirements</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Wheelchair, walker, assistance needed, etc."
+                          className="mt-1"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </div>
 
             {/* Program & Location Section */}
-            <div className="border-t pt-4">
+            <div className="border-t pt-4 bg-white">
               <h4 className="text-sm font-medium text-gray-900 mb-3">Program & Location Assignment</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="location_id" className="text-sm font-medium">Location</Label>
-                <Select 
-                  value={formData.location_id} 
-                  onValueChange={(value) => setFormData({...formData, location_id: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select location" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {locations.map((location: any) => (
-                      <SelectItem key={location.id} value={location.id}>
-                        {location.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-                <div>
-                  <Label htmlFor="program_id" className="text-sm font-medium">Program *</Label>
-                <Select 
-                  value={formData.program_id || selectedProgram || ''} 
-                  onValueChange={(value) => setFormData({...formData, program_id: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select program" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {programs?.map((program: any) => (
-                      <SelectItem key={program.id} value={program.id}>
-                        {program.name} ({program.corporateClient?.name || 'Unknown Client'})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                </div>
+                <FormField
+                  control={createForm.control}
+                  name="location_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Location</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="bg-white">
+                            <SelectValue placeholder="Select location" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="bg-white">
+                          {locations.map((location: any) => (
+                            <SelectItem key={location.id} value={location.id}>
+                              {location.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={createForm.control}
+                  name="program_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Program *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || selectedProgram || ''}>
+                        <FormControl>
+                          <SelectTrigger className="bg-white">
+                            <SelectValue placeholder="Select program" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="bg-white">
+                          {programs?.map((program: any) => (
+                            <SelectItem key={program.id} value={program.id}>
+                              {program.name} ({program.corporateClient?.name || 'Unknown Client'})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </div>
 
-            <div className="flex justify-end space-x-2 pt-4">
+            <div className="flex justify-end space-x-2 pt-4 bg-white">
               <Button 
                 type="button" 
                 variant="outline" 
                 onClick={() => setIsCreateDialogOpen(false)}
+                className="bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
               >
                 Cancel
               </Button>
               <Button 
                 type="submit" 
                 disabled={createClientMutation.isPending}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
               >
                 {createClientMutation.isPending ? "Creating..." : "Create Client"}
               </Button>

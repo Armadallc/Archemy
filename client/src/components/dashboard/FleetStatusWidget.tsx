@@ -6,11 +6,22 @@ import Widget from "./Widget";
 
 interface FleetStatusWidgetProps {
   className?: string;
+  drivers?: any[];
 }
 
-export default function FleetStatusWidget({ className }: FleetStatusWidgetProps) {
-  // Mock data - in real implementation, this would come from API
-  const fleetData = [
+export default function FleetStatusWidget({ className, drivers }: FleetStatusWidgetProps) {
+  // Use real driver data if provided, otherwise fall back to mock data
+  const fleetData = drivers && drivers.length > 0 ? drivers.slice(0, 4).map((driver: any, index: number) => ({
+    id: driver.id || index + 1,
+    vehicle: `Van-${String(index + 1).padStart(3, '0')}`,
+    driver: driver.users?.first_name && driver.users?.last_name 
+      ? `${driver.users.first_name} ${driver.users.last_name}` 
+      : driver.user_id || `Driver ${index + 1}`,
+    status: driver.is_active ? "active" : "break",
+    location: "Downtown", // This would come from real-time location data
+    battery: Math.floor(Math.random() * 40) + 60, // Mock battery level
+    trips: Math.floor(Math.random() * 20), // Mock trip count
+  })) : [
     { id: 1, vehicle: "Van-001", driver: "Alice Smith", status: "active", location: "Downtown", battery: 85, trips: 12 },
     { id: 2, vehicle: "Van-002", driver: "Bob Johnson", status: "active", location: "Uptown", battery: 92, trips: 8 },
     { id: 3, vehicle: "Van-003", driver: "Carol Davis", status: "maintenance", location: "Garage", battery: 0, trips: 0 },
@@ -63,7 +74,7 @@ export default function FleetStatusWidget({ className }: FleetStatusWidgetProps)
                   {getStatusIcon(vehicle.status)}
                 </div>
                 <div>
-                  <p className="font-medium text-sm">{vehicle.vehicle}</p>
+                  <p className="font-medium text-sm text-gray-900 dark:text-gray-100">{vehicle.vehicle}</p>
                   <p className="text-xs text-muted-foreground">{vehicle.driver}</p>
                 </div>
               </div>
@@ -75,11 +86,11 @@ export default function FleetStatusWidget({ className }: FleetStatusWidgetProps)
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground text-xs">Location</p>
-                <p className="font-medium">{vehicle.location}</p>
+                <p className="font-medium text-gray-900 dark:text-gray-100">{vehicle.location}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Trips Today</p>
-                <p className="font-medium">{vehicle.trips}</p>
+                <p className="font-medium text-gray-900 dark:text-gray-100">{vehicle.trips}</p>
               </div>
             </div>
             
@@ -106,15 +117,15 @@ export default function FleetStatusWidget({ className }: FleetStatusWidgetProps)
         {/* Fleet Summary */}
         <div className="grid grid-cols-3 gap-4 pt-4 border-t">
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">2</div>
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">2</div>
             <div className="text-xs text-muted-foreground">Active</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-orange-600">1</div>
+            <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">1</div>
             <div className="text-xs text-muted-foreground">On Break</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-red-600">1</div>
+            <div className="text-2xl font-bold text-red-600 dark:text-red-400">1</div>
             <div className="text-xs text-muted-foreground">Maintenance</div>
           </div>
         </div>

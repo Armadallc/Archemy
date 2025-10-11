@@ -6,10 +6,21 @@ import { usePerformanceMetrics } from "../../hooks/useRealtimeData";
 
 interface PerformanceMetricsWidgetProps {
   className?: string;
+  trips?: any[];
+  drivers?: any[];
 }
 
-export default function PerformanceMetricsWidget({ className }: PerformanceMetricsWidgetProps) {
-  const { data: metrics, isLoading, error } = usePerformanceMetrics();
+export default function PerformanceMetricsWidget({ className, trips, drivers }: PerformanceMetricsWidgetProps) {
+  const { data: hookMetrics, isLoading, error } = usePerformanceMetrics();
+  
+  // Calculate metrics from trips and drivers if provided, otherwise use hook data
+  const metrics = trips && drivers ? {
+    onTimeDelivery: trips.length > 0 ? (trips.filter((trip: any) => trip.status === 'completed').length / trips.length) * 100 : 98.5,
+    averageResponseTime: 4.2, // Mock data - would calculate from trip timestamps
+    customerSatisfaction: 4.8, // Mock data - would come from ratings
+    driverUtilization: drivers.length > 0 ? (drivers.filter((driver: any) => driver.is_active).length / drivers.length) * 100 : 85.0,
+    trend: 'up'
+  } : hookMetrics;
 
   const getTrendIcon = (trend: string) => {
     return trend === 'up' ? 
@@ -52,10 +63,10 @@ export default function PerformanceMetricsWidget({ className }: PerformanceMetri
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 {icon}
-                <span className="text-sm font-medium">{label}</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{label}</span>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-sm font-bold">
+                <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
                   {isPercentage ? `${value.toFixed(1)}%` : value.toFixed(1)}
                 </span>
                 <div className={`flex items-center ${getTrendColor(value >= target ? 'up' : 'down')}`}>
@@ -100,11 +111,11 @@ export default function PerformanceMetricsWidget({ className }: PerformanceMetri
           <div className="space-y-2">
             <div className="flex items-center space-x-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
               <AlertCircle className="h-4 w-4 text-yellow-600" />
-              <span className="text-sm">On-time rate below target (87.5% vs 90%)</span>
+              <span className="text-sm text-gray-900 dark:text-gray-100">On-time rate below target (87.5% vs 90%)</span>
             </div>
             <div className="flex items-center space-x-2 p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
               <CheckCircle className="h-4 w-4 text-green-600" />
-              <span className="text-sm">Customer satisfaction above target</span>
+              <span className="text-sm text-gray-900 dark:text-gray-100">Customer satisfaction above target</span>
             </div>
           </div>
         </div>

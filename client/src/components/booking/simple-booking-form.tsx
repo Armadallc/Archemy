@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -36,95 +36,144 @@ function SimpleBookingForm() {
     tripNickname: ""
   });
 
+  // Local state for program selection (for super admins)
+  const [selectedProgramLocal, setSelectedProgramLocal] = useState<string>("");
+  const [selectedCorporateClientLocal, setSelectedCorporateClientLocal] = useState<string>("");
+
+  // Determine which program/corporate client to use
+  const effectiveProgram = selectedProgram || selectedProgramLocal;
+  const effectiveCorporateClient = selectedCorporateClient || selectedCorporateClientLocal;
+
+  // Fetch corporate clients (for super admins)
+  const { data: corporateClients = [] } = useQuery({
+    queryKey: ["/api/corporate-clients"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/corporate-clients");
+      return await response.json();
+    },
+    enabled: level === 'corporate' && !selectedCorporateClient,
+  });
+
+  // Fetch programs (for super admins or when corporate client is selected)
+  const { data: programs = [] } = useQuery({
+    queryKey: ["/api/programs", effectiveCorporateClient],
+    queryFn: async () => {
+      let endpoint = "/api/programs";
+      if (effectiveCorporateClient) {
+        endpoint = `/api/programs/corporate-client/${effectiveCorporateClient}`;
+      }
+      const response = await apiRequest("GET", endpoint);
+      return await response.json();
+    },
+    enabled: level === 'corporate' && (!selectedProgram || !!effectiveCorporateClient),
+  });
+
+  // Auto-select first program for super admins
+  React.useEffect(() => {
+    if (level === 'corporate' && !selectedProgram && programs.length > 0 && !selectedProgramLocal) {
+      setSelectedProgramLocal(programs[0].id);
+    }
+  }, [level, selectedProgram, programs, selectedProgramLocal]);
+
   // Fetch clients based on current hierarchy level
   const { data: clients = [] } = useQuery({
-    queryKey: ["/api/clients", level, selectedCorporateClient, selectedProgram],
+    queryKey: ["/api/clients", level, effectiveCorporateClient, effectiveProgram],
     queryFn: async () => {
       let endpoint = "/api/clients";
       
-      if (level === 'program' && selectedProgram) {
-        endpoint = `/api/clients/program/${selectedProgram}`;
-      } else if (level === 'client' && selectedCorporateClient) {
-        endpoint = `/api/clients/corporate-client/${selectedCorporateClient}`;
+      if (level === 'program' && effectiveProgram) {
+        endpoint = `/api/clients/program/${effectiveProgram}`;
+      } else if (level === 'client' && effectiveCorporateClient) {
+        endpoint = `/api/clients/corporate-client/${effectiveCorporateClient}`;
+      } else if (level === 'corporate' && effectiveProgram) {
+        endpoint = `/api/clients/program/${effectiveProgram}`;
       }
       
       const response = await apiRequest("GET", endpoint);
       return await response.json();
     },
-    enabled: !!(selectedProgram || selectedCorporateClient),
+    enabled: !!(effectiveProgram || effectiveCorporateClient),
   });
 
   // Fetch client groups based on current hierarchy level
   const { data: clientGroups = [] } = useQuery({
-    queryKey: ["/api/client-groups", level, selectedCorporateClient, selectedProgram],
+    queryKey: ["/api/client-groups", level, effectiveCorporateClient, effectiveProgram],
     queryFn: async () => {
       let endpoint = "/api/client-groups";
       
-      if (level === 'program' && selectedProgram) {
-        endpoint = `/api/client-groups/program/${selectedProgram}`;
-      } else if (level === 'client' && selectedCorporateClient) {
-        endpoint = `/api/client-groups/corporate-client/${selectedCorporateClient}`;
+      if (level === 'program' && effectiveProgram) {
+        endpoint = `/api/client-groups/program/${effectiveProgram}`;
+      } else if (level === 'client' && effectiveCorporateClient) {
+        endpoint = `/api/client-groups/corporate-client/${effectiveCorporateClient}`;
+      } else if (level === 'corporate' && effectiveProgram) {
+        endpoint = `/api/client-groups/program/${effectiveProgram}`;
       }
       
       const response = await apiRequest("GET", endpoint);
       return await response.json();
     },
-    enabled: !!(selectedProgram || selectedCorporateClient),
+    enabled: !!(effectiveProgram || effectiveCorporateClient),
   });
 
   // Fetch drivers based on current hierarchy level
   const { data: drivers = [] } = useQuery({
-    queryKey: ["/api/drivers", level, selectedCorporateClient, selectedProgram],
+    queryKey: ["/api/drivers", level, effectiveCorporateClient, effectiveProgram],
     queryFn: async () => {
       let endpoint = "/api/drivers";
       
-      if (level === 'program' && selectedProgram) {
-        endpoint = `/api/drivers/program/${selectedProgram}`;
-      } else if (level === 'client' && selectedCorporateClient) {
-        endpoint = `/api/drivers/corporate-client/${selectedCorporateClient}`;
+      if (level === 'program' && effectiveProgram) {
+        endpoint = `/api/drivers/program/${effectiveProgram}`;
+      } else if (level === 'client' && effectiveCorporateClient) {
+        endpoint = `/api/drivers/corporate-client/${effectiveCorporateClient}`;
+      } else if (level === 'corporate' && effectiveProgram) {
+        endpoint = `/api/drivers/program/${effectiveProgram}`;
       }
       
       const response = await apiRequest("GET", endpoint);
       return await response.json();
     },
-    enabled: !!(selectedProgram || selectedCorporateClient),
+    enabled: !!(effectiveProgram || effectiveCorporateClient),
   });
 
   // Fetch frequent locations based on current hierarchy level
   const { data: frequentLocationsData = [], isLoading: frequentLocationsLoading } = useQuery({
-    queryKey: ["/api/frequent-locations", level, selectedCorporateClient, selectedProgram],
+    queryKey: ["/api/frequent-locations", level, effectiveCorporateClient, effectiveProgram],
     queryFn: async () => {
-      if (!selectedProgram && !selectedCorporateClient) return [];
+      if (!effectiveProgram && !effectiveCorporateClient) return [];
       
       let endpoint = "/api/frequent-locations";
-      if (level === 'program' && selectedProgram) {
-        endpoint = `/api/frequent-locations/program/${selectedProgram}`;
-      } else if (level === 'client' && selectedCorporateClient) {
-        endpoint = `/api/frequent-locations/corporate-client/${selectedCorporateClient}`;
+      if (level === 'program' && effectiveProgram) {
+        endpoint = `/api/frequent-locations/program/${effectiveProgram}`;
+      } else if (level === 'client' && effectiveCorporateClient) {
+        endpoint = `/api/frequent-locations/corporate-client/${effectiveCorporateClient}`;
+      } else if (level === 'corporate' && effectiveProgram) {
+        endpoint = `/api/frequent-locations/program/${effectiveProgram}`;
       }
       
       const response = await apiRequest("GET", endpoint);
       return await response.json();
     },
-    enabled: !!(selectedProgram || selectedCorporateClient),
+    enabled: !!(effectiveProgram || effectiveCorporateClient),
   });
 
   // Fetch locations based on current hierarchy level
   const { data: serviceAreasData = [] } = useQuery({
-    queryKey: ["/api/locations", level, selectedCorporateClient, selectedProgram],
+    queryKey: ["/api/locations", level, effectiveCorporateClient, effectiveProgram],
     queryFn: async () => {
       let endpoint = "/api/locations";
       
-      if (level === 'program' && selectedProgram) {
-        endpoint = `/api/locations/program/${selectedProgram}`;
-      } else if (level === 'client' && selectedCorporateClient) {
-        endpoint = `/api/locations/corporate-client/${selectedCorporateClient}`;
+      if (level === 'program' && effectiveProgram) {
+        endpoint = `/api/locations/program/${effectiveProgram}`;
+      } else if (level === 'client' && effectiveCorporateClient) {
+        endpoint = `/api/locations/corporate-client/${effectiveCorporateClient}`;
+      } else if (level === 'corporate' && effectiveProgram) {
+        endpoint = `/api/locations/program/${effectiveProgram}`;
       }
       
       const response = await apiRequest("GET", endpoint);
       return await response.json();
     },
-    enabled: !!(selectedProgram || selectedCorporateClient),
+    enabled: !!(effectiveProgram || effectiveCorporateClient),
   });
 
   const frequentLocations = Array.isArray(frequentLocationsData) ? frequentLocationsData : [];
@@ -152,7 +201,7 @@ function SimpleBookingForm() {
       if (tripData.isRecurring) {
         // Create recurring trip
         const apiData = {
-          program_id: selectedProgram,
+          program_id: effectiveProgram,
           client_id: tripData.selectionType === "individual" ? tripData.clientId : undefined,
           client_group_id: tripData.selectionType === "group" ? tripData.clientGroupId : undefined,
           driver_id: tripData.driverId === "unassigned" ? null : tripData.driverId || null,
@@ -172,7 +221,7 @@ function SimpleBookingForm() {
       } else {
         // Create regular trip
         const apiData = {
-          program_id: selectedProgram,
+          program_id: effectiveProgram,
           client_id: tripData.selectionType === "individual" ? tripData.clientId : undefined,
           client_group_id: tripData.selectionType === "group" ? tripData.clientGroupId : undefined,
           driver_id: tripData.driverId === "unassigned" ? null : tripData.driverId || null,
@@ -283,6 +332,64 @@ function SimpleBookingForm() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Program Selection for Super Admins */}
+          {level === 'corporate' && !selectedProgram && (
+            <div className="space-y-4 p-4 bg-blue-50 rounded-lg border">
+              <div className="text-sm font-medium text-blue-800">Program Selection Required</div>
+              
+              {corporateClients.length > 0 && (
+                <div>
+                  <Label htmlFor="corporateClient">Corporate Client</Label>
+                  <Select 
+                    value={selectedCorporateClientLocal} 
+                    onValueChange={(value) => {
+                      setSelectedCorporateClientLocal(value);
+                      setSelectedProgramLocal(""); // Reset program when corporate client changes
+                    }}
+                  >
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="Select corporate client" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      {corporateClients.map((client: any) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {programs.length > 0 && (
+                <div>
+                  <Label htmlFor="program">Program</Label>
+                  <Select 
+                    value={selectedProgramLocal} 
+                    onValueChange={setSelectedProgramLocal}
+                  >
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="Select program" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      {programs.map((program: any) => (
+                        <SelectItem key={program.id} value={program.id}>
+                          {program.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {!effectiveProgram && (
+                <div className="text-sm text-gray-600">
+                  Please select a program to load clients and continue with trip booking.
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Client Selection Type */}
           <div>
             <Label className="text-sm font-medium">Select Clients *</Label>
@@ -314,10 +421,10 @@ function SimpleBookingForm() {
             <div>
               <Label htmlFor="clientId">Individual Client *</Label>
               <Select value={formData.clientId} onValueChange={(value) => setFormData({ ...formData, clientId: value })}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-white">
                   <SelectValue placeholder="Select client" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   {clients.map((client: any) => (
                     <SelectItem key={client.id} value={client.id}>
                       {client.first_name} {client.last_name}
@@ -330,10 +437,10 @@ function SimpleBookingForm() {
             <div>
               <Label htmlFor="clientGroupId">Client Group *</Label>
               <Select value={formData.clientGroupId} onValueChange={(value) => setFormData({ ...formData, clientGroupId: value })}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-white">
                   <SelectValue placeholder="Select client group" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   {clientGroups.map((group: any) => (
                     <SelectItem key={group.id} value={group.id}>
                       {group.name} ({group.clientCount || 0} clients)
@@ -350,10 +457,10 @@ function SimpleBookingForm() {
               value={formData.driverId} 
               onValueChange={(value) => setFormData({ ...formData, driverId: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger className="bg-white">
                 <SelectValue placeholder="Select a driver or leave unassigned" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 <SelectItem value="unassigned">No driver assigned</SelectItem>
                 {availableDrivers.map((driver: any) => (
                   <SelectItem key={driver.id} value={driver.id}>
@@ -392,8 +499,8 @@ function SimpleBookingForm() {
                     <ChevronDown className="w-3 h-3" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80 p-0" align="end">
-                  <div className="max-h-64 overflow-y-auto">
+                <PopoverContent className="w-80 p-0 bg-white" align="end">
+                  <div className="max-h-64 overflow-y-auto bg-white">
                     {serviceAreas.length > 0 && (
                       <div className="p-2 border-b">
                         <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Service Areas</div>
@@ -467,8 +574,8 @@ function SimpleBookingForm() {
                     <ChevronDown className="w-3 h-3" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80 p-0" align="end">
-                  <div className="max-h-64 overflow-y-auto">
+                <PopoverContent className="w-80 p-0 bg-white" align="end">
+                  <div className="max-h-64 overflow-y-auto bg-white">
                     {serviceAreas.length > 0 && (
                       <div className="p-2 border-b">
                         <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Service Areas</div>
@@ -541,10 +648,10 @@ function SimpleBookingForm() {
           <div>
             <Label htmlFor="tripType">Trip Type</Label>
             <Select value={formData.tripType} onValueChange={(value) => setFormData({ ...formData, tripType: value })}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-white">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 <SelectItem value="one_way">One Way</SelectItem>
                 <SelectItem value="round_trip">Round Trip</SelectItem>
               </SelectContent>
@@ -594,10 +701,10 @@ function SimpleBookingForm() {
               <div>
                 <Label htmlFor="frequency">Frequency *</Label>
                 <Select value={formData.frequency} onValueChange={(value) => setFormData({ ...formData, frequency: value })}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white">
                     <SelectValue placeholder="Select frequency" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white">
                     <SelectItem value="weekly">Weekly</SelectItem>
                     <SelectItem value="monthly">Monthly</SelectItem>
                   </SelectContent>

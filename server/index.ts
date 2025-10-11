@@ -1,15 +1,20 @@
+import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import apiRoutes from "./api-routes";
-import { setupVite, serveStatic, log } from "./vite";
-import { initializeVehicles } from "./initialize-vehicles";
-import { seedTrips, seedAllOrganizationTrips } from "./seed-trips";
-import { validateResponseFormat } from "./validation-middleware";
+// Vite imports removed - using static file serving
 import session from "express-session";
-import MemoryStore from "memorystore";
 import bcrypt from "bcrypt";
+import { usersStorage, programsStorage, corporateClientsStorage } from "./minimal-supabase";
+import { RealtimeWebSocketServer } from "./websocket";
+import { setWebSocketServer, getWebSocketServer } from "./websocket-instance";
 
 // Environment validation - no logging of sensitive data
+console.log('🔍 Server environment check:');
+console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? 'Set' : 'Missing');
+console.log('SUPABASE_ANON_KEY:', process.env.VITE_SUPABASE_ANON_KEY ? 'Set' : 'Missing');
+console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Set' : 'Missing');
+
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   console.error("Missing required environment variables");
   process.exit(1);
@@ -30,19 +35,19 @@ app.use((req, res, next) => {
         process.env.REPLIT_DOMAIN,
         ...(host ? [`https://${host}`] : [])
       ].filter(Boolean)
-    : ['http://localhost:5000'];
+    : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5177', 'http://localhost:8081', 'http://localhost:8082', 'http://localhost:19006', 'http://192.168.12.215:8082', 'exp://192.168.12.215:8082'];
   
   if (origin && allowedOrigins.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
   } else if (!origin && !isProduction) {
-    res.header('Access-Control-Allow-Origin', 'http://localhost:5000');
+    res.header('Access-Control-Allow-Origin', 'http://localhost:5174');
   } else if (!origin && isProduction && host) {
     res.header('Access-Control-Allow-Origin', `https://${host}`);
   }
   
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control');
   res.header('Vary', 'Origin');
   
   if (req.method === 'OPTIONS') {
@@ -68,14 +73,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Add snake_case validation middleware in development
-// Temporarily disabled to fix authentication issues
-// if (process.env.NODE_ENV === 'development') {
-//   app.use(validateResponseFormat);
-// }
-
 // Create memory store for sessions
-const MemoryStoreSession = MemoryStore(session);
+// Using default memory store
 
 // Secure session configuration
 const isProduction = process.env.NODE_ENV === 'production';
@@ -88,12 +87,8 @@ if (!sessionSecret) {
 
 app.use(session({
   secret: sessionSecret,
-  resave: false, // Only save when session data changes
+  resave: false, // Don't save session if not modified
   saveUninitialized: false, // Don't create empty sessions
-  store: new MemoryStoreSession({
-    checkPeriod: 86400000,
-    ttl: 4 * 60 * 60 * 1000 // 4 hours TTL to match cookie
-  }),
   cookie: { 
     secure: false, // HTTP for development
     maxAge: 4 * 60 * 60 * 1000, // 4 hours
@@ -103,7 +98,7 @@ app.use(session({
     domain: undefined // Let Express handle domain automatically
   },
   name: 'connect.sid',
-  rolling: true // Reset maxAge on every request
+  rolling: false // Don't reset maxAge on every request
 }));
 
 app.use((req, res, next) => {
@@ -129,7 +124,7 @@ app.use((req, res, next) => {
         logLine = logLine.slice(0, 79) + "…";
       }
 
-      log(logLine);
+      console.log(logLine);
     }
   });
 
@@ -137,41 +132,49 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Initialize vehicle tables and data first
-  try {
-    await initializeVehicles();
-    
-    // Seed trip data after vehicles are initialized
-    // Disabled demo trip seeding for production environment
-    // await seedTrips();
-    // await seedAllOrganizationTrips();
-  } catch (error) {
-    console.log('Vehicle/trip initialization skipped or failed:', error);
-  }
+  // Vehicle initialization handled by database schema
+
+  // Health check endpoint (bypasses auth middleware)
+  app.get("/api/health", (req, res) => {
+    res.json({ 
+      status: "healthy", 
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development'
+    });
+  });
+
+  // WebSocket test endpoint
+  app.get("/api/ws-test", (req, res) => {
+    const wsServer = getWebSocketServer();
+    if (wsServer) {
+      res.json({ 
+        status: "WebSocket server is running",
+        connectedClients: wsServer.getConnectedClients().length
+      });
+    } else {
+      res.json({ 
+        status: "WebSocket server not initialized",
+        connectedClients: 0
+      });
+    }
+  });
 
   // Direct permissions endpoint (bypasses auth middleware)
   app.get("/api/permissions/all", async (req, res) => {
     try {
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabase = createClient(
-        process.env.SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
-      );
+      // Return hardcoded permissions since role_permissions table doesn't exist
+      const permissions = [
+        { role: 'super_admin', permission: 'VIEW_TRIPS', resource: '*', corporate_client_id: null, program_id: null },
+        { role: 'corporate_admin', permission: 'VIEW_TRIPS', resource: 'corporate', corporate_client_id: null, program_id: null },
+        { role: 'program_admin', permission: 'VIEW_TRIPS', resource: 'program', corporate_client_id: null, program_id: null },
+        { role: 'program_user', permission: 'VIEW_TRIPS', resource: 'program', corporate_client_id: null, program_id: null },
+        { role: 'driver', permission: 'VIEW_TRIPS', resource: 'assigned', corporate_client_id: null, program_id: null }
+      ];
 
-      const { data: permissions, error } = await supabase
-        .from('role_permissions')
-        .select('*')
-        .order('role', { ascending: true });
-
-      if (error) {
-        console.error("Error fetching permissions:", error);
-        return res.status(500).json({ message: "Failed to fetch permissions" });
-      }
-
-      const permissionsWithIds = permissions?.map((perm, index) => ({
+      const permissionsWithIds = permissions.map((perm, index) => ({
         ...perm,
         id: `${perm.role}-${perm.permission}-${perm.resource}-${index}`
-      })) || [];
+      }));
 
       console.log(`Returning ${permissionsWithIds.length} permissions to frontend`);
       res.json(permissionsWithIds);
@@ -185,25 +188,13 @@ app.use((req, res, next) => {
   app.post("/api/users", async (req, res) => {
     try {
       // Check authentication
-      const userId = req.session?.userId;
-      if (!userId) {
+      if (!req.user) {
         return res.status(401).json({ message: "Authentication required" });
       }
 
       // Get user and check role
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabase = createClient(
-        process.env.SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
-      );
-
-      const { data: currentUser } = await supabase
-        .from('users')
-        .select('role')
-        .eq('user_id', userId)
-        .single();
-
-      if (currentUser?.role !== 'super_admin') {
+      const currentUser = req.user;
+      if (!currentUser || currentUser.role !== 'super_admin') {
         return res.status(403).json({ message: "Super admin access required" });
       }
 
@@ -212,14 +203,14 @@ app.use((req, res, next) => {
       // Generate readable user ID
       const nameSlug = req.body.userName.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_');
       
-      // For executive roles, use company prefix instead of specific organization
+      // For executive roles, use company prefix instead of specific program
       let userIdSuffix;
       if (req.body.role && req.body.role.endsWith('_owner')) {
         const companyPrefix = req.body.role.replace('_owner', '');
         userIdSuffix = `${companyPrefix}_executive_001`;
       } else {
-        const orgSlug = req.body.organizationId.replace('_', '_');
-        userIdSuffix = `${orgSlug}_001`;
+        const programSlug = req.body.programId?.replace('_', '_') || 'default';
+        userIdSuffix = `${programSlug}_001`;
       }
       
       const newUserId = `user_${nameSlug}_${userIdSuffix}`;
@@ -233,23 +224,14 @@ app.use((req, res, next) => {
         email: req.body.email,
         password_hash: hashedPassword,
         role: req.body.role,
-        primary_organization_id: req.body.organizationId || req.body.primaryOrganizationId,
-        authorized_organizations: req.body.authorizedOrganizations || [req.body.organizationId || req.body.primaryOrganizationId],
+        primary_program_id: req.body.programId || req.body.primaryProgramId,
+        authorized_programs: req.body.authorizedPrograms || [req.body.programId || req.body.primaryProgramId],
         is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
       
-      const { data: newUser, error } = await supabase
-        .from('users')
-        .insert(userData)
-        .select()
-        .single();
-
-      if (error) {
-        console.error("User creation error:", error);
-        return res.status(400).json({ message: "Failed to create user", error: error.message });
-      }
+      const newUser = await usersStorage.createUser(userData);
 
       console.log("User created successfully:", newUser.email);
       
@@ -257,20 +239,20 @@ app.use((req, res, next) => {
       if (req.body.role === 'driver') {
         try {
           const driverData = {
+            id: `driver_${newUser.user_id}_${Date.now()}`,
             user_id: newUser.user_id,
-            primary_organization_id: newUser.primary_organization_id,
-            authorized_organizations: newUser.authorized_organizations,
             license_number: 'TBD-' + Date.now().toString().slice(-6), // Temporary license number
-            license_expiry: null,
             vehicle_info: 'Vehicle TBD',
-            phone: null,
-            emergency_contact: null,
-            emergency_phone: null,
-            is_available: true,
             is_active: true,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };
+          
+          const { createClient } = await import('@supabase/supabase-js');
+          const supabase = createClient(
+            process.env.SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+          );
           
           const { data: newDriver, error: driverError } = await supabase
             .from('drivers')
@@ -317,6 +299,18 @@ app.use((req, res, next) => {
     }
   }));
 
+  // Debug endpoint to test authentication
+  app.get('/api/debug', (req, res) => {
+    console.log('🔍 Debug endpoint called');
+    console.log('Headers:', req.headers);
+    console.log('Auth header:', req.headers.authorization);
+    res.json({ 
+      message: 'Debug endpoint working',
+      hasAuthHeader: !!req.headers.authorization,
+      authHeader: req.headers.authorization
+    });
+  });
+
   // Register all API routes FIRST, before any catch-all handlers
   app.use('/api', apiRoutes);
 
@@ -328,6 +322,11 @@ app.use((req, res, next) => {
   // Create HTTP server after routes are registered
   const server = createServer(app);
 
+  // Initialize WebSocket server
+  const wsServer = new RealtimeWebSocketServer(server);
+  setWebSocketServer(wsServer);
+  console.log('🔌 WebSocket server initialized on /ws');
+
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -338,20 +337,17 @@ app.use((req, res, next) => {
 
   // Setup frontend serving only for non-API routes
   if (app.get("env") === "development") {
-    await setupVite(app, server);
+    // Development mode - serve static files
+    app.use(express.static('client/dist'));
   } else {
-    serveStatic(app);
+    // Production mode - serve static files
+    app.use(express.static('client/dist'));
   }
 
-  // ALWAYS serve the app on port 5000
+  // Serve the app on port 8081
   // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
+  const port = 8081;
+  server.listen(port, () => {
+    console.log(`🚀 HALCYON NMT Server running on port ${port}`);
   });
 })();

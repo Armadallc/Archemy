@@ -18,6 +18,8 @@ import { useAuth } from "../hooks/useAuth";
 import { apiRequest } from "../lib/queryClient";
 import { useHierarchy } from "../hooks/useHierarchy";
 import { getUserDisplayName } from "../lib/displayNames";
+import ExportButton from "../components/export/ExportButton";
+import { format } from "date-fns";
 
 interface Driver {
   id: string;
@@ -286,13 +288,33 @@ export default function Drivers() {
         <div>
           <h1 className="text-3xl font-bold">DRIVERS</h1>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={handleNewDriver}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Driver
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-3">
+          <ExportButton
+            data={filteredDrivers}
+            columns={[
+              { key: 'id', label: 'Driver ID' },
+              { key: 'name', label: 'Name', formatter: (driver) => getUserDisplayName(driver) },
+              { key: 'email', label: 'Email' },
+              { key: 'phone', label: 'Phone' },
+              { key: 'license_number', label: 'License Number' },
+              { key: 'license_expiry', label: 'License Expiry', formatter: (value) => value ? format(new Date(value), 'MMM dd, yyyy') : 'N/A' },
+              { key: 'vehicle_info', label: 'Vehicle Info' },
+              { key: 'is_active', label: 'Status', formatter: (value) => value ? 'Active' : 'Inactive' },
+              { key: 'is_available', label: 'Available', formatter: (value) => value ? 'Yes' : 'No' },
+              { key: 'created_at', label: 'Created', formatter: (value) => value ? format(new Date(value), 'MMM dd, yyyy') : '' }
+            ]}
+            filename={`drivers-${format(new Date(), 'yyyy-MM-dd')}`}
+            onExportStart={() => console.log('Starting driver export...')}
+            onExportComplete={() => console.log('Driver export completed!')}
+            onExportError={(error) => console.error('Driver export failed:', error)}
+          />
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={handleNewDriver}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Driver
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
@@ -464,6 +486,7 @@ export default function Drivers() {
             </Form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="flex items-center space-x-2">

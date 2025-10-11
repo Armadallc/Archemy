@@ -1,17 +1,46 @@
-import React from "react";
-import { MapPin, Car, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { MapPin, Car, Clock, CheckCircle, AlertCircle, Wifi, WifiOff } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import Widget from "./Widget";
 import { useLiveTrips, useLiveDrivers } from "../../hooks/useRealtimeData";
+import { useWebSocket } from "../../hooks/useWebSocket";
+import { useRealtimeService } from "../../services/realtimeService";
 
 interface LiveOperationsWidgetProps {
   className?: string;
+  trips?: any[];
+  drivers?: any[];
 }
 
-export default function LiveOperationsWidget({ className }: LiveOperationsWidgetProps) {
-  const { data: trips, isLoading: tripsLoading, error: tripsError } = useLiveTrips();
-  const { data: drivers, isLoading: driversLoading, error: driversError } = useLiveDrivers();
+export default function LiveOperationsWidget({ className, trips: propTrips, drivers: propDrivers }: LiveOperationsWidgetProps) {
+  // Use props if provided, otherwise fall back to hooks
+  const { data: hookTrips, isLoading: tripsLoading, error: tripsError } = useLiveTrips();
+  const { data: hookDrivers, isLoading: driversLoading, error: driversError } = useLiveDrivers();
+  
+  // Use prop data if available, otherwise use hook data
+  const trips = propTrips || hookTrips;
+  const drivers = propDrivers || hookDrivers;
+  
+  // WebSocket connection for real-time updates
+  const { isConnected, connectionStatus } = useWebSocket({
+    enabled: true,
+    onMessage: (message) => {
+      console.log('🔄 LiveOperationsWidget received real-time update:', message.type);
+    }
+  });
+
+  // Real-time service for handling updates
+  const { createService } = useRealtimeService();
+  const [realtimeService, setRealtimeService] = useState<any>(null);
+
+  useEffect(() => {
+    if (isConnected) {
+      const service = createService({ isConnected });
+      setRealtimeService(service);
+      service.initialize();
+    }
+  }, [isConnected, createService]);
 
   // Process real data
   const activeTrips = trips?.slice(0, 5).map((trip: any) => ({
@@ -99,10 +128,23 @@ export default function LiveOperationsWidget({ className }: LiveOperationsWidget
       loading={isLoading}
       error={hasError ? 'Failed to load live data' : undefined}
       actions={
-        <Button variant="outline" size="sm">
-          <MapPin className="h-4 w-4 mr-1" />
-          View Map
-        </Button>
+        <div className="flex items-center space-x-2">
+          {/* Real-time connection status */}
+          <div className="flex items-center space-x-1">
+            {isConnected ? (
+              <Wifi className="h-4 w-4 text-green-500" />
+            ) : (
+              <WifiOff className="h-4 w-4 text-red-500" />
+            )}
+            <span className="text-xs text-muted-foreground">
+              {connectionStatus === 'connected' ? 'Live' : 'Offline'}
+            </span>
+          </div>
+          <Button variant="outline" size="sm">
+            <MapPin className="h-4 w-4 mr-1" />
+            View Map
+          </Button>
+        </div>
       }
     >
       <div className="space-y-6">
@@ -115,7 +157,7 @@ export default function LiveOperationsWidget({ className }: LiveOperationsWidget
                 <div className="flex items-center space-x-3">
                   <div className={`w-3 h-3 rounded-full ${getStatusColor(trip.status)}`} />
                   <div>
-                    <p className="font-medium text-sm">{trip.client}</p>
+                    <p className="font-medium text-sm text-gray-900 dark:text-gray-100">{trip.client}</p>
                     <p className="text-xs text-muted-foreground">Driver: {trip.driver}</p>
                   </div>
                 </div>
@@ -137,7 +179,7 @@ export default function LiveOperationsWidget({ className }: LiveOperationsWidget
                 <div className="flex items-center space-x-3">
                   <div className={`w-3 h-3 rounded-full ${getStatusColor(driver.status)}`} />
                   <div>
-                    <p className="font-medium text-sm">{driver.name}</p>
+                    <p className="font-medium text-sm text-gray-900 dark:text-gray-100">{driver.name}</p>
                     <p className="text-xs text-muted-foreground">{driver.location}</p>
                   </div>
                 </div>
@@ -153,19 +195,19 @@ export default function LiveOperationsWidget({ className }: LiveOperationsWidget
         {/* Quick Stats */}
         <div className="grid grid-cols-3 gap-4 pt-4 border-t">
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
               {trips?.filter((trip: any) => trip.status === 'completed').length || 0}
             </div>
             <div className="text-xs text-muted-foreground">Completed</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-yellow-600">
+            <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
               {trips?.filter((trip: any) => trip.status === 'in_progress').length || 0}
             </div>
             <div className="text-xs text-muted-foreground">In Progress</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
               {trips?.filter((trip: any) => trip.status === 'scheduled').length || 0}
             </div>
             <div className="text-xs text-muted-foreground">Scheduled</div>

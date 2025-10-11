@@ -9,7 +9,8 @@ import {
   Settings,
   BarChart3,
   FileText,
-  Bell
+  Bell,
+  Code
 } from 'lucide-react';
 import { Link } from 'wouter';
 import { useHierarchy } from '../hooks/useHierarchy';
@@ -74,6 +75,38 @@ const navigationItems: NavigationItem[] = [
     permissions: ['view_calendar'],
     levels: ['corporate', 'client', 'program']
   },
+          {
+            id: 'calendar-experiment',
+            label: 'Experiment',
+            icon: Calendar,
+            href: '/calendar-experiment',
+            permissions: ['view_calendar'],
+            levels: ['corporate', 'client', 'program']
+          },
+          {
+            id: 'playground',
+            label: 'Playground',
+            icon: Code,
+            href: '/playground',
+            permissions: ['view_calendar'],
+            levels: ['corporate', 'client', 'program']
+          },
+          {
+            id: 'shadcn-dashboard',
+            label: 'Shadcn Dashboard',
+            icon: LayoutDashboard,
+            href: '/shadcn-dashboard',
+            permissions: ['view_dashboard'],
+            levels: ['corporate', 'client', 'program']
+          },
+          {
+            id: 'shadcn-dashboard-migrated',
+            label: 'Migrated Dashboard',
+            icon: LayoutDashboard,
+            href: '/shadcn-dashboard-migrated',
+            permissions: ['view_dashboard'],
+            levels: ['corporate', 'client', 'program']
+          },
   {
     id: 'reports',
     label: 'Reports',

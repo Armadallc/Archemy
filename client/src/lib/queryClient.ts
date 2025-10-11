@@ -17,6 +17,7 @@ export async function apiRequest(
   
   // Try to get token from localStorage first (fallback)
   authToken = localStorage.getItem('auth_token') || localStorage.getItem('authToken');
+  console.log('🔍 apiRequest: localStorage token:', authToken ? 'found' : 'not found');
   
   // If no token in localStorage, try to get from Supabase session
   if (!authToken) {
@@ -25,6 +26,7 @@ export async function apiRequest(
       const { supabase } = await import('../lib/supabase');
       const { data: { session } } = await supabase.auth.getSession();
       authToken = session?.access_token || null;
+      console.log('🔍 apiRequest: Supabase session token:', authToken ? 'found' : 'not found');
     } catch (error) {
       console.warn('Could not get Supabase session:', error);
     }
@@ -35,6 +37,9 @@ export async function apiRequest(
   // Add Authorization header if token exists
   if (authToken) {
     headers['Authorization'] = `Bearer ${authToken}`;
+    console.log('🔍 apiRequest: Using token for', url, ':', authToken.substring(0, 20) + '...');
+  } else {
+    console.log('❌ apiRequest: No token available for', url);
   }
   
   // Add base URL if the URL doesn't start with http

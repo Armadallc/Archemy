@@ -1,23 +1,33 @@
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
+import { logger } from './logger';
+import { networkInspector } from './networkInspector';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000';
+const API_BASE_URL = Platform.OS === 'web' ? 'http://localhost:8081' : 'http://192.168.12.215:8081';
 
 interface Trip {
   id: string;
-  organizationId: string;
-  clientId: string;
-  driverId: string;
-  pickupLocation: string;
-  dropoffLocation: string;
-  scheduledPickupTime: string;
-  scheduledDropoffTime?: string;
-  actualPickupTime?: string;
-  actualDropoffTime?: string;
+  program_id: string;
+  client_id: string;
+  driver_id: string;
+  pickup_location: string;
+  dropoff_location: string;
+  scheduled_pickup_time: string;
+  scheduled_dropoff_time?: string;
+  actual_pickup_time?: string;
+  actual_dropoff_time?: string;
   status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
-  tripType: string;
-  passengerCount: number;
+  trip_type: string;
+  passenger_count: number;
   notes?: string;
   priority?: 'normal' | 'urgent' | 'emergency';
+  client_name?: string;
+  client_phone?: string;
+  // Additional fields from hierarchical system
+  trip_category_id?: string;
+  special_requirements?: string;
+  recurring_trip_id?: string;
+  client_group_id?: string;
 }
 
 interface TripStatusUpdate {
@@ -30,12 +40,6 @@ interface TripStatusUpdate {
   notes?: string;
 }
 
-interface EmergencyContact {
-  name: string;
-  phone: string;
-  type: 'dispatch' | 'supervisor' | 'emergency';
-}
-
 class ApiClient {
   private baseURL: string;
 
@@ -44,8 +48,18 @@ class ApiClient {
   }
 
   private async getAuthHeaders() {
+    let token = null;
+    if (Platform.OS === 'web') {
+      token = localStorage.getItem('auth_token');
+    } else {
+      token = await SecureStore.getItemAsync('auth_token');
+    }
+    
+    logger.debug('Getting auth headers', 'ApiClient', { tokenPresent: !!token });
+    
     return {
       'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
     };
   }
 
@@ -60,10 +74,9 @@ class ApiClient {
           ...headers,
           ...options.headers,
         },
-        credentials: 'include', // Include cookies for session management
+        credentials: 'include',
       });
 
-      // Handle authentication errors
       if (response.status === 401) {
         throw new Error('Authentication required');
       }
@@ -75,24 +88,52 @@ class ApiClient {
 
       return response.json();
     } catch (error) {
-      console.log(`API request error for ${endpoint}:`, error);
+      logger.error(`API request error for ${endpoint}`, 'ApiClient', { endpoint, error: error instanceof Error ? error.message : String(error) });
       throw error;
     }
   }
 
   // Authentication Methods
   async login(email: string, password: string) {
-    const response = await this.request<{user: any, sessionId: string}>('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-    
-    return response;
+    console.log('🔍 API Client: Attempting login with:', { email, password: password.substring(0, 3) + '***' });
+    try {
+      const response = await this.request<{user: any, token: string, sessionId: string}>('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+      
+      console.log('✅ API Client: Login successful, response:', response);
+      
+      // Store token for future requests
+      if (response.token) {
+        console.log('🔍 API Client: Storing token:', response.token.substring(0, 20) + '...');
+        if (Platform.OS === 'web') {
+          localStorage.setItem('auth_token', response.token);
+          console.log('🔍 API Client: Token stored in localStorage');
+        } else {
+          await SecureStore.setItemAsync('auth_token', response.token);
+          console.log('🔍 API Client: Token stored in SecureStore');
+        }
+      } else {
+        console.log('❌ API Client: No token in response');
+      }
+      
+      return response;
+    } catch (error) {
+      console.log('❌ API Client: Login failed:', error);
+      throw error;
+    }
   }
 
   async logout() {
     try {
       await this.request('/api/auth/logout', { method: 'POST' });
+      
+      if (Platform.OS === 'web') {
+        localStorage.removeItem('auth_token');
+      } else {
+        await SecureStore.deleteItemAsync('auth_token');
+      }
     } catch (error) {
       console.log('Logout API error:', error);
     }
@@ -102,17 +143,14 @@ class ApiClient {
     return this.request<{user: any}>('/api/auth/user');
   }
 
-  // Trip Management Methods
+  // Trip Management Methods - Updated for hierarchical system
   async getDriverTrips(): Promise<Trip[]> {
-    return this.request<Trip[]>(`/api/mobile/driver/trips`);
-  }
-
-  async getTripsByOrganization(organizationId: string): Promise<Trip[]> {
-    return this.request<Trip[]>(`/api/trips/organization/${organizationId}`);
+    // Use the mobile API endpoint that automatically finds the driver for the authenticated user
+    return this.request<Trip[]>(`/api/mobile/trips/driver`);
   }
 
   async updateTripStatus(tripId: string, status: string, additionalData?: any) {
-    return this.request(`/api/mobile/trips/${tripId}/status`, {
+    return this.request(`/api/trips/${tripId}`, {
       method: 'PATCH',
       body: JSON.stringify({
         status,
@@ -144,100 +182,16 @@ class ApiClient {
     return this.updateTripStatus(tripId, statusUpdate);
   }
 
-  async cancelTrip(tripId: string, reason: string) {
-    const statusUpdate: TripStatusUpdate = {
-      status: 'cancelled',
-      timestamp: new Date().toISOString(),
-      notes: `Trip cancelled: ${reason}`
-    };
+  // Emergency Methods
+  async sendEmergencyAlert(data: { location: any; tripId?: string }): Promise<any> {
+    logger.info('Sending emergency alert', 'ApiClient', data);
     
-    return this.updateTripStatus(tripId, statusUpdate);
-  }
-
-  // Emergency Communication Methods
-  async sendEmergencyAlert(driverId: string, location?: { latitude: number; longitude: number }, message?: string) {
-    return this.request('/api/emergency/alert', {
+    const response = await this.request('/api/emergency/panic', {
       method: 'POST',
-      body: JSON.stringify({
-        driverId,
-        location,
-        message: message || 'Emergency alert triggered from mobile app',
-        timestamp: new Date().toISOString(),
-        type: 'driver_emergency'
-      }),
+      body: JSON.stringify(data),
     });
-  }
 
-  async sendPanicAlert(driverId: string, tripId?: string, location?: { latitude: number; longitude: number }) {
-    return this.request('/api/emergency/panic', {
-      method: 'POST',
-      body: JSON.stringify({
-        driverId,
-        tripId,
-        location,
-        timestamp: new Date().toISOString(),
-        severity: 'critical'
-      }),
-    });
-  }
-
-  async getEmergencyContacts(organizationId: string): Promise<EmergencyContact[]> {
-    return this.request<EmergencyContact[]>(`/api/emergency/contacts/${organizationId}`);
-  }
-
-  async reportIncident(incidentData: {
-    driverId: string;
-    tripId?: string;
-    type: 'accident' | 'breakdown' | 'medical' | 'security' | 'other';
-    description: string;
-    location?: { latitude: number; longitude: number };
-    severity: 'low' | 'medium' | 'high' | 'critical';
-  }) {
-    return this.request('/api/incidents/report', {
-      method: 'POST',
-      body: JSON.stringify({
-        ...incidentData,
-        timestamp: new Date().toISOString(),
-      }),
-    });
-  }
-
-  // Driver Profile Methods
-  async getDriverProfile(driverId: string) {
-    return this.request(`/api/drivers/${driverId}`);
-  }
-
-  async updateDriverStatus(driverId: string, status: 'available' | 'busy' | 'offline' | 'break') {
-    return this.request(`/api/drivers/${driverId}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ 
-        status,
-        timestamp: new Date().toISOString()
-      }),
-    });
-  }
-
-  async getDriverSchedule(driverId: string) {
-    return this.request(`/api/drivers/${driverId}/schedule`);
-  }
-
-  async getDriverVehicles(driverId: string) {
-    return this.request<any[]>(`/api/drivers/${driverId}/vehicles`);
-  }
-
-  async getDriverSchedules(driverId: string) {
-    return this.request<any[]>(`/api/drivers/${driverId}/schedules`);
-  }
-
-  // Offline Support Methods
-  async syncOfflineData(offlineData: any[]) {
-    return this.request('/api/sync/offline', {
-      method: 'POST',
-      body: JSON.stringify({ 
-        data: offlineData,
-        timestamp: new Date().toISOString()
-      }),
-    });
+    return response;
   }
 
   // Health Check

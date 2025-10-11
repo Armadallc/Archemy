@@ -1,11 +1,21 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
+import { router } from 'expo-router';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
 
   const handleLogin = async () => {
@@ -14,41 +24,15 @@ export default function LoginScreen() {
       return;
     }
 
-    setLoading(true);
+    setIsLoading(true);
     try {
       await login(email, password);
-      // Navigator will automatically redirect to main app
-    } catch (error: any) {
-      console.log('Login error:', error);
-      let message = 'Login failed. Please check your credentials.';
-      
-      if (error.message?.includes('Only drivers')) {
-        message = 'Only drivers can access the mobile application. Please use the web interface for other roles.';
-      } else if (error.message?.includes('Authentication required')) {
-        message = 'Invalid email or password. Please try again.';
-      }
-      
-      Alert.alert('Login Failed', message);
+      router.replace('/(tabs)');
+    } catch (error) {
+      Alert.alert('Login Failed', 'Invalid credentials. Please try again.');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
-  };
-
-  const handleDemoLogin = () => {
-    Alert.alert(
-      'Demo Login',
-      'Login as a demo driver to explore the app?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Login as Alex (Driver)',
-          onPress: () => {
-            setEmail('alex@monarch.com');
-            setPassword('drive123');
-          }
-        }
-      ]
-    );
   };
 
   return (
@@ -57,73 +41,50 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.content}>
-        {/* Logo/Header */}
         <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>🚗</Text>
-          </View>
           <Text style={styles.title}>Monarch Driver</Text>
-          <Text style={styles.subtitle}>Transport Management System</Text>
+          <Text style={styles.subtitle}>Sign in to your account</Text>
         </View>
 
-        {/* Login Form */}
         <View style={styles.form}>
-          <Text style={styles.label}>Email Address</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoComplete="email"
-            editable={!loading}
-          />
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Enter your email"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
 
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoComplete="password"
-            editable={!loading}
-          />
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              style={styles.input}
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Enter your password"
+              secureTextEntry
+            />
+          </View>
 
           <TouchableOpacity
-            style={[styles.loginButton, loading && styles.disabledButton]}
+            style={[styles.button, isLoading && styles.buttonDisabled]}
             onPress={handleLogin}
-            disabled={loading}
+            disabled={isLoading}
           >
-            <Text style={styles.loginButtonText}>
-              {loading ? 'Signing In...' : 'Sign In'}
+            <Text style={styles.buttonText}>
+              {isLoading ? 'Signing In...' : 'Sign In'}
             </Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.demoButton}
-            onPress={handleDemoLogin}
-            disabled={loading}
-          >
-            <Text style={styles.demoButtonText}>Demo Login</Text>
-          </TouchableOpacity>
         </View>
 
-        {/* Security Notice */}
-        <View style={styles.securityNotice}>
-          <Text style={styles.securityText}>
-            🔒 Secure driver authentication with 12-hour session timeout
-          </Text>
-          <Text style={styles.securitySubtext}>
-            Your location and trip data are protected with enterprise-grade security
-          </Text>
-        </View>
-
-        {/* Emergency Contact */}
-        <View style={styles.emergencyContact}>
-          <Text style={styles.emergencyText}>
-            Need help? Contact dispatch: 555-DISPATCH
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            For demo purposes, use any email/password
           </Text>
         </View>
       </View>
@@ -134,7 +95,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f5f5f5',
   },
   content: {
     flex: 1,
@@ -143,34 +104,23 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
-  },
-  logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  logoText: {
-    fontSize: 36,
-    color: 'white',
+    marginBottom: 48,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#1a1a1a',
+    color: '#333',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
     color: '#666',
-    textAlign: 'center',
   },
   form: {
     marginBottom: 32,
+  },
+  inputContainer: {
+    marginBottom: 20,
   },
   label: {
     fontSize: 16,
@@ -179,72 +129,41 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
-    height: 50,
-    borderWidth: 1,
-    borderColor: '#ddd',
+    backgroundColor: 'white',
     borderRadius: 8,
     paddingHorizontal: 16,
+    paddingVertical: 12,
     fontSize: 16,
-    backgroundColor: 'white',
-    marginBottom: 20,
-    color: '#333',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
-  loginButton: {
-    height: 50,
-    backgroundColor: '#007AFF',
+  button: {
+    backgroundColor: '#3B82F6',
     borderRadius: 8,
-    justifyContent: 'center',
+    paddingVertical: 16,
     alignItems: 'center',
-    marginBottom: 16,
+    marginTop: 8,
   },
-  disabledButton: {
-    opacity: 0.6,
+  buttonDisabled: {
+    backgroundColor: '#9CA3AF',
   },
-  loginButtonText: {
+  buttonText: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
   },
-  demoButton: {
-    height: 44,
-    borderWidth: 1,
-    borderColor: '#007AFF',
-    borderRadius: 8,
-    justifyContent: 'center',
+  footer: {
     alignItems: 'center',
   },
-  demoButtonText: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  securityNotice: {
-    backgroundColor: '#e8f5e8',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  securityText: {
+  footerText: {
     fontSize: 14,
-    color: '#2d5a2d',
-    fontWeight: '500',
-    marginBottom: 4,
-  },
-  securitySubtext: {
-    fontSize: 12,
-    color: '#5a7a5a',
-  },
-  emergencyContact: {
-    backgroundColor: '#fff3cd',
-    padding: 12,
-    borderRadius: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: '#ffc107',
-  },
-  emergencyText: {
-    fontSize: 14,
-    color: '#856404',
-    fontWeight: '500',
+    color: '#666',
     textAlign: 'center',
   },
 });
+
+
+
+
+
+
