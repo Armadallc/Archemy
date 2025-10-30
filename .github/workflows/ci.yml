@@ -50,3 +50,17 @@ jobs:
         working-directory: server
         run: npm run build || true
 
+      - name: npm audit (root)
+        run: |
+          npm audit --audit-level=high || echo "audit issues found"
+
+      - name: npm audit (client)
+        working-directory: client
+        run: |
+          npm audit --audit-level=high || echo "audit issues found"
+
+      - name: npm audit (server)
+        working-directory: server
+        run: |
+          npm audit --audit-level=high || echo "audit issues found"
+
