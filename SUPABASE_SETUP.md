@@ -1,4 +1,4 @@
-# Supabase Setup for Aethr Transport Management
+# Supabase Setup
 
 ## Step 1: Create Supabase Project
 
@@ -70,5 +70,3 @@ After setting the environment variables:
 - **Automatic backups**: Point-in-time recovery
 - **Edge functions**: Server-side logic deployment
 - **Dashboard**: Visual database management
-
-The application will continue using your local database until Supabase environment variables are configured.
