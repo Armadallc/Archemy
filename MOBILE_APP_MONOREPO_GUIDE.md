@@ -2,7 +2,7 @@
 
 ## Project Structure Overview
 
-Your Replit project now supports both web and mobile applications in a single workspace:
+
 
 ```
 project-root/
@@ -156,5 +156,3 @@ For production, update to your deployed backend URL.
 2. **Start mobile**: `cd mobile && npx expo start`
 3. **Test integration**: Login with driver credentials in mobile app
 4. **Verify data sync**: Create trips in web app, view in mobile app
-
-The mobile app is fully integrated with your existing transport management system and ready for driver use.
