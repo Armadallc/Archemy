@@ -1,6 +1,6 @@
 # Figma Design Template - Transport Management System
 
-## 📱 Canvas Sizes & Breakpoints
+## Canvas Sizes & Breakpoints
 
 ### **Desktop Breakpoints**
 ```
@@ -17,7 +17,7 @@ Mobile Small:  375x667px  (iPhone SE)
 Tablet:        768x1024px (iPad)
 ```
 
-## 🎨 Color System (Copy to Figma)
+## Color System (Copy to Figma)
 
 ### **Foundation Colors**
 ```
@@ -52,7 +52,7 @@ Driver 5: #F97316 (Orange)
 Driver 6: #6366F1 (Indigo)
 ```
 
-## 📐 Spacing System
+## Spacing System
 
 ### **Base Unit: 8px**
 ```
@@ -74,7 +74,7 @@ Section Margin:  32px
 Page Margin:     48px
 ```
 
-## 🔤 Typography Scale
+## Typography Scale
 
 ### **Font Families**
 ```
@@ -107,7 +107,7 @@ Bold:      700
 Black:     900
 ```
 
-## 📦 Component Dimensions
+## Component Dimensions
 
 ### **Header**
 ```
@@ -163,7 +163,7 @@ Card Padding:    16px
 Status Badge:    24px height, 8px 12px padding
 ```
 
-## 📱 Mobile Optimization
+## Mobile Optimization
 
 ### **Touch Targets**
 ```
@@ -188,7 +188,7 @@ Bottom Safe Area: env(safe-area-inset-bottom)
 Side Safe Areas:  env(safe-area-inset-left/right)
 ```
 
-## 🎯 Component Templates
+## Component Templates
 
 ### **Dashboard Layout**
 ```
@@ -222,19 +222,19 @@ Text Size:       16px medium weight
 Active State:    Background + border accent
 ```
 
-## 🔧 Figma Setup Instructions
+## Figma Setup 
 
 ### **1. Create Artboards**
 - Desktop: 1440x900px
 - Mobile: 390x844px
 - Tablet: 768x1024px
 
-### **2. Set Up Styles**
+### **2. Styles**
 - Create color styles for foundation colors
 - Create text styles for typography scale
 - Create effect styles for shadows and borders
 
-### **3. Create Components**
+### **3. Components**
 - Header with logo and navigation
 - Sidebar with menu items
 - Card layouts for trip information
@@ -242,7 +242,7 @@ Active State:    Background + border accent
 - Calendar grid with date cells
 - Status badges with color variants
 
-### **4. Auto Layout**
+### **4. Layout**
 - Use auto layout for responsive components
 - Set proper constraints for resizing
 - Create responsive grids for content
