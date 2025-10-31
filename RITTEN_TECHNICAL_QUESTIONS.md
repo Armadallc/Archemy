@@ -158,5 +158,3 @@
     - User training for appointment workflows
     - Documentation and user guides
     - Ongoing support and maintenance
-
-These questions will help us understand Ritten's capabilities and design the most effective integration for your transport management needs.
