@@ -251,5 +251,3 @@ Active State:    Background + border accent
 - Export design tokens using Figma Tokens plugin
 - Organize tokens by categories (colors, spacing, typography)
 - Maintain consistency with CSS variables
-
-This template provides the exact specifications used in your current transport management system, ensuring perfect alignment between Figma designs and the implemented code.
