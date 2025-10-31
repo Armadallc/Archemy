@@ -2,7 +2,7 @@
 ## Comprehensive Transport Management System Overview
 
 ### Executive Summary
-This document outlines the integration between Ritten.io EHR/EMR software and our multi-tenant transport management system. The integration enables automatic trip creation from calendar appointments while maintaining HIPAA compliance and providing bilateral synchronization capabilities.
+This outlines the integration between Ritten.io EHR/EMR software and our multi-tenant transport management system. The integration enables automatic trip creation from calendar appointments while maintaining HIPAA compliance and providing bilateral synchronization capabilities.
 
 ### System Architecture
 
@@ -340,5 +340,3 @@ A: Only appointments containing transport keywords are transmitted. Full treatme
 
 **Q: Who can modify integration settings?**
 A: Only organization admins and super admins can modify webhook configurations and filtering rules.
-
-The system is production-ready and HIPAA-compliant. We need to establish the technical connection and configure the filtering rules for each organization.
