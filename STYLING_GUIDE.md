@@ -1,4 +1,4 @@
-# Amish Limo Service - Styling Guide
+# HALCYON - Styling Guide
 
 ## Color Theme Format
 
