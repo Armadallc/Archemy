@@ -1,13 +1,6 @@
 # Vehicles Table Setup for Supabase
 
-To complete the vehicle management system, you need to create the vehicles table in your Supabase database.
-
-## Step 1: Access Supabase Dashboard
-1. Go to https://supabase.com/dashboard/projects
-2. Open your project
-3. Go to SQL Editor
-
-## Step 2: Execute This SQL
+**EXECUTE THIS SQL**
 ```sql
 -- Create vehicles table
 CREATE TABLE vehicles (
@@ -50,11 +43,3 @@ INSERT INTO vehicles (id, organization_id, year, make, model, color, license_pla
 ('vehicle_012', 'monarch_launch', 2021, 'BMW', 'X3', 'Black', 'ML-002', true),
 ('vehicle_013', 'monarch_launch', 2020, 'Audi', 'Q5', 'Gray', 'ML-003', true);
 ```
-
-## Step 3: Test the Vehicle Management
-After creating the tables, the vehicle management system will be fully functional with:
-- Vehicle listing and search
-- Add new vehicles
-- Edit existing vehicles  
-- Delete vehicles
-- Driver-vehicle assignments
