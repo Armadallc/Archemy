@@ -1,4 +1,4 @@
-# Amish Limo Service
+# HALCYON (old)
 
 ## Overview
 This project is a full-stack, multi-tenant limo service management system. It supports web and mobile applications with real-time trip management, driver tracking, and comprehensive vehicle management. The system is designed for multi-tenant organizations like Monarch Competency, Monarch Mental Health, Monarch Sober Living, and Monarch Launch, providing isolated data and role-based access control. The business vision is to provide a robust, scalable solution for transport management, with market potential in various service-based organizations requiring fleet and trip coordination.
