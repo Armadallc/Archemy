@@ -1,12 +1,12 @@
 # HALCYON NMT Transportation System - Architectural Reference
 
-## 📋 Project Overview
+## Project Overview
 
 **HALCYON NMT Transportation System** is a comprehensive transportation management platform designed for non-medical transportation services, specifically built for corporate clients managing multiple programs and locations.
 
 ---
 
-## 🏗️ ARCHITECTURAL BLUEPRINT
+## ARCHITECTURAL BLUEPRINT
 
 ### **Organizational Hierarchy**
 ```
