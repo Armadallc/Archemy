@@ -2,7 +2,7 @@
 
 This document outlines the naming conventions for the HALCYON NMT Transportation System.
 
-## **🏗️ DATABASE LAYER (snake_case)**
+## **DATABASE LAYER (snake_case)**
 
 ### **Tables**
 - `corporate_clients` - Corporate client entities
@@ -111,7 +111,7 @@ This document outlines the naming conventions for the HALCYON NMT Transportation
 - `switchCorporateClient(corporateClientId)` - Switch to corporate client
 - `switchLocation(locationId)` - Switch to location
 
-## **🎨 FRONTEND LAYER (camelCase)**
+## **FRONTEND LAYER (camelCase)**
 
 ### **Components**
 - `CorporateClientSelector` - Corporate client selection component
@@ -168,7 +168,7 @@ This document outlines the naming conventions for the HALCYON NMT Transportation
 - `TripCategorySelector.tsx` - Trip category selector
 - `DriverMobileDashboard.tsx` - Driver mobile dashboard
 
-## **🔄 DATA FLOW**
+## **DATA FLOW**
 
 1. **Database** → **Backend Storage** → **API Response** → **Frontend**
 2. **snake_case** → **camelCase** → **camelCase** → **camelCase**
@@ -200,7 +200,7 @@ const user = {
 };
 ```
 
-## **⚠️ EXCEPTIONS**
+## **EXCEPTIONS**
 
 ### **Standard HTTP Headers**
 - `Content-Type` - Keep as is
@@ -214,14 +214,14 @@ const user = {
 - All database fields remain in `snake_case` as they are the source of truth
 - Conversion to `camelCase` happens in the storage layer
 
-## **✅ ENFORCEMENT**
+## **ENFORCEMENT**
 
 - **ESLint**: Enforces naming conventions in code
 - **TypeScript**: Provides type safety
 - **Code Reviews**: Manual verification
 - **Documentation**: This file serves as reference
 
-## **🔄 MIGRATION**
+## **MIGRATION**
 
 When updating existing code:
 1. Update database fields to `snake_case`
@@ -230,6 +230,3 @@ When updating existing code:
 4. Update API routes to use `camelCase`
 5. Update components to use `camelCase`
 6. Update types to use `camelCase`
-
-
-
