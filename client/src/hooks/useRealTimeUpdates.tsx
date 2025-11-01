@@ -9,7 +9,7 @@ interface UseRealTimeUpdatesOptions {
 
 export function useRealTimeUpdates({ 
   enabled = true, 
-  interval = 5000, // 5 seconds for more responsive updates
+  interval = 30000, // 30 seconds for more reasonable updates
   queryKeys 
 }: UseRealTimeUpdatesOptions) {
   const queryClient = useQueryClient();

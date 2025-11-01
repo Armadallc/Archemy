@@ -29,7 +29,7 @@ interface Driver {
   last_name?: string;
   email: string;
   primary_program_id: string;
-  authorized_organizations?: string[];
+  authorized_programs?: string[];
   license_number: string;
   license_expiry?: string | null;
   vehicle_info?: string | null;

@@ -34,11 +34,13 @@ import { TripTracker } from "../services/tripTracking";
 import { checkLocationPermission, LocationError, type LocationPermissionState } from "../lib/location";
 import { useAuth } from "../hooks/useAuth";
 import { useHierarchy } from "../hooks/useHierarchy";
+import { useClientNames } from "../hooks/useClientNames";
 
 interface Trip {
   id: string;
   program_id: string; // Updated from organization_id
   client_id: string;
+  client_group_id?: string;
   driver_id?: string; // Made optional
   pickup_address: string;
   dropoff_address: string;
@@ -49,10 +51,21 @@ interface Trip {
   notes?: string;
   trip_type: string;
   special_requirements?: string;
+  is_group_trip?: boolean;
   // Updated client data structure for hierarchy
   client_first_name?: string;
   client_last_name?: string;
   client_phone?: string;
+  client?: {
+    first_name: string;
+    last_name: string;
+    phone?: string;
+  };
+  client_groups?: {
+    id: string;
+    name: string;
+    description?: string;
+  };
   // Updated driver data structure for hierarchy
   driver_name?: string;
   driver_license?: string;
@@ -89,6 +102,7 @@ export function TripHoverCard({ trip, children }: TripHoverCardProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const { level, selectedProgram, selectedCorporateClient } = useHierarchy();
+  const { getClientName, getClientInitials } = useClientNames();
 
   // Trip tracking state
   const [locationPermission, setLocationPermission] = useState<LocationPermissionState>('unknown');
@@ -308,9 +322,24 @@ export function TripHoverCard({ trip, children }: TripHoverCardProps) {
   const canStartTrips = user?.role === 'driver' || user?.role === 'super_admin';
 
   // Get client display name - updated for hierarchy system
-  const clientName = trip.client_first_name && trip.client_last_name
-    ? `${trip.client_first_name} ${trip.client_last_name}`.trim()
-    : 'Unknown Client';
+  const getClientDisplayName = (trip: Trip): string => {
+    if (trip.is_group_trip && trip.client_groups) {
+      return trip.client_groups.name;
+    } else if (trip.is_group_trip && trip.client_group_id) {
+      // For group trips, show a more descriptive name
+      return `Group Trip (${trip.client_group_id.slice(0, 8)}...)`;
+    } else if (trip.client) {
+      return `${trip.client.first_name} ${trip.client.last_name}`.trim();
+    } else if (trip.client_first_name && trip.client_last_name) {
+      return `${trip.client_first_name} ${trip.client_last_name}`.trim();
+    } else if (trip.client_id) {
+      // For individual trips, fetch the client name using the hook
+      return getClientName(trip.client_id);
+    }
+    return 'Unknown Client';
+  };
+  
+  const clientName = getClientDisplayName(trip);
   
   // Format pickup time
   const pickupTime = trip.scheduled_pickup_time 

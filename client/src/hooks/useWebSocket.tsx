@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { useHierarchy } from './useHierarchy';
+import { createClient } from '@supabase/supabase-js';
 
 export interface WebSocketMessage {
   type: 'trip_update' | 'driver_update' | 'client_update' | 'system_update' | 'connection';
@@ -44,8 +45,15 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected');
 
-  const connect = useCallback(() => {
-    if (!enabled || !user?.auth_user_id) {
+  const connect = useCallback(async () => {
+    if (!enabled || !user?.user_id) {
+      console.log('🔌 WebSocket connection skipped: not enabled or no user');
+      return;
+    }
+
+    // Prevent multiple simultaneous connection attempts
+    if (wsRef.current && (wsRef.current.readyState === WebSocket.CONNECTING || wsRef.current.readyState === WebSocket.OPEN)) {
+      console.log('🔌 WebSocket connection skipped: already connecting or connected');
       return;
     }
 
@@ -59,8 +67,28 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     // Get the WebSocket URL
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.hostname;
-    const port = window.location.port || (protocol === 'wss:' ? '443' : '8081');
-    const wsUrl = `${protocol}//${host}:${port}/ws?token=${user.auth_user_id}`;
+    const port = '8081'; // WebSocket server runs on port 8081
+    
+    // Use auth_user_id if available, otherwise get JWT token as fallback
+    let token = user.auth_user_id;
+    if (!token) {
+      console.log('🔍 auth_user_id not available, getting JWT token...');
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://iuawurdssgbkbavyyvbs.supabase.co';
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1YXd1cmRzc2dia2Jhdnl5dmJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NDU1MzEsImV4cCI6MjA3NDQyMTUzMX0.JLcuSTI1mfEMGu_mP9UBnGQyG33vcoU2SzvKo8olkL4';
+      const supabase = createClient(supabaseUrl, supabaseAnonKey);
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        token = session.access_token;
+        console.log('✅ Using JWT token for WebSocket authentication');
+      } else {
+        console.error('❌ No authentication token available for WebSocket');
+        setConnectionStatus('error');
+        return;
+      }
+    }
+    
+    const wsUrl = `${protocol}//${host}:${port}/ws?token=${token}`;
 
     console.log('🔌 Connecting to WebSocket:', wsUrl);
 
@@ -96,7 +124,11 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         if (event.code !== 1000 && reconnectAttemptsRef.current < maxReconnectAttempts) {
           console.log(`🔄 Attempting to reconnect (${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts})...`);
           reconnectAttemptsRef.current++;
-          reconnectTimeoutRef.current = setTimeout(connect, reconnectInterval);
+          // Add exponential backoff to prevent rapid reconnection attempts
+          const delay = Math.min(reconnectInterval * Math.pow(2, reconnectAttemptsRef.current - 1), 30000);
+          reconnectTimeoutRef.current = setTimeout(connect, delay);
+        } else if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
+          console.log('❌ WebSocket: Max reconnection attempts reached, giving up');
         }
       };
 
@@ -110,7 +142,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       console.error('❌ Error creating WebSocket connection:', error);
       setConnectionStatus('error');
     }
-  }, [enabled, user?.auth_user_id, reconnectInterval, maxReconnectAttempts, onConnect, onDisconnect, onError, onMessage]);
+  }, [enabled, user?.user_id, reconnectInterval, maxReconnectAttempts, onConnect, onDisconnect, onError, onMessage]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -137,20 +169,26 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
   // Connect when user is available and enabled
   useEffect(() => {
-    if (enabled && user?.auth_user_id) {
+    // Temporarily disable WebSocket to prevent error spam
+    console.log('🔌 WebSocket temporarily disabled to prevent error spam');
+    return;
+    
+    if (enabled && user?.user_id) {
+      console.log('🔌 WebSocket useEffect: attempting to connect');
       connect();
     } else {
+      console.log('🔌 WebSocket useEffect: disconnecting');
       disconnect();
     }
 
     return () => {
       disconnect();
     };
-  }, [enabled, user?.auth_user_id, connect, disconnect]);
+  }, [enabled, user?.user_id, connect, disconnect]);
 
   // Reconnect when hierarchy changes (user switches programs/corporate clients)
   useEffect(() => {
-    if (isConnected && user?.auth_user_id) {
+    if (isConnected && user?.user_id) {
       // Send hierarchy update to server
       sendMessage({
         type: 'hierarchy_update',

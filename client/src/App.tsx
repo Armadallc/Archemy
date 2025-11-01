@@ -6,7 +6,6 @@ import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { MockAuthProvider } from "./hooks/useMockAuth";
 import { HierarchyProvider } from "./hooks/useHierarchy";
 import { ThemeProvider } from "./components/theme-provider";
-import { EnvironmentBanner } from "./components/EnvironmentBanner";
 import MainLayout from "./components/layout/main-layout";
 import MobileNavigation from "./components/MobileNavigation";
 import Login from "./pages/login";
@@ -69,7 +68,6 @@ function App() {
             <MockAuthProvider>
               <HierarchyProvider>
                 <div className="min-h-screen">
-                  <EnvironmentBanner />
                   <AppContent />
                 </div>
                 {/* <Toaster /> */}

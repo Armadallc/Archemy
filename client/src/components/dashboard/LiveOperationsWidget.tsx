@@ -152,7 +152,7 @@ export default function LiveOperationsWidget({ className, trips: propTrips, driv
         <div>
           <h4 className="text-sm font-medium text-muted-foreground mb-3">Active Trips</h4>
           <div className="space-y-2">
-            {activeTrips.map((trip) => (
+            {activeTrips.map((trip: any) => (
               <div key={trip.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <div className="flex items-center space-x-3">
                   <div className={`w-3 h-3 rounded-full ${getStatusColor(trip.status)}`} />
@@ -174,7 +174,7 @@ export default function LiveOperationsWidget({ className, trips: propTrips, driv
         <div>
           <h4 className="text-sm font-medium text-muted-foreground mb-3">Driver Status</h4>
           <div className="space-y-2">
-            {processedDrivers.map((driver) => (
+            {processedDrivers.map((driver: any) => (
               <div key={driver.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <div className="flex items-center space-x-3">
                   <div className={`w-3 h-3 rounded-full ${getStatusColor(driver.status)}`} />

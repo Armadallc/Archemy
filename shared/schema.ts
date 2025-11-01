@@ -1,490 +1,582 @@
 /**
- * PROJECT STANDARD: Database fields use snake_case
- * NEVER convert to camelCase - causes authentication failures
- * Examples: user_id, organization_id, service_area_id, pickup_time
+ * HALCYON NMT Transportation System - Current Database Schema
+ * 
+ * This file contains the TypeScript schema definitions that match the current
+ * database schema defined in server/create-complete-schema.sql
+ * 
+ * Architecture: Corporate Clients → Programs → Locations → Clients
+ * Version: 2.0.0
+ * Created: 2024-01-01
  */
-import { 
-  pgTable, 
-  text, 
-  varchar, 
-  uuid, 
-  timestamp, 
-  time, 
-  integer, 
-  boolean,
-  pgEnum,
-  jsonb
-} from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod";
 
-// Enums
+import { pgTable, text, varchar, boolean, timestamp, uuid, integer, decimal, jsonb, time, date, pgEnum } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
+import { z } from 'zod';
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
 export const userRoleEnum = pgEnum('user_role', [
-  'super_admin', 
-  'monarch_owner', 
-  'organization_admin', 
-  'organization_user', 
+  'super_admin',
+  'corporate_admin', 
+  'program_admin',
+  'program_user',
   'driver'
 ]);
 
-export const tripTypeEnum = pgEnum('trip_type', ['one_way', 'round_trip']);
-
-export const tripStatusEnum = pgEnum('trip_status', [
-  'scheduled', 
-  'confirmed', 
-  'in_progress', 
-  'completed', 
-  'cancelled'
+export const tripTypeEnum = pgEnum('trip_type', [
+  'medical',
+  'non_medical',
+  'emergency',
+  'group'
 ]);
 
-// System settings table for application-wide branding
-export const system_settings = pgTable("system_settings", {
-  id: text("id").primaryKey().default('app_settings'),
-  app_name: text("app_name").default('Amish Limo Service'),
-  main_logo_url: text("main_logo_url"), // Main application logo displayed above app name
-  created_at: timestamp("created_at").defaultNow(),
-  updated_at: timestamp("updated_at").defaultNow(),
-});
+export const tripStatusEnum = pgEnum('trip_status', [
+  'scheduled',
+  'confirmed',
+  'in_progress',
+  'completed',
+  'cancelled',
+  'no_show'
+]);
 
-// Organizations table
-export const organizations = pgTable("organizations", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  address: text("address"),
-  phone: text("phone"),
-  email: text("email"),
-  logo_url: text("logo_url"), // Organization logo
-  is_active: boolean("is_active").default(true),
-  created_at: timestamp("created_at").defaultNow(),
-  updated_at: timestamp("updated_at").defaultNow(),
-});
+export const vehicleStatusEnum = pgEnum('vehicle_status', [
+  'active',
+  'maintenance',
+  'inactive',
+  'retired'
+]);
 
-// Users table
-export const users = pgTable("users", {
-  user_id: varchar("user_id").primaryKey(),
-  user_name: varchar("user_name").notNull(),
-  email: varchar("email").unique().notNull(),
-  password_hash: varchar("password_hash").notNull(),
-  role: userRoleEnum("role").notNull(),
-  primary_organization_id: varchar("primary_organization_id").references(() => organizations.id),
-  authorized_organizations: varchar("authorized_organizations").array(),
-  avatar_url: text("avatar_url"), // User profile avatar
-  billing_pin: text("billing_pin"), // Individual billing PIN (hashed)
-  is_active: boolean("is_active").default(true),
-  created_at: timestamp("created_at").defaultNow(),
-  updated_at: timestamp("updated_at").defaultNow(),
-});
+export const dutyStatusEnum = pgEnum('duty_status', [
+  'off_duty',
+  'on_duty',
+  'on_trip',
+  'break',
+  'unavailable'
+]);
 
-// Service areas table
-export const serviceAreas = pgTable("service_areas", {
-  id: text("id").primaryKey(),
-  organizationId: text("organization_id").references(() => organizations.id).notNull(),
-  nickname: text("nickname").notNull(),
+// ============================================================================
+// CORE TABLES
+// ============================================================================
+
+// Corporate Clients Table
+export const corporateClients = pgTable("corporate_clients", {
+  id: varchar("id", { length: 50 }).primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
-  boundaryCoordinates: jsonb("boundary_coordinates"),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  address: text("address"),
+  phone: varchar("phone", { length: 20 }),
+  email: varchar("email", { length: 255 }),
+  website: varchar("website", { length: 255 }),
+  logo_url: text("logo_url"),
+  is_active: boolean("is_active").default(true),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
 });
 
-// Client groups table
+// Programs Table (renamed from organizations)
+export const programs = pgTable("programs", {
+  id: varchar("id", { length: 50 }).primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  short_name: varchar("short_name", { length: 100 }),
+  description: text("description"),
+  corporate_client_id: varchar("corporate_client_id", { length: 50 }).notNull().references(() => corporateClients.id, { onDelete: 'cascade' }),
+  address: text("address"),
+  phone: varchar("phone", { length: 20 }),
+  email: varchar("email", { length: 255 }),
+  logo_url: text("logo_url"),
+  is_active: boolean("is_active").default(true),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+// Locations Table (renamed from service_areas)
+export const locations = pgTable("locations", {
+  id: varchar("id", { length: 50 }).primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  program_id: varchar("program_id", { length: 50 }).notNull().references(() => programs.id, { onDelete: 'cascade' }),
+  address: text("address").notNull(),
+  phone: varchar("phone", { length: 20 }),
+  contact_person: varchar("contact_person", { length: 255 }),
+  latitude: decimal("latitude", { precision: 10, scale: 8 }),
+  longitude: decimal("longitude", { precision: 11, scale: 8 }),
+  is_active: boolean("is_active").default(true),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+// Frequent Locations Table
+export const frequentLocations = pgTable("frequent_locations", {
+  id: text("id").primaryKey().default(sql`'fl_'::text || gen_random_uuid()`),
+  corporate_client_id: text("corporate_client_id").references(() => corporateClients.id, { onDelete: 'cascade' }),
+  program_id: text("program_id").references(() => programs.id, { onDelete: 'cascade' }),
+  location_id: text("location_id").references(() => locations.id, { onDelete: 'cascade' }),
+  name: text("name").notNull(),
+  description: text("description"),
+  street_address: text("street_address").notNull(),
+  city: text("city").notNull(),
+  state: text("state").notNull(),
+  zip_code: text("zip_code"),
+  full_address: text("full_address").notNull(),
+  location_type: text("location_type").default("destination").$type<'pickup' | 'dropoff' | 'destination' | 'facility' | 'courthouse' | 'medical' | 'commercial' | 'other'>(),
+  // New tag system columns
+  tag: text("tag").default("other").$type<'service_location' | 'grocery_store' | 'dmv' | 'legal_services' | 'medical' | 'non_medical' | 'group_activity' | 'fellowship' | 'other'>(),
+  is_service_location: boolean("is_service_location").default(false),
+  priority: integer("priority").default(0),
+  auto_synced: boolean("auto_synced").default(false),
+  usage_count: integer("usage_count").default(0),
+  is_active: boolean("is_active").default(true),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+// Users Table
+export const users = pgTable("users", {
+  user_id: varchar("user_id", { length: 50 }).primaryKey(),
+  user_name: varchar("user_name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).unique().notNull(),
+  password_hash: varchar("password_hash", { length: 255 }).notNull(),
+  role: userRoleEnum("role").notNull(),
+  primary_program_id: varchar("primary_program_id", { length: 50 }).references(() => programs.id, { onDelete: 'set null' }),
+  authorized_programs: text("authorized_programs").array(),
+  corporate_client_id: varchar("corporate_client_id", { length: 50 }).references(() => corporateClients.id, { onDelete: 'set null' }),
+  avatar_url: text("avatar_url"),
+  phone: varchar("phone", { length: 20 }),
+  is_active: boolean("is_active").default(true),
+  last_login: timestamp("last_login"),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+// Clients Table
+export const clients = pgTable("clients", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  first_name: varchar("first_name", { length: 255 }).notNull(),
+  last_name: varchar("last_name", { length: 255 }).notNull(),
+  program_id: varchar("program_id", { length: 50 }).notNull().references(() => programs.id, { onDelete: 'cascade' }),
+  location_id: varchar("location_id", { length: 50 }).references(() => locations.id, { onDelete: 'set null' }),
+  phone: varchar("phone", { length: 20 }),
+  phone_type: varchar("phone_type", { length: 20 }),
+  email: varchar("email", { length: 255 }),
+  address: text("address"),
+  use_location_address: boolean("use_location_address").default(false),
+  date_of_birth: date("date_of_birth"),
+  birth_sex: varchar("birth_sex", { length: 10 }),
+  age: integer("age"),
+  race: varchar("race", { length: 50 }),
+  avatar_url: text("avatar_url"),
+  emergency_contact_name: varchar("emergency_contact_name", { length: 255 }),
+  emergency_contact_phone: varchar("emergency_contact_phone", { length: 20 }),
+  medical_conditions: text("medical_conditions"),
+  special_requirements: text("special_requirements"),
+  billing_pin: varchar("billing_pin", { length: 10 }),
+  is_active: boolean("is_active").default(true),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+// Client Groups Table
 export const clientGroups = pgTable("client_groups", {
   id: uuid("id").primaryKey().defaultRandom(),
-  organizationId: varchar("organization_id").references(() => organizations.id).notNull(),
-  name: varchar("name").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
-  serviceAreaId: uuid("service_area_id").references(() => serviceAreas.id),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  program_id: varchar("program_id", { length: 50 }).notNull().references(() => programs.id, { onDelete: 'cascade' }),
+  is_active: boolean("is_active").default(true),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
 });
 
-// Client group memberships table (many-to-many relationship)
+// Client Group Memberships Table
 export const clientGroupMemberships = pgTable("client_group_memberships", {
   id: uuid("id").primaryKey().defaultRandom(),
-  clientId: uuid("client_id").references(() => clients.id).notNull(),
-  groupId: uuid("group_id").references(() => clientGroups.id).notNull(),
-  joinedAt: timestamp("joined_at").defaultNow(),
+  client_id: uuid("client_id").notNull().references(() => clients.id, { onDelete: 'cascade' }),
+  client_group_id: uuid("client_group_id").notNull().references(() => clientGroups.id, { onDelete: 'cascade' }),
+  joined_at: timestamp("joined_at").defaultNow(),
 });
 
-// Clients table
-export const clients = pgTable("clients", {
-  id: text("id").primaryKey(),
-  organizationId: text("organization_id").references(() => organizations.id).notNull(),
-  serviceAreaId: text("service_area_id").references(() => serviceAreas.id).notNull(),
-  firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
-  phone: text("phone"),
-  email: text("email"),
-  address: text("address"),
-  emergencyContact: text("emergency_contact"),
-  emergencyPhone: text("emergency_phone"),
-  medicalNotes: text("medical_notes"),
-  mobilityRequirements: text("mobility_requirements"),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+// Client Program Contacts Table
+export const clientProgramContacts = pgTable("client_program_contacts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  client_id: uuid("client_id").notNull().references(() => clients.id, { onDelete: 'cascade' }),
+  first_name: varchar("first_name", { length: 255 }).notNull(),
+  last_name: varchar("last_name", { length: 255 }).notNull(),
+  role: varchar("role", { length: 100 }).notNull(),
+  phone: varchar("phone", { length: 20 }).notNull(),
+  is_preferred_poc: boolean("is_preferred_poc").default(false),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
 });
 
-// Drivers table
+// Mobility Requirements Lookup Table
+export const mobilityRequirements = pgTable("mobility_requirements", {
+  id: varchar("id", { length: 50 }).primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  is_active: boolean("is_active").default(true),
+});
+
+// Client Mobility Requirements Junction Table
+export const clientMobilityRequirements = pgTable("client_mobility_requirements", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  client_id: uuid("client_id").notNull().references(() => clients.id, { onDelete: 'cascade' }),
+  mobility_requirement_id: varchar("mobility_requirement_id", { length: 50 }).notNull().references(() => mobilityRequirements.id),
+  custom_note: text("custom_note"),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+// Special Requirements Lookup Table
+export const specialRequirements = pgTable("special_requirements", {
+  id: varchar("id", { length: 50 }).primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  is_active: boolean("is_active").default(true),
+});
+
+// Client Special Requirements Junction Table
+export const clientSpecialRequirements = pgTable("client_special_requirements", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  client_id: uuid("client_id").notNull().references(() => clients.id, { onDelete: 'cascade' }),
+  special_requirement_id: varchar("special_requirement_id", { length: 50 }).notNull().references(() => specialRequirements.id),
+  custom_note: text("custom_note"),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+// Communication Needs Lookup Table
+export const communicationNeeds = pgTable("communication_needs", {
+  id: varchar("id", { length: 50 }).primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  is_active: boolean("is_active").default(true),
+});
+
+// Client Communication Needs Junction Table
+export const clientCommunicationNeeds = pgTable("client_communication_needs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  client_id: uuid("client_id").notNull().references(() => clients.id, { onDelete: 'cascade' }),
+  communication_need_id: varchar("communication_need_id", { length: 50 }).notNull().references(() => communicationNeeds.id),
+  custom_note: text("custom_note"),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+// Client Safety Preferences Table
+export const clientSafetyPreferences = pgTable("client_safety_preferences", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  client_id: uuid("client_id").notNull().references(() => clients.id, { onDelete: 'cascade' }),
+  preferred_driver_request: text("preferred_driver_request"),
+  other_preferences: text("other_preferences"),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+// Drivers Table
 export const drivers = pgTable("drivers", {
-  id: text("id").primaryKey(),
-  userId: varchar("user_id").references(() => users.user_id).notNull(),
-  primaryOrganizationId: varchar("primary_organization_id").references(() => organizations.id).notNull(),
-  authorizedOrganizations: varchar("authorized_organizations").array(),
-  licenseNumber: varchar("license_number").notNull(),
-  licenseExpiry: timestamp("license_expiry"),
-  vehicleInfo: text("vehicle_info"),
-  phone: varchar("phone"),
-  emergencyContact: varchar("emergency_contact"),
-  emergencyPhone: varchar("emergency_phone"),
-  isAvailable: boolean("is_available").default(true),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  id: varchar("id", { length: 50 }).primaryKey(),
+  user_id: varchar("user_id", { length: 50 }).notNull().references(() => users.user_id, { onDelete: 'cascade' }),
+  program_id: varchar("program_id", { length: 50 }).notNull().references(() => programs.id, { onDelete: 'cascade' }),
+  license_number: varchar("license_number", { length: 50 }).notNull(),
+  license_expiry: date("license_expiry"),
+  vehicle_info: text("vehicle_info"),
+  is_active: boolean("is_active").default(true),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
 });
 
-// Driver schedules table
-export const driverSchedules = pgTable("driver_schedules", {
-  id: text("id").primaryKey(),
-  driverId: varchar("driver_id").references(() => users.user_id).notNull(),
-  organizationId: varchar("organization_id").references(() => organizations.id).notNull(),
-  dayOfWeek: integer("day_of_week").notNull(), // 0=Sunday, 1=Monday, etc.
-  startTime: time("start_time").notNull(),
-  endTime: time("end_time").notNull(),
-  isOnCall: boolean("is_on_call").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
+// Vehicles Table
+export const vehicles = pgTable("vehicles", {
+  id: varchar("id", { length: 50 }).primaryKey(),
+  program_id: varchar("program_id", { length: 50 }).notNull().references(() => programs.id, { onDelete: 'cascade' }),
+  make: varchar("make", { length: 100 }).notNull(),
+  model: varchar("model", { length: 100 }).notNull(),
+  year: integer("year").notNull(),
+  license_plate: varchar("license_plate", { length: 20 }).notNull(),
+  color: varchar("color", { length: 50 }),
+  vehicle_type: varchar("vehicle_type", { length: 50 }),
+  capacity: integer("capacity"),
+  status: vehicleStatusEnum("status").default('active'),
+  is_active: boolean("is_active").default(true),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
 });
 
-// Trips table
+// Vehicle Assignments Table
+export const vehicleAssignments = pgTable("vehicle_assignments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  driver_id: varchar("driver_id", { length: 50 }).notNull().references(() => drivers.id, { onDelete: 'cascade' }),
+  vehicle_id: varchar("vehicle_id", { length: 50 }).notNull().references(() => vehicles.id, { onDelete: 'cascade' }),
+  assigned_at: timestamp("assigned_at").defaultNow(),
+  unassigned_at: timestamp("unassigned_at"),
+  is_active: boolean("is_active").default(true),
+});
+
+// Vehicle Maintenance Table
+export const vehicleMaintenance = pgTable("vehicle_maintenance", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  vehicle_id: varchar("vehicle_id", { length: 50 }).notNull().references(() => vehicles.id, { onDelete: 'cascade' }),
+  maintenance_type: varchar("maintenance_type", { length: 100 }).notNull(),
+  description: text("description"),
+  cost: decimal("cost", { precision: 10, scale: 2 }),
+  maintenance_date: date("maintenance_date").notNull(),
+  next_maintenance_date: date("next_maintenance_date"),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+// Trip Categories Table
+export const tripCategories = pgTable("trip_categories", {
+  id: varchar("id", { length: 50 }).primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  color: varchar("color", { length: 7 }), // Hex color code
+  is_active: boolean("is_active").default(true),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+// Trips Table
 export const trips = pgTable("trips", {
-  id: text("id").primaryKey(),
-  organizationId: text("organization_id").references(() => organizations.id).notNull(),
-  clientId: text("client_id").references(() => clients.id).notNull(),
-  driverId: text("driver_id"),
-  tripType: tripTypeEnum("trip_type").notNull(),
-  pickupAddress: text("pickup_address").notNull(),
-  dropoffAddress: text("dropoff_address").notNull(),
-  scheduledPickupTime: timestamp("scheduled_pickup_time").notNull(),
-  scheduledReturnTime: timestamp("scheduled_return_time"),
-  actualPickupTime: timestamp("actual_pickup_time"),
-  actualDropoffTime: timestamp("actual_dropoff_time"),
-  actualReturnTime: timestamp("actual_return_time"),
-  passengerCount: integer("passenger_count").default(1),
-  specialRequirements: text("special_requirements"),
+  id: varchar("id", { length: 50 }).primaryKey(),
+  program_id: varchar("program_id", { length: 50 }).notNull().references(() => programs.id, { onDelete: 'cascade' }),
+  client_id: uuid("client_id").references(() => clients.id, { onDelete: 'cascade' }),
+  client_group_id: uuid("client_group_id").references(() => clientGroups.id, { onDelete: 'cascade' }),
+  driver_id: varchar("driver_id", { length: 50 }).references(() => drivers.id, { onDelete: 'set null' }),
+  vehicle_id: varchar("vehicle_id", { length: 50 }).references(() => vehicles.id, { onDelete: 'set null' }),
+  trip_type: tripTypeEnum("trip_type").notNull(),
+  trip_category_id: varchar("trip_category_id", { length: 50 }).references(() => tripCategories.id, { onDelete: 'set null' }),
+  pickup_address: text("pickup_address").notNull(),
+  dropoff_address: text("dropoff_address").notNull(),
+  scheduled_pickup_time: timestamp("scheduled_pickup_time").notNull(),
+  scheduled_return_time: timestamp("scheduled_return_time"),
+  actual_pickup_time: timestamp("actual_pickup_time"),
+  actual_dropoff_time: timestamp("actual_dropoff_time"),
+  passenger_count: integer("passenger_count").default(1),
   status: tripStatusEnum("status").default('scheduled'),
+  special_requirements: text("special_requirements"),
   notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
 });
 
-// Insert schemas
-export const insertOrganizationSchema = createInsertSchema(organizations).omit({
-  createdAt: true,
-  updatedAt: true,
+// Driver Schedules Table
+export const driverSchedules = pgTable("driver_schedules", {
+  id: varchar("id", { length: 50 }).primaryKey(),
+  driver_id: varchar("driver_id", { length: 50 }).notNull().references(() => drivers.id, { onDelete: 'cascade' }),
+  program_id: varchar("program_id", { length: 50 }).notNull().references(() => programs.id, { onDelete: 'cascade' }),
+  day_of_week: integer("day_of_week").notNull(), // 0=Sunday, 1=Monday, etc.
+  start_time: time("start_time").notNull(),
+  end_time: time("end_time").notNull(),
+  is_active: boolean("is_active").default(true),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).omit({
-  created_at: true,
-  updated_at: true,
+// Driver Duty Status Table
+export const driverDutyStatus = pgTable("driver_duty_status", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  driver_id: varchar("driver_id", { length: 50 }).notNull().references(() => drivers.id, { onDelete: 'cascade' }),
+  status: dutyStatusEnum("status").notNull(),
+  started_at: timestamp("started_at").notNull(),
+  ended_at: timestamp("ended_at"),
+  notes: text("notes"),
+  created_at: timestamp("created_at").defaultNow(),
 });
 
-export const insertServiceAreaSchema = createInsertSchema(serviceAreas).omit({
-  createdAt: true,
-  updatedAt: true,
+// Driver Locations Table
+export const driverLocations = pgTable("driver_locations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  driver_id: varchar("driver_id", { length: 50 }).notNull().references(() => drivers.id, { onDelete: 'cascade' }),
+  latitude: decimal("latitude", { precision: 10, scale: 8 }).notNull(),
+  longitude: decimal("longitude", { precision: 11, scale: 8 }).notNull(),
+  accuracy: decimal("accuracy", { precision: 8, scale: 2 }),
+  heading: decimal("heading", { precision: 5, scale: 2 }),
+  speed: decimal("speed", { precision: 5, scale: 2 }),
+  address: text("address"),
+  timestamp: timestamp("timestamp").defaultNow(),
+  is_active: boolean("is_active").default(true),
 });
 
-export const insertClientGroupSchema = createInsertSchema(clientGroups).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+// Notification Templates Table
+export const notificationTemplates = pgTable("notification_templates", {
+  id: varchar("id", { length: 50 }).primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  type: varchar("type", { length: 50 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  body: text("body").notNull(),
+  variables: jsonb("variables"),
+  is_active: boolean("is_active").default(true),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
 });
 
-export const insertClientGroupMembershipSchema = createInsertSchema(clientGroupMemberships).omit({
-  id: true,
-  joinedAt: true,
+// Notifications Table
+export const notifications = pgTable("notifications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  user_id: varchar("user_id", { length: 50 }).notNull().references(() => users.user_id, { onDelete: 'cascade' }),
+  type: varchar("type", { length: 50 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  body: text("body").notNull(),
+  data: jsonb("data"),
+  priority: varchar("priority", { length: 20 }).default('medium'),
+  channels: text("channels").array(),
+  status: varchar("status", { length: 20 }).default('draft'),
+  scheduled_for: timestamp("scheduled_for"),
+  sent_at: timestamp("sent_at"),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
 });
 
-export const insertClientSchema = createInsertSchema(clients).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+// Notification Deliveries Table
+export const notificationDeliveries = pgTable("notification_deliveries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  notification_id: uuid("notification_id").notNull().references(() => notifications.id, { onDelete: 'cascade' }),
+  channel: varchar("channel", { length: 50 }).notNull(),
+  status: varchar("status", { length: 20 }).notNull(),
+  sent_at: timestamp("sent_at"),
+  delivered_at: timestamp("delivered_at"),
+  error_message: text("error_message"),
+  created_at: timestamp("created_at").defaultNow(),
 });
 
-export const insertDriverSchema = createInsertSchema(drivers).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+// Notification Preferences Table
+export const notificationPreferences = pgTable("notification_preferences", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  user_id: varchar("user_id", { length: 50 }).notNull().references(() => users.user_id, { onDelete: 'cascade' }),
+  notification_type: varchar("notification_type", { length: 50 }).notNull(),
+  email_enabled: boolean("email_enabled").default(true),
+  push_enabled: boolean("push_enabled").default(true),
+  sms_enabled: boolean("sms_enabled").default(false),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
 });
 
-export const insertDriverScheduleSchema = createInsertSchema(driverSchedules).omit({
-  id: true,
-  createdAt: true,
+// Trip Status Logs Table
+export const tripStatusLogs = pgTable("trip_status_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  trip_id: varchar("trip_id", { length: 50 }).notNull().references(() => trips.id, { onDelete: 'cascade' }),
+  old_status: tripStatusEnum("old_status"),
+  new_status: tripStatusEnum("new_status").notNull(),
+  changed_by: varchar("changed_by", { length: 50 }).references(() => users.user_id, { onDelete: 'set null' }),
+  reason: text("reason"),
+  created_at: timestamp("created_at").defaultNow(),
 });
 
-export const insertTripSchema = createInsertSchema(trips).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-}).extend({
-  scheduledPickupTime: z.union([z.string(), z.date()]).transform(val => typeof val === 'string' ? new Date(val) : val),
-  scheduledReturnTime: z.union([z.string(), z.date()]).transform(val => typeof val === 'string' ? new Date(val) : val).optional(),
-  actualPickupTime: z.union([z.string(), z.date()]).transform(val => typeof val === 'string' ? new Date(val) : val).optional(),
-  actualDropoffTime: z.union([z.string(), z.date()]).transform(val => typeof val === 'string' ? new Date(val) : val).optional(),
-  actualReturnTime: z.union([z.string(), z.date()]).transform(val => typeof val === 'string' ? new Date(val) : val).optional(),
+// Offline Updates Table
+export const offlineUpdates = pgTable("offline_updates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  driver_id: varchar("driver_id", { length: 50 }).notNull().references(() => drivers.id, { onDelete: 'cascade' }),
+  update_type: varchar("update_type", { length: 50 }).notNull(),
+  update_data: jsonb("update_data").notNull(),
+  status: varchar("status", { length: 20 }).default('pending'),
+  created_at: timestamp("created_at").defaultNow(),
+  synced_at: timestamp("synced_at"),
 });
 
-// Select types
-export type Organization = typeof organizations.$inferSelect;
-export type SystemSettings = typeof system_settings.$inferSelect;
+// ============================================================================
+// INSERT SCHEMAS (Zod validation)
+// ============================================================================
+
+export const insertCorporateClientSchema = createInsertSchema(corporateClients);
+export const insertProgramSchema = createInsertSchema(programs);
+export const insertLocationSchema = createInsertSchema(locations);
+export const insertFrequentLocationSchema = createInsertSchema(frequentLocations);
+export const insertUserSchema = createInsertSchema(users);
+export const insertClientSchema = createInsertSchema(clients);
+export const insertClientGroupSchema = createInsertSchema(clientGroups);
+export const insertClientGroupMembershipSchema = createInsertSchema(clientGroupMemberships);
+export const insertDriverSchema = createInsertSchema(drivers);
+export const insertVehicleSchema = createInsertSchema(vehicles);
+export const insertVehicleAssignmentSchema = createInsertSchema(vehicleAssignments);
+export const insertVehicleMaintenanceSchema = createInsertSchema(vehicleMaintenance);
+export const insertTripCategorySchema = createInsertSchema(tripCategories);
+export const insertTripSchema = createInsertSchema(trips);
+export const insertDriverScheduleSchema = createInsertSchema(driverSchedules);
+export const insertDriverDutyStatusSchema = createInsertSchema(driverDutyStatus);
+export const insertDriverLocationSchema = createInsertSchema(driverLocations);
+export const insertNotificationTemplateSchema = createInsertSchema(notificationTemplates);
+export const insertNotificationSchema = createInsertSchema(notifications);
+export const insertNotificationDeliverySchema = createInsertSchema(notificationDeliveries);
+export const insertNotificationPreferenceSchema = createInsertSchema(notificationPreferences);
+export const insertTripStatusLogSchema = createInsertSchema(tripStatusLogs);
+export const insertOfflineUpdateSchema = createInsertSchema(offlineUpdates);
+
+// ============================================================================
+// SELECT SCHEMAS (Zod validation)
+// ============================================================================
+
+export const selectCorporateClientSchema = createSelectSchema(corporateClients);
+export const selectProgramSchema = createSelectSchema(programs);
+export const selectLocationSchema = createSelectSchema(locations);
+export const selectFrequentLocationSchema = createSelectSchema(frequentLocations);
+export const selectUserSchema = createSelectSchema(users);
+export const selectClientSchema = createSelectSchema(clients);
+export const selectClientGroupSchema = createSelectSchema(clientGroups);
+export const selectClientGroupMembershipSchema = createSelectSchema(clientGroupMemberships);
+export const selectDriverSchema = createSelectSchema(drivers);
+export const selectVehicleSchema = createSelectSchema(vehicles);
+export const selectVehicleAssignmentSchema = createSelectSchema(vehicleAssignments);
+export const selectVehicleMaintenanceSchema = createSelectSchema(vehicleMaintenance);
+export const selectTripCategorySchema = createSelectSchema(tripCategories);
+export const selectTripSchema = createSelectSchema(trips);
+export const selectDriverScheduleSchema = createSelectSchema(driverSchedules);
+export const selectDriverDutyStatusSchema = createSelectSchema(driverDutyStatus);
+export const selectDriverLocationSchema = createSelectSchema(driverLocations);
+export const selectNotificationTemplateSchema = createSelectSchema(notificationTemplates);
+export const selectNotificationSchema = createSelectSchema(notifications);
+export const selectNotificationDeliverySchema = createSelectSchema(notificationDeliveries);
+export const selectNotificationPreferenceSchema = createSelectSchema(notificationPreferences);
+export const selectTripStatusLogSchema = createSelectSchema(tripStatusLogs);
+export const selectOfflineUpdateSchema = createSelectSchema(offlineUpdates);
+
+// ============================================================================
+// SELECT TYPES (TypeScript types)
+// ============================================================================
+
+export type CorporateClient = typeof corporateClients.$inferSelect;
+export type Program = typeof programs.$inferSelect;
+export type Location = typeof locations.$inferSelect;
+export type FrequentLocation = typeof frequentLocations.$inferSelect;
 export type User = typeof users.$inferSelect;
-export type ServiceArea = typeof serviceAreas.$inferSelect;
+export type Client = typeof clients.$inferSelect;
 export type ClientGroup = typeof clientGroups.$inferSelect;
 export type ClientGroupMembership = typeof clientGroupMemberships.$inferSelect;
-export type Client = typeof clients.$inferSelect;
 export type Driver = typeof drivers.$inferSelect;
-export type DriverSchedule = typeof driverSchedules.$inferSelect;
+export type Vehicle = typeof vehicles.$inferSelect;
+export type VehicleAssignment = typeof vehicleAssignments.$inferSelect;
+export type VehicleMaintenance = typeof vehicleMaintenance.$inferSelect;
+export type TripCategory = typeof tripCategories.$inferSelect;
 export type Trip = typeof trips.$inferSelect;
+export type DriverSchedule = typeof driverSchedules.$inferSelect;
+export type DriverDutyStatus = typeof driverDutyStatus.$inferSelect;
+export type DriverLocation = typeof driverLocations.$inferSelect;
+export type NotificationTemplate = typeof notificationTemplates.$inferSelect;
+export type Notification = typeof notifications.$inferSelect;
+export type NotificationDelivery = typeof notificationDeliveries.$inferSelect;
+export type NotificationPreference = typeof notificationPreferences.$inferSelect;
+export type TripStatusLog = typeof tripStatusLogs.$inferSelect;
+export type OfflineUpdate = typeof offlineUpdates.$inferSelect;
 
-// Webhook Integration Tables
-export const webhookIntegrations = pgTable("webhook_integrations", {
-  id: text("id").primaryKey(),
-  organization_id: text("organization_id").references(() => organizations.id).notNull(),
-  name: text("name").notNull(),
-  provider: text("provider").notNull(), // 'ritten', 'google_calendar', etc.
-  
-  // Configuration
-  webhook_url: text("webhook_url"), // URL for Ritten to call
-  secret_key: text("secret_key"), // For webhook validation
-  api_key: text("api_key"), // For API authentication
-  
-  // Filtering rules
-  filter_keywords: text("filter_keywords").array(), // ['transport', 'your_name']
-  filter_attendees: text("filter_attendees").array(), // Specific attendee names/emails
-  
-  // Status
-  status: text("status").default('inactive'), // 'active', 'inactive', 'error'
-  last_sync: timestamp("last_sync"),
-  sync_errors: jsonb("sync_errors"),
-  
-  created_at: timestamp("created_at").defaultNow(),
-  updated_at: timestamp("updated_at").defaultNow(),
-});
+// ============================================================================
+// INSERT TYPES (TypeScript types for inserts)
+// ============================================================================
 
-export const webhookEventLogs = pgTable("webhook_event_logs", {
-  id: text("id").primaryKey(),
-  integration_id: text("integration_id").references(() => webhookIntegrations.id).notNull(),
-  organization_id: text("organization_id").references(() => organizations.id).notNull(),
-  
-  // Event details
-  event_type: text("event_type").notNull(), // 'created', 'updated', 'deleted'
-  event_data: jsonb("event_data").notNull(), // Raw webhook payload
-  
-  // Processing results
-  status: text("status").notNull(), // 'success', 'error', 'skipped'
-  trips_created: text("trips_created").array(), // Trip IDs created
-  error_message: text("error_message"),
-  
-  created_at: timestamp("created_at").defaultNow(),
-});
-
-export const tripCreationRules = pgTable("trip_creation_rules", {
-  id: text("id").primaryKey(),
-  organization_id: text("organization_id").references(() => organizations.id).notNull(),
-  integration_id: text("integration_id").references(() => webhookIntegrations.id).notNull(),
-  
-  name: text("name").notNull(),
-  description: text("description"),
-  is_active: boolean("is_active").default(true),
-  
-  // Trigger conditions
-  keyword_matches: text("keyword_matches").array(), // Keywords that must be present
-  attendee_matches: text("attendee_matches").array(), // Attendees that must be present
-  time_advance_hours: integer("time_advance_hours").default(2), // Only create trips X hours in advance
-  
-  // Trip creation settings
-  auto_create: boolean("auto_create").default(true),
-  trip_type: tripTypeEnum("trip_type").default('round_trip'),
-  pickup_offset_minutes: integer("pickup_offset_minutes").default(-30), // 30 min before appointment
-  dropoff_offset_minutes: integer("dropoff_offset_minutes").default(15), // 15 min after appointment
-  default_pickup_location: text("default_pickup_location"), // Service area ID
-  default_dropoff_location: text("default_dropoff_location"), // Service area ID
-  requires_approval: boolean("requires_approval").default(false),
-  
-  created_at: timestamp("created_at").defaultNow(),
-  updated_at: timestamp("updated_at").defaultNow(),
-});
-
-// Billing module tables
-export const billingCodes = pgTable("billing_codes", {
-  id: text("id").primaryKey(),
-  code: text("code").notNull().unique(), // T2003, T2004, A0120, etc.
-  description: text("description").notNull(),
-  category: text("category").notNull(), // 'transport', 'waiver', 'modifier'
-  rate_colorado: text("rate_colorado"), // Colorado Medicaid rate
-  is_active: boolean("is_active").default(true),
-  created_at: timestamp("created_at").defaultNow(),
-  updated_at: timestamp("updated_at").defaultNow(),
-});
-
-export const billingModifiers = pgTable("billing_modifiers", {
-  id: text("id").primaryKey(),
-  code: text("code").notNull().unique(), // U1, U2, QM, TK, etc.
-  description: text("description").notNull(),
-  applies_to_codes: text("applies_to_codes").array(), // Which billing codes this modifier applies to
-  is_active: boolean("is_active").default(true),
-  created_at: timestamp("created_at").defaultNow(),
-  updated_at: timestamp("updated_at").defaultNow(),
-});
-
-export const clientBillingInfo = pgTable("client_billing_info", {
-  id: text("id").primaryKey(),
-  client_id: text("client_id").references(() => clients.id).notNull(),
-  organization_id: text("organization_id").references(() => organizations.id).notNull(),
-  
-  // Insurance information
-  insurance_type: text("insurance_type").notNull(), // 'medicaid', 'medicare', 'private'
-  medicaid_id: text("medicaid_id"),
-  medicare_id: text("medicare_id"),
-  group_number: text("group_number"),
-  
-  // Waiver information
-  waiver_type: text("waiver_type"), // 'HCBS', 'CMHS', etc.
-  waiver_id: text("waiver_id"),
-  prior_authorization_number: text("prior_authorization_number"),
-  authorization_expiry: timestamp("authorization_expiry"),
-  
-  // Billing provider
-  billing_provider_npi: text("billing_provider_npi"),
-  billing_provider_name: text("billing_provider_name"),
-  billing_provider_taxonomy: text("billing_provider_taxonomy"),
-  
-  // Compliance
-  hipaa_authorization_date: timestamp("hipaa_authorization_date"),
-  billing_consent_date: timestamp("billing_consent_date"),
-  
-  is_active: boolean("is_active").default(true),
-  created_at: timestamp("created_at").defaultNow(),
-  updated_at: timestamp("updated_at").defaultNow(),
-});
-
-export const billingClaims = pgTable("billing_claims", {
-  id: text("id").primaryKey(),
-  organization_id: text("organization_id").references(() => organizations.id).notNull(),
-  client_id: text("client_id").references(() => clients.id).notNull(),
-  trip_id: text("trip_id").references(() => trips.id).notNull(),
-  
-  // Claim details
-  claim_number: text("claim_number").unique(),
-  service_date: timestamp("service_date").notNull(),
-  billing_code: text("billing_code").references(() => billingCodes.code).notNull(),
-  modifiers: text("modifiers").array(), // Array of modifier codes
-  units: integer("units").default(1),
-  rate: text("rate"), // Rate charged
-  total_amount: text("total_amount"), // Total claim amount
-  
-  // Submission details
-  status: text("status").notNull().default('draft'), // 'draft', 'submitted', 'paid', 'denied', 'resubmitted'
-  submission_date: timestamp("submission_date"),
-  payment_date: timestamp("payment_date"),
-  paid_amount: text("paid_amount"),
-  denial_reason: text("denial_reason"),
-  
-  // Generated form data
-  cms_1500_data: jsonb("cms_1500_data"), // Complete CMS-1500 form data
-  
-  created_at: timestamp("created_at").defaultNow(),
-  updated_at: timestamp("updated_at").defaultNow(),
-});
-
-export const billingBatches = pgTable("billing_batches", {
-  id: text("id").primaryKey(),
-  organization_id: text("organization_id").references(() => organizations.id).notNull(),
-  
-  name: text("name").notNull(), // e.g., "January 2025 Medicaid Claims"
-  description: text("description"),
-  claim_ids: text("claim_ids").array(), // Array of claim IDs in this batch
-  total_claims: integer("total_claims").default(0),
-  total_amount: text("total_amount"),
-  
-  status: text("status").notNull().default('draft'), // 'draft', 'submitted', 'processed'
-  created_by: text("created_by").references(() => users.user_id).notNull(),
-  submitted_date: timestamp("submitted_date"),
-  
-  created_at: timestamp("created_at").defaultNow(),
-  updated_at: timestamp("updated_at").defaultNow(),
-});
-
-// Insert schemas for webhook tables
-export const insertWebhookIntegrationSchema = createInsertSchema(webhookIntegrations).omit({
-  id: true,
-  created_at: true,
-  updated_at: true,
-});
-
-export const insertTripCreationRuleSchema = createInsertSchema(tripCreationRules).omit({
-  id: true,
-  created_at: true,
-  updated_at: true,
-});
-
-// Insert schemas for billing tables
-export const insertBillingCodeSchema = createInsertSchema(billingCodes).omit({
-  id: true,
-  created_at: true,
-  updated_at: true,
-});
-
-export const insertBillingModifierSchema = createInsertSchema(billingModifiers).omit({
-  id: true,
-  created_at: true,
-  updated_at: true,
-});
-
-export const insertClientBillingInfoSchema = createInsertSchema(clientBillingInfo).omit({
-  id: true,
-  created_at: true,
-  updated_at: true,
-});
-
-export const insertBillingClaimSchema = createInsertSchema(billingClaims).omit({
-  id: true,
-  created_at: true,
-  updated_at: true,
-});
-
-export const insertBillingBatchSchema = createInsertSchema(billingBatches).omit({
-  id: true,
-  created_at: true,
-  updated_at: true,
-});
-
-// Insert types
-export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type InsertServiceArea = z.infer<typeof insertServiceAreaSchema>;
-export type InsertClientGroup = z.infer<typeof insertClientGroupSchema>;
-export type InsertClientGroupMembership = z.infer<typeof insertClientGroupMembershipSchema>;
-export type InsertClient = z.infer<typeof insertClientSchema>;
-export type InsertDriver = z.infer<typeof insertDriverSchema>;
-export type InsertDriverSchedule = z.infer<typeof insertDriverScheduleSchema>;
-export type InsertTrip = z.infer<typeof insertTripSchema>;
-export type InsertWebhookIntegration = z.infer<typeof insertWebhookIntegrationSchema>;
-export type InsertTripCreationRule = z.infer<typeof insertTripCreationRuleSchema>;
-export type InsertBillingCode = z.infer<typeof insertBillingCodeSchema>;
-export type InsertBillingModifier = z.infer<typeof insertBillingModifierSchema>;
-export type InsertClientBillingInfo = z.infer<typeof insertClientBillingInfoSchema>;
-export type InsertBillingClaim = z.infer<typeof insertBillingClaimSchema>;
-export type InsertBillingBatch = z.infer<typeof insertBillingBatchSchema>;
-
-// Additional select types for webhook tables
-export type WebhookIntegration = typeof webhookIntegrations.$inferSelect;
-export type WebhookEventLog = typeof webhookEventLogs.$inferSelect;
-export type TripCreationRule = typeof tripCreationRules.$inferSelect;
-
-// Select types for billing tables
-export type BillingCode = typeof billingCodes.$inferSelect;
-export type BillingModifier = typeof billingModifiers.$inferSelect;
-export type ClientBillingInfo = typeof clientBillingInfo.$inferSelect;
-export type BillingClaim = typeof billingClaims.$inferSelect;
-export type BillingBatch = typeof billingBatches.$inferSelect;
+export type InsertCorporateClient = typeof insertCorporateClientSchema._type;
+export type InsertProgram = typeof insertProgramSchema._type;
+export type InsertLocation = typeof insertLocationSchema._type;
+export type InsertFrequentLocation = typeof insertFrequentLocationSchema._type;
+export type InsertUser = typeof insertUserSchema._type;
+export type InsertClient = typeof insertClientSchema._type;
+export type InsertClientGroup = typeof insertClientGroupSchema._type;
+export type InsertClientGroupMembership = typeof insertClientGroupMembershipSchema._type;
+export type InsertDriver = typeof insertDriverSchema._type;
+export type InsertVehicle = typeof insertVehicleSchema._type;
+export type InsertVehicleAssignment = typeof insertVehicleAssignmentSchema._type;
+export type InsertVehicleMaintenance = typeof insertVehicleMaintenanceSchema._type;
+export type InsertTripCategory = typeof insertTripCategorySchema._type;
+export type InsertTrip = typeof insertTripSchema._type;
+export type InsertDriverSchedule = typeof insertDriverScheduleSchema._type;
+export type InsertDriverDutyStatus = typeof insertDriverDutyStatusSchema._type;
+export type InsertDriverLocation = typeof insertDriverLocationSchema._type;
+export type InsertNotificationTemplate = typeof insertNotificationTemplateSchema._type;
+export type InsertNotification = typeof insertNotificationSchema._type;
+export type InsertNotificationDelivery = typeof insertNotificationDeliverySchema._type;
+export type InsertNotificationPreference = typeof insertNotificationPreferenceSchema._type;
+export type InsertTripStatusLog = typeof insertTripStatusLogSchema._type;
+export type InsertOfflineUpdate = typeof insertOfflineUpdateSchema._type;

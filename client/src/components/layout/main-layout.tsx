@@ -31,6 +31,9 @@ import MobileBottomNav from "../MobileBottomNav";
 // Removed useOrganization - using useHierarchy instead
 import { useAuth } from "../../hooks/useAuth";
 import { useHierarchy } from "../../hooks/useHierarchy";
+// Design System Pages
+import DesignSystem from "../../pages/design-system";
+import DesignSystemDemo from "../../pages/design-system-demo";
 
 interface MainLayoutProps {
   children?: ReactNode;
@@ -189,6 +192,12 @@ export default function MainLayout({
               </Route>
               <Route path="/empty-calendar">
                 <EmptyUniversalCalendar />
+              </Route>
+              <Route path="/design-system">
+                <DesignSystem />
+              </Route>
+              <Route path="/design-system-demo">
+                <DesignSystemDemo />
               </Route>
               <Route>
                 {(params) => {

@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { useRealTimeUpdates } from "../hooks/useRealTimeUpdates";
+import { useClientNames } from "../hooks/useClientNames";
 import { TripHoverCard } from "./TripHoverCard";
 import { 
   Calendar, 
@@ -15,7 +16,8 @@ import {
   Car,
   MapPin,
   Filter,
-  RefreshCw
+  RefreshCw,
+  Plus
 } from "lucide-react";
 import { format, 
   startOfMonth, 
@@ -44,6 +46,7 @@ interface Trip {
   id: string;
   program_id: string;
   client_id: string;
+  client_group_id?: string;
   driver_id?: string;
   pickup_address: string;
   dropoff_address: string;
@@ -53,9 +56,15 @@ interface Trip {
   trip_type: string;
   passenger_count: number;
   notes?: string;
+  is_group_trip?: boolean;
   client?: {
     first_name: string;
     last_name: string;
+  };
+  client_groups?: {
+    id: string;
+    name: string;
+    description?: string;
   };
   driver?: {
     user_id: string;
@@ -71,6 +80,22 @@ const statusColors = {
   cancelled: '#EF4444', // red
 };
 
+// Helper function to get display name for trips
+const getTripDisplayName = (trip: Trip, getClientName: (id: string) => string): string => {
+  if (trip.is_group_trip && trip.client_groups) {
+    return trip.client_groups.name;
+  } else if (trip.is_group_trip && trip.client_group_id) {
+    // For group trips, show a more descriptive name
+    return `Group Trip (${trip.client_group_id.slice(0, 8)}...)`;
+  } else if (trip.client) {
+    return `${trip.client.first_name} ${trip.client.last_name}`;
+  } else if (trip.client_id) {
+    // For individual trips, fetch the client name using the hook
+    return getClientName(trip.client_id);
+  }
+  return 'Unknown Client';
+};
+
 const driverColors = [
   '#8B5CF6', // violet
   '#EC4899', // pink
@@ -83,15 +108,12 @@ const driverColors = [
 export default function EnhancedTripCalendar() {
   const { user } = useAuth();
   const { level, selectedProgram, selectedCorporateClient } = useHierarchy();
+  const { getClientName, getClientInitials, isLoading: clientsLoading } = useClientNames();
   
-  // Set initial date to current date for drivers, July 2025 for others
-  const [currentDate, setCurrentDate] = useState(
-    user?.role === 'driver' ? new Date() : new Date(2025, 6, 1)
-  );
-  // Default to 'today' view for drivers, 'month' for others
-  const [viewMode, setViewMode] = useState<ViewMode>(
-    user?.role === 'driver' ? 'today' : 'month'
-  );
+  // Set initial date to current date for all users
+  const [currentDate, setCurrentDate] = useState(new Date());
+  // Default to 'month' view for all users
+  const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [colorMode, setColorMode] = useState<'status' | 'driver'>('status');
 
   // Fetch trips data based on hierarchy level
@@ -299,7 +321,14 @@ export default function EnhancedTripCalendar() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-end items-center">
+        <div className="flex justify-between items-center">
+          <Button 
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={() => window.location.href = '/trips?action=create'}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create Trip
+          </Button>
           <div className="flex items-center gap-2">
             <Button 
               variant="outline" 
@@ -333,27 +362,38 @@ export default function EnhancedTripCalendar() {
         </div>
 
         <div className="flex justify-between items-center">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigateDate('prev')}
-            className="flex items-center gap-1"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Prev
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigateDate('prev')}
+              className="flex items-center gap-1"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Prev
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentDate(new Date())}
+              className="flex items-center gap-1"
+            >
+              Today
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigateDate('next')}
+              className="flex items-center gap-1"
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
           
           <h3 className="text-lg font-semibold">{getViewTitle()}</h3>
           
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigateDate('next')}
-            className="flex items-center gap-1"
-          >
-            Next
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          <div className="w-24"></div> {/* Spacer for alignment */}
         </div>
       </CardHeader>
 
@@ -394,7 +434,7 @@ export default function EnhancedTripCalendar() {
                             <div className="flex items-center gap-2">
                               <User className="h-4 w-4" />
                               <span className="text-sm">
-                                {trip.client?.first_name} {trip.client?.last_name}
+                                {getTripDisplayName(trip, getClientName)}
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
@@ -422,6 +462,62 @@ export default function EnhancedTripCalendar() {
                   ))}
               </div>
             )}
+          </div>
+        ) : viewMode === 'week' ? (
+          <div className="space-y-4">
+            <div className="text-sm text-gray-600 mb-4">
+              {days.slice(0, 7).reduce((total, day) => total + getTripsForDate(day).length, 0)} trip(s) scheduled this week
+            </div>
+            <div className="grid grid-cols-7 gap-4">
+              {days.slice(0, 7).map(day => {
+                const dayTrips = getTripsForDate(day);
+                const isDayToday = isToday(day);
+                
+                return (
+                  <div key={day.toISOString()} className="space-y-2">
+                    <div className={`text-center p-2 rounded-lg ${
+                      isDayToday 
+                        ? 'bg-blue-100 text-blue-800 font-semibold' 
+                        : 'bg-gray-50 text-gray-700'
+                    }`}>
+                      <div className="text-sm font-medium">{format(day, 'EEE')}</div>
+                      <div className="text-lg">{format(day, 'd')}</div>
+                    </div>
+                    <div className="space-y-2 min-h-[200px]">
+                      {dayTrips.length === 0 ? (
+                        <div className="text-center text-gray-400 text-xs py-4">
+                          No trips
+                        </div>
+                      ) : (
+                        dayTrips
+                          .sort((a: Trip, b: Trip) => a.scheduled_pickup_time.localeCompare(b.scheduled_pickup_time))
+                          .map((trip: Trip) => (
+                            <TripHoverCard key={trip.id} trip={trip}>
+                              <div 
+                                className="border rounded-lg p-2 space-y-1 cursor-pointer hover:shadow-md transition-shadow bg-white border-l-4"
+                                style={{ borderLeftColor: getTripColor(trip) }}
+                              >
+                                <div className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  <span className="text-xs font-medium">
+                                    {format(parseISO(trip.scheduled_pickup_time), 'h:mm a')}
+                                  </span>
+                                </div>
+                                <div className="text-xs text-gray-600 truncate">
+                                  {getTripDisplayName(trip, getClientName)}
+                                </div>
+                                <div className="text-xs text-gray-500 truncate">
+                                  {trip.pickup_address} → {trip.dropoff_address}
+                                </div>
+                              </div>
+                            </TripHoverCard>
+                          ))
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden">
@@ -470,7 +566,7 @@ export default function EnhancedTripCalendar() {
                           }`}
                           style={{ backgroundColor: getTripColor(trip) }}
                         >
-                          {format(parseISO(trip.scheduled_pickup_time), 'h:mm a')} {trip.client?.first_name || 'Client'}
+                          {format(parseISO(trip.scheduled_pickup_time), 'h:mm a')} {getTripDisplayName(trip, getClientName)}
                         </div>
                       </TripHoverCard>
                     ))}

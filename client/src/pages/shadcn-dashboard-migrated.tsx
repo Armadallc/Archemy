@@ -66,8 +66,6 @@ const ShadcnHeader = ({ title, subtitle }: { title: string; subtitle?: string })
 
 // Main Dashboard Component with Shadcn Layout
 export default function ShadcnDashboardMigrated() {
-  console.log('🔵 ShadcnDashboardMigrated component is rendering');
-  console.log('🔴 VERIFICATION DOT SHOULD BE VISIBLE NOW - CHECK THE DASHBOARD');
   
   const { user } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -97,10 +95,6 @@ export default function ShadcnDashboardMigrated() {
     driversCount: realTimeDrivers?.length || 0
   });
   
-  console.log('🔴 RENDERING VERIFICATION DOT NOW - CHECK THE DASHBOARD');
-  console.log('🔍 Current user role:', realTimeUserRole);
-  console.log('🔍 Data loading state:', dataLoading);
-  console.log('🔍 Data error state:', dataError);
 
   // PROTECTION: Role validation function
   const validateSuperAdminRole = () => {
@@ -141,14 +135,6 @@ export default function ShadcnDashboardMigrated() {
           <h1 className="text-2xl font-bold text-white mb-4">Loading HALCYON Dashboard...</h1>
           <p className="text-gray-400">Please wait while we load your dashboard.</p>
           
-          {/* VERIFICATION DOT IN LOADING STATE */}
-          <div className="mt-8 p-6 bg-red-600 rounded-lg border-4 border-yellow-400 shadow-2xl">
-            <div className="text-white font-bold text-2xl">🔴 VERIFICATION DOT - LOADING STATE 🔴</div>
-            <div className="text-yellow-200 text-lg">This should be visible while loading</div>
-            <div className="text-yellow-100 text-sm">User Role: {realTimeUserRole || 'Unknown'}</div>
-            <div className="text-yellow-100 text-sm">Data Loading: {dataLoading ? 'Yes' : 'No'}</div>
-            <div className="text-yellow-100 text-sm">Data Error: {dataError ? 'Yes' : 'No'}</div>
-          </div>
         </div>
       </div>
     );
@@ -165,14 +151,6 @@ export default function ShadcnDashboardMigrated() {
           <h1 className="text-2xl font-bold text-red-500 mb-4">Error Loading HALCYON Dashboard</h1>
           <p className="text-gray-400">There was an error loading your dashboard data.</p>
           
-          {/* VERIFICATION DOT IN ERROR STATE */}
-          <div className="mt-8 p-6 bg-red-600 rounded-lg border-4 border-yellow-400 shadow-2xl">
-            <div className="text-white font-bold text-2xl">🔴 VERIFICATION DOT - ERROR STATE 🔴</div>
-            <div className="text-yellow-200 text-lg">This should be visible even with API errors</div>
-            <div className="text-yellow-100 text-sm">User Role: {realTimeUserRole || 'Unknown'}</div>
-            <div className="text-yellow-100 text-sm">Data Loading: {dataLoading ? 'Yes' : 'No'}</div>
-            <div className="text-yellow-100 text-sm">Data Error: {dataError ? 'Yes' : 'No'}</div>
-          </div>
         </div>
       </div>
     );
@@ -188,15 +166,6 @@ export default function ShadcnDashboardMigrated() {
     
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* COMPONENT VERIFICATION - BRIGHT RED BAR */}
-        <div className="bg-red-500 text-white p-4 text-center font-bold text-xl">
-          🔴 SHADCN DASHBOARD MIGRATED COMPONENT IS RENDERING 🔴
-        </div>
-        
-        {/* PROTECTION BANNER - DO NOT DELETE */}
-        <div className="bg-blue-600 text-white p-2 text-center font-bold text-sm">
-          🔒 SUPER ADMIN PROTECTED SECTION - VERIFIED MAPPING ACTIVE 🔒
-        </div>
         {/* Header */}
         <ShadcnHeader title={getRoleBasedTitle()} subtitle="System-wide operations and performance overview" />
         {/* Dashboard Content */}
@@ -255,23 +224,6 @@ export default function ShadcnDashboardMigrated() {
               </Card>
             </div>
 
-            {/* ======================================== */}
-            {/* 🔒 CRITICAL VERIFICATION DOT - PROTECTED 🔒 */}
-            {/* DO NOT DELETE, MODIFY, OR MOVE THIS SECTION */}
-            {/* This is the verification element for super admin dashboard */}
-            {/* ======================================== */}
-            <div className="flex justify-center items-center p-6 bg-red-600 rounded-lg mb-6 border-4 border-yellow-400 shadow-2xl">
-              <div className="w-12 h-12 bg-yellow-300 rounded-full animate-pulse mr-4"></div>
-              <div className="text-center">
-                <div className="text-white font-bold text-2xl">🔴 VERIFICATION DOT 🔴</div>
-                <div className="text-yellow-200 text-lg">DASHBOARD WIDGETS AREA</div>
-                <div className="text-yellow-100 text-sm">This should be visible on the main dashboard</div>
-                <div className="text-yellow-100 text-xs mt-2">🔒 SUPER ADMIN PROTECTED ELEMENT 🔒</div>
-              </div>
-            </div>
-            {/* ======================================== */}
-            {/* END CRITICAL VERIFICATION DOT SECTION */}
-            {/* ======================================== */}
 
             {/* Live Operations Widgets - Preserved */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -420,15 +372,6 @@ export default function ShadcnDashboardMigrated() {
               </Card>
             </div>
 
-            {/* VERIFICATION BLUE DOT - PLEASE CONFIRM YOU SEE THIS */}
-            <div className="flex justify-center items-center p-6 bg-red-600 rounded-lg mb-6 border-4 border-yellow-400 shadow-2xl">
-              <div className="w-12 h-12 bg-yellow-300 rounded-full animate-pulse mr-4"></div>
-              <div className="text-center">
-                <div className="text-white font-bold text-2xl">🔴 VERIFICATION DOT 🔴</div>
-                <div className="text-yellow-200 text-lg">DASHBOARD WIDGETS AREA</div>
-                <div className="text-yellow-100 text-sm">This should be visible on the main dashboard</div>
-              </div>
-            </div>
 
             {/* Live Operations Widgets - Preserved */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -516,10 +459,6 @@ export default function ShadcnDashboardMigrated() {
         {/* Header */}
         <ShadcnHeader title={getRoleBasedTitle()} subtitle={`Managing ${selectedProgram || "program"} operations`} />
         
-        {/* VERIFICATION BLUE DOT - PLEASE CONFIRM YOU SEE THIS */}
-        <div className="bg-red-500 text-white p-4 text-center font-bold text-xl">
-          🔴 PROGRAM ADMIN VERIFICATION DOT 🔴
-        </div>
         
         {/* Dashboard Content */}
         <div className="flex-1 overflow-auto p-6 bg-gray-900">
@@ -669,10 +608,6 @@ export default function ShadcnDashboardMigrated() {
         {/* Header */}
         <ShadcnHeader title={getRoleBasedTitle()} subtitle={`Viewing ${selectedProgram || "program"} data`} />
         
-        {/* VERIFICATION BLUE DOT - PLEASE CONFIRM YOU SEE THIS */}
-        <div className="bg-red-500 text-white p-4 text-center font-bold text-xl">
-          🔴 PROGRAM USER VERIFICATION DOT 🔴
-        </div>
         
         {/* Dashboard Content */}
         <div className="flex-1 overflow-auto p-6 bg-gray-900">
@@ -822,10 +757,6 @@ export default function ShadcnDashboardMigrated() {
         {/* Header */}
         <ShadcnHeader title={getRoleBasedTitle()} subtitle="Your daily operations and trip management" />
         
-        {/* VERIFICATION BLUE DOT - PLEASE CONFIRM YOU SEE THIS */}
-        <div className="bg-red-500 text-white p-4 text-center font-bold text-xl">
-          🔴 DRIVER VERIFICATION DOT 🔴
-        </div>
         
         {/* Dashboard Content */}
         <div className="flex-1 overflow-auto p-6 bg-gray-900">

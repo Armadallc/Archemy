@@ -47,8 +47,9 @@ const sampleData = {
   programs: [
     {
       id: 'monarch_competency',
-      name: 'Monarch Competency Center',
-      description: 'Competency restoration program for court-ordered clients',
+      name: 'Monarch Competency',
+      short_name: 'Competency',
+      description: 'Monarch Competency',
       corporate_client_id: 'monarch',
       address: '789 Competency St, Medical City, MC 12345',
       phone: '555-1100',
@@ -59,7 +60,8 @@ const sampleData = {
     {
       id: 'monarch_mental_health',
       name: 'Monarch Mental Health',
-      description: 'Outpatient mental health services and counseling',
+      short_name: 'Mental Health',
+      description: 'Monarch Mental Health',
       corporate_client_id: 'monarch',
       address: '321 Mental Health Ave, Medical City, MC 12345',
       phone: '555-1200',
@@ -70,7 +72,8 @@ const sampleData = {
     {
       id: 'monarch_sober_living',
       name: 'Monarch Sober Living',
-      description: 'Residential sober living and recovery support',
+      short_name: 'Sober Living',
+      description: 'Monarch Sober Living',
       corporate_client_id: 'monarch',
       address: '654 Sober Living Blvd, Medical City, MC 12345',
       phone: '555-1300',
@@ -80,8 +83,9 @@ const sampleData = {
     },
     {
       id: 'halcyon_detox',
-      name: 'Halcyon Detox Program',
-      description: 'Medical detoxification and stabilization services',
+      name: 'Halcyon Detox',
+      short_name: 'Detox',
+      description: 'Halcyon Detox',
       corporate_client_id: 'halcyon',
       address: '987 Detox Drive, Wellness City, WC 67890',
       phone: '555-2100',
@@ -91,8 +95,9 @@ const sampleData = {
     },
     {
       id: 'halcyon_outpatient',
-      name: 'Halcyon Outpatient Services',
-      description: 'Intensive outpatient treatment and therapy',
+      name: 'Halcyon Outpatient',
+      short_name: 'Outpatient',
+      description: 'Halcyon Outpatient',
       corporate_client_id: 'halcyon',
       address: '147 Outpatient Lane, Wellness City, WC 67890',
       phone: '555-2200',

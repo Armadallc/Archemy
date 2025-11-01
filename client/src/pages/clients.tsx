@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -23,6 +23,7 @@ import { Plus, Search, Edit, Trash2, Phone, Mail, MapPin, Users, Building2, Cale
 import { format, parseISO } from "date-fns";
 import { apiRequest } from "../lib/queryClient";
 import ExportButton from "../components/export/ExportButton";
+import { ComprehensiveClientForm } from "../components/forms/ComprehensiveClientForm";
 
 // Zod schema for client validation
 const clientFormSchema = z.object({
@@ -30,11 +31,17 @@ const clientFormSchema = z.object({
   last_name: z.string().min(1, "Last name is required"),
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
   phone: z.string().optional(),
+  phone_type: z.enum(["Mobile", "Home"]).optional(),
   program_id: z.string().min(1, "Program is required"),
   location_id: z.string().optional(),
   is_active: z.boolean().default(true),
   address: z.string().optional(),
+  use_location_address: z.boolean().default(false),
   date_of_birth: z.string().optional(),
+  birth_sex: z.enum(["Male", "Female"]).optional(),
+  age: z.number().optional(),
+  race: z.string().optional(),
+  avatar_url: z.string().optional(),
   emergency_contact_name: z.string().optional(),
   emergency_contact_phone: z.string().optional(),
   medical_conditions: z.string().optional(),
@@ -42,6 +49,23 @@ const clientFormSchema = z.object({
   billing_pin: z.string().optional(),
   medical_notes: z.string().optional(),
   mobility_requirements: z.string().optional(),
+  // New fields for program contacts
+  program_contacts: z.array(z.object({
+    first_name: z.string().min(1, "First name is required"),
+    last_name: z.string().min(1, "Last name is required"),
+    role: z.string().min(1, "Role is required"),
+    phone: z.string().min(1, "Phone is required"),
+    is_preferred_poc: z.boolean().default(false),
+  })).optional(),
+  // New fields for transport requirements
+  mobility_requirement_ids: z.array(z.string()).optional(),
+  mobility_custom_notes: z.record(z.string()).optional(),
+  special_requirement_ids: z.array(z.string()).optional(),
+  special_custom_notes: z.record(z.string()).optional(),
+  communication_need_ids: z.array(z.string()).optional(),
+  communication_custom_notes: z.record(z.string()).optional(),
+  preferred_driver_request: z.string().optional(),
+  other_preferences: z.string().optional(),
 });
 
 type ClientFormData = z.infer<typeof clientFormSchema>;
@@ -53,9 +77,15 @@ interface Client {
   program_id: string;
   location_id?: string;
   phone?: string;
+  phone_type?: string;
   email?: string;
   address?: string;
+  use_location_address?: boolean;
   date_of_birth?: string;
+  birth_sex?: string;
+  age?: number;
+  race?: string;
+  avatar_url?: string;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
   medical_conditions?: string;
@@ -71,6 +101,17 @@ interface Client {
   program?: {
     id: string;
     name: string;
+    short_name?: string;
+    corporate_client_id: string;
+    corporateClient?: {
+      id: string;
+      name: string;
+    };
+  };
+  programs?: {
+    id: string;
+    name: string;
+    short_name?: string;
     corporate_client_id: string;
     corporateClient?: {
       id: string;
@@ -82,6 +123,11 @@ interface Client {
     name: string;
     address: string;
   };
+  locations?: {
+    id: string;
+    name: string;
+    address: string;
+  };
 }
 
 
@@ -89,12 +135,18 @@ const initialFormData: ClientFormData = {
   first_name: "",
   last_name: "",
   phone: "",
+  phone_type: undefined,
   email: "",
   program_id: "",
   location_id: "",
   is_active: true,
   address: "",
+  use_location_address: false,
   date_of_birth: "",
+  birth_sex: undefined,
+  age: undefined,
+  race: "",
+  avatar_url: "",
   emergency_contact_name: "",
   emergency_contact_phone: "",
   medical_conditions: "",
@@ -102,6 +154,15 @@ const initialFormData: ClientFormData = {
   billing_pin: "",
   medical_notes: "",
   mobility_requirements: "",
+  program_contacts: [],
+  mobility_requirement_ids: [],
+  mobility_custom_notes: {},
+  special_requirement_ids: [],
+  special_custom_notes: {},
+  communication_need_ids: [],
+  communication_custom_notes: {},
+  preferred_driver_request: "",
+  other_preferences: "",
 };
 
 // Status color definitions
@@ -140,17 +201,22 @@ export default function Clients() {
   const [editingGroup, setEditingGroup] = useState<any>(null);
   const [viewingGroup, setViewingGroup] = useState<any>(null);
   const [groupMembers, setGroupMembers] = useState<any[]>([]);
-  const [groupFormData, setGroupFormData] = useState({
-    name: "",
-    description: "",
-    selectedClients: [] as string[],
-    expiryOption: "never" as "single" | "7days" | "30days" | "never"
-  });
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { level, selectedCorporateClient, selectedProgram, getFilterParams, getPageTitle } = useHierarchy();
+
+  console.log('Selected program from hierarchy:', selectedProgram);
+
+  const [groupFormData, setGroupFormData] = useState({
+    name: "",
+    description: "",
+    selectedClients: [] as string[],
+    program_id: selectedProgram || "",
+    expiryOption: "never" as "single" | "7days" | "30days" | "never"
+  });
 
   // Get filter parameters based on current hierarchy level
   const filterParams = getFilterParams();
@@ -186,6 +252,17 @@ export default function Clients() {
 
   // Ensure clients is always an array
   const clients = Array.isArray(clientsData) ? clientsData : [];
+  
+  // Debug log to see the data structure
+  console.log('🔍 Clients data:', clients);
+  if (clients.length > 0) {
+    console.log('🔍 First client structure:', clients[0]);
+    console.log('🔍 First client program:', clients[0].program);
+    console.log('🔍 First client programs:', clients[0].programs);
+    console.log('🔍 First client location_id:', clients[0].location_id);
+    console.log('🔍 First client location:', clients[0].location);
+    console.log('🔍 First client locations:', clients[0].locations);
+  }
 
   // Fetch locations for the dropdown
   const { data: locationsData, error: locationsError } = useQuery({
@@ -277,7 +354,10 @@ export default function Clients() {
         billing_pin: clientData.billing_pin || undefined,
         is_active: true
       };
-      return apiRequest("POST", "/api/clients", apiData);
+      console.log('🔍 Creating client with data:', apiData);
+      const response = await apiRequest("POST", "/api/clients", apiData);
+      console.log('🔍 Client creation response:', response);
+      return response;
     },
     onSuccess: () => {
       toast({
@@ -365,11 +445,251 @@ export default function Clients() {
     },
   });
 
+  // ============================================================================
+  // CLIENT GROUP MUTATIONS
+  // ============================================================================
+
+  // Create client group mutation
+  const createGroupMutation = useMutation({
+    mutationFn: async (groupData: { name: string; description: string; selectedClients: string[]; program_id?: string }) => {
+      const apiPayload = {
+        name: groupData.name,
+        description: groupData.description,
+        program_id: groupData.program_id || selectedProgram || programs?.[0]?.id || 'monarch_competency',
+        is_active: true
+      };
+      console.log('API payload:', apiPayload);
+      const response = await apiRequest("POST", "/api/client-groups", apiPayload);
+      const group = await response.json();
+      
+      // Add members to group
+      if (groupData.selectedClients.length > 0) {
+        await Promise.all(groupData.selectedClients.map(clientId => 
+          apiRequest("POST", "/api/client-group-memberships", {
+            client_id: clientId,
+            client_group_id: group.id
+          })
+        ));
+      }
+      
+      return group;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/client-groups"] });
+      setIsCreateGroupDialogOpen(false);
+      setGroupFormData({ name: "", description: "", selectedClients: [], program_id: selectedProgram || "", expiryOption: "never" });
+      toast({ 
+        title: "Group Created", 
+        description: "Client group created successfully" 
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create client group. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update client group mutation
+  const updateGroupMutation = useMutation({
+    mutationFn: async (data: { id: string; updates: any }) => {
+      return apiRequest("PATCH", `/api/client-groups/${data.id}`, data.updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/client-groups"] });
+      setIsEditGroupDialogOpen(false);
+      setEditingGroup(null);
+      setGroupFormData({ name: "", description: "", selectedClients: [], program_id: selectedProgram || "", expiryOption: "never" });
+      toast({ 
+        title: "Group Updated", 
+        description: "Client group updated successfully" 
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update client group. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete client group mutation
+  const deleteGroupMutation = useMutation({
+    mutationFn: async (groupId: string) => {
+      return apiRequest("DELETE", `/api/client-groups/${groupId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/client-groups"] });
+      toast({ 
+        title: "Group Deleted", 
+        description: "Client group deleted successfully" 
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete client group. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Add member to group mutation
+  const addMemberMutation = useMutation({
+    mutationFn: async ({ groupId, clientId }: { groupId: string; clientId: string }) => {
+      return apiRequest("POST", "/api/client-group-memberships", {
+        groupId: groupId,
+        clientId: clientId
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/client-groups"] });
+      // Refresh group members list
+      if (viewingGroup) {
+        const fetchMembers = async () => {
+          try {
+            const response = await apiRequest("GET", `/api/client-group-memberships/${viewingGroup.id}`);
+            const members = await response.json();
+            setGroupMembers(members || []);
+          } catch (error) {
+            console.error("Error fetching group members:", error);
+          }
+        };
+        fetchMembers();
+      }
+      toast({ 
+        title: "Member Added", 
+        description: "Client added to group successfully" 
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to add client to group. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Remove member from group mutation
+  const removeMemberMutation = useMutation({
+    mutationFn: async (membershipId: string) => {
+      return apiRequest("DELETE", `/api/client-group-memberships/${membershipId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/client-groups"] });
+      // Refresh group members list
+      if (viewingGroup) {
+        const fetchMembers = async () => {
+          try {
+            const response = await apiRequest("GET", `/api/client-group-memberships/${viewingGroup.id}`);
+            const members = await response.json();
+            setGroupMembers(members || []);
+          } catch (error) {
+            console.error("Error fetching group members:", error);
+          }
+        };
+        fetchMembers();
+      }
+      toast({ 
+        title: "Member Removed", 
+        description: "Client removed from group successfully" 
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to remove client from group. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // ============================================================================
+  // CLIENT GROUP FORM HANDLERS
+  // ============================================================================
+
+  // Update group form data when selected program changes
+  useEffect(() => {
+    setGroupFormData(prev => ({
+      ...prev,
+      program_id: selectedProgram || ""
+    }));
+  }, [selectedProgram]);
+
+  // Create group form handler
+  const handleCreateGroup = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (groupFormData.name.trim() && !createGroupMutation.isPending) {
+      console.log('Creating group with data:', groupFormData);
+      console.log('Selected program:', selectedProgram);
+      createGroupMutation.mutate(groupFormData);
+    }
+  };
+
+  // Update group form handler
+  const handleUpdateGroup = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingGroup) {
+      updateGroupMutation.mutate({
+        id: editingGroup.id,
+        updates: groupFormData
+      });
+    }
+  };
+
+  // Delete group handler
+  const handleDeleteGroup = (groupId: string) => {
+    deleteGroupMutation.mutate(groupId);
+  };
+
+  // Add member to group handler
+  const handleAddMember = (groupId: string, clientId: string) => {
+    addMemberMutation.mutate({ groupId, clientId });
+  };
+
+  // Remove member from group handler
+  const handleRemoveMember = (membershipId: string) => {
+    removeMemberMutation.mutate(membershipId);
+  };
+
+  // Load group members when dialog opens
+  useEffect(() => {
+    if (isViewEditMembersDialogOpen && viewingGroup) {
+      // Fetch group members from API
+      const fetchMembers = async () => {
+        setIsLoadingMembers(true);
+        try {
+          console.log('Fetching members for group:', viewingGroup.id);
+          const response = await apiRequest("GET", `/api/client-group-memberships/${viewingGroup.id}`);
+          const members = await response.json();
+          console.log('Fetched members:', members);
+          setGroupMembers(members || []);
+        } catch (error) {
+          console.error("Error fetching group members:", error);
+          setGroupMembers([]);
+        } finally {
+          setIsLoadingMembers(false);
+        }
+      };
+      fetchMembers();
+    } else {
+      // Clear members when dialog closes
+      setGroupMembers([]);
+      setIsLoadingMembers(false);
+    }
+  }, [isViewEditMembersDialogOpen, viewingGroup]);
+
   const handleCreateClient = (data: ClientFormData) => {
+    console.log('🔍 handleCreateClient called with data:', data);
     const finalFormData = {
       ...data,
       program_id: data.program_id || selectedProgram || ''
     };
+    console.log('🔍 Final form data:', finalFormData);
     createClientMutation.mutate(finalFormData);
   };
 
@@ -418,11 +738,17 @@ export default function Clients() {
       first_name: client.first_name,
       last_name: client.last_name,
       phone: client.phone || "",
+      phone_type: client.phone_type as "Mobile" | "Home" | undefined,
       email: client.email || "",
       program_id: client.program_id,
       location_id: client.location_id || "",
       address: client.address || "",
+      use_location_address: client.use_location_address || false,
       date_of_birth: client.date_of_birth || "",
+      birth_sex: client.birth_sex as "Male" | "Female" | undefined,
+      age: client.age,
+      race: client.race || "",
+      avatar_url: client.avatar_url || "",
       emergency_contact_name: client.emergency_contact_name || "",
       emergency_contact_phone: client.emergency_contact_phone || "",
       medical_conditions: client.medical_conditions || "",
@@ -431,6 +757,15 @@ export default function Clients() {
       medical_notes: client.medical_notes || "",
       mobility_requirements: client.mobility_requirements || "",
       is_active: client.is_active,
+      program_contacts: [],
+      mobility_requirement_ids: [],
+      mobility_custom_notes: {},
+      special_requirement_ids: [],
+      special_custom_notes: {},
+      communication_need_ids: [],
+      communication_custom_notes: {},
+      preferred_driver_request: "",
+      other_preferences: "",
     });
     setIsEditDialogOpen(true);
   };
@@ -570,7 +905,7 @@ export default function Clients() {
 
 
       {/* Two-Panel Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         
         {/* TOP PANEL: Clients List */}
         <Card className="flex flex-col">
@@ -721,15 +1056,12 @@ export default function Clients() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="text-sm">
-                            <div className="font-medium">{client.program?.name || 'Unknown'}</div>
-                            <div className="text-gray-500">{client.program?.corporateClient?.name || ''}</div>
-                          </div>
+                          <div className="text-sm font-medium">{client.programs?.short_name || client.programs?.name || client.program?.short_name || client.program?.name || 'Unknown'}</div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2 text-sm">
                             <MapPin className="w-4 h-4 text-gray-400" />
-                            <span>{client.location?.name || 'Not assigned'}</span>
+                            <span>{client.locations?.name || client.location?.name || 'Not assigned'}</span>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -890,7 +1222,7 @@ export default function Clients() {
                         <h3 className="font-medium text-gray-900">{group.name}</h3>
                         <p className="text-sm text-gray-600">{group.description}</p>
                       </div>
-                      <Badge variant="outline">{group.member_count || 0} members</Badge>
+                      <Badge variant="outline">{group.member_count ?? 0} members</Badge>
                     </div>
                     
                     <div className="flex items-center justify-between">
@@ -914,6 +1246,13 @@ export default function Clients() {
                           size="sm"
                           onClick={() => {
                             setEditingGroup(group);
+                            setGroupFormData({
+                              name: group.name,
+                              description: group.description || "",
+                              selectedClients: [],
+                              program_id: selectedProgram || "",
+                              expiryOption: "never"
+                            });
                             setIsEditGroupDialogOpen(true);
                           }}
                         >
@@ -935,7 +1274,10 @@ export default function Clients() {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction className="bg-red-600 hover:bg-red-700">
+                              <AlertDialogAction 
+                                onClick={() => handleDeleteGroup(group.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
                                 Delete
                               </AlertDialogAction>
                             </AlertDialogFooter>
@@ -953,11 +1295,11 @@ export default function Clients() {
 
       {/* Create Client Group Dialog */}
       <Dialog open={isCreateGroupDialogOpen} onOpenChange={setIsCreateGroupDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl bg-white">
           <DialogHeader>
             <DialogTitle>Create Client Group</DialogTitle>
           </DialogHeader>
-          <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+          <form onSubmit={handleCreateGroup} className="space-y-4">
             <div>
               <Label htmlFor="group-name">Group Name *</Label>
               <Input
@@ -1031,6 +1373,7 @@ export default function Clients() {
                     name: "",
                     description: "",
                     selectedClients: [],
+                    program_id: selectedProgram || "",
                     expiryOption: "never"
                   });
                 }}
@@ -1049,336 +1392,197 @@ export default function Clients() {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Client Group Dialog */}
+      <Dialog open={isEditGroupDialogOpen} onOpenChange={setIsEditGroupDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Client Group</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleUpdateGroup} className="space-y-4">
+            <div>
+              <Label htmlFor="edit-group-name">Group Name *</Label>
+              <Input
+                id="edit-group-name"
+                value={groupFormData.name}
+                onChange={(e) => setGroupFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Enter group name"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-group-description">Description</Label>
+              <Textarea
+                id="edit-group-description"
+                value={groupFormData.description}
+                onChange={(e) => setGroupFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Enter group description"
+                rows={3}
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button 
+                type="button"
+                variant="outline" 
+                onClick={() => {
+                  setIsEditGroupDialogOpen(false);
+                  setEditingGroup(null);
+                  setGroupFormData({
+                    name: "",
+                    description: "",
+                    selectedClients: [],
+                    program_id: selectedProgram || "",
+                    expiryOption: "never"
+                  });
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                className="bg-blue-600 hover:bg-blue-700"
+                disabled={!groupFormData.name.trim()}
+              >
+                Update Group
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* View/Edit Group Members Dialog */}
+      <Dialog open={isViewEditMembersDialogOpen} onOpenChange={setIsViewEditMembersDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-white">
+          <DialogHeader>
+            <DialogTitle>Group Members: {viewingGroup?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Current Members */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 mb-3">
+                Current Members {isLoadingMembers ? '(Loading...)' : `(${groupMembers.length})`}
+              </h4>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {isLoadingMembers ? (
+                  <div className="flex items-center justify-center p-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+                    <span className="ml-2 text-sm text-gray-500">Loading members...</span>
+                  </div>
+                ) : groupMembers.length === 0 ? (
+                  <p className="text-sm text-gray-500 italic">No members in this group</p>
+                ) : (
+                  groupMembers.map((member) => (
+                    <div key={member.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-medium text-gray-600">
+                            {member.clients?.first_name?.[0]}{member.clients?.last_name?.[0]}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            {member.clients?.first_name} {member.clients?.last_name}
+                          </p>
+                          <p className="text-xs text-gray-500">{member.clients?.email}</p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRemoveMember(member.id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Add New Members - Only show when not loading */}
+            {!isLoadingMembers && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-900 mb-3">Add New Members</h4>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {clients
+                  .filter(client => !groupMembers.some(member => member.client_id === client.id))
+                  .map((client) => (
+                    <div key={client.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-medium text-gray-600">
+                            {client.first_name?.[0]}{client.last_name?.[0]}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            {client.first_name} {client.last_name}
+                          </p>
+                          <p className="text-xs text-gray-500">{client.email}</p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAddMember(viewingGroup.id, client.id)}
+                        className="text-blue-600 hover:text-blue-700"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+              </div>
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsViewEditMembersDialogOpen(false);
+                setViewingGroup(null);
+                setGroupMembers([]);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                // Save changes - refresh the group data
+                queryClient.invalidateQueries({ queryKey: ["/api/client-groups"] });
+                setIsViewEditMembersDialogOpen(false);
+                setViewingGroup(null);
+                setGroupMembers([]);
+                toast({ 
+                  title: "Changes Saved", 
+                  description: "Group members updated successfully" 
+                });
+              }}
+            >
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Create Client Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
           <DialogHeader className="bg-white">
-            <DialogTitle className="text-gray-900">Add New Client</DialogTitle>
+            <DialogTitle className="text-gray-900 uppercase font-semibold" style={{ fontFamily: 'Nohemi', fontWeight: 600 }}>ADD NEW CLIENT</DialogTitle>
           </DialogHeader>
           <Form {...createForm}>
             <form onSubmit={(e) => {
               e.preventDefault();
+              console.log('🔍 Form submitted, form data:', createForm.getValues());
               createForm.handleSubmit(handleCreateClient)(e);
             }} className="space-y-6 bg-white">
-            {/* Personal Information Section */}
-            <div className="border-t pt-4 bg-white">
-              <h4 className="text-sm font-medium text-gray-900 mb-3">Personal Information</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={createForm.control}
-                  name="first_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">First Name *</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Enter first name"
-                          className="mt-1"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={createForm.control}
-                  name="last_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">Last Name *</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Enter last name"
-                          className="mt-1"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Contact Information Section */}
-            <div className="border-t pt-4 bg-white">
-              <h4 className="text-sm font-medium text-gray-900 mb-3">Contact Information</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={createForm.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">Phone</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="(555) 123-4567"
-                          className="mt-1"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={createForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">Email</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="email"
-                          placeholder="client@email.com"
-                          className="mt-1"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Address Section */}
-            <div className="border-t pt-4 bg-white">
-              <h4 className="text-sm font-medium text-gray-900 mb-3">Address Information</h4>
-              <FormField
-                control={createForm.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium">Address</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="123 Main Street, City, State 12345"
-                        className="mt-1"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Personal Details Section */}
-            <div className="border-t pt-4 bg-white">
-              <h4 className="text-sm font-medium text-gray-900 mb-3">Personal Details</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={createForm.control}
-                  name="date_of_birth"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">Date of Birth</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="date"
-                          className="mt-1"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={createForm.control}
-                  name="billing_pin"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">Billing PIN</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Optional billing PIN"
-                          className="mt-1"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Emergency Contact Section */}
-            <div className="border-t pt-4 bg-white">
-              <h4 className="text-sm font-medium text-gray-900 mb-3">Emergency Contact</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={createForm.control}
-                  name="emergency_contact_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">Emergency Contact Name</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Emergency contact name"
-                          className="mt-1"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={createForm.control}
-                  name="emergency_contact_phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">Emergency Contact Phone</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="(555) 987-6543"
-                          className="mt-1"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-              {/* Medical Information Section */}
-              <div className="border-t pt-4 bg-white">
-                <h4 className="text-sm font-medium text-gray-900 mb-3">Medical & Trip Information</h4>
-              <div className="space-y-4">
-                <FormField
-                  control={createForm.control}
-                  name="medical_conditions"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">Medical Conditions</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="List any medical conditions"
-                          className="mt-1"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={createForm.control}
-                  name="medical_notes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">Trip Notes</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Notes for drivers about this client (pickup instructions, special needs, etc.)"
-                          className="mt-1"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={createForm.control}
-                  name="special_requirements"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">Special Requirements</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Accessibility needs, special equipment, etc."
-                          className="mt-1"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={createForm.control}
-                  name="mobility_requirements"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">Mobility Requirements</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Wheelchair, walker, assistance needed, etc."
-                          className="mt-1"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Program & Location Section */}
-            <div className="border-t pt-4 bg-white">
-              <h4 className="text-sm font-medium text-gray-900 mb-3">Program & Location Assignment</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={createForm.control}
-                  name="location_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">Location</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="bg-white">
-                            <SelectValue placeholder="Select location" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="bg-white">
-                          {locations.map((location: any) => (
-                            <SelectItem key={location.id} value={location.id}>
-                              {location.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={createForm.control}
-                  name="program_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">Program *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || selectedProgram || ''}>
-                        <FormControl>
-                          <SelectTrigger className="bg-white">
-                            <SelectValue placeholder="Select program" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="bg-white">
-                          {programs?.map((program: any) => (
-                            <SelectItem key={program.id} value={program.id}>
-                              {program.name} ({program.corporateClient?.name || 'Unknown Client'})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
+            <ComprehensiveClientForm 
+              createForm={createForm}
+              programs={programs || []}
+              locations={locations || []}
+              selectedProgram={selectedProgram}
+            />
 
             <div className="flex justify-end space-x-2 pt-4 bg-white">
               <Button 

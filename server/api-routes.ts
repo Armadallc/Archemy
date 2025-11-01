@@ -9,6 +9,16 @@ import {
   tripsStorage,
   clientGroupsStorage
 } from "./minimal-supabase";
+import { 
+  getFrequentLocations,
+  getFrequentLocationById,
+  createFrequentLocation,
+  updateFrequentLocation,
+  deleteFrequentLocation,
+  incrementUsageCount,
+  getFrequentLocationsForProgram,
+  getFrequentLocationsForCorporateClient
+} from "./frequent-locations-storage";
 import { tripCategoriesStorage } from "./trip-categories-storage";
 import { enhancedTripsStorage } from "./enhanced-trips-storage";
 import { driverSchedulesStorage } from "./driver-schedules-storage";
@@ -57,6 +67,9 @@ router.get("/mobile/test", (req, res) => {
 // Mobile endpoint to get trips for current authenticated driver
 router.get("/mobile/trips/driver", requireSupabaseAuth, async (req: SupabaseAuthenticatedRequest, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
     const userId = req.user.userId;
     console.log('🔍 Mobile: Fetching trips for user:', userId);
     
@@ -86,8 +99,10 @@ router.get("/mobile/trips/driver", requireSupabaseAuth, async (req: SupabaseAuth
     res.json(trips || []);
   } catch (error) {
     console.error("❌ Mobile: Error fetching driver trips:", error);
-    console.error("❌ Mobile: Error details:", error.message, error.stack);
-    res.status(500).json({ message: "Failed to fetch driver trips", error: error.message });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error("❌ Mobile: Error details:", errorMessage, errorStack);
+    res.status(500).json({ message: "Failed to fetch driver trips", error: errorMessage });
   }
 });
 
@@ -133,6 +148,7 @@ router.post("/auth/login", async (req, res) => {
       .from('users')
       .select(`
         user_id,
+        auth_user_id,
         user_name,
         email,
         role,
@@ -229,7 +245,8 @@ router.get('/test-schema', async (req, res) => {
       allError: allError?.message || null
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ error: errorMessage });
   }
 });
 
@@ -262,7 +279,8 @@ router.post('/test-auth', async (req, res) => {
       } : null
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ error: errorMessage });
   }
 });
 
@@ -580,6 +598,120 @@ router.delete("/locations/:id", requireSupabaseAuth, requireSupabaseRole(['super
 });
 
 // ============================================================================
+// FREQUENT LOCATIONS ROUTES
+// ============================================================================
+
+// Get all frequent locations with optional filtering
+router.get("/frequent-locations", requireSupabaseAuth, async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const filters = {
+      corporate_client_id: req.query.corporate_client_id as string,
+      program_id: req.query.program_id as string,
+      location_id: req.query.location_id as string,
+      location_type: req.query.location_type as string,
+      is_active: req.query.is_active === 'true' ? true : req.query.is_active === 'false' ? false : undefined,
+      search: req.query.search as string
+    };
+
+    const frequentLocations = await getFrequentLocations(filters);
+    res.json(frequentLocations);
+  } catch (error) {
+    console.error("Error fetching frequent locations:", error);
+    res.status(500).json({ message: "Failed to fetch frequent locations" });
+  }
+});
+
+// Get frequent location by ID
+router.get("/frequent-locations/:id", requireSupabaseAuth, async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const frequentLocation = await getFrequentLocationById(id);
+    
+    if (!frequentLocation) {
+      return res.status(404).json({ message: "Frequent location not found" });
+    }
+    
+    res.json(frequentLocation);
+  } catch (error) {
+    console.error("Error fetching frequent location:", error);
+    res.status(500).json({ message: "Failed to fetch frequent location" });
+  }
+});
+
+// Create new frequent location
+router.post("/frequent-locations", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin', 'program_user']), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const frequentLocation = await createFrequentLocation(req.body);
+    res.status(201).json(frequentLocation);
+  } catch (error) {
+    console.error("Error creating frequent location:", error);
+    res.status(500).json({ message: "Failed to create frequent location" });
+  }
+});
+
+// Update frequent location
+router.patch("/frequent-locations/:id", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin', 'program_user']), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const frequentLocation = await updateFrequentLocation(id, req.body);
+    res.json(frequentLocation);
+  } catch (error) {
+    console.error("Error updating frequent location:", error);
+    res.status(500).json({ message: "Failed to update frequent location" });
+  }
+});
+
+// Delete frequent location
+router.delete("/frequent-locations/:id", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin', 'program_user']), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    await deleteFrequentLocation(id);
+    res.json({ message: "Frequent location deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting frequent location:", error);
+    res.status(500).json({ message: "Failed to delete frequent location" });
+  }
+});
+
+// Increment usage count
+router.post("/frequent-locations/:id/increment-usage", requireSupabaseAuth, async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const frequentLocation = await incrementUsageCount(id);
+    res.json(frequentLocation);
+  } catch (error) {
+    console.error("Error incrementing usage count:", error);
+    res.status(500).json({ message: "Failed to increment usage count" });
+  }
+});
+
+// Get frequent locations for program (for trip creation)
+router.get("/frequent-locations/program/:programId", requireSupabaseAuth, async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { programId } = req.params;
+    const locationType = req.query.location_type as string;
+    const frequentLocations = await getFrequentLocationsForProgram(programId, locationType);
+    res.json(frequentLocations);
+  } catch (error) {
+    console.error("Error fetching frequent locations for program:", error);
+    res.status(500).json({ message: "Failed to fetch frequent locations for program" });
+  }
+});
+
+// Get frequent locations for corporate client
+router.get("/frequent-locations/corporate-client/:corporateClientId", requireSupabaseAuth, async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { corporateClientId } = req.params;
+    const locationType = req.query.location_type as string;
+    const frequentLocations = await getFrequentLocationsForCorporateClient(corporateClientId, locationType);
+    res.json(frequentLocations);
+  } catch (error) {
+    console.error("Error fetching frequent locations for corporate client:", error);
+    res.status(500).json({ message: "Failed to fetch frequent locations for corporate client" });
+  }
+});
+
+// ============================================================================
 // CLIENTS ROUTES
 // ============================================================================
 
@@ -733,6 +865,43 @@ router.delete("/client-groups/:id", requireSupabaseAuth, requireSupabaseRole(['s
   } catch (error) {
     console.error("Error deleting client group:", error);
     res.status(500).json({ message: "Failed to delete client group" });
+  }
+});
+
+// ============================================================================
+// CLIENT GROUP MEMBERSHIPS ROUTES
+// ============================================================================
+
+router.get("/client-group-memberships/:groupId", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_CLIENT_GROUPS), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { groupId } = req.params;
+    const members = await clientGroupsStorage.getClientGroupMembers(groupId);
+    res.json(members);
+  } catch (error) {
+    console.error("Error fetching group members:", error);
+    res.status(500).json({ message: "Failed to fetch group members" });
+  }
+});
+
+router.post("/client-group-memberships", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin']), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { client_group_id, client_id } = req.body;
+    const membership = await clientGroupsStorage.addClientToGroup(client_group_id, client_id);
+    res.status(201).json(membership);
+  } catch (error) {
+    console.error("Error adding client to group:", error);
+    res.status(500).json({ message: "Failed to add client to group" });
+  }
+});
+
+router.delete("/client-group-memberships/:membershipId", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin']), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { membershipId } = req.params;
+    await clientGroupsStorage.removeClientFromGroup(membershipId);
+    res.json({ message: "Client removed from group successfully" });
+  } catch (error) {
+    console.error("Error removing client from group:", error);
+    res.status(500).json({ message: "Failed to remove client from group" });
   }
 });
 
@@ -1612,13 +1781,17 @@ router.get("/trips/driver/:driverId", requireSupabaseAuth, async (req: SupabaseA
     res.json(trips || []);
   } catch (error) {
     console.error("❌ Web: Error fetching driver trips:", error);
-    res.status(500).json({ message: "Failed to fetch driver trips", error: error.message });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ message: "Failed to fetch driver trips", error: errorMessage });
   }
 });
 
 // Emergency API endpoints
 router.post("/emergency/panic", requireSupabaseAuth, async (req: SupabaseAuthenticatedRequest, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
     const { location, tripId } = req.body;
     const driverId = req.user.userId;
     
@@ -1627,9 +1800,15 @@ router.post("/emergency/panic", requireSupabaseAuth, async (req: SupabaseAuthent
     console.log('🚗 Trip ID:', tripId);
     
     // Get driver info
-    const driver = await enhancedTripsStorage.getDriverById(driverId);
-    if (!driver) {
-      return res.status(404).json({ message: "Driver not found" });
+    const { data: driver, error: driverError } = await supabase
+      .from('drivers')
+      .select('*')
+      .eq('user_id', driverId)
+      .single();
+    
+    if (driverError || !driver) {
+      console.error('❌ Driver not found:', driverError);
+      return res.status(404).json({ error: 'Driver not found' });
     }
     
     // Get driver name
@@ -1670,7 +1849,8 @@ router.post("/emergency/panic", requireSupabaseAuth, async (req: SupabaseAuthent
     
   } catch (error) {
     console.error("❌ Error processing emergency panic:", error);
-    res.status(500).json({ message: "Failed to process emergency alert", error: error.message });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ message: "Failed to process emergency alert", error: errorMessage });
   }
 });
 

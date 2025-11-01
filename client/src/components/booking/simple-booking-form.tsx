@@ -5,12 +5,13 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { Calendar, Clock, MapPin, ChevronDown } from "lucide-react";
+import { Calendar, Clock, MapPin, ChevronDown, Plus, X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "../../hooks/use-toast";
 import { useAuth } from "../../hooks/useAuth";
 import { useHierarchy } from "../../hooks/useHierarchy";
 import { apiRequest } from "../../lib/queryClient";
+import QuickAddLocation from "./quick-add-location";
 
 function SimpleBookingForm() {
   const { toast } = useToast();
@@ -21,6 +22,7 @@ function SimpleBookingForm() {
   const [formData, setFormData] = useState({
     selectionType: "individual",
     clientId: "",
+    clientIds: [] as string[], // Array for multiple individual clients
     clientGroupId: "",
     driverId: "unassigned",
     pickupAddress: "",
@@ -48,7 +50,7 @@ function SimpleBookingForm() {
   const { data: corporateClients = [] } = useQuery({
     queryKey: ["/api/corporate-clients"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "/api/corporate-clients");
+      const response = await apiRequest("GET", "/api/corporate/clients");
       return await response.json();
     },
     enabled: level === 'corporate' && !selectedCorporateClient,
@@ -60,7 +62,7 @@ function SimpleBookingForm() {
     queryFn: async () => {
       let endpoint = "/api/programs";
       if (effectiveCorporateClient) {
-        endpoint = `/api/programs/corporate-client/${effectiveCorporateClient}`;
+        endpoint = `/api/corporate/programs/corporate-client/${effectiveCorporateClient}`;
       }
       const response = await apiRequest("GET", endpoint);
       return await response.json();
@@ -130,34 +132,36 @@ function SimpleBookingForm() {
       }
       
       const response = await apiRequest("GET", endpoint);
-      return await response.json();
+      const data = await response.json();
+      console.log('🔍 Drivers API response:', data);
+      return data;
     },
     enabled: !!(effectiveProgram || effectiveCorporateClient),
   });
 
   // Fetch frequent locations based on current hierarchy level
   const { data: frequentLocationsData = [], isLoading: frequentLocationsLoading } = useQuery({
-    queryKey: ["/api/frequent-locations", level, effectiveCorporateClient, effectiveProgram],
+    queryKey: ["/api/frequent-locations", level, selectedCorporateClient, selectedProgram],
     queryFn: async () => {
-      if (!effectiveProgram && !effectiveCorporateClient) return [];
+      if (!selectedProgram && !selectedCorporateClient) return [];
       
       let endpoint = "/api/frequent-locations";
-      if (level === 'program' && effectiveProgram) {
-        endpoint = `/api/frequent-locations/program/${effectiveProgram}`;
-      } else if (level === 'client' && effectiveCorporateClient) {
-        endpoint = `/api/frequent-locations/corporate-client/${effectiveCorporateClient}`;
-      } else if (level === 'corporate' && effectiveProgram) {
-        endpoint = `/api/frequent-locations/program/${effectiveProgram}`;
+      if (level === 'program' && selectedProgram) {
+        endpoint = `/api/frequent-locations/program/${selectedProgram}`;
+      } else if (level === 'client' && selectedCorporateClient) {
+        endpoint = `/api/frequent-locations/corporate-client/${selectedCorporateClient}`;
+      } else if (level === 'corporate' && selectedProgram) {
+        endpoint = `/api/frequent-locations/program/${selectedProgram}`;
       }
       
       const response = await apiRequest("GET", endpoint);
       return await response.json();
     },
-    enabled: !!(effectiveProgram || effectiveCorporateClient),
+    enabled: !!(selectedProgram || selectedCorporateClient),
   });
 
   // Fetch locations based on current hierarchy level
-  const { data: serviceAreasData = [] } = useQuery({
+  const { data: locationsData = [] } = useQuery({
     queryKey: ["/api/locations", level, effectiveCorporateClient, effectiveProgram],
     queryFn: async () => {
       let endpoint = "/api/locations";
@@ -177,7 +181,7 @@ function SimpleBookingForm() {
   });
 
   const frequentLocations = Array.isArray(frequentLocationsData) ? frequentLocationsData : [];
-  const serviceAreas = Array.isArray(serviceAreasData) ? serviceAreasData : [];
+  const locations = Array.isArray(locationsData) ? locationsData : [];
 
 
 
@@ -187,15 +191,36 @@ function SimpleBookingForm() {
 
   // Filter drivers by client's program (they should all be from same program already)
   const availableDrivers = drivers.filter((driver: any) => 
-    driver.program_id === clientProgram || driver.program_id === selectedProgram
+    driver.program_id === clientProgram || driver.program_id === effectiveProgram
   );
+  
+  console.log('🔍 Available drivers:', availableDrivers);
+  console.log('🔍 Drivers count:', drivers.length);
+  console.log('🔍 Available drivers count:', availableDrivers.length);
+  console.log('🔍 effectiveProgram:', effectiveProgram);
+  console.log('🔍 selectedProgram:', selectedProgram);
+  console.log('🔍 selectedProgramLocal:', selectedProgramLocal);
+  console.log('🔍 clientProgram:', clientProgram);
 
   // Create trip mutation
   const createTripMutation = useMutation({
     mutationFn: async (tripData: any) => {
-      const scheduledPickupTime = `${tripData.scheduledDate}T${tripData.scheduledTime}:00`;
+      // Create datetime strings with Colorado timezone
+      // Colorado is currently in MDT (UTC-6), but we'll use a more robust approach
+      const createDateTimeString = (date: string, time: string) => {
+        // Create a date object in local timezone, then convert to ISO with timezone
+        const localDateTime = new Date(`${date}T${time}:00`);
+        // Get the timezone offset for Colorado (currently -6 hours for MDT)
+        const timezoneOffset = -6; // MDT (UTC-6)
+        const offsetHours = Math.floor(Math.abs(timezoneOffset));
+        const offsetMinutes = (Math.abs(timezoneOffset) % 1) * 60;
+        const offsetString = `${timezoneOffset >= 0 ? '+' : '-'}${offsetHours.toString().padStart(2, '0')}:${offsetMinutes.toString().padStart(2, '0')}`;
+        return `${date}T${time}:00${offsetString}`;
+      };
+      
+      const scheduledPickupTime = createDateTimeString(tripData.scheduledDate, tripData.scheduledTime);
       const scheduledReturnTime = tripData.tripType === "round_trip" && tripData.returnTime 
-        ? `${tripData.scheduledDate}T${tripData.returnTime}:00`
+        ? createDateTimeString(tripData.scheduledDate, tripData.returnTime)
         : null;
       
       if (tripData.isRecurring) {
@@ -214,38 +239,80 @@ function SimpleBookingForm() {
           days_of_week: tripData.daysOfWeek,
           duration: tripData.duration,
           start_date: tripData.scheduledDate,
+          passenger_count: tripData.selectionType === "group" ? (clientGroups.find(g => g.id === tripData.clientGroupId)?.member_count || 1) : 1,
+          is_group_trip: tripData.selectionType === "group",
           is_active: true
         };
         const response = await apiRequest("POST", "/api/recurring-trips", apiData);
         return response;
       } else {
-        // Create regular trip
-        const apiData = {
-          program_id: effectiveProgram,
-          client_id: tripData.selectionType === "individual" ? tripData.clientId : undefined,
-          client_group_id: tripData.selectionType === "group" ? tripData.clientGroupId : undefined,
-          driver_id: tripData.driverId === "unassigned" ? null : tripData.driverId || null,
-          trip_type: tripData.tripType,
-          pickup_address: tripData.pickupAddress,
-          dropoff_address: tripData.dropoffAddress,
-          scheduled_pickup_time: scheduledPickupTime,
-          scheduled_return_time: scheduledReturnTime,
-          passenger_count: 1,
-          status: "scheduled"
-        };
-        
-        const response = await apiRequest("POST", "/api/trips", apiData);
-        return response;
+        // Create regular trip(s)
+        if (tripData.selectionType === "individual") {
+          // Create separate trips for each individual client
+          const allClientIds = [tripData.clientId, ...tripData.clientIds].filter(id => id);
+          const tripPromises = allClientIds.map((clientId, index) => {
+            const apiData = {
+              id: `trip_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`,
+              program_id: effectiveProgram,
+              client_id: clientId,
+              driver_id: tripData.driverId === "unassigned" ? null : tripData.driverId || null,
+              trip_type: tripData.tripType,
+              pickup_address: tripData.pickupAddress,
+              dropoff_address: tripData.dropoffAddress,
+              scheduled_pickup_time: scheduledPickupTime,
+              scheduled_return_time: scheduledReturnTime,
+              passenger_count: 1,
+              is_group_trip: false,
+              status: "scheduled",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+            
+            return apiRequest("POST", "/api/trips", apiData);
+          });
+          
+          const responses = await Promise.all(tripPromises);
+          return responses;
+        } else {
+          // Create group trip
+          const apiData = {
+            id: `trip_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            program_id: effectiveProgram,
+            client_group_id: tripData.clientGroupId,
+            driver_id: tripData.driverId === "unassigned" ? null : tripData.driverId || null,
+            trip_type: tripData.tripType,
+            pickup_address: tripData.pickupAddress,
+            dropoff_address: tripData.dropoffAddress,
+            scheduled_pickup_time: scheduledPickupTime,
+            scheduled_return_time: scheduledReturnTime,
+            passenger_count: clientGroups.find(g => g.id === tripData.clientGroupId)?.member_count || 1,
+            is_group_trip: true,
+            status: "scheduled",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          
+          const response = await apiRequest("POST", "/api/trips", apiData);
+          return response;
+        }
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      const isMultipleTrips = Array.isArray(data);
+      const tripCount = isMultipleTrips ? data.length : 1;
+      
       toast({
-        title: formData.isRecurring ? "Recurring Trip Scheduled" : "Trip Scheduled",
-        description: formData.isRecurring ? "Recurring trip has been successfully created." : "Trip has been successfully scheduled.",
+        title: formData.isRecurring ? "Recurring Trip Scheduled" : (isMultipleTrips ? "Trips Scheduled" : "Trip Scheduled"),
+        description: formData.isRecurring 
+          ? "Recurring trip has been successfully created." 
+          : (isMultipleTrips 
+              ? `${tripCount} trips have been successfully scheduled.` 
+              : "Trip has been successfully scheduled."),
       });
       setFormData({
         selectionType: "individual",
         clientId: "",
+        clientIds: [] as string[],
         clientGroupId: "",
         driverId: "unassigned",
         pickupAddress: "",
@@ -279,10 +346,12 @@ function SimpleBookingForm() {
     
     // Validation based on selection type
     if (formData.selectionType === "individual") {
-      if (!formData.clientId || !formData.pickupAddress || !formData.dropoffAddress || !formData.scheduledDate || !formData.scheduledTime) {
+      // Check if at least one client is selected (either clientId or any clientIds)
+      const hasClient = formData.clientId || formData.clientIds.some(id => id);
+      if (!hasClient || !formData.pickupAddress || !formData.dropoffAddress || !formData.scheduledDate || !formData.scheduledTime) {
         toast({
           title: "Missing Information",
-          description: "Please fill in all required fields.",
+          description: "Please select at least one client and fill in all required fields.",
           variant: "destructive",
         });
         return;
@@ -350,9 +419,9 @@ function SimpleBookingForm() {
                     <SelectTrigger className="bg-white">
                       <SelectValue placeholder="Select corporate client" />
                     </SelectTrigger>
-                    <SelectContent className="bg-white">
+                    <SelectContent className="bg-white text-gray-900 max-h-60 z-50">
                       {corporateClients.map((client: any) => (
-                        <SelectItem key={client.id} value={client.id}>
+                        <SelectItem key={client.id} value={client.id} className="text-gray-900 hover:bg-gray-100">
                           {client.name}
                         </SelectItem>
                       ))}
@@ -371,9 +440,9 @@ function SimpleBookingForm() {
                     <SelectTrigger className="bg-white">
                       <SelectValue placeholder="Select program" />
                     </SelectTrigger>
-                    <SelectContent className="bg-white">
+                    <SelectContent className="bg-white text-gray-900 max-h-60 z-50">
                       {programs.map((program: any) => (
-                        <SelectItem key={program.id} value={program.id}>
+                        <SelectItem key={program.id} value={program.id} className="text-gray-900 hover:bg-gray-100">
                           {program.name}
                         </SelectItem>
                       ))}
@@ -399,7 +468,7 @@ function SimpleBookingForm() {
                   type="radio"
                   value="individual"
                   checked={formData.selectionType === "individual"}
-                  onChange={(e) => setFormData({...formData, selectionType: e.target.value as "individual" | "group", clientId: "", clientGroupId: ""})}
+                  onChange={(e) => setFormData({...formData, selectionType: e.target.value as "individual" | "group", clientId: "", clientIds: [], clientGroupId: ""})}
                   className="rounded border-gray-300"
                 />
                 <span className="text-sm">Individual Client</span>
@@ -409,7 +478,7 @@ function SimpleBookingForm() {
                   type="radio"
                   value="group"
                   checked={formData.selectionType === "group"}
-                  onChange={(e) => setFormData({...formData, selectionType: e.target.value as "individual" | "group", clientId: "", clientGroupId: ""})}
+                  onChange={(e) => setFormData({...formData, selectionType: e.target.value as "individual" | "group", clientId: "", clientIds: [], clientGroupId: ""})}
                   className="rounded border-gray-300"
                 />
                 <span className="text-sm">Client Group</span>
@@ -419,19 +488,76 @@ function SimpleBookingForm() {
 
           {formData.selectionType === "individual" ? (
             <div>
-              <Label htmlFor="clientId">Individual Client *</Label>
-              <Select value={formData.clientId} onValueChange={(value) => setFormData({ ...formData, clientId: value })}>
-                <SelectTrigger className="bg-white">
-                  <SelectValue placeholder="Select client" />
-                </SelectTrigger>
-                <SelectContent className="bg-white">
-                  {clients.map((client: any) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.first_name} {client.last_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Individual Clients *</Label>
+              <div className="space-y-2">
+                {/* First client selection */}
+                <Select 
+                  value={formData.clientId} 
+                  onValueChange={(value) => setFormData({ ...formData, clientId: value })}
+                >
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Select first client" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white text-gray-900 max-h-60 z-50">
+                    {clients.map((client: any) => (
+                      <SelectItem key={client.id} value={client.id} className="text-gray-900 hover:bg-gray-100">
+                        {client.first_name} {client.last_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {/* Additional client selections */}
+                {formData.clientIds.map((clientId, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Select 
+                      value={clientId} 
+                      onValueChange={(value) => {
+                        const newClientIds = [...formData.clientIds];
+                        newClientIds[index] = value;
+                        setFormData({ ...formData, clientIds: newClientIds });
+                      }}
+                    >
+                      <SelectTrigger className="bg-white">
+                        <SelectValue placeholder="Select additional client" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white text-gray-900 max-h-60 z-50">
+                        {clients.map((client: any) => (
+                          <SelectItem key={client.id} value={client.id} className="text-gray-900 hover:bg-gray-100">
+                            {client.first_name} {client.last_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const newClientIds = formData.clientIds.filter((_, i) => i !== index);
+                        setFormData({ ...formData, clientIds: newClientIds });
+                      }}
+                      className="px-2 py-1 h-8 w-8"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                
+                {/* Add client button */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setFormData({ ...formData, clientIds: [...formData.clientIds, ""] });
+                  }}
+                  className="w-full"
+                  disabled={formData.clientIds.length >= 4} // Limit to 5 total clients (1 + 4 additional)
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Client ({formData.clientIds.length + 1}/5)
+                </Button>
+              </div>
             </div>
           ) : (
             <div>
@@ -440,10 +566,10 @@ function SimpleBookingForm() {
                 <SelectTrigger className="bg-white">
                   <SelectValue placeholder="Select client group" />
                 </SelectTrigger>
-                <SelectContent className="bg-white">
+                <SelectContent className="bg-white text-gray-900 max-h-60 z-50">
                   {clientGroups.map((group: any) => (
-                    <SelectItem key={group.id} value={group.id}>
-                      {group.name} ({group.clientCount || 0} clients)
+                    <SelectItem key={group.id} value={group.id} className="text-gray-900 hover:bg-gray-100">
+                      {group.name} ({group.member_count || 0} clients)
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -457,14 +583,20 @@ function SimpleBookingForm() {
               value={formData.driverId} 
               onValueChange={(value) => setFormData({ ...formData, driverId: value })}
             >
-              <SelectTrigger className="bg-white">
+              <SelectTrigger className="bg-white text-gray-900">
                 <SelectValue placeholder="Select a driver or leave unassigned" />
               </SelectTrigger>
-              <SelectContent className="bg-white">
-                <SelectItem value="unassigned">No driver assigned</SelectItem>
+              <SelectContent className="bg-white text-gray-900 max-h-60 z-50">
+                <SelectItem value="unassigned" className="text-gray-900 hover:bg-gray-100">
+                  No driver assigned
+                </SelectItem>
                 {availableDrivers.map((driver: any) => (
-                  <SelectItem key={driver.id} value={driver.id}>
-                    {driver.user_name}
+                  <SelectItem 
+                    key={driver.id} 
+                    value={driver.id}
+                    className="text-gray-900 hover:bg-gray-100"
+                  >
+                    {driver.users?.user_name || driver.user_name || 'Unknown Driver'}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -476,155 +608,23 @@ function SimpleBookingForm() {
             )}
           </div>
 
-          <div>
-            <Label htmlFor="pickupAddress">Pickup Address</Label>
-            <div className="flex gap-2">
-              <Input
-                type="text"
-                placeholder="Enter pickup address"
-                value={formData.pickupAddress}
-                onChange={(e) => setFormData({ ...formData, pickupAddress: e.target.value })}
-                className="flex-1"
-              />
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="px-3 flex items-center gap-1"
-                    type="button"
-                  >
-                    <MapPin className="w-4 h-4" />
-                    Quick Add
-                    <ChevronDown className="w-3 h-3" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80 p-0 bg-white" align="end">
-                  <div className="max-h-64 overflow-y-auto bg-white">
-                    {serviceAreas.length > 0 && (
-                      <div className="p-2 border-b">
-                        <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Service Areas</div>
-                        {serviceAreas.map((area: any) => (
-                          <button
-                            key={area.id}
-                            type="button"
-                            onClick={() => setFormData({...formData, pickupAddress: area.full_address || area.nickname})}
-                            className="w-full text-left p-2 hover:bg-gray-50 rounded text-sm"
-                          >
-                            <div className="font-medium">{area.nickname}</div>
-                            <div className="text-xs text-gray-500">{area.full_address}</div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {frequentLocations.length > 0 && (
-                      <div className="p-2">
-                        <div className="text-xs font-semibold text-gray-500 uppercase mb-2">
-                          Frequent Locations ({frequentLocations.length})
-                        </div>
-                        {frequentLocations.map((location: any) => (
-                          <button
-                            key={location.id}
-                            type="button"
-                            onClick={() => setFormData({...formData, pickupAddress: location.full_address || location.name})}
-                            className="w-full text-left p-2 hover:bg-gray-50 rounded text-sm"
-                          >
-                            <div className="font-medium">{location.name}</div>
-                            <div className="text-xs text-gray-500">{location.full_address}</div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {frequentLocations.length === 0 && serviceAreas.length === 0 && !frequentLocationsLoading && (
-                      <div className="p-4 text-sm text-gray-500 text-center">
-                        No saved locations available
-                      </div>
-                    )}
-                    {frequentLocationsLoading && (
-                      <div className="p-4 text-sm text-blue-500 text-center">
-                        Loading locations...
-                      </div>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
+          <QuickAddLocation
+            value={formData.pickupAddress}
+            onChange={(value) => setFormData({ ...formData, pickupAddress: value })}
+            placeholder="Enter pickup address"
+            locationType="pickup"
+            label="Pickup Address"
+            required
+          />
 
-          <div>
-            <Label htmlFor="dropoffAddress">Drop-off Address</Label>
-            <div className="flex gap-2">
-              <Input
-                type="text"
-                placeholder="Enter drop-off address"
-                value={formData.dropoffAddress}
-                onChange={(e) => setFormData({ ...formData, dropoffAddress: e.target.value })}
-                className="flex-1"
-              />
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="px-3 flex items-center gap-1"
-                    type="button"
-                  >
-                    <MapPin className="w-4 h-4" />
-                    Quick Add
-                    <ChevronDown className="w-3 h-3" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80 p-0 bg-white" align="end">
-                  <div className="max-h-64 overflow-y-auto bg-white">
-                    {serviceAreas.length > 0 && (
-                      <div className="p-2 border-b">
-                        <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Service Areas</div>
-                        {serviceAreas.map((area: any) => (
-                          <button
-                            key={area.id}
-                            type="button"
-                            onClick={() => setFormData({...formData, dropoffAddress: area.full_address || area.nickname})}
-                            className="w-full text-left p-2 hover:bg-gray-50 rounded text-sm"
-                          >
-                            <div className="font-medium">{area.nickname}</div>
-                            <div className="text-xs text-gray-500">{area.full_address}</div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {frequentLocations.length > 0 && (
-                      <div className="p-2">
-                        <div className="text-xs font-semibold text-gray-500 uppercase mb-2">
-                          Frequent Locations ({frequentLocations.length})
-                        </div>
-                        {frequentLocations.map((location: any) => (
-                          <button
-                            key={location.id}
-                            type="button"
-                            onClick={() => setFormData({...formData, dropoffAddress: location.full_address || location.name})}
-                            className="w-full text-left p-2 hover:bg-gray-50 rounded text-sm"
-                          >
-                            <div className="font-medium">{location.name}</div>
-                            <div className="text-xs text-gray-500">{location.full_address}</div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {frequentLocations.length === 0 && serviceAreas.length === 0 && !frequentLocationsLoading && (
-                      <div className="p-4 text-sm text-gray-500 text-center">
-                        No saved locations available
-                      </div>
-                    )}
-                    {frequentLocationsLoading && (
-                      <div className="p-4 text-sm text-blue-500 text-center">
-                        Loading locations...
-                      </div>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
+          <QuickAddLocation
+            value={formData.dropoffAddress}
+            onChange={(value) => setFormData({ ...formData, dropoffAddress: value })}
+            placeholder="Enter drop-off address"
+            locationType="dropoff"
+            label="Drop-off Address"
+            required
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -651,9 +651,9 @@ function SimpleBookingForm() {
               <SelectTrigger className="bg-white">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-white">
-                <SelectItem value="one_way">One Way</SelectItem>
-                <SelectItem value="round_trip">Round Trip</SelectItem>
+              <SelectContent className="bg-white text-gray-900 max-h-60 z-50">
+                <SelectItem value="one_way" className="text-gray-900 hover:bg-gray-100">One Way</SelectItem>
+                <SelectItem value="round_trip" className="text-gray-900 hover:bg-gray-100">Round Trip</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -704,9 +704,9 @@ function SimpleBookingForm() {
                   <SelectTrigger className="bg-white">
                     <SelectValue placeholder="Select frequency" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white">
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectContent className="bg-white text-gray-900 max-h-60 z-50">
+                    <SelectItem value="weekly" className="text-gray-900 hover:bg-gray-100">Weekly</SelectItem>
+                    <SelectItem value="monthly" className="text-gray-900 hover:bg-gray-100">Monthly</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

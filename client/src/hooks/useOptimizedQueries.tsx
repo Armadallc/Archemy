@@ -13,9 +13,9 @@ interface OptimizedQueriesOptions {
 export function useOptimizedQueries(options: OptimizedQueriesOptions = {}) {
   const {
     enabled = true,
-    staleTime = 30000, // 30 seconds - data stays fresh
-    cacheTime = 300000, // 5 minutes - keep in cache
-    refetchInterval = 5000, // 5 seconds
+    staleTime = 60000, // 60 seconds - data stays fresh
+    cacheTime = 600000, // 10 minutes - keep in cache
+    refetchInterval = 30000, // 30 seconds - more reasonable interval
     refetchOnWindowFocus = false // Don't refetch on window focus
   } = options;
 
@@ -23,10 +23,9 @@ export function useOptimizedQueries(options: OptimizedQueriesOptions = {}) {
 
   // Optimized query configuration
   const queryConfig = useMemo(() => ({
-    enabled,
     staleTime,
     cacheTime,
-    refetchInterval: enabled ? refetchInterval : false,
+    refetchInterval: enabled && typeof refetchInterval === 'number' && refetchInterval > 0 ? refetchInterval : 0,
     refetchOnWindowFocus,
     retry: 2, // Retry failed requests twice
     retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
@@ -38,8 +37,8 @@ export function useOptimizedQueries(options: OptimizedQueriesOptions = {}) {
       queryClient.prefetchQuery({
         queryKey: [key],
         queryFn: async () => {
-          const response = await apiRequest(`/api/${key}`);
-          return response.data;
+          const response = await apiRequest('GET', `/api/${key}`);
+          return await response.json();
         },
         ...queryConfig
       })

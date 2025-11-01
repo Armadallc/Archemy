@@ -1,11 +1,11 @@
-# Supabase Setup
+# Supabase Setup for HALCYON Transport Management
 
 ## Step 1: Create Supabase Project
 
 1. Go to [supabase.com](https://supabase.com) and create an account
 2. Click "New Project"
 3. Choose your organization
-4. Set project name: "Aethr Transport Management"
+4. Set project name: "HALCYON Transport Management"
 5. Set database password (save this securely)
 6. Choose region closest to your users
 7. Click "Create new project"
@@ -16,7 +16,14 @@
 2. Copy the entire contents of `supabase-schema.sql` file
 3. Paste and run the SQL to create all tables, indexes, and policies
 
-## Step 3: Get Connection Details
+## Step 3: Configure Authentication
+
+1. Go to Authentication > Settings
+2. Enable Email/Password authentication
+3. Disable email confirmations for development (Settings > Auth > Email Auth)
+4. Set up custom JWT claims for role-based access
+
+## Step 4: Get Connection Details
 
 From your Supabase dashboard, go to Settings > Database:
 
@@ -24,13 +31,14 @@ From your Supabase dashboard, go to Settings > Database:
 2. **Service Role Key**: Found in Settings > API > service_role (secret key)
 3. **Database Password**: The password you set when creating the project
 
-## Step 4: Configure Environment Variables
+## Step 5: Configure Environment Variables
 
 Create a `.env` file in your project root with these variables:
 
 ```env
 # Supabase Configuration
 SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-secret-key
 SUPABASE_DB_PASSWORD=your-database-password
 
@@ -38,7 +46,18 @@ SUPABASE_DB_PASSWORD=your-database-password
 SESSION_SECRET=your-random-session-secret-key
 ```
 
-## Step 5: Test Connection
+## Step 6: Update Application Code
+
+After database setup, you may need to:
+1. Install Supabase client: `npm install @supabase/supabase-js`
+2. Replace current auth system with Supabase Auth (if migrating)
+3. Update database client to use Supabase
+4. Implement user registration flow
+5. Set up proper password hashing via Supabase
+
+**Note**: The Row Level Security (RLS) policies in the schema filter data by organization. These will need to be adjusted based on your specific Supabase auth JWT structure.
+
+## Step 7: Test Connection
 
 After setting the environment variables:
 

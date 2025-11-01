@@ -54,8 +54,8 @@ export default function PerformanceMetricsWidget({ className, trips, drivers }: 
     >
       <div className="space-y-6">
         {[
-          { key: 'completionRate', label: 'Completion Rate', icon: <Target className="h-4 w-4 text-muted-foreground" />, value: metrics?.completionRate || 0, target: 95, isPercentage: true },
-          { key: 'onTimeRate', label: 'On Time Rate', icon: <Clock className="h-4 w-4 text-muted-foreground" />, value: metrics?.onTimeRate || 0, target: 90, isPercentage: true },
+          { key: 'completionRate', label: 'Completion Rate', icon: <Target className="h-4 w-4 text-muted-foreground" />, value: (metrics as any)?.completionRate || (metrics as any)?.onTimeDelivery || 0, target: 95, isPercentage: true },
+          { key: 'onTimeRate', label: 'On Time Rate', icon: <Clock className="h-4 w-4 text-muted-foreground" />, value: (metrics as any)?.onTimeRate || (metrics as any)?.onTimeDelivery || 0, target: 90, isPercentage: true },
           { key: 'customerSatisfaction', label: 'Customer Satisfaction', icon: <Users className="h-4 w-4 text-muted-foreground" />, value: metrics?.customerSatisfaction || 0, target: 4.5, isPercentage: false },
           { key: 'driverUtilization', label: 'Driver Utilization', icon: <BarChart3 className="h-4 w-4 text-muted-foreground" />, value: metrics?.driverUtilization || 0, target: 80, isPercentage: true }
         ].map(({ key, label, icon, value, target, isPercentage }) => (
@@ -95,7 +95,7 @@ export default function PerformanceMetricsWidget({ className, trips, drivers }: 
           <h4 className="text-sm font-medium text-muted-foreground mb-3">Today's Summary</h4>
           <div className="grid grid-cols-2 gap-4">
             <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{metrics?.completedTrips || 0}</div>
+              <div className="text-2xl font-bold text-green-600">{(metrics as any)?.completedTrips || 0}</div>
               <div className="text-xs text-muted-foreground">Trips Completed</div>
             </div>
             <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">

@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
-import express from 'express';
+import * as express from 'express';
 
 // Supabase clients
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseUrl = process.env.SUPABASE_URL || 'https://iuawurdssgbkbavyyvbs.supabase.co';
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1YXd1cmRzc2dia2Jhdnl5dmJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NDU1MzEsImV4cCI6MjA3NDQyMTUzMX0.JLcuSTI1mfEMGu_mP9UBnGQyG33vcoU2SzvKo8olkL4';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1YXd1cmRzc2dia2Jhdnl5dmJzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODg0NTUzMSwiZXhwIjoyMDc0NDIxNTMxfQ.p43LNk28V9bTfvWsbdW8ByZw_lb26-IKoDrHxkvp9fg';
 
 // Client for JWT verification (uses anon key)
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -87,6 +87,7 @@ export function extractToken(req: express.Request): string | null {
 // Supabase authentication middleware
 export async function requireSupabaseAuth(req: SupabaseAuthenticatedRequest, res: express.Response, next: express.NextFunction) {
   try {
+    console.log('🔍 requireSupabaseAuth middleware called for:', req.method, req.path);
     const token = extractToken(req);
     
     if (!token) {

@@ -214,7 +214,11 @@ export default function EnhancedAnalyticsWidget({ className }: AnalyticsWidgetPr
         size="large"
         className={className}
         loading={true}
-      />
+      >
+        <div className="flex items-center justify-center h-32">
+          <div className="text-sm text-muted-foreground">Loading enhanced analytics data...</div>
+        </div>
+      </Widget>
     );
   }
 
@@ -226,7 +230,11 @@ export default function EnhancedAnalyticsWidget({ className }: AnalyticsWidgetPr
         size="large"
         className={className}
         error="Failed to load analytics data"
-      />
+      >
+        <div className="flex items-center justify-center h-32">
+          <div className="text-sm text-red-600">Failed to load analytics data</div>
+        </div>
+      </Widget>
     );
   }
 

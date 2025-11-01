@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "../ui/button";
-import { Plus, Monitor, LogOut, User, Building, Building2, MapPin, Search } from "lucide-react";
+import { Plus, Monitor, User, Building, Building2, MapPin, Search } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { useHierarchy } from "../../hooks/useHierarchy";
 import { useMockAuth } from "../../hooks/useMockAuth";
@@ -66,14 +66,13 @@ const programNames: Record<string, string> = {
 
 export default function Header({ currentProgram, kioskMode, setKioskMode }: HeaderProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { mockUser, setMockUser, isMockMode } = useMockAuth();
   const { level, selectedProgram, selectedCorporateClient } = useHierarchy();
   const { isOpen, openSearch, closeSearch, handleResultSelect } = useGlobalSearch();
 
-  // Get current user (real or mock)
-  const currentUser = isMockMode && mockUser ? mockUser : user;
-  const currentRole = currentUser?.role || 'program_admin';
+  // Get current role for role toggle
+  const currentRole = (isMockMode && mockUser ? mockUser : user)?.role || 'program_admin';
 
   // Handle role change for testing
   const handleRoleChange = (role: string, userContext: any) => {
@@ -111,9 +110,6 @@ export default function Header({ currentProgram, kioskMode, setKioskMode }: Head
     });
   };
 
-  const handleLogout = () => {
-    logout();
-  };
 
   // Get program name
   const getProgramName = () => {
@@ -212,48 +208,7 @@ export default function Header({ currentProgram, kioskMode, setKioskMode }: Head
             isDevelopment={import.meta.env.DEV}
           />
           
-          {currentUser && (
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                {(currentUser as any).avatar_url ? (
-                  <img 
-                    src={(currentUser as any).avatar_url} 
-                    alt="Avatar" 
-                    className="w-8 h-8 rounded-full"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                      if (fallback) {
-                        fallback.classList.remove('hidden');
-                      }
-                    }}
-                  />
-                ) : null}
-                <span className={`text-sm font-medium text-white ${(currentUser as any).avatar_url ? 'hidden' : ''}`}>
-                  {currentUser.user_name?.charAt(0).toUpperCase() || currentUser.email?.charAt(0).toUpperCase() || 'U'}
-                </span>
-              </div>
-              
-              <div className="text-sm">
-                <div className="font-medium text-gray-900">
-                  {currentUser.user_name || currentUser.email}
-                </div>
-                <div className="text-gray-500 capitalize">
-                  {currentUser.role?.replace('_', ' ')}
-                </div>
-              </div>
-            </div>
-          )}
           
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleLogout}
-            className="flex items-center space-x-2"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Logout</span>
-          </Button>
         </div>
       </div>
       

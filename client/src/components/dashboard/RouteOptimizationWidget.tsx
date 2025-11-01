@@ -61,13 +61,19 @@ export default function RouteOptimizationWidget({ className }: RouteOptimization
   // Fetch trips and drivers for optimization
   const { data: trips, isLoading: tripsLoading } = useQuery({
     queryKey: ['trips', getFilterParams()],
-    queryFn: () => apiRequest('/api/trips'),
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/trips');
+      return await response.json();
+    },
     enabled: true,
   });
 
   const { data: drivers, isLoading: driversLoading } = useQuery({
     queryKey: ['drivers', getFilterParams()],
-    queryFn: () => apiRequest('/api/drivers'),
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/drivers');
+      return await response.json();
+    },
     enabled: true,
   });
 

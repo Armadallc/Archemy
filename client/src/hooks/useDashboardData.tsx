@@ -12,7 +12,7 @@ interface DashboardDataOptions {
 }
 
 export function useDashboardData(options: DashboardDataOptions = {}) {
-  const { enableRealTime = true, refreshInterval = 5000 } = options;
+  const { enableRealTime = true, refreshInterval = 30000 } = options;
   const { user } = useAuth();
   const { mockUser, isMockMode } = useMockAuth();
   const { level, selectedCorporateClient, selectedProgram } = useHierarchy();
@@ -32,10 +32,17 @@ export function useDashboardData(options: DashboardDataOptions = {}) {
     'universalTrips'
   ];
 
-  // Get optimized query configuration
-  const { queryConfig } = useOptimizedQueries({
+  // Get optimized query configuration for dynamic data (trips, drivers)
+  const { queryConfig: dynamicQueryConfig } = useOptimizedQueries({
     enabled: true,
-    refetchInterval: enableRealTime ? refreshInterval : false,
+    refetchInterval: enableRealTime && refreshInterval > 0 ? refreshInterval : 0,
+  });
+
+  // Get optimized query configuration for static data (programs, corporate clients)
+  const { queryConfig: staticQueryConfig } = useOptimizedQueries({
+    enabled: true,
+    refetchInterval: 0, // No auto-refresh for static data
+    staleTime: 300000, // 5 minutes - static data stays fresh longer
   });
 
   // Enable real-time updates
@@ -48,6 +55,7 @@ export function useDashboardData(options: DashboardDataOptions = {}) {
   // Fetch trips data
   const { data: tripsData, isLoading: tripsLoading, error: tripsError } = useQuery({
     queryKey: ['trips', userRole, currentUser?.user_id],
+    enabled: true,
     queryFn: async () => {
       console.log('🔍 useDashboardData: Fetching trips for role:', userRole, 'user:', currentUser?.email);
       if (userRole === 'driver' && currentUser?.user_id) {
@@ -55,13 +63,13 @@ export function useDashboardData(options: DashboardDataOptions = {}) {
         try {
           console.log('🔍 useDashboardData: Fetching drivers for driver user');
           const driversResponse = await apiRequest('GET', '/api/drivers');
-          const driversData = driversResponse.data || [];
+          const driversData = await driversResponse.json();
           const driverRecord = driversData.find((d: any) => d.user_id === currentUser.user_id);
           
           if (driverRecord) {
             console.log('🔍 useDashboardData: Found driver record, fetching trips');
             const response = await apiRequest('GET', `/api/trips/driver/${driverRecord.id}`);
-            return response.data;
+            return await response.json();
           }
           return [];
         } catch (error) {
@@ -73,35 +81,38 @@ export function useDashboardData(options: DashboardDataOptions = {}) {
         console.log('🔍 useDashboardData: Fetching all trips for role:', userRole);
         try {
           const response = await apiRequest('GET', '/api/trips');
-          console.log('✅ useDashboardData: Trips fetched successfully:', response.data?.length || 0, 'trips');
-          return response.data;
+          const data = await response.json();
+          console.log('✅ useDashboardData: Trips fetched successfully:', data?.length || 0, 'trips');
+          return data;
         } catch (error) {
           console.error('❌ useDashboardData: Error fetching trips:', error);
           throw error;
         }
       }
     },
-    ...queryConfig,
+    ...dynamicQueryConfig,
   });
 
   // Fetch drivers data
   const { data: driversData, isLoading: driversLoading, error: driversError } = useQuery({
     queryKey: ['drivers'],
+    enabled: true,
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/drivers');
-      return response.data;
+      return await response.json();
     },
-    ...queryConfig,
+    ...dynamicQueryConfig,
   });
 
   // Fetch clients data
   const { data: clientsData, isLoading: clientsLoading, error: clientsError } = useQuery({
     queryKey: ['clients'],
+    enabled: true,
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/clients');
-      return response.data;
+      return await response.json();
     },
-    ...queryConfig,
+    ...dynamicQueryConfig,
   });
 
   // Fetch corporate clients data (for super admin)
@@ -109,20 +120,21 @@ export function useDashboardData(options: DashboardDataOptions = {}) {
     queryKey: ['corporateClients'],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/corporate-clients');
-      return response.data;
+      return await response.json();
     },
     enabled: isSuperAdmin,
-    ...queryConfig,
+    ...staticQueryConfig,
   });
 
   // Fetch programs data
   const { data: programsData, isLoading: programsLoading, error: programsError } = useQuery({
     queryKey: ['programs'],
+    enabled: true,
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/programs');
-      return response.data;
+      return await response.json();
     },
-    ...queryConfig,
+    ...staticQueryConfig,
   });
 
   // Fetch universal trips data (for super admin)
@@ -130,10 +142,10 @@ export function useDashboardData(options: DashboardDataOptions = {}) {
     queryKey: ['universalTrips'],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/trips');
-      return response.data;
+      return await response.json();
     },
     enabled: isSuperAdmin,
-    ...queryConfig,
+    ...dynamicQueryConfig,
   });
 
   // Calculate real-time metrics

@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS corporate_clients (
 CREATE TABLE IF NOT EXISTS programs (
     id VARCHAR(50) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
+    short_name VARCHAR(100),
     description TEXT,
     corporate_client_id VARCHAR(50) NOT NULL REFERENCES corporate_clients(id) ON DELETE CASCADE,
     address TEXT,
@@ -565,13 +566,16 @@ INSERT INTO corporate_clients (id, name, description, is_active) VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- Insert default programs
-INSERT INTO programs (id, name, description, corporate_client_id, is_active) VALUES
-('monarch_competency', 'Monarch Competency Center', 'Monarch Competency Program', 'monarch', true),
-('monarch_mental_health', 'Monarch Mental Health', 'Monarch Mental Health Program', 'monarch', true),
-('monarch_sober_living', 'Monarch Sober Living', 'Monarch Sober Living Program', 'monarch', true),
-('monarch_launch', 'Monarch Launch', 'Monarch Launch Program', 'monarch', true),
-('halcyon_detox', 'Halcyon Detox Program', 'Halcyon Detox Program', 'halcyon', true)
-ON CONFLICT (id) DO NOTHING;
+INSERT INTO programs (id, name, short_name, description, corporate_client_id, is_active) VALUES
+('monarch_competency', 'Monarch Competency', 'Competency', 'Monarch Competency', 'monarch', true),
+('monarch_mental_health', 'Monarch Mental Health', 'Mental Health', 'Monarch Mental Health', 'monarch', true),
+('monarch_sober_living', 'Monarch Sober Living', 'Sober Living', 'Monarch Sober Living', 'monarch', true),
+('monarch_launch', 'Monarch Launch', 'Launch', 'Monarch Launch', 'monarch', true),
+('halcyon_detox', 'Halcyon Detox', 'Detox', 'Halcyon Detox', 'halcyon', true)
+ON CONFLICT (id) DO UPDATE SET 
+  name = EXCLUDED.name,
+  short_name = EXCLUDED.short_name,
+  description = EXCLUDED.description;
 
 -- Insert default trip categories for each program
 INSERT INTO trip_categories (id, program_id, name, description, is_active) VALUES

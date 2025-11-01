@@ -56,13 +56,13 @@ export default function RevenueWidget({ className, trips }: RevenueWidgetProps) 
         {/* Today's Revenue */}
         <div className="text-center p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg">
           <div className="text-3xl font-bold text-blue-600">
-            {formatCurrency(revenueData?.today || 0)}
+            {formatCurrency((revenueData as any)?.today || (revenueData as any)?.totalRevenue || 0)}
           </div>
           <div className="text-sm text-muted-foreground">Today's Revenue</div>
-          <div className={`flex items-center justify-center mt-2 ${getTrendColor(revenueData?.todayChange > 0 ? 'up' : 'down')}`}>
-            {getTrendIcon(revenueData?.todayChange > 0 ? 'up' : 'down')}
+          <div className={`flex items-center justify-center mt-2 ${getTrendColor((revenueData as any)?.todayChange > 0 ? 'up' : 'down')}`}>
+            {getTrendIcon((revenueData as any)?.todayChange > 0 ? 'up' : 'down')}
             <span className="text-sm font-medium ml-1">
-              {revenueData?.todayChange > 0 ? '+' : ''}{revenueData?.todayChange || 0}%
+              {(revenueData as any)?.todayChange > 0 ? '+' : ''}{(revenueData as any)?.todayChange || 0}%
             </span>
           </div>
         </div>
@@ -70,9 +70,9 @@ export default function RevenueWidget({ className, trips }: RevenueWidgetProps) 
         {/* Revenue Breakdown */}
         <div className="space-y-3">
           {[
-            { key: 'week', label: 'Last 7 days', amount: revenueData?.week || 0, change: revenueData?.weekChange || 0 },
-            { key: 'month', label: 'Last 30 days', amount: revenueData?.month || 0, change: revenueData?.monthChange || 0 },
-            { key: 'year', label: 'Last 12 months', amount: revenueData?.year || 0, change: revenueData?.yearChange || 0 }
+            { key: 'week', label: 'Last 7 days', amount: (revenueData as any)?.week || 0, change: (revenueData as any)?.weekChange || 0 },
+            { key: 'month', label: 'Last 30 days', amount: (revenueData as any)?.month || (revenueData as any)?.monthlyRevenue || 0, change: (revenueData as any)?.monthChange || 0 },
+            { key: 'year', label: 'Last 12 months', amount: (revenueData as any)?.year || 0, change: (revenueData as any)?.yearChange || 0 }
           ].map(({ key, label, amount, change }) => (
             <div key={key} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <div className="flex items-center space-x-3">

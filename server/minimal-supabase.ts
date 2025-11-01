@@ -451,15 +451,16 @@ export const clientsStorage = {
       .from('clients')
       .select(`
         *,
-        programs:program_id (
+        program:programs!program_id (
           id,
           name,
-          corporate_clients:corporate_client_id (
+          short_name,
+          corporateClient:corporate_clients!corporate_client_id (
             id,
             name
           )
         ),
-        locations:location_id (
+        location:locations!location_id (
           id,
           name,
           address
@@ -546,6 +547,7 @@ export const clientsStorage = {
   },
 
   async createClient(client: any) {
+    // Database will auto-generate UUID for id field
     const { data, error } = await supabase.from('clients').insert(client).select().single();
     if (error) throw error;
     return data;
@@ -592,7 +594,7 @@ export const tripsStorage = {
           name,
           address
         ),
-        clients:client_id (
+        clients!client_id (
           id,
           first_name,
           last_name,
@@ -605,6 +607,11 @@ export const tripsStorage = {
             user_name,
             email
           )
+        ),
+        client_groups!client_group_id (
+          id,
+          name,
+          description
         )
       `);
     if (error) throw error;
@@ -634,7 +641,7 @@ export const tripsStorage = {
           name,
           address
         ),
-        clients:client_id (
+        clients!client_id (
           id,
           first_name,
           last_name,
@@ -647,6 +654,11 @@ export const tripsStorage = {
             user_name,
             email
           )
+        ),
+        client_groups!client_group_id (
+          id,
+          name,
+          description
         )
       `)
       .eq('id', id)
@@ -678,7 +690,7 @@ export const tripsStorage = {
           name,
           address
         ),
-        clients:client_id (
+        clients!client_id (
           id,
           first_name,
           last_name,
@@ -691,6 +703,11 @@ export const tripsStorage = {
             user_name,
             email
           )
+        ),
+        client_groups!client_group_id (
+          id,
+          name,
+          description
         )
       `)
       .eq('program_id', programId);
@@ -721,7 +738,7 @@ export const tripsStorage = {
           name,
           address
         ),
-        clients:client_id (
+        clients!client_id (
           id,
           first_name,
           last_name,
@@ -734,6 +751,11 @@ export const tripsStorage = {
             user_name,
             email
           )
+        ),
+        client_groups!client_group_id (
+          id,
+          name,
+          description
         )
       `)
       .eq('driver_id', driverId);
@@ -765,7 +787,7 @@ export const tripsStorage = {
           name,
           address
         ),
-        clients:client_id (
+        clients!client_id (
           id,
           first_name,
           last_name,
@@ -778,6 +800,11 @@ export const tripsStorage = {
             user_name,
             email
           )
+        ),
+        client_groups!client_group_id (
+          id,
+          name,
+          description
         )
       `)
       .eq('programs.corporate_client_id', corporateClientId)
@@ -787,6 +814,28 @@ export const tripsStorage = {
   },
 
   async createTrip(trip: any) {
+    // Auto-set is_group_trip flag based on client_group_id
+    if (trip.client_group_id && !trip.hasOwnProperty('is_group_trip')) {
+      trip.is_group_trip = true;
+    }
+    
+    // Validate group trip has proper group membership
+    if (trip.is_group_trip && trip.client_group_id) {
+      const { data: groupMembers, error: groupError } = await supabase
+        .from('client_group_memberships')
+        .select('id')
+        .eq('client_group_id', trip.client_group_id);
+      
+      if (groupError) throw groupError;
+      
+      if (!groupMembers || groupMembers.length === 0) {
+        throw new Error('Cannot create group trip: Client group has no members');
+      }
+      
+      // Set passenger count to actual group member count for group trips
+      trip.passenger_count = groupMembers.length;
+    }
+    
     const { data, error } = await supabase.from('trips').insert(trip).select().single();
     if (error) throw error;
     return data;
@@ -822,11 +871,19 @@ export const clientGroupsStorage = {
             id,
             name
           )
-        )
+        ),
+        client_group_memberships(count)
       `)
       .eq('is_active', true);
     if (error) throw error;
-    return data || [];
+    
+    // Add member_count to each group
+    const groupsWithCount = (data || []).map(group => ({
+      ...group,
+      member_count: group.client_group_memberships?.[0]?.count || 0
+    }));
+    
+    return groupsWithCount;
   },
 
   async getClientGroup(id: string) {
@@ -861,16 +918,30 @@ export const clientGroupsStorage = {
             id,
             name
           )
-        )
+        ),
+        client_group_memberships(count)
       `)
       .eq('program_id', programId)
       .eq('is_active', true);
     if (error) throw error;
-    return data || [];
+    
+    // Add member_count to each group
+    const groupsWithCount = (data || []).map(group => ({
+      ...group,
+      member_count: group.client_group_memberships?.[0]?.count || 0
+    }));
+    
+    return groupsWithCount;
   },
 
   async createClientGroup(clientGroup: any) {
-    const { data, error } = await supabase.from('client_groups').insert(clientGroup).select().single();
+    // Generate a UUID for the client group if not provided
+    const groupWithId = {
+      ...clientGroup,
+      id: clientGroup.id || crypto.randomUUID()
+    };
+    
+    const { data, error } = await supabase.from('client_groups').insert(groupWithId).select().single();
     if (error) throw error;
     return data;
   },
@@ -883,6 +954,39 @@ export const clientGroupsStorage = {
 
   async deleteClientGroup(id: string) {
     const { data, error } = await supabase.from('client_groups').update({ is_active: false }).eq('id', id);
+    if (error) throw error;
+    return data;
+  },
+
+  // Member management functions
+  async getClientGroupMembers(groupId: string) {
+    const { data, error } = await supabase
+      .from('client_group_memberships')
+      .select('id, client_id, clients:client_id (id, first_name, last_name, email)')
+      .eq('client_group_id', groupId);
+    if (error) throw error;
+    return data || [];
+  },
+
+  async addClientToGroup(groupId: string, clientId: string) {
+    const { data, error } = await supabase
+      .from('client_group_memberships')
+      .insert({
+        id: crypto.randomUUID(),
+        client_group_id: groupId,
+        client_id: clientId
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async removeClientFromGroup(membershipId: string) {
+    const { data, error } = await supabase
+      .from('client_group_memberships')
+      .delete()
+      .eq('id', membershipId);
     if (error) throw error;
     return data;
   }

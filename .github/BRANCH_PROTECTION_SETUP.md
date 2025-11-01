@@ -1,6 +1,17 @@
 # GitHub Branch Protection Setup Guide
 
-This document provides exact settings to apply in GitHub UI for protecting `main` and `develop` branches.
+> **⚠️ IMPORTANT:** This guide is for GitHub Organizations only.
+> 
+> **For personal accounts with private repos**, see: [`.github/MANUAL_BRANCH_PROTECTION.md`](./MANUAL_BRANCH_PROTECTION.md)
+> 
+> Branch protection rules are only available for:
+> - Public repos (personal or organization)
+> - Private repos in GitHub Organizations
+> - Private repos with GitHub Team/Enterprise plans
+
+---
+
+This document provides exact settings to apply in GitHub UI for protecting `main` and `develop` branches (organization accounts only).
 
 ---
 
@@ -135,4 +146,6 @@ For **develop** branch:
 ---
 
 *Last Updated: $(date)*
+
+
 

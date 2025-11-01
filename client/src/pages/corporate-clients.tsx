@@ -43,13 +43,16 @@ export default function CorporateClients() {
   });
 
   // Fetch corporate clients
-  const { data: corporateClients = [], isLoading: clientsLoading, error: clientsError } = useQuery({
+  const { data: corporateClientsResponse, isLoading: clientsLoading, error: clientsError } = useQuery({
     queryKey: ["/api/corporate-clients"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/corporate-clients");
       return await response.json();
     }
   });
+
+  // Extract corporate clients from the response
+  const corporateClients = corporateClientsResponse?.corporateClients || [];
 
   // Create corporate client mutation
   const createClientMutation = useMutation({

@@ -107,7 +107,11 @@ export default function AnalyticsWidget({ className }: AnalyticsWidgetProps) {
         size="large"
         className={className}
         loading={true}
-      />
+      >
+        <div className="flex items-center justify-center h-32">
+          <div className="text-sm text-muted-foreground">Loading analytics data...</div>
+        </div>
+      </Widget>
     );
   }
 

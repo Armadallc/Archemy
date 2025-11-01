@@ -1,18 +1,20 @@
 import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
-import apiRoutes from "./api-routes";
+import apiRoutes from "./routes";
+import fileStorageRoutes from "./file-storage-routes";
 // Vite imports removed - using static file serving
 import session from "express-session";
 import bcrypt from "bcrypt";
 import { usersStorage, programsStorage, corporateClientsStorage } from "./minimal-supabase";
 import { RealtimeWebSocketServer } from "./websocket";
 import { setWebSocketServer, getWebSocketServer } from "./websocket-instance";
+import { requireSupabaseAuth, SupabaseAuthenticatedRequest } from "./supabase-auth";
 
 // Environment validation - no logging of sensitive data
 console.log('🔍 Server environment check:');
 console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? 'Set' : 'Missing');
-console.log('SUPABASE_ANON_KEY:', process.env.VITE_SUPABASE_ANON_KEY ? 'Set' : 'Missing');
+console.log('SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? 'Set' : 'Missing');
 console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Set' : 'Missing');
 
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -46,7 +48,7 @@ app.use((req, res, next) => {
   }
   
   res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control');
   res.header('Vary', 'Origin');
   
@@ -185,7 +187,7 @@ app.use((req, res, next) => {
   });
 
   // Direct user creation endpoint before router registration
-  app.post("/api/users", async (req, res) => {
+  app.post("/api/users", requireSupabaseAuth, async (req: SupabaseAuthenticatedRequest, res) => {
     try {
       // Check authentication
       if (!req.user) {
@@ -277,7 +279,8 @@ app.use((req, res, next) => {
       res.status(201).json(userWithoutPassword);
     } catch (error) {
       console.error("Error creating user:", error);
-      res.status(500).json({ message: "Failed to create user", error: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      res.status(500).json({ message: "Failed to create user", error: errorMessage });
     }
   });
 
@@ -313,6 +316,10 @@ app.use((req, res, next) => {
 
   // Register all API routes FIRST, before any catch-all handlers
   app.use('/api', apiRoutes);
+  console.log('🔍 API routes registered');
+  
+  app.use('/api/files', fileStorageRoutes);
+  console.log('🔍 File storage routes registered');
 
   // Add 404 handler for unmatched API routes AFTER route registration
   app.use('/api/*', (req, res) => {

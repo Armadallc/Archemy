@@ -10,6 +10,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { useHierarchy } from "../../hooks/useHierarchy";
 import { useToast } from "../../hooks/use-toast";
 import { apiRequest } from "../../lib/queryClient";
+import QuickAddLocation from "./quick-add-location";
 
 function QuickBookingForm() {
   const { user } = useAuth();
@@ -50,6 +51,7 @@ function QuickBookingForm() {
       const scheduledPickupTime = `${tripData.scheduledDate}T${tripData.scheduledTime}:00`;
       
       const apiData = {
+        id: `trip_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         program_id: selectedProgram,
         client_id: tripData.clientId,
         trip_type: tripData.tripType,
@@ -57,7 +59,9 @@ function QuickBookingForm() {
         dropoff_address: tripData.dropoffAddress,
         scheduled_pickup_time: scheduledPickupTime,
         passenger_count: 1,
-        status: "scheduled"
+        status: "scheduled",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
       
       return apiRequest("POST", "/api/trips", apiData);
@@ -117,9 +121,9 @@ function QuickBookingForm() {
               <SelectTrigger>
                 <SelectValue placeholder="Select client" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white text-gray-900 max-h-60 z-50">
                 {clients.map((client: any) => (
-                  <SelectItem key={client.id} value={client.id}>
+                  <SelectItem key={client.id} value={client.id} className="text-gray-900 hover:bg-gray-100">
                     {client.name}
                   </SelectItem>
                 ))}
@@ -127,25 +131,23 @@ function QuickBookingForm() {
             </Select>
           </div>
 
-          <div>
-            <Label htmlFor="pickupAddress">Pickup Address</Label>
-            <Input
-              id="pickupAddress"
-              value={formData.pickupAddress}
-              onChange={(e) => setFormData({ ...formData, pickupAddress: e.target.value })}
-              placeholder="Enter pickup address"
-            />
-          </div>
+          <QuickAddLocation
+            value={formData.pickupAddress}
+            onChange={(value) => setFormData({ ...formData, pickupAddress: value })}
+            placeholder="Enter pickup address"
+            locationType="pickup"
+            label="Pickup Address"
+            required
+          />
 
-          <div>
-            <Label htmlFor="dropoffAddress">Dropoff Address</Label>
-            <Input
-              id="dropoffAddress"
-              value={formData.dropoffAddress}
-              onChange={(e) => setFormData({ ...formData, dropoffAddress: e.target.value })}
-              placeholder="Enter dropoff address"
-            />
-          </div>
+          <QuickAddLocation
+            value={formData.dropoffAddress}
+            onChange={(value) => setFormData({ ...formData, dropoffAddress: value })}
+            placeholder="Enter dropoff address"
+            locationType="dropoff"
+            label="Dropoff Address"
+            required
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -174,9 +176,9 @@ function QuickBookingForm() {
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="one_way">One Way</SelectItem>
-                <SelectItem value="round_trip">Round Trip</SelectItem>
+              <SelectContent className="bg-white text-gray-900 max-h-60 z-50">
+                <SelectItem value="one_way" className="text-gray-900 hover:bg-gray-100">One Way</SelectItem>
+                <SelectItem value="round_trip" className="text-gray-900 hover:bg-gray-100">Round Trip</SelectItem>
               </SelectContent>
             </Select>
           </div>

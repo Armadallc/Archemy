@@ -231,7 +231,7 @@ export default function RecentActivity() {
           id: `group_created_${group.id}`,
           type: 'group_created',
           title: 'Client group created',
-          description: `${group.name} created with ${group.clientCount || 0} clients`,
+          description: `${group.name} created with ${group.member_count || 0} clients`,
           timestamp: group.created_at,
           relatedId: group.id,
           relatedType: 'group',

@@ -155,7 +155,7 @@ export const mobileApi = {
           color: driver.vehicles.color
         } : undefined,
         current_status: currentStatus?.status || 'off_duty',
-        last_location: lastLocation
+        last_location: lastLocation || undefined
       };
     } catch (error) {
       console.error('Error fetching driver profile:', error);
@@ -346,7 +346,10 @@ export const mobileApi = {
 
       // If going on duty, start location tracking
       if (status === 'on_duty' && location) {
-        await this.updateDriverLocation(driverId, location);
+        await this.updateDriverLocation(driverId, {
+          ...location,
+          accuracy: 10 // Default accuracy for duty status location
+        });
       }
 
       return dutyStatus;
@@ -402,7 +405,7 @@ export const mobileApi = {
           }
           results.push({ id: update.id, success: true });
         } catch (error) {
-          results.push({ id: update.id, success: false, error: error.message });
+          results.push({ id: update.id, success: false, error: error instanceof Error ? error.message : 'Unknown error' });
         }
       }
 
@@ -432,7 +435,7 @@ export const mobileApi = {
 
       if (error) throw error;
 
-      return data?.map(membership => ({
+      return data?.map((membership: any) => ({
         id: membership.clients?.id || '',
         name: `${membership.clients?.first_name || ''} ${membership.clients?.last_name || ''}`.trim(),
         phone: membership.clients?.phone

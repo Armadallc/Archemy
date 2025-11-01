@@ -14,6 +14,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export interface User {
   user_id: string;
+  auth_user_id?: string;
   user_name: string;
   email: string;
   role: 'super_admin' | 'corporate_admin' | 'program_admin' | 'program_user' | 'driver';

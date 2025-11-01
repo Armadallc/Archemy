@@ -60,8 +60,9 @@ export default function InteractiveMapWidget({ className }: InteractiveMapWidget
   const { data: drivers, isLoading: driversLoading } = useQuery({
     queryKey: ['drivers', getFilterParams()],
     queryFn: async () => {
-      const response = await apiRequest('/api/drivers');
-      return response.data || [];
+      const response = await apiRequest('GET', '/api/drivers');
+      const data = await response.json();
+      return data || [];
     },
     enabled: true,
   });
@@ -69,8 +70,9 @@ export default function InteractiveMapWidget({ className }: InteractiveMapWidget
   const { data: trips, isLoading: tripsLoading } = useQuery({
     queryKey: ['trips', getFilterParams()],
     queryFn: async () => {
-      const response = await apiRequest('/api/trips');
-      return response.data || [];
+      const response = await apiRequest('GET', '/api/trips');
+      const data = await response.json();
+      return data || [];
     },
     enabled: true,
   });
