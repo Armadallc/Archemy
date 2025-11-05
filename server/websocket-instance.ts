@@ -272,13 +272,13 @@ export function broadcastTripCreated(tripData: any, target?: {
   if (target?.programId) {
     console.log(`   → Broadcasting to program: ${target.programId} (corporate client: ${tripCorporateClientId || 'unknown'})`);
     wsServerInstance.broadcastToProgram(target.programId, event, tripCorporateClientId);
-  } else if (target?.role) {
-    console.log(`   → Broadcasting to role: ${target.role}`);
-    wsServerInstance.broadcastToRole(target.role, event);
   } else if (target?.corporateClientId || tripCorporateClientId) {
     const corporateClientId = target?.corporateClientId || tripCorporateClientId;
     console.log(`   → Broadcasting to corporate client: ${corporateClientId}`);
     wsServerInstance.broadcastToCorporateClient(corporateClientId, event);
+  } else if (target?.role) {
+    console.log(`   → Broadcasting to role: ${target.role}`);
+    wsServerInstance.broadcastToRole(target.role, event);
   }
   
   // Note: We don't do a global broadcast here to maintain hierarchical isolation
