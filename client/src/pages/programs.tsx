@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { useToast } from "../hooks/use-toast";
 import { apiRequest } from "../lib/queryClient";
 import { useHierarchy } from "../hooks/useHierarchy";
+import { useAuth } from "../hooks/useAuth";
 
 interface Program {
   id: string;
@@ -35,6 +36,7 @@ interface CorporateClient {
 
 export default function Programs() {
   const { level, selectedCorporateClient } = useHierarchy();
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
@@ -47,13 +49,30 @@ export default function Programs() {
     is_active: true
   });
 
-  // Fetch programs
+  // Fetch programs based on hierarchy level and user role
   const { data: programs = [], isLoading: programsLoading, error: programsError } = useQuery({
-    queryKey: ["/api/programs"],
+    queryKey: ["/api/programs", level, selectedCorporateClient, user?.role],
     queryFn: async () => {
-      const response = await apiRequest("GET", "/api/programs");
-      return await response.json();
-    }
+      let endpoint = "/api/programs";
+      
+      // Get corporate client ID from hierarchy or user object
+      const corporateClientId = selectedCorporateClient || (user as any)?.corporate_client_id;
+      
+      // For corporate_admin or when viewing from corporate client context, fetch programs by corporate client
+      if (user?.role === 'corporate_admin' && corporateClientId) {
+        endpoint = `/api/programs/corporate-client/${corporateClientId}`;
+      } else if (level === 'client' && corporateClientId) {
+        endpoint = `/api/programs/corporate-client/${corporateClientId}`;
+      }
+      // For super_admin or corporate level, use the base endpoint to see all programs
+      
+      console.log('🔍 [Programs] Fetching from:', endpoint, { level, selectedCorporateClient, role: user?.role });
+      const response = await apiRequest("GET", endpoint);
+      const data = await response.json();
+      console.log('🔍 [Programs] Received:', Array.isArray(data) ? data.length : 'not array', 'programs');
+      return data;
+    },
+    enabled: true,
   });
 
   // Fetch corporate clients for dropdown

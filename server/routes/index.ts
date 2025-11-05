@@ -42,6 +42,8 @@ router.use("/", legacyRoutes);
 
 // Error handling
 router.use(errorHandler);
-router.use(notFoundHandler);
+// Note: notFoundHandler is commented out to prevent it from catching /api/files/* routes
+// The catch-all handler in server/index.ts will handle unmatched routes instead
+// router.use(notFoundHandler);
 
 export default router;

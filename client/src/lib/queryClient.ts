@@ -2,8 +2,27 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    let errorText;
+    try {
+      const errorData = await res.json();
+      console.error('❌ API Error Response:', {
+        status: res.status,
+        statusText: res.statusText,
+        url: res.url,
+        error: errorData
+      });
+      errorText = JSON.stringify(errorData);
+    } catch {
+      const text = await res.text();
+      console.error('❌ API Error Response (non-JSON):', {
+        status: res.status,
+        statusText: res.statusText,
+        url: res.url,
+        body: text
+      });
+      errorText = text || res.statusText;
+    }
+    throw new Error(`${res.status}: ${errorText}`);
   }
 }
 
@@ -20,19 +39,23 @@ export async function apiRequest(
     // Import supabase client dynamically to avoid circular imports
     const { supabase } = await import('../lib/supabase');
     const { data: { session } } = await supabase.auth.getSession();
-    console.log('🔍 apiRequest: Supabase session:', session ? 'found' : 'not found');
-    if (session) {
-      console.log('🔍 apiRequest: Session access token:', session.access_token ? 'found' : 'not found');
-    }
+    // Reduced logging to prevent console spam
+    // console.log('🔍 apiRequest: Supabase session:', session ? 'found' : 'not found');
+    // if (session) {
+    //   console.log('🔍 apiRequest: Session access token:', session.access_token ? 'found' : 'not found');
+    // }
     authToken = session?.access_token || null;
   } catch (error) {
-    console.warn('Could not get Supabase session:', error);
+    // Only log errors, not every request
+    if (import.meta.env.DEV) {
+      console.warn('Could not get Supabase session:', error);
+    }
   }
   
   // Fallback to localStorage only if Supabase session fails
   if (!authToken) {
     authToken = localStorage.getItem('auth_token') || localStorage.getItem('authToken');
-    console.log('🔍 apiRequest: localStorage fallback token:', authToken ? 'found' : 'not found');
+    // console.log('🔍 apiRequest: localStorage fallback token:', authToken ? 'found' : 'not found'); // Disabled to reduce console spam
   }
   
   const headers: any = data ? { "Content-Type": "application/json" } : {};
@@ -40,13 +63,15 @@ export async function apiRequest(
   // Add Authorization header if token exists
   if (authToken) {
     headers['Authorization'] = `Bearer ${authToken}`;
-    console.log('🔍 apiRequest: Sending token:', authToken.substring(0, 20) + '...');
+    // console.log('🔍 apiRequest: Sending token:', authToken.substring(0, 20) + '...'); // Disabled to reduce console spam
   } else {
-    console.log('🔍 apiRequest: No token found');
+    // Only log missing token as warning, not on every request
+    // console.log('🔍 apiRequest: No token found'); // Disabled to reduce console spam
   }
   
   // Add base URL if the URL doesn't start with http
-  const fullUrl = url.startsWith('http') ? url : `http://localhost:8081${url}`;
+  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+  const fullUrl = url.startsWith('http') ? url : `${apiBaseUrl}${url}`;
   
   const res = await fetch(fullUrl, {
     method,
@@ -91,7 +116,8 @@ export const getQueryFn: <T>(options: {
     }
     
     // Add base URL if the URL doesn't start with http
-    const fullUrl = (queryKey[0] as string).startsWith('http') ? queryKey[0] as string : `http://localhost:8081${queryKey[0] as string}`;
+    const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+    const fullUrl = (queryKey[0] as string).startsWith('http') ? queryKey[0] as string : `${apiBaseUrl}${queryKey[0] as string}`;
     
     const res = await fetch(fullUrl, {
       credentials: "include",

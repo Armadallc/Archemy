@@ -19,9 +19,9 @@ const queryClient = new QueryClient();
 function AppContent() {
   const { user, isLoading } = useAuth();
 
-  // Debug authentication state
-  console.log('🔍 App auth state:', { user: user?.email, role: user?.role, isLoading });
-  console.log('🔴 APP COMPONENT IS RENDERING - CHECK AUTH STATE');
+  // Reduced logging to prevent console spam
+  // console.log('🔍 App auth state:', { user: user?.email, role: user?.role, isLoading });
+  // console.log('🔴 APP COMPONENT IS RENDERING - CHECK AUTH STATE');
 
   if (isLoading) {
     return (

@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useLocation } from 'wouter';
 import { useAuth } from './useAuth';
+import { parseHierarchicalUrl } from '../lib/urlBuilder';
 
 // Hierarchy levels
 export type HierarchyLevel = 'corporate' | 'client' | 'program';
@@ -39,6 +41,7 @@ const HierarchyContext = createContext<HierarchyContextType | undefined>(undefin
 
 export function HierarchyProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const [location] = useLocation();
   const [level, setLevel] = useState<HierarchyLevel>('corporate');
   const [selectedCorporateClient, setSelectedCorporateClient] = useState<string | null>(null);
   const [selectedProgram, setSelectedProgram] = useState<string | null>(null);
@@ -48,9 +51,51 @@ export function HierarchyProvider({ children }: { children: ReactNode }) {
     name: string;
   }>>([]);
 
+  // Sync hierarchy state with URL params (for hierarchical URLs)
+  useEffect(() => {
+    const urlParams = parseHierarchicalUrl(location);
+    console.log('🔍 [useHierarchy] URL parsing:', {
+      location,
+      urlParams,
+      currentLevel: level,
+      currentSelectedCorporateClient: selectedCorporateClient,
+      currentSelectedProgram: selectedProgram
+    });
+    if (urlParams) {
+      // URL contains hierarchical structure, sync state
+      if (urlParams.corporateClientId && urlParams.corporateClientId !== selectedCorporateClient) {
+        console.log('🔍 [useHierarchy] Setting corporate client:', urlParams.corporateClientId);
+        setSelectedCorporateClient(urlParams.corporateClientId);
+      }
+      
+      // Handle program ID: set it if present, clear it if not
+      if (urlParams.programId) {
+        if (urlParams.programId !== selectedProgram) {
+          console.log('🔍 [useHierarchy] Setting program:', urlParams.programId);
+          setSelectedProgram(urlParams.programId);
+          setLevel('program');
+        }
+      } else {
+        // No program in URL - clear program selection and set level to 'client'
+        if (selectedProgram !== null) {
+          console.log('🔍 [useHierarchy] Clearing program (no program in URL)');
+          setSelectedProgram(null);
+        }
+        if (urlParams.corporateClientId && level !== 'client') {
+          console.log('🔍 [useHierarchy] Setting level to client (corporate client view)');
+          setLevel('client');
+        }
+      }
+    }
+  }, [location, selectedCorporateClient, selectedProgram]);
+
   // Initialize based on user role
   useEffect(() => {
     if (!user) return;
+
+    // Don't override if URL already sets hierarchy
+    const urlParams = parseHierarchicalUrl(location);
+    if (urlParams) return;
 
     // Super admin starts at corporate level
     if (user.role === 'super_admin') {
@@ -60,15 +105,27 @@ export function HierarchyProvider({ children }: { children: ReactNode }) {
       setBreadcrumbs([]);
     }
     // Corporate admin starts at their corporate client level
-    else if (user.role === 'corporate_admin' && user.program?.corporateClient?.id) {
-      setLevel('client');
-      setSelectedCorporateClient(user.program.corporateClient.id);
-      setSelectedProgram(null);
-      setBreadcrumbs([{
-        level: 'client',
-        id: user.program.corporateClient.id,
-        name: user.program.corporateClient.name
-      }]);
+    // Use corporate_client_id directly from user object (backend returns it at top level)
+    else if (user.role === 'corporate_admin') {
+      const corporateClientId = (user as any).corporate_client_id || user.program?.corporateClient?.id;
+      if (corporateClientId) {
+        setLevel('client');
+        setSelectedCorporateClient(corporateClientId);
+        setSelectedProgram(null);
+        setBreadcrumbs([{
+          level: 'client',
+          id: corporateClientId,
+          name: corporateClientId // Will be replaced with actual name when available
+        }]);
+        
+        // Redirect to hierarchical URL if not already there (only on initial load)
+        if (!location.startsWith(`/corporate-client/${corporateClientId}`)) {
+          const currentPath = location === '/' ? '' : location;
+          window.history.replaceState(null, '', `/corporate-client/${corporateClientId}${currentPath}`);
+        }
+      } else {
+        console.warn('⚠️ Corporate admin user missing corporate_client_id:', user);
+      }
     }
     // Program admin/user starts at their program level
     else if (user.role === 'program_admin' || user.role === 'program_user') {
@@ -121,6 +178,11 @@ export function HierarchyProvider({ children }: { children: ReactNode }) {
         name: programName
       }
     ]);
+    
+    // Update URL for corporate admin
+    if (user?.role === 'corporate_admin' && selectedCorporateClient) {
+      window.history.pushState(null, '', `/corporate-client/${selectedCorporateClient}/program/${programId}/`);
+    }
   };
 
   const goBack = () => {

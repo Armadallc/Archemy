@@ -52,22 +52,22 @@ export function useDashboardData(options: DashboardDataOptions = {}) {
     queryKeys
   });
 
-  // Fetch trips data
+  // Fetch trips data - only enable if user is authenticated
   const { data: tripsData, isLoading: tripsLoading, error: tripsError } = useQuery({
-    queryKey: ['trips', userRole, currentUser?.user_id],
-    enabled: true,
+    queryKey: ['trips', userRole, currentUser?.user_id, (currentUser as any)?.corporate_client_id, selectedCorporateClient],
+    enabled: !!currentUser?.user_id, // Only fetch if user is authenticated
     queryFn: async () => {
-      console.log('🔍 useDashboardData: Fetching trips for role:', userRole, 'user:', currentUser?.email);
+      // console.log('🔍 useDashboardData: Fetching trips for role:', userRole, 'user:', currentUser?.email); // Reduced logging
       if (userRole === 'driver' && currentUser?.user_id) {
         // For drivers, first find the driver record, then fetch their trips
         try {
-          console.log('🔍 useDashboardData: Fetching drivers for driver user');
+          // console.log('🔍 useDashboardData: Fetching drivers for driver user'); // Reduced logging
           const driversResponse = await apiRequest('GET', '/api/drivers');
           const driversData = await driversResponse.json();
           const driverRecord = driversData.find((d: any) => d.user_id === currentUser.user_id);
           
           if (driverRecord) {
-            console.log('🔍 useDashboardData: Found driver record, fetching trips');
+            // console.log('🔍 useDashboardData: Found driver record, fetching trips'); // Reduced logging
             const response = await apiRequest('GET', `/api/trips/driver/${driverRecord.id}`);
             return await response.json();
           }
@@ -76,13 +76,37 @@ export function useDashboardData(options: DashboardDataOptions = {}) {
           console.error('❌ useDashboardData: Error fetching driver trips:', error);
           return [];
         }
+      } else if (userRole === 'corporate_admin') {
+        // Corporate admin should filter by their corporate client ID for tenant isolation
+        const corporateClientId = (currentUser as any)?.corporate_client_id || selectedCorporateClient;
+        if (corporateClientId) {
+          try {
+            const response = await apiRequest('GET', `/api/trips/corporate-client/${corporateClientId}`);
+            const data = await response.json();
+            // console.log('✅ useDashboardData: Corporate admin trips fetched:', data?.length || 0, 'trips'); // Reduced logging
+            return data;
+          } catch (error) {
+            console.error('❌ useDashboardData: Error fetching corporate admin trips:', error);
+            throw error;
+          }
+        } else {
+          console.warn('⚠️ useDashboardData: Corporate admin missing corporate_client_id');
+          return []; // Return empty array instead of fetching all trips
+        }
       } else {
-        // For other roles, fetch all trips
-        console.log('🔍 useDashboardData: Fetching all trips for role:', userRole);
+        // For other roles (super_admin, program_admin, etc.), fetch all trips or filtered by hierarchy
+        // console.log('🔍 useDashboardData: Fetching trips for role:', userRole); // Reduced logging
         try {
-          const response = await apiRequest('GET', '/api/trips');
+          let endpoint = '/api/trips';
+          if (level === 'program' && selectedProgram) {
+            endpoint = `/api/trips/program/${selectedProgram}`;
+          } else if (level === 'client' && selectedCorporateClient) {
+            endpoint = `/api/trips/corporate-client/${selectedCorporateClient}`;
+          }
+          
+          const response = await apiRequest('GET', endpoint);
           const data = await response.json();
-          console.log('✅ useDashboardData: Trips fetched successfully:', data?.length || 0, 'trips');
+          // console.log('✅ useDashboardData: Trips fetched successfully:', data?.length || 0, 'trips'); // Reduced logging
           return data;
         } catch (error) {
           console.error('❌ useDashboardData: Error fetching trips:', error);
@@ -93,24 +117,68 @@ export function useDashboardData(options: DashboardDataOptions = {}) {
     ...dynamicQueryConfig,
   });
 
-  // Fetch drivers data
+  // Fetch drivers data - only enable if user is authenticated
   const { data: driversData, isLoading: driversLoading, error: driversError } = useQuery({
-    queryKey: ['drivers'],
-    enabled: true,
+    queryKey: ['drivers', userRole, (currentUser as any)?.corporate_client_id, selectedCorporateClient, selectedProgram],
+    enabled: !!currentUser?.user_id, // Only fetch if user is authenticated
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/drivers');
+      let endpoint = '/api/drivers';
+      
+      // Corporate admin should filter by their corporate client ID for tenant isolation
+      if (userRole === 'corporate_admin') {
+        const corporateClientId = (currentUser as any)?.corporate_client_id || selectedCorporateClient;
+        if (corporateClientId) {
+          endpoint = `/api/drivers/corporate-client/${corporateClientId}`;
+        } else {
+          console.warn('⚠️ useDashboardData: Corporate admin missing corporate_client_id for drivers');
+          return []; // Return empty array instead of fetching all drivers
+        }
+      } else if (level === 'program' && selectedProgram) {
+        endpoint = `/api/drivers/program/${selectedProgram}`;
+      } else if (level === 'client' && selectedCorporateClient) {
+        endpoint = `/api/drivers/corporate-client/${selectedCorporateClient}`;
+      }
+      
+      const response = await apiRequest('GET', endpoint);
       return await response.json();
     },
     ...dynamicQueryConfig,
   });
 
-  // Fetch clients data
+  // Fetch clients data - only enable if user is authenticated
   const { data: clientsData, isLoading: clientsLoading, error: clientsError } = useQuery({
-    queryKey: ['clients'],
-    enabled: true,
+    queryKey: ['clients', userRole, (currentUser as any)?.corporate_client_id, selectedCorporateClient, selectedProgram],
+    enabled: !!currentUser?.user_id, // Only fetch if user is authenticated
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/clients');
-      return await response.json();
+      let endpoint = '/api/clients';
+      
+      // Corporate admin should filter by their corporate client ID for tenant isolation
+      // Note: Clients are typically filtered by program, but we can filter by corporate client if needed
+      if (userRole === 'corporate_admin') {
+        const corporateClientId = (currentUser as any)?.corporate_client_id || selectedCorporateClient;
+        // For now, clients are filtered by program, so we'll filter client-side
+        // If an endpoint exists, use it: endpoint = `/api/clients/corporate-client/${corporateClientId}`;
+      } else if (level === 'program' && selectedProgram) {
+        endpoint = `/api/clients/program/${selectedProgram}`;
+      }
+      
+      const response = await apiRequest('GET', endpoint);
+      const data = await response.json();
+      
+      // Filter clients by corporate client for corporate_admin if needed
+      if (userRole === 'corporate_admin' && data) {
+        const corporateClientId = (currentUser as any)?.corporate_client_id || selectedCorporateClient;
+        if (corporateClientId && Array.isArray(data)) {
+          // Filter clients whose program belongs to this corporate client
+          return data.filter((client: any) => {
+            // Check if client's program belongs to the corporate client
+            return client.program?.corporate_client_id === corporateClientId || 
+                   client.programs?.corporate_client_id === corporateClientId;
+          });
+        }
+      }
+      
+      return data;
     },
     ...dynamicQueryConfig,
   });
@@ -126,11 +194,29 @@ export function useDashboardData(options: DashboardDataOptions = {}) {
     ...staticQueryConfig,
   });
 
-  // Fetch programs data
+  // Fetch programs data - only enable if user is authenticated
   const { data: programsData, isLoading: programsLoading, error: programsError } = useQuery({
-    queryKey: ['programs'],
-    enabled: true,
+    queryKey: ['programs', userRole, (currentUser as any)?.corporate_client_id, selectedCorporateClient],
+    enabled: !!currentUser?.user_id, // Only fetch if user is authenticated
     queryFn: async () => {
+      // Corporate admin should filter by their corporate client ID for tenant isolation
+      if (userRole === 'corporate_admin') {
+        const corporateClientId = (currentUser as any)?.corporate_client_id || selectedCorporateClient;
+        if (corporateClientId) {
+          try {
+            const response = await apiRequest('GET', `/api/programs/corporate-client/${corporateClientId}`);
+            return await response.json();
+          } catch (error) {
+            console.error('❌ useDashboardData: Error fetching corporate admin programs:', error);
+            return [];
+          }
+        } else {
+          console.warn('⚠️ useDashboardData: Corporate admin missing corporate_client_id for programs');
+          return [];
+        }
+      }
+      
+      // For other roles, fetch all programs
       const response = await apiRequest('GET', '/api/programs');
       return await response.json();
     },

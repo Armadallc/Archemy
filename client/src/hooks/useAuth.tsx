@@ -20,6 +20,7 @@ export interface User {
   role: 'super_admin' | 'corporate_admin' | 'program_admin' | 'program_user' | 'driver';
   primary_program_id?: string;
   authorized_programs?: string[];
+  corporate_client_id?: string; // Added for tenant isolation
   avatar_url?: string;
   program?: {
     id: string;
@@ -70,9 +71,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return null;
       }
 
-      console.log('🔍 Making request to /api/auth/user with token:', currentSession.access_token.substring(0, 20) + '...');
+      // Reduced logging to prevent console spam
+      // console.log('🔍 Making request to /api/auth/user with token:', currentSession.access_token.substring(0, 20) + '...');
       
-      const response = await fetch('http://localhost:8081/api/auth/user', {
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+      const response = await fetch(`${apiBaseUrl}/api/auth/user`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${currentSession.access_token}`,
@@ -80,15 +83,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       });
 
-      console.log('📡 Response status:', response.status);
+      // console.log('📡 Response status:', response.status); // Disabled to reduce console spam
       
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ User data received:', data);
+        // console.log('✅ User data received:', data); // Disabled to reduce console spam
         return data.user;
       } else {
         const errorText = await response.text();
-        console.log('❌ API error:', response.status, errorText);
+        // Only log errors, not successful responses
+        if (import.meta.env.DEV) {
+          console.error('❌ API error:', response.status, errorText);
+        }
         return null;
       }
     } catch (error) {
@@ -99,29 +105,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      console.log('🔍 Starting auth check...');
+      // console.log('🔍 Starting auth check...'); // Disabled to reduce console spam
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.user) {
-        console.log('🔍 Supabase session found:', session.user.email);
-        console.log('🔍 Calling fetchUserData...');
+        // console.log('🔍 Supabase session found:', session.user.email); // Disabled to reduce console spam
+        // console.log('🔍 Calling fetchUserData...'); // Disabled to reduce console spam
         const userData = await fetchUserData(session.user, session);
         if (userData) {
           setUser(userData);
-          console.log('✅ User authenticated:', userData.email);
+          // console.log('✅ User authenticated:', userData.email); // Disabled to reduce console spam
         } else {
-          console.log('❌ Failed to fetch user data');
+          // Only log errors
+          if (import.meta.env.DEV) {
+            console.error('❌ Failed to fetch user data');
+          }
           setUser(null);
         }
       } else {
-        console.log('❌ No Supabase session');
+        // console.log('❌ No Supabase session'); // Disabled to reduce console spam
         setUser(null);
       }
     } catch (error) {
       console.error('❌ Auth check error:', error);
       setUser(null);
     } finally {
-      console.log('🔍 Setting isLoading to false');
+      // console.log('🔍 Setting isLoading to false'); // Disabled to reduce console spam
       setIsLoading(false);
     }
   };
@@ -215,19 +224,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔄 Auth state changed:', event, session?.user?.email);
+      // Reduced logging - only log important state changes
+      if (import.meta.env.DEV && (event === 'SIGNED_IN' || event === 'SIGNED_OUT')) {
+        console.log('🔄 Auth state changed:', event, session?.user?.email);
+      }
       
       if (event === 'SIGNED_IN' && session?.user) {
-        console.log('🔍 SIGNED_IN event - calling fetchUserData...');
+        // console.log('🔍 SIGNED_IN event - calling fetchUserData...'); // Disabled to reduce console spam
         const userData = await fetchUserData(session.user, session);
         if (userData) {
-          console.log('✅ User data received in onAuthStateChange:', userData);
+          // console.log('✅ User data received in onAuthStateChange:', userData); // Disabled to reduce console spam
           setUser(userData);
         } else {
-          console.log('❌ Failed to fetch user data in onAuthStateChange');
+          // Only log errors
+          if (import.meta.env.DEV) {
+            console.error('❌ Failed to fetch user data in onAuthStateChange');
+          }
         }
       } else if (event === 'SIGNED_OUT') {
-        console.log('🔍 SIGNED_OUT event');
+        // console.log('🔍 SIGNED_OUT event'); // Disabled to reduce console spam
         setUser(null);
       }
     });

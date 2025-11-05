@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { WebSocketMessage } from '../hooks/useWebSocket';
 
@@ -22,7 +23,8 @@ export class RealtimeService {
 
   // Handle incoming real-time messages
   private handleRealtimeMessage(message: WebSocketMessage) {
-    console.log('🔄 RealtimeService handling message:', message.type);
+    // Reduced logging to prevent console spam
+    // console.log('🔄 RealtimeService handling message:', message.type);
 
     switch (message.type) {
       case 'trip_update':
@@ -38,13 +40,17 @@ export class RealtimeService {
         this.handleSystemUpdate(message.data);
         break;
       default:
-        console.log('📨 Unknown message type:', message.type);
+        // Only log unknown message types in development
+        if (typeof window !== 'undefined' && import.meta.env.DEV) {
+          console.log('📨 Unknown message type:', message.type);
+        }
     }
   }
 
   // Handle trip updates
   private handleTripUpdate(data: any) {
-    console.log('🚗 Trip update received:', data);
+    // Reduced logging to prevent console spam
+    // console.log('🚗 Trip update received:', data);
     
     // Invalidate trip-related queries
     this.queryClient.invalidateQueries({ 
@@ -72,7 +78,8 @@ export class RealtimeService {
 
   // Handle driver updates
   private handleDriverUpdate(data: any) {
-    console.log('👨‍💼 Driver update received:', data);
+    // Reduced logging to prevent console spam
+    // console.log('👨‍💼 Driver update received:', data);
     
     // Invalidate driver-related queries
     this.queryClient.invalidateQueries({ 
@@ -95,7 +102,8 @@ export class RealtimeService {
 
   // Handle client updates
   private handleClientUpdate(data: any) {
-    console.log('👥 Client update received:', data);
+    // Reduced logging to prevent console spam
+    // console.log('👥 Client update received:', data);
     
     // Invalidate client-related queries
     this.queryClient.invalidateQueries({ 
@@ -174,8 +182,13 @@ export class RealtimeService {
 export function useRealtimeService() {
   const queryClient = useQueryClient();
   
+  // Memoize createService to prevent it from changing on every render
+  const createService = useCallback((wsConnection: any) => {
+    return new RealtimeService(queryClient, wsConnection);
+  }, [queryClient]);
+  
   return {
-    createService: (wsConnection: any) => new RealtimeService(queryClient, wsConnection)
+    createService
   };
 }
 

@@ -91,21 +91,35 @@ export default function Locations() {
     enabled: user?.role === 'super_admin',
   });
 
-  // Fetch locations based on current hierarchy level
+  // Fetch locations based on current hierarchy level and user role
   const { data: locationsData, isLoading: locationsLoading } = useQuery({
-    queryKey: ["/api/locations", level, selectedCorporateClient, selectedProgram],
+    queryKey: ["/api/locations", level, selectedCorporateClient, selectedProgram, user?.role],
     queryFn: async () => {
       let endpoint = "/api/locations";
       
-      // Build endpoint based on hierarchy level
-      if (level === 'program' && selectedProgram) {
+      // For corporate_admin, always use corporate-client endpoint for tenant isolation
+      if (user?.role === 'corporate_admin') {
+        const corporateClientId = (user as any).corporate_client_id || selectedCorporateClient;
+        if (corporateClientId) {
+          endpoint = `/api/locations/corporate-client/${corporateClientId}`;
+        } else {
+          console.warn('⚠️ Corporate admin missing corporate_client_id for locations');
+        }
+      } else if (level === 'program' && selectedProgram) {
         endpoint = `/api/locations/program/${selectedProgram}`;
       } else if (level === 'client' && selectedCorporateClient) {
         endpoint = `/api/locations/corporate-client/${selectedCorporateClient}`;
+      } else if (level === 'corporate' && user?.role === 'super_admin') {
+        endpoint = "/api/locations"; // Super admin sees all
+      } else {
+        console.warn('⚠️ Locations: Unfiltered endpoint fallback. User:', user?.role, 'Level:', level);
       }
       
+      console.log('🔍 Fetching locations from:', endpoint);
       const response = await apiRequest("GET", endpoint);
-      return await response.json();
+      const data = await response.json();
+      console.log('🔍 Locations received:', Array.isArray(data) ? data.length : 'not array', data);
+      return data;
     },
     enabled: true,
   });

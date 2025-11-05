@@ -91,80 +91,121 @@ export default function EnhancedNotificationCenter({ className }: EnhancedNotifi
   const { isConnected, connectionStatus } = useWebSocket({
     enabled: true,
     onMessage: (message) => {
-      if (message.type === 'NOTIFICATION') {
-        addNotification(message.payload);
+      // Reduced logging to prevent console spam - only log in development and only important messages
+      if (import.meta.env.DEV && (message.type === 'trip_created' || message.type === 'trip_update')) {
+        console.log('📬 EnhancedNotificationCenter: Received WebSocket message:', message.type);
+      }
+      // console.log('📬 Full message data:', JSON.stringify(message, null, 2)); // Disabled to reduce console spam
+      
+      // Handle different WebSocket event types
+      if (message.type === 'trip_created') {
+        // console.log('🎯 Processing trip_created notification...'); // Disabled to reduce console spam
+        const trip = message.data;
+        const clientName = trip.clients 
+          ? `${trip.clients.first_name || ''} ${trip.clients.last_name || ''}`.trim() 
+          : trip.client_name || 'Unknown Client';
+        
+        // console.log('📬 Creating trip_created notification:', { // Disabled to reduce console spam
+        //   clientName,
+        //   tripId: trip.id,
+        //   programId: trip.program_id,
+        //   driverId: trip.driver_id
+        // });
+        
+        addNotification({
+          type: 'info',
+          title: 'New Trip Created',
+          message: `A new trip has been created${trip.driver_id ? ' and assigned to a driver' : ''} for ${clientName}`,
+          category: 'trip',
+          priority: 'high',
+          data: trip
+        });
+        
+        // console.log('✅ Notification added successfully'); // Disabled to reduce console spam
+      } else if (message.type === 'trip_update') {
+        const trip = message.data;
+        const clientName = trip.clients 
+          ? `${trip.clients.first_name || ''} ${trip.clients.last_name || ''}`.trim() 
+          : trip.client_name || 'Unknown Client';
+        
+        // Use enhanced notification fields from server if available
+        const title = trip.notificationTitle || (trip.statusChange ? `Trip ${trip.statusChange}` : 'Trip Updated');
+        let messageText = trip.notificationMessage || trip.message || `Trip for ${clientName} has been updated`;
+        
+        // Add driver context if driver made the update (for admin notifications)
+        if (trip.driverName && trip.updatedByRole === 'driver') {
+          messageText = `${trip.driverName}: ${messageText}`;
+        }
+        
+        // Handle different action types
+        if (trip.action === 'assignment') {
+          messageText = trip.driverName 
+            ? `Trip assigned to ${trip.driverName}`
+            : 'Trip assigned to driver';
+        } else if (trip.action === 'modification') {
+          messageText = `Trip details updated${trip.driverName ? ` by ${trip.driverName}` : ''}`;
+        } else if (trip.action === 'cancellation') {
+          messageText = `Trip cancelled${trip.driverName ? ` by ${trip.driverName}` : ''}`;
+        }
+        
+        // Determine notification type based on status and action
+        let notificationType: 'info' | 'success' | 'warning' | 'error' = 'info';
+        if (trip.status === 'completed') {
+          notificationType = 'success';
+        } else if (trip.status === 'cancelled' || trip.status === 'no_show' || trip.action === 'cancellation') {
+          notificationType = 'warning';
+        } else if (trip.status === 'in_progress') {
+          notificationType = 'info';
+        } else if (trip.action === 'assignment') {
+          notificationType = 'info';
+        }
+        
+        addNotification({
+          type: notificationType,
+          title: title,
+          message: messageText + (clientName !== 'Unknown Client' ? ` - ${clientName}` : ''),
+          category: 'trip',
+          priority: trip.status === 'completed' || trip.status === 'cancelled' || trip.action === 'cancellation' 
+            ? 'high' 
+            : (trip.status === 'in_progress' || trip.action === 'assignment' ? 'medium' : 'low'),
+          data: trip
+        });
+      } else if (message.type === 'driver_update') {
+        addNotification({
+          type: 'info',
+          title: 'Driver Update',
+          message: message.data?.message || 'Driver information has been updated',
+          category: 'driver',
+          priority: 'medium',
+          data: message.data
+        });
+      } else if (message.type === 'client_update') {
+        addNotification({
+          type: 'info',
+          title: 'Client Update',
+          message: message.data?.message || 'Client information has been updated',
+          category: 'client',
+          priority: 'medium',
+          data: message.data
+        });
+      } else if (message.type === 'system_update') {
+        addNotification({
+          type: message.data?.severity === 'error' ? 'error' : 'warning',
+          title: 'System Alert',
+          message: message.data?.message || 'System update',
+          category: 'system',
+          priority: message.data?.priority || 'medium',
+          data: message.data
+        });
       }
     }
   });
 
-  // Mock notifications for demonstration
-  useEffect(() => {
-    const mockNotifications: Notification[] = [
-      {
-        id: '1',
-        type: 'success',
-        title: 'Trip Completed',
-        message: 'Trip #001 has been completed successfully',
-        timestamp: new Date(Date.now() - 5 * 60 * 1000),
-        read: false,
-        category: 'trip',
-        priority: 'medium'
-      },
-      {
-        id: '2',
-        type: 'warning',
-        title: 'Driver Delay',
-        message: 'John Smith is running 10 minutes late for pickup',
-        timestamp: new Date(Date.now() - 15 * 60 * 1000),
-        read: false,
-        category: 'driver',
-        priority: 'high'
-      },
-      {
-        id: '3',
-        type: 'info',
-        title: 'New Trip Request',
-        message: 'New trip request from client ABC Corp',
-        timestamp: new Date(Date.now() - 30 * 60 * 1000),
-        read: true,
-        category: 'trip',
-        priority: 'medium'
-      },
-      {
-        id: '4',
-        type: 'error',
-        title: 'System Alert',
-        message: 'GPS tracking temporarily unavailable',
-        timestamp: new Date(Date.now() - 45 * 60 * 1000),
-        read: true,
-        category: 'system',
-        priority: 'urgent'
-      },
-      {
-        id: '5',
-        type: 'info',
-        title: 'Billing Update',
-        message: 'Monthly invoice generated for $2,450.00',
-        timestamp: new Date(Date.now() - 60 * 60 * 1000),
-        read: false,
-        category: 'billing',
-        priority: 'low'
-      },
-      {
-        id: '6',
-        type: 'warning',
-        title: 'Vehicle Maintenance',
-        message: 'Van-003 requires scheduled maintenance',
-        timestamp: new Date(Date.now() - 90 * 60 * 1000),
-        read: true,
-        category: 'maintenance',
-        priority: 'medium'
-      }
-    ];
-
-    setNotifications(mockNotifications);
-    setUnreadCount(mockNotifications.filter(n => !n.read).length);
-  }, []);
+  // Mock notifications DISABLED - only show real WebSocket notifications
+  // Commented out to prevent interference with real notifications
+  // useEffect(() => {
+  //   // Mock notifications removed - only show real notifications from WebSocket
+  // }, []);
 
   const addNotification = (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
     const newNotification: Notification = {
@@ -174,8 +215,33 @@ export default function EnhancedNotificationCenter({ className }: EnhancedNotifi
       read: false
     };
 
-    setNotifications(prev => [newNotification, ...prev]);
-    setUnreadCount(prev => prev + 1);
+    // Reduced logging to prevent console spam
+    // console.log('📬 addNotification called:', {
+    //   title: newNotification.title,
+    //   message: newNotification.message,
+    //   category: newNotification.category,
+    //   id: newNotification.id
+    // });
+
+    setNotifications(prev => {
+      // Filter out any mock notifications when adding real ones
+      const filtered = prev.filter(n => !n.id?.startsWith('mock-'));
+      const updated = [newNotification, ...filtered];
+      // console.log('📬 Updated notifications array:', { // Disabled to reduce console spam
+      //   before: prev.length,
+      //   after: updated.length,
+      //   filteredMocks: prev.length - filtered.length,
+      //   newNotificationId: newNotification.id,
+      //   newNotificationTitle: newNotification.title
+      // });
+      return updated;
+    });
+    setUnreadCount(prev => {
+      // Count unread from the new notifications array (excluding mocks)
+      const newCount = prev + 1;
+      // console.log('📬 Updated unread count:', prev, '→', newCount); // Disabled to reduce console spam
+      return newCount;
+    });
   };
 
   const markAsRead = (id: string) => {

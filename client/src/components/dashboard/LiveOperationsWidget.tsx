@@ -26,7 +26,8 @@ export default function LiveOperationsWidget({ className, trips: propTrips, driv
   const { isConnected, connectionStatus } = useWebSocket({
     enabled: true,
     onMessage: (message) => {
-      console.log('🔄 LiveOperationsWidget received real-time update:', message.type);
+      // Reduced logging to prevent console spam
+      // console.log('🔄 LiveOperationsWidget received real-time update:', message.type);
     }
   });
 
@@ -40,7 +41,9 @@ export default function LiveOperationsWidget({ className, trips: propTrips, driv
       setRealtimeService(service);
       service.initialize();
     }
-  }, [isConnected, createService]);
+    // Only depend on isConnected, not createService (which changes every render)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected]);
 
   // Process real data
   const activeTrips = trips?.slice(0, 5).map((trip: any) => ({

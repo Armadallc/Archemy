@@ -23,6 +23,7 @@ import { useAuth } from "../hooks/useAuth";
 import { format, parseISO, isToday, isTomorrow, isYesterday } from "date-fns";
 import ExportButton from "./export/ExportButton";
 import { useLocation } from "wouter";
+import ElementMeasurer from "./scratch/ElementMeasurer";
 
 interface Trip {
   id: string;
@@ -89,26 +90,40 @@ export default function HierarchicalTripsPage() {
 
   const filterParams = getFilterParams();
 
-  // Build API endpoint based on hierarchy level
+  // Build API endpoint based on hierarchy level and user role
   const getTripsEndpoint = () => {
-    if (level === 'corporate') {
+    // For corporate_admin, always use corporate-client endpoint for tenant isolation
+    if (user?.role === 'corporate_admin') {
+      const corporateClientId = (user as any).corporate_client_id || selectedCorporateClient;
+      if (corporateClientId) {
+        return `/api/trips/corporate-client/${corporateClientId}`;
+      }
+      console.warn('⚠️ Corporate admin missing corporate_client_id, falling back to unfiltered endpoint');
+    }
+    
+    if (level === 'corporate' && user?.role === 'super_admin') {
       return '/api/trips'; // Use regular trips endpoint for super_admin
     } else if (level === 'client' && selectedCorporateClient) {
       return `/api/trips/corporate-client/${selectedCorporateClient}`;
     } else if (level === 'program' && selectedProgram) {
       return `/api/trips/program/${selectedProgram}`;
     }
+    
+    // Fallback - should only happen for super_admin
+    console.warn('⚠️ Falling back to unfiltered trips endpoint. User:', user?.role, 'Level:', level);
     return '/api/trips';
   };
 
   // Fetch trips based on current hierarchy level
   const { data: tripsData, isLoading, error } = useQuery({
-    queryKey: ['trips', level, selectedCorporateClient, selectedProgram],
+    queryKey: ['trips', level, selectedCorporateClient, selectedProgram, user?.role],
     queryFn: async () => {
       const endpoint = getTripsEndpoint();
-      console.log('🔍 Fetching trips from:', endpoint, 'for level:', level);
+      console.log('🔍 Fetching trips from:', endpoint, 'for level:', level, 'user role:', user?.role);
       const response = await apiRequest("GET", endpoint);
-      return await response.json();
+      const data = await response.json();
+      console.log('🔍 Trips received:', Array.isArray(data) ? data.length : 'not array', data);
+      return data;
     },
     enabled: true,
   });
@@ -398,6 +413,9 @@ export default function HierarchicalTripsPage() {
           ))}
         </div>
       )}
+
+      {/* Element Measurer - for measuring actual trips page elements */}
+      <ElementMeasurer />
     </div>
   );
 }

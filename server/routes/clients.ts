@@ -65,6 +65,19 @@ router.get("/groups/program/:programId", requireSupabaseAuth, requirePermission(
   }
 });
 
+router.get("/groups/corporate-client/:corporateClientId", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_CLIENT_GROUPS), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { corporateClientId } = req.params;
+    console.log('🔍 [GET /clients/groups/corporate-client/:corporateClientId] Fetching for:', corporateClientId);
+    const clientGroups = await clientGroupsStorage.getClientGroupsByCorporateClient(corporateClientId);
+    console.log(`✅ Found ${clientGroups.length} client groups for corporate client ${corporateClientId}`);
+    res.json(clientGroups);
+  } catch (error) {
+    console.error("Error fetching client groups by corporate client:", error);
+    res.status(500).json({ message: "Failed to fetch client groups" });
+  }
+});
+
 router.post("/groups", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin']), async (req: SupabaseAuthenticatedRequest, res) => {
   try {
     const clientGroup = await clientGroupsStorage.createClientGroup(req.body);
@@ -156,6 +169,21 @@ router.get("/location/:locationId", requireSupabaseAuth, requirePermission(PERMI
     res.json(clients);
   } catch (error) {
     console.error("Error fetching clients by location:", error);
+    res.status(500).json({ message: "Failed to fetch clients" });
+  }
+});
+
+router.get("/corporate-client/:corporateClientId", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_CLIENTS), async (req: SupabaseAuthenticatedRequest, res) => {
+  console.log('🔍 [GET /clients/corporate-client/:corporateClientId] Route hit');
+  console.log('🔍 Corporate client ID:', req.params.corporateClientId);
+  try {
+    const { corporateClientId } = req.params;
+    console.log('🔍 Fetching clients for corporate client:', corporateClientId);
+    const clients = await clientsStorage.getClientsByCorporateClient(corporateClientId);
+    console.log(`✅ Found ${clients.length} clients for corporate client ${corporateClientId}`);
+    res.json(clients);
+  } catch (error) {
+    console.error("❌ Error fetching clients by corporate client:", error);
     res.status(500).json({ message: "Failed to fetch clients" });
   }
 });

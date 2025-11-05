@@ -4,7 +4,7 @@ import { useHierarchy } from './useHierarchy';
 import { createClient } from '@supabase/supabase-js';
 
 export interface WebSocketMessage {
-  type: 'trip_update' | 'driver_update' | 'client_update' | 'system_update' | 'connection';
+  type: 'trip_update' | 'trip_created' | 'driver_update' | 'client_update' | 'system_update' | 'connection';
   data: any;
   timestamp: string;
   target?: {
@@ -46,20 +46,42 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected');
 
   const connect = useCallback(async () => {
+    // WebSocket connections re-enabled for Phase 5 testing
+    // TODO: Monitor for connection issues and adjust if needed
+    
     if (!enabled || !user?.user_id) {
-      console.log('🔌 WebSocket connection skipped: not enabled or no user');
+      if (import.meta.env.DEV) {
+        console.log('🔌 WebSocket connection skipped: not enabled or no user');
+      }
       return;
     }
 
     // Prevent multiple simultaneous connection attempts
-    if (wsRef.current && (wsRef.current.readyState === WebSocket.CONNECTING || wsRef.current.readyState === WebSocket.OPEN)) {
-      console.log('🔌 WebSocket connection skipped: already connecting or connected');
-      return;
-    }
-
-    // Close existing connection
+    // Check if there's an existing connection that's actually active
     if (wsRef.current) {
-      wsRef.current.close();
+      const state = wsRef.current.readyState;
+      if (state === WebSocket.CONNECTING || state === WebSocket.OPEN) {
+        console.log('🔌 WebSocket connection skipped: already connecting or connected, state:', state);
+        return;
+      }
+      // If connection is closed or closing, clean it up before creating a new one
+      if (state === WebSocket.CLOSING || state === WebSocket.CLOSED) {
+        console.log('🔌 Cleaning up closed WebSocket connection, state:', state);
+        try {
+          wsRef.current.close();
+        } catch (e) {
+          // Ignore errors when closing
+        }
+        wsRef.current = null;
+      } else {
+        // For any other state, close cleanly
+        try {
+          wsRef.current.close(1000, 'Reconnecting');
+        } catch (e) {
+          // Ignore errors when closing
+        }
+        wsRef.current = null;
+      }
     }
 
     setConnectionStatus('connecting');
@@ -67,37 +89,91 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     // Get the WebSocket URL
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.hostname;
-    const port = '8081'; // WebSocket server runs on port 8081
+    // Use environment variable for API URL, extract port if full URL, otherwise default to 8081
+    const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+    const apiUrl = new URL(apiBaseUrl);
+    const port = apiUrl.port || '8081';
     
-    // Use auth_user_id if available, otherwise get JWT token as fallback
+    // Use auth_user_id if available (preferred), otherwise get JWT token as fallback
     let token = user.auth_user_id;
+    // REDUCED LOGGING: Only log once per connection attempt, not on every call
     if (!token) {
-      console.log('🔍 auth_user_id not available, getting JWT token...');
+      if (import.meta.env.DEV) {
+        console.log('🔍 auth_user_id not available, getting JWT token...');
+      }
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://iuawurdssgbkbavyyvbs.supabase.co';
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1YXd1cmRzc2dia2Jhdnl5dmJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NDU1MzEsImV4cCI6MjA3NDQyMTUzMX0.JLcuSTI1mfEMGu_mP9UBnGQyG33vcoU2SzvKo8olkL4';
       const supabase = createClient(supabaseUrl, supabaseAnonKey);
       
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.access_token) {
-        token = session.access_token;
-        console.log('✅ Using JWT token for WebSocket authentication');
-      } else {
-        console.error('❌ No authentication token available for WebSocket');
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) {
+          if (import.meta.env.DEV) {
+            console.error('❌ Error getting session:', sessionError);
+          }
+          setConnectionStatus('error');
+          return;
+        }
+        
+        if (session?.access_token) {
+          token = session.access_token;
+          if (import.meta.env.DEV) {
+            console.log('✅ Using JWT token for WebSocket authentication');
+          }
+        } else {
+          if (import.meta.env.DEV) {
+            console.error('❌ No authentication token available for WebSocket');
+          }
+          setConnectionStatus('error');
+          return;
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error('❌ Error fetching session:', error);
+        }
         setConnectionStatus('error');
         return;
       }
     }
     
+    if (!token) {
+      if (import.meta.env.DEV) {
+        console.error('❌ No token available for WebSocket connection');
+      }
+      setConnectionStatus('error');
+      return;
+    }
+    
     const wsUrl = `${protocol}//${host}:${port}/ws?token=${token}`;
 
-    console.log('🔌 Connecting to WebSocket:', wsUrl);
+    // Reduced logging to prevent console spam - only log in development
+    if (import.meta.env.DEV) {
+      console.log('🔌 Attempting WebSocket connection to:', wsUrl.replace(/token=[^&]+/, 'token=***'));
+      console.log('🔌 User:', user.email, 'User ID:', user.user_id);
+    }
 
     try {
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
+      // console.log('🔌 WebSocket instance created, state:', ws.readyState); // Disabled to reduce console spam
+
+      // Set a connection timeout
+      const connectionTimeout = setTimeout(() => {
+        if (ws.readyState === WebSocket.CONNECTING) {
+          if (import.meta.env.DEV) {
+            console.warn('⏱️ WebSocket connection timeout');
+          }
+          ws.close();
+          setConnectionStatus('error');
+        }
+      }, 10000); // 10 second timeout
 
       ws.onopen = () => {
-        console.log('✅ WebSocket connected');
+        clearTimeout(connectionTimeout);
+        // Only log successful connections in development
+        if (import.meta.env.DEV) {
+          console.log('✅ WebSocket connected successfully');
+        }
         setIsConnected(true);
         setConnectionStatus('connected');
         reconnectAttemptsRef.current = 0;
@@ -107,42 +183,72 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       ws.onmessage = (event) => {
         try {
           const message: WebSocketMessage = JSON.parse(event.data);
-          console.log('📨 WebSocket message received:', message);
+          // Reduced logging - only log important message types in development
+          if (import.meta.env.DEV && (message.type === 'trip_created' || message.type === 'trip_update')) {
+            console.log('📨 WebSocket message received:', message.type);
+          }
+          // console.log('📨 WebSocket message received:', message.type, message); // Disabled to reduce console spam
           onMessage?.(message);
         } catch (error) {
-          console.error('❌ Error parsing WebSocket message:', error);
+          if (import.meta.env.DEV) {
+            console.error('❌ Error parsing WebSocket message:', error);
+          }
         }
       };
 
       ws.onclose = (event) => {
-        console.log('🔌 WebSocket disconnected:', event.code, event.reason);
+        clearTimeout(connectionTimeout);
         setIsConnected(false);
         setConnectionStatus('disconnected');
+        
+      // REDUCED LOGGING: Only log errors, not normal disconnects
+        
+        // Don't log or attempt reconnect for manual closes
+        if (event.code === 1000) {
+          // Manual close - normal disconnect
+          return;
+        }
+        
+        // Don't spam reconnect attempts for authentication failures
+        if (event.code === 1008) {
+          if (import.meta.env.DEV) {
+            console.warn('⚠️ WebSocket authentication failed (1008). Check your login status and ensure auth_user_id is available.');
+          }
+          setConnectionStatus('error');
+          reconnectAttemptsRef.current = maxReconnectAttempts; // Prevent reconnection
+          onDisconnect?.();
+          return;
+        }
+        
         onDisconnect?.();
 
-        // Attempt to reconnect if not a manual close
-        if (event.code !== 1000 && reconnectAttemptsRef.current < maxReconnectAttempts) {
-          console.log(`🔄 Attempting to reconnect (${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts})...`);
-          reconnectAttemptsRef.current++;
-          // Add exponential backoff to prevent rapid reconnection attempts
-          const delay = Math.min(reconnectInterval * Math.pow(2, reconnectAttemptsRef.current - 1), 30000);
-          reconnectTimeoutRef.current = setTimeout(connect, delay);
-        } else if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
-          console.log('❌ WebSocket: Max reconnection attempts reached, giving up');
+        // COMPLETELY DISABLED: Stop all reconnection attempts and clear any pending timeouts
+        if (reconnectTimeoutRef.current) {
+          clearTimeout(reconnectTimeoutRef.current);
+          reconnectTimeoutRef.current = null;
         }
+        
+        // Don't log anything - completely silent to prevent console spam
+        setConnectionStatus('error');
+        
+        // ALL RECONNECTION CODE DISABLED - Do nothing, just stop
       };
 
       ws.onerror = (error) => {
-        console.error('❌ WebSocket error:', error);
+        clearTimeout(connectionTimeout);
+        // Suppress verbose error logs - onclose will handle the actual error code
         setConnectionStatus('error');
         onError?.(error);
       };
 
     } catch (error) {
-      console.error('❌ Error creating WebSocket connection:', error);
+      if (import.meta.env.DEV) {
+        console.error('❌ Error creating WebSocket connection:', error);
+      }
       setConnectionStatus('error');
+      onError?.(error as Event);
     }
-  }, [enabled, user?.user_id, reconnectInterval, maxReconnectAttempts, onConnect, onDisconnect, onError, onMessage]);
+  }, [enabled, user?.user_id, user?.auth_user_id, reconnectInterval, maxReconnectAttempts, onConnect, onDisconnect, onError, onMessage]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -167,24 +273,44 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     return false;
   }, []);
 
-  // Connect when user is available and enabled
+  // WebSocket connection effect - re-enabled for Phase 5 testing
   useEffect(() => {
-    // Temporarily disable WebSocket to prevent error spam
-    console.log('🔌 WebSocket temporarily disabled to prevent error spam');
-    return;
+    // Reset reconnect attempts when user changes
+    reconnectAttemptsRef.current = 0;
     
     if (enabled && user?.user_id) {
-      console.log('🔌 WebSocket useEffect: attempting to connect');
+      // Attempt to connect
       connect();
     } else {
-      console.log('🔌 WebSocket useEffect: disconnecting');
-      disconnect();
+      // Disconnect if not enabled or no user
+      setIsConnected(false);
+      setConnectionStatus('disconnected');
+      
+      // Clear any existing connections
+      if (wsRef.current) {
+        try {
+          wsRef.current.close(1000);
+        } catch (e) {
+          // Ignore
+        }
+        wsRef.current = null;
+      }
+      
+      // Clear any pending timeouts
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
     }
-
+    
+    // Cleanup on unmount or when dependencies change
     return () => {
-      disconnect();
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
     };
-  }, [enabled, user?.user_id, connect, disconnect]);
+  }, [enabled, user?.user_id, user?.auth_user_id, connect]);
 
   // Reconnect when hierarchy changes (user switches programs/corporate clients)
   useEffect(() => {
@@ -221,7 +347,7 @@ export function useRealtimeSubscription(
   const handleMessage = useCallback((message: WebSocketMessage) => {
     // Filter messages based on subscription type
     if (subscriptionType === 'all' || 
-        (subscriptionType === 'trips' && message.type === 'trip_update') ||
+        (subscriptionType === 'trips' && (message.type === 'trip_update' || message.type === 'trip_created')) ||
         (subscriptionType === 'drivers' && message.type === 'driver_update') ||
         (subscriptionType === 'clients' && message.type === 'client_update')) {
       onMessage?.(message);

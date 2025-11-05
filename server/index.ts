@@ -314,12 +314,20 @@ app.use((req, res, next) => {
     });
   });
 
-  // Register all API routes FIRST, before any catch-all handlers
-  app.use('/api', apiRoutes);
-  console.log('🔍 API routes registered');
+  // Register file storage routes FIRST (more specific routes before general /api routes)
+  // This ensures /api/files/* routes are matched before /api/* catch-all handlers
+  app.use('/api/files', (req, res, next) => {
+    console.log('🔍 [FILE STORAGE] Request to /api/files:', req.method, req.path);
+    next();
+  }, fileStorageRoutes);
+  console.log('🔍 File storage routes registered at /api/files');
   
-  app.use('/api/files', fileStorageRoutes);
-  console.log('🔍 File storage routes registered');
+  // Register all other API routes AFTER file storage routes
+  app.use('/api', (req, res, next) => {
+    console.log('🔍 [API ROUTES] Request to /api:', req.method, req.path, 'originalUrl:', req.originalUrl);
+    next();
+  }, apiRoutes);
+  console.log('🔍 API routes registered at /api');
 
   // Add 404 handler for unmatched API routes AFTER route registration
   app.use('/api/*', (req, res) => {
@@ -329,16 +337,47 @@ app.use((req, res, next) => {
   // Create HTTP server after routes are registered
   const server = createServer(app);
 
+  // Add upgrade handler BEFORE WebSocket server initialization to catch all upgrade requests
+  server.on('upgrade', (request, socket, head) => {
+    console.log('🔍 [HTTP SERVER] Upgrade request received:', request.url);
+    console.log('🔍 [HTTP SERVER] Upgrade method:', request.method);
+    console.log('🔍 [HTTP SERVER] Upgrade headers:', {
+      upgrade: request.headers.upgrade,
+      connection: request.headers.connection,
+      'sec-websocket-key': request.headers['sec-websocket-key'],
+      'sec-websocket-version': request.headers['sec-websocket-version']
+    });
+    // Don't handle it - let WebSocketServer handle it
+  });
+
   // Initialize WebSocket server
+  console.log('🔌 Initializing WebSocket server...');
   const wsServer = new RealtimeWebSocketServer(server);
   setWebSocketServer(wsServer);
   console.log('🔌 WebSocket server initialized on /ws');
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
+    // Only handle errors if response hasn't been sent yet
+    if (res.headersSent) {
+      return _next(err);
+    }
+    
     const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    res.status(status).json({ message });
+    
+    // If this is an API route and we have detailed error info, include it
+    if (req.path.startsWith('/api') && err.details) {
+      console.error('❌ Global error handler caught error for:', req.path);
+      res.status(status).json({
+        message: err.message || "Internal Server Error",
+        error: err.code || err.name || 'UNKNOWN_ERROR',
+        details: err.details,
+        hint: err.hint
+      });
+    } else {
+      // For non-API routes or errors without details, use simple message
+      res.status(status).json({ message: err.message || "Internal Server Error" });
+    }
+    
     throw err;
   });
 

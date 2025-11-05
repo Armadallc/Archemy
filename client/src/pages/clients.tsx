@@ -39,7 +39,7 @@ const clientFormSchema = z.object({
   use_location_address: z.boolean().default(false),
   date_of_birth: z.string().optional(),
   birth_sex: z.enum(["Male", "Female"]).optional(),
-  age: z.number().optional(),
+  age: z.coerce.number().optional().or(z.literal("")),
   race: z.string().optional(),
   avatar_url: z.string().optional(),
   emergency_contact_name: z.string().optional(),
@@ -221,14 +221,29 @@ export default function Clients() {
   // Get filter parameters based on current hierarchy level
   const filterParams = getFilterParams();
 
-  // Fetch programs for assignment dropdown (for super admins)
+  // Fetch programs based on hierarchy level
   const { data: programs } = useQuery({
-    queryKey: ["/api/programs"],
+    queryKey: ["/api/programs", level, selectedCorporateClient, user?.role, (user as any)?.corporate_client_id],
     queryFn: async () => {
-      const response = await apiRequest("GET", "/api/programs");
+      let endpoint = "/api/programs";
+      
+      // Get corporate client ID from hierarchy or user object
+      const corporateClientId = selectedCorporateClient || (user as any)?.corporate_client_id;
+      
+      // For corporate_admin, fetch programs by corporate client
+      if (user?.role === 'corporate_admin' && corporateClientId) {
+        endpoint = `/api/programs/corporate-client/${corporateClientId}`;
+      } else if (level === 'client' && corporateClientId) {
+        endpoint = `/api/programs/corporate-client/${corporateClientId}`;
+      } else if (level === 'program' && selectedProgram) {
+        // For program level, still return all programs (or just the selected one)
+        endpoint = "/api/programs";
+      }
+      
+      const response = await apiRequest("GET", endpoint);
       return await response.json();
     },
-    enabled: user?.role === 'super_admin',
+    enabled: true,
   });
 
   // Fetch clients based on current hierarchy level
@@ -238,14 +253,34 @@ export default function Clients() {
       let endpoint = "/api/clients";
       
       // Build endpoint based on hierarchy level
-      if (level === 'program' && selectedProgram) {
+      // Check for program level first (more specific)
+      if (level === 'program' && selectedProgram && selectedProgram !== 'undefined' && selectedProgram !== null) {
         endpoint = `/api/clients/program/${selectedProgram}`;
       } else if (level === 'client' && selectedCorporateClient) {
+        // Corporate client level - fetch all clients for this corporate client
+        endpoint = `/api/clients/corporate-client/${selectedCorporateClient}`;
+      } else if (selectedCorporateClient && !selectedProgram) {
+        // Fallback: if we have a corporate client but no program, use corporate client endpoint
         endpoint = `/api/clients/corporate-client/${selectedCorporateClient}`;
       }
       
+      console.log('🔍 [Clients Query] Fetching clients:', {
+        level,
+        selectedCorporateClient,
+        selectedProgram,
+        endpoint
+      });
+      
       const response = await apiRequest("GET", endpoint);
-      return await response.json();
+      const data = await response.json();
+      
+      console.log('🔍 [Clients Query] Response:', {
+        endpoint,
+        dataLength: Array.isArray(data) ? data.length : 'not array',
+        data: data
+      });
+      
+      return data;
     },
     enabled: true,
   });
@@ -264,16 +299,28 @@ export default function Clients() {
     console.log('🔍 First client locations:', clients[0].locations);
   }
 
+  // Watch the selected program from the form to refetch locations
+  const formProgramId = createForm.watch("program_id");
+  const effectiveProgramId = formProgramId || selectedProgram;
+
   // Fetch locations for the dropdown
   const { data: locationsData, error: locationsError } = useQuery({
-    queryKey: ["/api/locations", selectedProgram],
+    queryKey: ["/api/locations", effectiveProgramId, level, selectedCorporateClient, user?.role, (user as any)?.corporate_client_id],
     queryFn: async () => {
       let endpoint = "/api/locations";
       
-      if (level === 'program' && selectedProgram) {
+      // Get corporate client ID from hierarchy or user object
+      const corporateClientId = selectedCorporateClient || (user as any)?.corporate_client_id;
+      
+      // If a program is selected (from form or hierarchy), fetch locations for that program
+      if (effectiveProgramId) {
+        endpoint = `/api/locations/program/${effectiveProgramId}`;
+      } else if (level === 'program' && selectedProgram) {
         endpoint = `/api/locations/program/${selectedProgram}`;
-      } else if (level === 'client' && selectedCorporateClient) {
-        endpoint = `/api/locations/corporate-client/${selectedCorporateClient}`;
+      } else if (user?.role === 'corporate_admin' && corporateClientId) {
+        endpoint = `/api/locations/corporate-client/${corporateClientId}`;
+      } else if (level === 'client' && corporateClientId) {
+        endpoint = `/api/locations/corporate-client/${corporateClientId}`;
       }
       
       const response = await apiRequest("GET", endpoint);
@@ -287,14 +334,14 @@ export default function Clients() {
 
   // Fetch client groups
   const { data: clientGroupsData } = useQuery({
-    queryKey: ["/api/client-groups", level, selectedCorporateClient, selectedProgram],
+    queryKey: ["/api/clients/groups", level, selectedCorporateClient, selectedProgram],
     queryFn: async () => {
-      let endpoint = "/api/client-groups";
+      let endpoint = "/api/clients/groups";
       
       if (level === 'program' && selectedProgram) {
-        endpoint = `/api/client-groups/program/${selectedProgram}`;
+        endpoint = `/api/clients/groups/program/${selectedProgram}`;
       } else if (level === 'client' && selectedCorporateClient) {
-        endpoint = `/api/client-groups/corporate-client/${selectedCorporateClient}`;
+        endpoint = `/api/clients/groups/corporate-client/${selectedCorporateClient}`;
       }
       
       const response = await apiRequest("GET", endpoint);
@@ -352,7 +399,13 @@ export default function Clients() {
         medical_conditions: clientData.medical_conditions || undefined,
         special_requirements: clientData.special_requirements || undefined,
         billing_pin: clientData.billing_pin || undefined,
-        is_active: true
+        is_active: true,
+        // Include program contacts if provided
+        program_contacts: clientData.program_contacts && clientData.program_contacts.length > 0 
+          ? clientData.program_contacts.filter(contact => 
+              contact.first_name && contact.last_name && contact.role && contact.phone
+            )
+          : undefined
       };
       console.log('🔍 Creating client with data:', apiData);
       const response = await apiRequest("POST", "/api/clients", apiData);
@@ -366,7 +419,13 @@ export default function Clients() {
       });
       setIsCreateDialogOpen(false);
       setFormData(initialFormData);
+      createForm.reset();
+      // Invalidate all client queries to ensure the new client appears
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      // Also invalidate the specific query with hierarchy parameters
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/clients", level, selectedCorporateClient, selectedProgram] 
+      });
     },
     onError: () => {
       toast({

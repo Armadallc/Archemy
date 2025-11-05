@@ -34,6 +34,7 @@ import { useHierarchy } from "../../hooks/useHierarchy";
 // Design System Pages
 import DesignSystem from "../../pages/design-system";
 import DesignSystemDemo from "../../pages/design-system-demo";
+import ScratchPage from "../../pages/scratch";
 
 interface MainLayoutProps {
   children?: ReactNode;
@@ -107,6 +108,65 @@ export default function MainLayout({
         <div className="flex-1 overflow-auto mobile-optimized pb-20 md:pb-0">
           {children || (
             <Switch>
+              {/* Hierarchical Routes - Corporate Client + Program (must come before corporate-client-only routes) */}
+              <Route path="/corporate-client/:corporateClientId/program/:programId/locations">
+                <Locations />
+              </Route>
+              <Route path="/corporate-client/:corporateClientId/program/:programId/trips">
+                <HierarchicalTripsPage />
+              </Route>
+              <Route path="/corporate-client/:corporateClientId/program/:programId/clients">
+                <Clients />
+              </Route>
+              <Route path="/corporate-client/:corporateClientId/program/:programId/frequent-locations">
+                <FrequentLocations />
+              </Route>
+              <Route path="/corporate-client/:corporateClientId/program/:programId/drivers">
+                <Drivers />
+              </Route>
+              <Route path="/corporate-client/:corporateClientId/program/:programId/vehicles">
+                <Vehicles />
+              </Route>
+              <Route path="/corporate-client/:corporateClientId/program/:programId/calendar">
+                <CalendarPage />
+              </Route>
+              <Route path="/corporate-client/:corporateClientId/program/:programId/programs">
+                <Programs />
+              </Route>
+              <Route path="/corporate-client/:corporateClientId/program/:programId">
+                <ShadcnDashboardMigrated />
+              </Route>
+
+              {/* Hierarchical Routes - Corporate Client Only */}
+              <Route path="/corporate-client/:corporateClientId/locations">
+                <Locations />
+              </Route>
+              <Route path="/corporate-client/:corporateClientId/trips">
+                <HierarchicalTripsPage />
+              </Route>
+              <Route path="/corporate-client/:corporateClientId/clients">
+                <Clients />
+              </Route>
+              <Route path="/corporate-client/:corporateClientId/frequent-locations">
+                <FrequentLocations />
+              </Route>
+              <Route path="/corporate-client/:corporateClientId/drivers">
+                <Drivers />
+              </Route>
+              <Route path="/corporate-client/:corporateClientId/vehicles">
+                <Vehicles />
+              </Route>
+              <Route path="/corporate-client/:corporateClientId/calendar">
+                <CalendarPage />
+              </Route>
+              <Route path="/corporate-client/:corporateClientId/programs">
+                <Programs />
+              </Route>
+              <Route path="/corporate-client/:corporateClientId">
+                <ShadcnDashboardMigrated />
+              </Route>
+
+              {/* Flat Routes (for Super Admin and backward compatibility) */}
               <Route path="/">
                 {() => {
                   if (process.env.NODE_ENV === 'development') {
@@ -161,6 +221,9 @@ export default function MainLayout({
               </Route>
         <Route path="/playground">
           <Playground />
+        </Route>
+        <Route path="/scratch">
+          <ScratchPage />
         </Route>
         <Route path="/shadcn-dashboard">
           <ShadcnDashboard />

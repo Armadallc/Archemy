@@ -44,9 +44,30 @@ import {
 } from "./auth";
 import { PERMISSIONS } from "./permissions";
 import { upload, processAvatar, processLogo, deleteFile } from "./upload";
-import { broadcastTripUpdate, broadcastDriverUpdate, broadcastClientUpdate } from "./websocket-instance";
+import { broadcastTripUpdate, broadcastTripCreated, broadcastDriverUpdate, broadcastClientUpdate } from "./websocket-instance";
 
 const router = express.Router();
+
+// Helper function to get driver display name (shared with routes/trips.ts logic)
+async function getDriverDisplayName(driverId: string): Promise<string | undefined> {
+  try {
+    const driver = await driversStorage.getDriver(driverId);
+    if (!driver) return undefined;
+    
+    // Try to get name from driver.users or driver directly
+    if (driver.users?.user_name) {
+      return driver.users.user_name;
+    }
+    // If driver has first_name/last_name, use those (might not be in schema but check anyway)
+    if ((driver as any).first_name && (driver as any).last_name) {
+      return `${(driver as any).first_name} ${(driver as any).last_name}`;
+    }
+    return undefined;
+  } catch (error) {
+    console.warn("Could not fetch driver name:", error);
+    return undefined;
+  }
+}
 
 // Add middleware to ensure API routes are handled correctly
 router.use((req, res, next) => {
@@ -197,6 +218,7 @@ router.get("/auth/user", requireSupabaseAuth, async (req: SupabaseAuthenticatedR
       .from('users')
       .select(`
         user_id,
+        auth_user_id,
         user_name,
         email,
         role,
@@ -565,6 +587,17 @@ router.get("/locations/program/:programId", requireSupabaseAuth, requirePermissi
   }
 });
 
+router.get("/locations/corporate-client/:corporateClientId", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_LOCATIONS), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { corporateClientId } = req.params;
+    const locations = await locationsStorage.getLocationsByCorporateClient(corporateClientId);
+    res.json(locations);
+  } catch (error) {
+    console.error("Error fetching locations by corporate client:", error);
+    res.status(500).json({ message: "Failed to fetch locations" });
+  }
+});
+
 router.post("/locations", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin']), async (req: SupabaseAuthenticatedRequest, res) => {
   try {
     const location = await locationsStorage.createLocation(req.body);
@@ -725,22 +758,7 @@ router.get("/clients", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_C
   }
 });
 
-router.get("/clients/:id", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_CLIENTS), async (req: SupabaseAuthenticatedRequest, res) => {
-  try {
-    const { id } = req.params;
-    const client = await clientsStorage.getClient(id);
-    
-    if (!client) {
-      return res.status(404).json({ message: "Client not found" });
-    }
-    
-    res.json(client);
-  } catch (error) {
-    console.error("Error fetching client:", error);
-    res.status(500).json({ message: "Failed to fetch client" });
-  }
-});
-
+// More specific routes must come BEFORE the generic /:id route
 router.get("/clients/program/:programId", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_CLIENTS), async (req: SupabaseAuthenticatedRequest, res) => {
   try {
     const { programId } = req.params;
@@ -763,13 +781,132 @@ router.get("/clients/location/:locationId", requireSupabaseAuth, requirePermissi
   }
 });
 
+router.get("/clients/corporate-client/:corporateClientId", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_CLIENTS), async (req: SupabaseAuthenticatedRequest, res) => {
+  console.log('🔍 [GET /clients/corporate-client/:corporateClientId] Route hit');
+  console.log('🔍 Corporate client ID:', req.params.corporateClientId);
+  try {
+    const { corporateClientId } = req.params;
+    console.log('🔍 Fetching clients for corporate client:', corporateClientId);
+    const clients = await clientsStorage.getClientsByCorporateClient(corporateClientId);
+    console.log(`✅ Found ${clients.length} clients for corporate client ${corporateClientId}`);
+    res.json(clients);
+  } catch (error) {
+    console.error("❌ Error fetching clients by corporate client:", error);
+    res.status(500).json({ message: "Failed to fetch clients" });
+  }
+});
+
+router.get("/clients/:id", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_CLIENTS), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const client = await clientsStorage.getClient(id);
+    
+    if (!client) {
+      return res.status(404).json({ message: "Client not found" });
+    }
+    
+    res.json(client);
+  } catch (error) {
+    console.error("Error fetching client:", error);
+    res.status(500).json({ message: "Failed to fetch client" });
+  }
+});
+
 router.post("/clients", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin', 'program_user']), async (req: SupabaseAuthenticatedRequest, res) => {
   try {
-    const client = await clientsStorage.createClient(req.body);
+    console.log('🔍 [POST /clients] Request received');
+    console.log('🔍 [POST /clients] Request body keys:', Object.keys(req.body));
+    console.log('🔍 [POST /clients] Request body:', JSON.stringify(req.body, null, 2));
+    
+    // Extract program_contacts from request body
+    const { program_contacts, ...clientData } = req.body;
+    
+    // Clean up clientData - remove undefined/null values and fields that shouldn't be in the database
+    const cleanedClientData: any = {};
+    const fieldsToExclude = [
+      'program_contacts', // Explicitly exclude - this is in a separate table
+      'use_location_address', 
+      'mobility_requirement_ids', 
+      'mobility_custom_notes', 
+      'special_requirement_ids', 
+      'special_custom_notes', 
+      'communication_need_ids', 
+      'communication_custom_notes', 
+      'other_preferences'
+    ];
+    
+    for (const [key, value] of Object.entries(clientData)) {
+      // Skip fields that are not part of the clients table schema
+      if (fieldsToExclude.includes(key)) {
+        continue;
+      }
+      // Only include defined values (but allow empty strings for optional text fields)
+      if (value !== undefined && value !== null) {
+        cleanedClientData[key] = value;
+      }
+    }
+    
+    // Double-check that program_contacts is not accidentally included
+    if ('program_contacts' in cleanedClientData) {
+      delete cleanedClientData.program_contacts;
+    }
+    
+    // Final safety check: explicitly remove program_contacts and any other non-client-table fields
+    delete cleanedClientData.program_contacts;
+    delete cleanedClientData.client_program_contacts;
+    
+    console.log('🔍 [POST /clients] Cleaned client data keys:', Object.keys(cleanedClientData));
+    console.log('🔍 [POST /clients] Cleaned client data:', JSON.stringify(cleanedClientData, null, 2));
+    console.log('🔍 [POST /clients] Program contacts:', program_contacts);
+    
+    // Verify program_contacts is NOT in cleanedClientData
+    if ('program_contacts' in cleanedClientData || 'client_program_contacts' in cleanedClientData) {
+      console.error('❌ [POST /clients] ERROR: program_contacts still present in cleanedClientData!');
+      throw new Error('Internal error: program_contacts field should not be in client data');
+    }
+    
+    // Create the client first (required for program contacts foreign key)
+    const client = await clientsStorage.createClient(cleanedClientData);
+    console.log('✅ [POST /clients] Client created successfully:', client.id);
+    
+    // Create program contacts if provided
+    if (program_contacts && Array.isArray(program_contacts) && program_contacts.length > 0) {
+      const { clientProgramContactsStorage } = await import("./minimal-supabase");
+      try {
+        const contacts = await clientProgramContactsStorage.createProgramContacts(client.id, program_contacts);
+        console.log(`✅ Created ${contacts.length} program contacts for client ${client.id}`);
+      } catch (contactError: any) {
+        console.error("❌ Error creating program contacts:", contactError);
+        console.error("❌ Contact error details:", {
+          message: contactError?.message,
+          code: contactError?.code,
+          details: contactError?.details,
+          hint: contactError?.hint
+        });
+        // Don't fail the entire request if contacts fail, but log the error
+        // The client is still created successfully
+      }
+    }
+    
     res.status(201).json(client);
-  } catch (error) {
-    console.error("Error creating client:", error);
-    res.status(500).json({ message: "Failed to create client" });
+  } catch (error: any) {
+    console.error("❌ [POST /clients] Error creating client - FULL ERROR:");
+    console.error("❌ Error type:", typeof error);
+    console.error("❌ Error constructor:", error?.constructor?.name);
+    console.error("❌ Error message:", error?.message);
+    console.error("❌ Error code:", error?.code);
+    console.error("❌ Error details:", error?.details);
+    console.error("❌ Error hint:", error?.hint);
+    console.error("❌ Full error object:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    
+    res.status(500).json({ 
+      message: "Failed to create client",
+      error: error?.message || String(error),
+      code: error?.code,
+      details: error?.details,
+      hint: error?.hint,
+      fullError: JSON.stringify(error, Object.getOwnPropertyNames(error))
+    });
   }
 });
 
@@ -832,6 +969,19 @@ router.get("/client-groups/program/:programId", requireSupabaseAuth, requirePerm
     res.json(clientGroups);
   } catch (error) {
     console.error("Error fetching client groups by program:", error);
+    res.status(500).json({ message: "Failed to fetch client groups" });
+  }
+});
+
+router.get("/client-groups/corporate-client/:corporateClientId", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_CLIENT_GROUPS), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { corporateClientId } = req.params;
+    console.log('🔍 [GET /client-groups/corporate-client/:corporateClientId] Fetching for:', corporateClientId);
+    const clientGroups = await clientGroupsStorage.getClientGroupsByCorporateClient(corporateClientId);
+    console.log(`✅ Found ${clientGroups.length} client groups for corporate client ${corporateClientId}`);
+    res.json(clientGroups);
+  } catch (error) {
+    console.error("Error fetching client groups by corporate client:", error);
     res.status(500).json({ message: "Failed to fetch client groups" });
   }
 });
@@ -1033,6 +1183,30 @@ router.get("/trips/driver/:driverId", requireSupabaseAuth, requirePermission(PER
 router.post("/trips", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin', 'program_user']), async (req: SupabaseAuthenticatedRequest, res) => {
   try {
     const trip = await tripsStorage.createTrip(req.body);
+    
+    // Prepare notification targets
+    let driverUserId: string | undefined;
+    
+    // If trip has an assigned driver, get their user_id for targeted notification
+    if (trip.driver_id) {
+      try {
+        const driver = await driversStorage.getDriver(trip.driver_id);
+        if (driver?.user_id) {
+          driverUserId = driver.user_id;
+        }
+      } catch (driverError) {
+        console.warn("Could not fetch driver for notification:", driverError);
+        // Continue without driver notification - still notify program users
+      }
+    }
+    
+    // Broadcast trip creation notification
+    broadcastTripCreated(trip, {
+      userId: driverUserId, // Send to assigned driver if exists
+      programId: trip.program_id, // Also notify all program users
+      corporateClientId: req.user?.corporateClientId || undefined
+    });
+    
     res.status(201).json(trip);
   } catch (error) {
     console.error("Error creating trip:", error);
@@ -1041,21 +1215,275 @@ router.post("/trips", requireSupabaseAuth, requireSupabaseRole(['super_admin', '
 });
 
 router.patch("/trips/:id", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin', 'program_user', 'driver']), async (req: SupabaseAuthenticatedRequest, res) => {
+  console.log('🔍 [PATCH /trips/:id] Route handler called');
+  console.log('🔍 Request params:', req.params);
+  console.log('🔍 Request body:', req.body);
+  
   try {
     const { id } = req.params;
-    const trip = await tripsStorage.updateTrip(id, req.body);
+    const updates = req.body;
+    console.log('🔍 Processing trip update:', { id, hasStatus: !!updates.status });
     
-    // Broadcast trip update via WebSocket
-    broadcastTripUpdate(trip, {
-      programId: trip.program_id,
-      corporateClientId: req.user?.corporateClientId || undefined,
-      role: req.user?.role
-    });
+    // Fetch current trip to get previous status and driver info for notifications
+    let previousStatus: string | undefined;
+    let previousDriverId: string | undefined;
+    let driverUserId: string | undefined;
+    let driverName: string | undefined;
+    let oldDriverUserId: string | undefined;
     
-    res.json(trip);
-  } catch (error) {
-    console.error("Error updating trip:", error);
-    res.status(500).json({ message: "Failed to update trip" });
+    try {
+      const currentTrip = await tripsStorage.getTrip(id);
+      if (currentTrip) {
+        previousStatus = currentTrip.status;
+        previousDriverId = currentTrip.driver_id;
+        
+        // Get driver's user_id if trip has an assigned driver
+        if (currentTrip.driver_id) {
+          try {
+            const driver = await driversStorage.getDriver(currentTrip.driver_id);
+            if (driver?.user_id) {
+              driverUserId = driver.user_id;
+            }
+          } catch (driverError) {
+            console.warn("Could not fetch driver for notification:", driverError);
+          }
+        }
+      }
+    } catch (fetchError) {
+      console.warn("Could not fetch current trip for notification context:", fetchError);
+      // Continue with update even if fetch fails
+    }
+    
+    // Determine action type and detect driver assignment/modification
+    let actionType: 'status_update' | 'assignment' | 'modification' | 'cancellation' = 'status_update';
+    const isDriverUpdate = req.user?.role === 'driver';
+    
+    // Detect driver assignment (driver_id changed)
+    if (updates.driver_id !== undefined && updates.driver_id !== previousDriverId) {
+      actionType = 'assignment';
+      // Get old driver's user_id if driver was reassigned
+      if (previousDriverId) {
+        try {
+          const oldDriver = await driversStorage.getDriver(previousDriverId);
+          if (oldDriver?.user_id) {
+            oldDriverUserId = oldDriver.user_id;
+          }
+        } catch (error) {
+          console.warn("Could not fetch old driver for notification:", error);
+        }
+      }
+    }
+    
+    // Detect cancellation
+    if (updates.status === 'cancelled' || (updates.status === undefined && previousStatus && previousStatus !== 'cancelled' && updates.notes?.toLowerCase().includes('cancel'))) {
+      actionType = 'cancellation';
+    }
+    
+    // Detect modification (non-status, non-assignment changes)
+    if (!updates.status && updates.driver_id === undefined && Object.keys(updates).length > 0) {
+      actionType = 'modification';
+    }
+    
+    // If driver is making the update, get their name for admin notifications
+    if (isDriverUpdate && req.user?.userId) {
+      // Find driver record for this user
+      try {
+        const { data: driverData, error: driverError } = await supabase
+          .from('drivers')
+          .select('id, users:user_id (user_name)')
+          .eq('user_id', req.user.userId)
+          .single();
+        
+        if (driverData && !driverError) {
+          // Handle the nested structure - users might be an object or array
+          const usersData = (driverData as any).users;
+          if (Array.isArray(usersData) && usersData.length > 0 && usersData[0]) {
+            driverName = (usersData[0] as any)?.user_name || 'Driver';
+          } else if (usersData && typeof usersData === 'object' && !Array.isArray(usersData)) {
+            driverName = (usersData as any).user_name || 'Driver';
+          } else {
+            driverName = 'Driver';
+          }
+        }
+      } catch (error) {
+        console.warn("Could not fetch driver name:", error);
+      }
+    }
+    
+    // If status is being updated, use the validated updateTripStatus method
+    if (updates.status) {
+      const { status, actualTimes, skipValidation, skipTimestampAutoSet, ...otherUpdates } = updates;
+      
+      // Use enhanced trips storage for status updates (includes validation)
+      console.log('🔍 Calling enhancedTripsStorage.updateTripStatus...');
+      let trip;
+      try {
+        trip = await enhancedTripsStorage.updateTripStatus(
+          id,
+          status,
+          actualTimes,
+          {
+            userId: req.user?.userId,
+            skipValidation: skipValidation === true,
+            skipTimestampAutoSet: skipTimestampAutoSet === true
+          }
+        );
+        console.log('✅ updateTripStatus succeeded');
+      } catch (statusUpdateError: any) {
+        console.error('❌ updateTripStatus threw error:', statusUpdateError);
+        console.error('❌ Error details:', {
+          message: statusUpdateError?.message,
+          code: statusUpdateError?.code,
+          details: statusUpdateError?.details,
+          hint: statusUpdateError?.hint,
+          name: statusUpdateError?.name,
+          stack: statusUpdateError?.stack
+        });
+        throw statusUpdateError; // Re-throw to be caught by outer catch
+      }
+      
+      // Apply any other updates if provided
+      let finalTrip = trip;
+      if (Object.keys(otherUpdates).length > 0) {
+        finalTrip = await tripsStorage.updateTrip(id, otherUpdates);
+      }
+      
+      // Update driverUserId if trip's driver changed
+      if (finalTrip.driver_id && finalTrip.driver_id !== previousDriverId) {
+        try {
+          const driver = await driversStorage.getDriver(finalTrip.driver_id);
+          if (driver?.user_id) {
+            driverUserId = driver.user_id;
+          }
+          // Get driver name for new assignment
+          if (actionType === 'assignment') {
+            driverName = await getDriverDisplayName(finalTrip.driver_id);
+          }
+        } catch (driverError) {
+          console.warn("Could not fetch updated driver for notification:", driverError);
+        }
+      } else if (finalTrip.driver_id && isDriverUpdate) {
+        // If driver is updating their own trip status, get their name
+        driverName = await getDriverDisplayName(finalTrip.driver_id);
+      }
+      
+      // Broadcast trip update via WebSocket with driver context
+      broadcastTripUpdate(
+        finalTrip,
+        previousStatus,
+        {
+          programId: finalTrip.program_id,
+          corporateClientId: req.user?.corporateClientId || undefined,
+          role: req.user?.role,
+          driverId: driverUserId,
+          updatedBy: req.user?.userId,
+          driverName: driverName,
+          action: actionType
+        }
+      );
+      
+      // If driver was reassigned, notify old driver
+      if (oldDriverUserId && actionType === 'assignment') {
+        broadcastTripUpdate(
+          finalTrip,
+          previousStatus,
+          {
+            userId: oldDriverUserId,
+            programId: finalTrip.program_id,
+            corporateClientId: req.user?.corporateClientId || undefined,
+            role: 'driver',
+            action: 'assignment',
+            updatedBy: req.user?.userId
+          }
+        );
+      }
+      
+      res.json(finalTrip);
+    } else {
+      // For non-status updates, use the regular update method
+      const trip = await tripsStorage.updateTrip(id, updates);
+      
+      // Update driverUserId if trip's driver changed
+      if (trip.driver_id && trip.driver_id !== previousDriverId) {
+        try {
+          const driver = await driversStorage.getDriver(trip.driver_id);
+          if (driver?.user_id) {
+            driverUserId = driver.user_id;
+          }
+          // Get driver name for new assignment
+          if (actionType === 'assignment') {
+            driverName = await getDriverDisplayName(trip.driver_id);
+          }
+        } catch (driverError) {
+          console.warn("Could not fetch updated driver for notification:", driverError);
+        }
+      }
+      
+      // Broadcast trip update via WebSocket with action context
+      broadcastTripUpdate(
+        trip,
+        undefined,
+        {
+          programId: trip.program_id,
+          corporateClientId: req.user?.corporateClientId || undefined,
+          role: req.user?.role,
+          driverId: driverUserId,
+          updatedBy: req.user?.userId,
+          driverName: driverName,
+          action: actionType
+        }
+      );
+      
+      // If driver was reassigned, notify old driver
+      if (oldDriverUserId && actionType === 'assignment') {
+        broadcastTripUpdate(
+          trip,
+          undefined,
+          {
+            userId: oldDriverUserId,
+            programId: trip.program_id,
+            corporateClientId: req.user?.corporateClientId || undefined,
+            role: 'driver',
+            action: 'assignment',
+            updatedBy: req.user?.userId
+          }
+        );
+      }
+      
+      res.json(trip);
+    }
+  } catch (error: any) {
+    // Log the ENTIRE error object (including all properties)
+    console.error("❌ ERROR updating trip - FULL ERROR OBJECT:");
+    console.error(JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    console.error("❌ Error type:", typeof error);
+    console.error("❌ Error constructor:", error?.constructor?.name);
+    console.error("❌ Error keys:", Object.keys(error || {}));
+    
+    // Return 400 for validation errors, 500 for other errors
+    if (error?.message && error.message.includes('Invalid status transition')) {
+      res.status(400).json({ 
+        message: error.message,
+        error: 'VALIDATION_ERROR'
+      });
+    } else {
+      // Return COMPLETE error information - try to stringify the whole error
+      const errorResponse: any = {
+        message: error?.message || String(error) || "Failed to update trip",
+        error: error?.code || error?.name || 'UNKNOWN_ERROR',
+        errorType: typeof error,
+        errorConstructor: error?.constructor?.name,
+        fullError: JSON.stringify(error, Object.getOwnPropertyNames(error))
+      };
+      
+      // Include all error properties
+      if (error?.details) errorResponse.details = error.details;
+      if (error?.hint) errorResponse.hint = error.hint;
+      if (error?.code) errorResponse.code = error.code;
+      if (error?.stack) errorResponse.stack = error.stack;
+      
+      res.status(500).json(errorResponse);
+    }
   }
 });
 
@@ -1237,6 +1665,30 @@ router.get("/enhanced-trips/recurring/:programId", requireSupabaseAuth, requireP
 router.post("/enhanced-trips", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin', 'program_user']), async (req: SupabaseAuthenticatedRequest, res) => {
   try {
     const trip = await enhancedTripsStorage.createTrip(req.body);
+    
+    // Prepare notification targets
+    let driverUserId: string | undefined;
+    
+    // If trip has an assigned driver, get their user_id for targeted notification
+    if (trip.driver_id) {
+      try {
+        const driver = await driversStorage.getDriver(trip.driver_id);
+        if (driver?.user_id) {
+          driverUserId = driver.user_id;
+        }
+      } catch (driverError) {
+        console.warn("Could not fetch driver for notification:", driverError);
+        // Continue without driver notification - still notify program users
+      }
+    }
+    
+    // Broadcast trip creation notification
+    broadcastTripCreated(trip, {
+      userId: driverUserId, // Send to assigned driver if exists
+      programId: trip.program_id, // Also notify all program users
+      corporateClientId: req.user?.corporateClientId || undefined
+    });
+    
     res.status(201).json(trip);
   } catch (error) {
     console.error("Error creating enhanced trip:", error);
@@ -1269,12 +1721,32 @@ router.patch("/enhanced-trips/:id", requireSupabaseAuth, requireSupabaseRole(['s
 router.patch("/enhanced-trips/:id/status", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin', 'program_user', 'driver']), async (req: SupabaseAuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
-    const { status, actualTimes } = req.body;
-    const trip = await enhancedTripsStorage.updateTripStatus(id, status, actualTimes);
+    const { status, actualTimes, skipValidation, skipTimestampAutoSet } = req.body;
+    
+    const trip = await enhancedTripsStorage.updateTripStatus(
+      id, 
+      status, 
+      actualTimes,
+      {
+        userId: req.user?.userId,
+        skipValidation: skipValidation === true,
+        skipTimestampAutoSet: skipTimestampAutoSet === true
+      }
+    );
+    
     res.json(trip);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error updating trip status:", error);
-    res.status(500).json({ message: "Failed to update trip status" });
+    
+    // Return 400 for validation errors, 500 for other errors
+    if (error.message && error.message.includes('Invalid status transition')) {
+      res.status(400).json({ 
+        message: error.message,
+        error: 'VALIDATION_ERROR'
+      });
+    } else {
+      res.status(500).json({ message: "Failed to update trip status" });
+    }
   }
 });
 
@@ -1730,11 +2202,26 @@ router.patch("/mobile/trips/:tripId/status", requireSupabaseAuth, requireSupabas
   try {
     const { tripId } = req.params;
     const { status, actualTimes, driverId } = req.body;
-    const trip = await mobileApi.updateTripStatus(tripId, status, actualTimes, driverId);
+    const trip = await mobileApi.updateTripStatus(
+      tripId, 
+      status, 
+      actualTimes, 
+      driverId,
+      req.user?.userId // Pass userId for logging
+    );
     res.json(trip);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error updating trip status:", error);
-    res.status(500).json({ message: "Failed to update trip status" });
+    
+    // Return 400 for validation errors, 500 for other errors
+    if (error.message && error.message.includes('Invalid status transition')) {
+      res.status(400).json({ 
+        message: error.message,
+        error: 'VALIDATION_ERROR'
+      });
+    } else {
+      res.status(500).json({ message: "Failed to update trip status" });
+    }
   }
 });
 
@@ -2140,6 +2627,18 @@ router.get("/drivers/program/:programId", requireSupabaseAuth, async (req: Supab
   } catch (error) {
     console.error("Error fetching program drivers:", error);
     res.status(500).json({ message: "Failed to fetch program drivers" });
+  }
+});
+
+// Get drivers for a specific corporate client (all programs under that client)
+router.get("/drivers/corporate-client/:corporateClientId", requireSupabaseAuth, async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { corporateClientId } = req.params;
+    const drivers = await driversStorage.getDriversByCorporateClient(corporateClientId);
+    res.json(drivers);
+  } catch (error) {
+    console.error("Error fetching corporate client drivers:", error);
+    res.status(500).json({ message: "Failed to fetch corporate client drivers" });
   }
 });
 

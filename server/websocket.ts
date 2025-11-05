@@ -7,6 +7,7 @@ export interface AuthenticatedWebSocket extends WebSocket {
   role?: string;
   programId?: string;
   corporateClientId?: string;
+  authorizedPrograms?: string[]; // Array of program IDs user has access to
   isAlive?: boolean;
 }
 
@@ -17,13 +18,48 @@ export class RealtimeWebSocketServer {
 
   constructor(server: any) {
     console.log('🔌 Creating WebSocket server...');
+    console.log('🔌 HTTP server provided:', !!server);
+    console.log('🔌 HTTP server address:', server?.address());
+    
+    // Wrap verifyClient to catch any errors
+    const verifyClientWrapper = async (info: any, callback: (result: boolean, code?: number, name?: string) => void) => {
+      try {
+        console.log('🔍 verifyClientWrapper called');
+        const result = await this.verifyClient(info);
+        console.log('🔍 verifyClient result:', result);
+        callback(result);
+      } catch (error) {
+        console.error('❌ verifyClientWrapper error:', error);
+        console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack');
+        callback(false, 500, 'Internal Server Error');
+      }
+    };
+    
     this.wss = new WebSocketServer({ 
       server,
       path: '/ws',
-      verifyClient: this.verifyClient.bind(this)
+      verifyClient: verifyClientWrapper
     });
 
     console.log('🔌 WebSocket server created successfully');
+    console.log('🔌 WebSocket server path:', '/ws');
+    console.log('🔌 WebSocket server options:', {
+      noServer: false,
+      clientTracking: true
+    });
+    
+    // Add error handler to catch any WebSocket server errors
+    this.wss.on('error', (error) => {
+      console.error('❌ WebSocket server error:', error);
+      console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack');
+    });
+    
+    // Log when upgrade requests are received
+    server.on('upgrade', (request, socket, head) => {
+      console.log('🔍 HTTP upgrade request received:', request.url);
+      console.log('🔍 Upgrade headers:', JSON.stringify(request.headers, null, 2));
+    });
+    
     this.setupEventHandlers();
     this.startHeartbeat();
   }
@@ -31,10 +67,13 @@ export class RealtimeWebSocketServer {
   private async verifyClient(info: any): Promise<boolean> {
     try {
       console.log('🔍 WebSocket verification started');
-      const url = new URL(info.req.url, `http://${info.req.headers.host}`);
+      console.log('🔍 Request URL:', info.req.url);
+      console.log('🔍 Request headers:', JSON.stringify(info.req.headers, null, 2));
+      
+      const url = new URL(info.req.url || '', `http://${info.req.headers.host || 'localhost:8081'}`);
       const token = url.searchParams.get('token');
       
-      console.log('🔍 Token received:', token ? token.substring(0, 20) + '...' : 'null');
+      console.log('🔍 Token received:', token ? `${token.substring(0, 20)}... (${token.length} chars)` : 'null');
       
       if (!token) {
         console.log('❌ WebSocket connection rejected: No token provided');
@@ -45,37 +84,48 @@ export class RealtimeWebSocketServer {
       let user;
       if (token.startsWith('eyJ')) {
         // It's a Supabase JWT token
+        console.log('🔍 Detected JWT token, verifying...');
         user = await verifySupabaseToken(token);
       } else {
         // It's an auth_user_id, look up user directly
+        console.log('🔍 Detected auth_user_id, looking up user...');
         const { createClient } = await import('@supabase/supabase-js');
         const supabaseAdmin = createClient(
           process.env.SUPABASE_URL!,
           process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
         
+        console.log('🔍 Querying users table for auth_user_id:', token);
         const { data: dbUser, error } = await supabaseAdmin
           .from('users')
           .select('*')
           .eq('auth_user_id', token)
           .single();
         
+        if (error) {
+          console.log('❌ Database query error:', error.message, error);
+        }
+        
         if (error || !dbUser) {
-          console.log('❌ WebSocket connection rejected: User not found');
+          console.log('❌ WebSocket connection rejected: User not found in database');
+          console.log('   Error details:', error?.message || 'No error');
+          console.log('   User data:', dbUser ? 'Found' : 'Not found');
           return false;
         }
 
+        console.log('✅ User found in database:', dbUser.email, dbUser.role);
         user = {
           userId: dbUser.user_id,
           email: dbUser.email,
           role: dbUser.role,
           primaryProgramId: dbUser.primary_program_id,
-          corporateClientId: dbUser.corporate_client_id
+          corporateClientId: dbUser.corporate_client_id,
+          authorizedPrograms: dbUser.authorized_programs || []
         };
       }
 
       if (!user) {
-        console.log('❌ WebSocket connection rejected: Invalid token');
+        console.log('❌ WebSocket connection rejected: Invalid token (user verification failed)');
         return false;
       }
 
@@ -85,6 +135,7 @@ export class RealtimeWebSocketServer {
       return true;
     } catch (error) {
       console.error('❌ WebSocket verification error:', error);
+      console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack');
       return false;
     }
   }
@@ -126,7 +177,8 @@ export class RealtimeWebSocketServer {
                   email: dbUser.email,
                   role: dbUser.role,
                   primaryProgramId: dbUser.primary_program_id,
-                  corporateClientId: dbUser.corporate_client_id
+                  corporateClientId: dbUser.corporate_client_id,
+                  authorizedPrograms: dbUser.authorized_programs || []
                 };
               }
             }
@@ -149,6 +201,7 @@ export class RealtimeWebSocketServer {
       ws.role = user.role;
       ws.programId = user.primaryProgramId;
       ws.corporateClientId = user.corporateClientId;
+      ws.authorizedPrograms = user.authorizedPrograms || [];
       ws.isAlive = true;
 
       // Store client
@@ -231,24 +284,90 @@ export class RealtimeWebSocketServer {
     });
   }
 
-  // Broadcast to users by program
-  public broadcastToProgram(programId: string, data: any) {
-    const message = JSON.stringify(data);
-    this.clients.forEach((ws) => {
-      if (ws.programId === programId && ws.readyState === WebSocket.OPEN) {
-        ws.send(message);
+  // Helper function to check if user should receive notification based on hierarchical validation
+  private shouldReceiveNotification(
+    ws: AuthenticatedWebSocket,
+    targetProgramId?: string,
+    targetCorporateClientId?: string
+  ): boolean {
+    // Super admin always receives all notifications
+    if (ws.role === 'super_admin') {
+      return true;
+    }
+
+    // Corporate admin only receives notifications for their corporate client
+    if (ws.role === 'corporate_admin') {
+      if (targetCorporateClientId && ws.corporateClientId === targetCorporateClientId) {
+        return true;
       }
-    });
+      // Corporate admins should NOT receive program-level notifications unless corporate client matches
+      // This ensures isolation: corporate admin for Client A shouldn't see notifications for Client B's programs
+      return false;
+    }
+
+    // Program-level users (program_admin, program_user, driver) only receive notifications for their authorized programs
+    if (targetProgramId) {
+      // Check if user's primary program matches
+      if (ws.programId === targetProgramId) {
+        return true;
+      }
+      // Check if user's authorized programs include the target program
+      if (ws.authorizedPrograms && ws.authorizedPrograms.includes(targetProgramId)) {
+        return true;
+      }
+      
+      // If targetCorporateClientId is provided, verify user belongs to that corporate client
+      // This prevents cross-corporate leakage even if program IDs somehow match
+      if (targetCorporateClientId && ws.corporateClientId) {
+        if (ws.corporateClientId !== targetCorporateClientId) {
+          return false; // User belongs to different corporate client
+        }
+      }
+    }
+
+    return false;
   }
 
-  // Broadcast to users by corporate client
-  public broadcastToCorporateClient(corporateClientId: string, data: any) {
+  // Broadcast to users by program (with hierarchical validation)
+  public broadcastToProgram(programId: string, data: any, targetCorporateClientId?: string) {
     const message = JSON.stringify(data);
+    let sentCount = 0;
+    let skippedCount = 0;
+    
     this.clients.forEach((ws) => {
-      if (ws.corporateClientId === corporateClientId && ws.readyState === WebSocket.OPEN) {
+      if (ws.readyState !== WebSocket.OPEN) return;
+      
+      // Apply hierarchical validation
+      if (this.shouldReceiveNotification(ws, programId, targetCorporateClientId)) {
         ws.send(message);
+        sentCount++;
+      } else {
+        skippedCount++;
       }
     });
+    
+    console.log(`📨 broadcastToProgram(${programId}): sent to ${sentCount} clients, skipped ${skippedCount}`);
+  }
+
+  // Broadcast to users by corporate client (with hierarchical validation)
+  public broadcastToCorporateClient(corporateClientId: string, data: any) {
+    const message = JSON.stringify(data);
+    let sentCount = 0;
+    let skippedCount = 0;
+    
+    this.clients.forEach((ws) => {
+      if (ws.readyState !== WebSocket.OPEN) return;
+      
+      // Apply hierarchical validation
+      if (this.shouldReceiveNotification(ws, undefined, corporateClientId)) {
+        ws.send(message);
+        sentCount++;
+      } else {
+        skippedCount++;
+      }
+    });
+    
+    console.log(`📨 broadcastToCorporateClient(${corporateClientId}): sent to ${sentCount} clients, skipped ${skippedCount}`);
   }
 
   // Get connected clients info
@@ -258,6 +377,7 @@ export class RealtimeWebSocketServer {
       role: ws.role,
       programId: ws.programId,
       corporateClientId: ws.corporateClientId,
+      authorizedPrograms: ws.authorizedPrograms,
       isAlive: ws.isAlive
     }));
   }
@@ -273,7 +393,7 @@ export class RealtimeWebSocketServer {
 
 // Real-time event types
 export interface RealtimeEvent {
-  type: 'trip_update' | 'driver_update' | 'client_update' | 'system_update' | 'connection';
+  type: 'trip_update' | 'trip_created' | 'driver_update' | 'client_update' | 'system_update' | 'connection';
   data: any;
   timestamp: string;
   target?: {

@@ -26,6 +26,30 @@ router.get("/", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_DRIVERS)
   }
 });
 
+// IMPORTANT: More specific routes MUST come before /:id to avoid route conflicts
+router.get("/corporate-client/:corporateClientId", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_DRIVERS), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { corporateClientId } = req.params;
+    const drivers = await driversStorage.getDriversByCorporateClient(corporateClientId);
+    res.json(drivers);
+  } catch (error) {
+    console.error("Error fetching corporate client drivers:", error);
+    res.status(500).json({ message: "Failed to fetch corporate client drivers" });
+  }
+});
+
+router.get("/program/:programId", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_DRIVERS), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { programId } = req.params;
+    const drivers = await driversStorage.getDriversByProgram(programId);
+    res.json(drivers);
+  } catch (error) {
+    console.error("Error fetching drivers by program:", error);
+    res.status(500).json({ message: "Failed to fetch drivers" });
+  }
+});
+
+// Single driver by ID - must come LAST to avoid matching other routes
 router.get("/:id", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_DRIVERS), async (req: SupabaseAuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
@@ -39,17 +63,6 @@ router.get("/:id", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_DRIVE
   } catch (error) {
     console.error("Error fetching driver:", error);
     res.status(500).json({ message: "Failed to fetch driver" });
-  }
-});
-
-router.get("/program/:programId", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_DRIVERS), async (req: SupabaseAuthenticatedRequest, res) => {
-  try {
-    const { programId } = req.params;
-    const drivers = await driversStorage.getDriversByProgram(programId);
-    res.json(drivers);
-  } catch (error) {
-    console.error("Error fetching drivers by program:", error);
-    res.status(500).json({ message: "Failed to fetch drivers" });
   }
 });
 

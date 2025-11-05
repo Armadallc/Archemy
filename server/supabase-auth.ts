@@ -50,6 +50,7 @@ export async function verifySupabaseToken(token: string) {
         role,
         primary_program_id,
         corporate_client_id,
+        authorized_programs,
         is_active
       `)
       .eq('auth_user_id', user.id)
@@ -67,7 +68,8 @@ export async function verifySupabaseToken(token: string) {
       email: dbUser.email,
       role: dbUser.role,
       primaryProgramId: dbUser.primary_program_id,
-      corporateClientId: dbUser.corporate_client_id
+      corporateClientId: dbUser.corporate_client_id,
+      authorizedPrograms: dbUser.authorized_programs || []
     };
   } catch (error) {
     console.error('❌ Token verification error:', error);

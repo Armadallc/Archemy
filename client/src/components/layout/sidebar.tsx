@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
+import { buildHierarchicalUrl } from "../../lib/urlBuilder";
 import { 
   Home, 
   Route, 
@@ -34,6 +35,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { useAuth } from "../../hooks/useAuth";
 // Removed useOrganization - using useHierarchy instead
 import { useHierarchy } from "../../hooks/useHierarchy";
+import { supabase } from "../../lib/supabase";
 
 interface SidebarProps {
   currentProgram?: string;
@@ -42,12 +44,8 @@ interface SidebarProps {
   setIsCollapsed?: (collapsed: boolean) => void;
 }
 
-const programOptions = [
-  { value: "monarch_competency", label: "Monarch Competency" },
-  { value: "monarch_mental_health", label: "Monarch Mental Health" },
-  { value: "monarch_sober_living", label: "Monarch Sober Living" },
-  { value: "monarch_launch", label: "Monarch Launch" },
-];
+// This will be dynamically populated based on user role and corporate client
+// See useEffect below that fetches programs for corporate_admin
 
 const roleOptions = [
   { value: "super_admin", label: "Super Admin" },
@@ -95,9 +93,8 @@ const navigationCategories = [
       { path: "/trips", label: "My Trips", icon: Route, roles: ["driver"], status: "completed" as PageStatus },
       { path: "/trips", label: "Trips", icon: Route, roles: ["super_admin", "corporate_admin", "program_admin", "program_user"], status: "completed" as PageStatus },
       { path: "/calendar", label: "Calendar", icon: Calendar, roles: ["super_admin", "corporate_admin", "program_admin", "program_user", "driver"], status: "completed" as PageStatus },
-      { path: "/drivers", label: "Drivers", icon: Car, roles: ["super_admin", "corporate_admin", "program_admin"], status: "completed" as PageStatus },
-      { path: "/vehicles", label: "Vehicles", icon: Car, roles: ["super_admin", "corporate_admin", "program_admin"], status: "not-started" as PageStatus },
-      { path: "/locations", label: "Locations", icon: MapPin, roles: ["super_admin", "corporate_admin", "program_admin"], status: "completed" as PageStatus },
+      { path: "/drivers", label: "Drivers", icon: Car, roles: ["super_admin", "program_admin"], status: "completed" as PageStatus }, // Removed corporate_admin
+      { path: "/vehicles", label: "Vehicles", icon: Car, roles: ["super_admin", "program_admin"], status: "not-started" as PageStatus }, // Removed corporate_admin
       { path: "/frequent-locations", label: "Frequent Locations", icon: MapPin, roles: ["super_admin", "corporate_admin", "program_admin"], status: "has-issues" as PageStatus }
     ]
   },
@@ -109,6 +106,7 @@ const navigationCategories = [
     items: [
       { path: "/corporate-clients", label: "Corporate Clients", icon: Building2, roles: ["super_admin"], status: "completed" as PageStatus },
       { path: "/programs", label: "Programs", icon: Building, roles: ["super_admin", "corporate_admin"], status: "completed" as PageStatus },
+      { path: "/locations", label: "Locations", icon: MapPin, roles: ["super_admin", "corporate_admin", "program_admin"], status: "completed" as PageStatus }, // Moved from OPERATIONS to CORPORATE
       { path: "/clients", label: "Clients", icon: Users, roles: ["super_admin", "corporate_admin", "program_admin", "program_user"], status: "completed" as PageStatus }
     ]
   },
@@ -160,6 +158,9 @@ export default function Sidebar({
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   
+  // Dynamic program options based on user role
+  const [programOptions, setProgramOptions] = useState<Array<{ value: string; label: string }>>([]);
+  
   // Toggle category expansion
   const toggleCategory = (categoryId: string) => {
     setExpandedCategories(prev => {
@@ -183,6 +184,114 @@ export default function Sidebar({
       setExpandedCategories(prev => new Set([...prev, currentCategory.id]));
     }
   }, [location, expandedCategories]);
+
+  // Fetch program options based on user role
+  useEffect(() => {
+    const fetchProgramOptions = async () => {
+      if (!user) return;
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+          console.warn('⚠️ Sidebar: No access token for fetching programs');
+          return;
+        }
+
+        const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+        
+        if (user.role === 'corporate_admin') {
+          // Fetch programs for corporate admin's corporate client
+          const corporateClientId = (user as any)?.corporate_client_id || selectedCorporateClient;
+          if (!corporateClientId) {
+            console.warn('⚠️ Sidebar: Corporate admin missing corporate_client_id');
+            return;
+          }
+
+          const response = await fetch(`${apiBaseUrl}/api/programs/corporate-client/${corporateClientId}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (response.ok) {
+            const programs = await response.json();
+            const options = Array.isArray(programs) 
+              ? programs.map((p: any) => ({
+                  value: p.program_id || p.id,
+                  label: p.program_name || p.name || p.program_id || p.id
+                }))
+              : [];
+            setProgramOptions(options);
+            
+            if (import.meta.env.DEV) {
+              console.log('🔍 Sidebar: Fetched programs for corporate_admin:', options);
+            }
+          } else {
+            console.error('❌ Sidebar: Failed to fetch programs:', response.status);
+          }
+        } else if (user.role === 'super_admin') {
+          // Super admin can see all programs (or fetch all if needed)
+          // For now, use authorized_programs if available, otherwise empty
+          if (user.authorized_programs && Array.isArray(user.authorized_programs)) {
+            const options = user.authorized_programs.map((programId: string) => ({
+              value: programId,
+              label: programId.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
+            }));
+            setProgramOptions(options);
+          } else {
+            // Fetch all programs for super admin
+            const response = await fetch(`${apiBaseUrl}/api/programs`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+
+            if (response.ok) {
+              const programs = await response.json();
+              const options = Array.isArray(programs)
+                ? programs.map((p: any) => ({
+                    value: p.program_id || p.id,
+                    label: p.program_name || p.name || p.program_id || p.id
+                  }))
+                : [];
+              setProgramOptions(options);
+            }
+          }
+        } else {
+          // For program_admin, program_user, driver: use authorized_programs or primary_program_id
+          // Parse authorized_programs if it's a JSON string
+          let programs: string[] = [];
+          if (user.authorized_programs) {
+            if (typeof user.authorized_programs === 'string') {
+              try {
+                programs = JSON.parse(user.authorized_programs);
+              } catch {
+                programs = [user.authorized_programs];
+              }
+            } else if (Array.isArray(user.authorized_programs)) {
+              programs = user.authorized_programs;
+            }
+          } else if (user.primary_program_id) {
+            programs = [user.primary_program_id];
+          }
+          
+          const options = programs.map((programId: string) => ({
+            value: programId,
+            label: programId.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
+          }));
+          setProgramOptions(options);
+        }
+      } catch (error) {
+        console.error('❌ Sidebar: Error fetching program options:', error);
+      }
+    };
+
+    fetchProgramOptions();
+  }, [user, selectedCorporateClient]);
   
   // Handle user menu toggle
   const toggleUserMenu = () => {
@@ -310,8 +419,8 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* Program Selector */}
-      {!isCollapsed && (
+      {/* Program Selector - Only show if user has 2+ programs */}
+      {!isCollapsed && programOptions.length > 1 && (
         <div className="p-4 border-b border-gray-700">
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Current Program
@@ -328,6 +437,18 @@ export default function Sidebar({
               ))}
             </SelectContent>
           </Select>
+        </div>
+      )}
+      
+      {/* Show current program name if only 1 program (no selector needed) */}
+      {!isCollapsed && programOptions.length === 1 && activeProgram && (
+        <div className="p-4 border-b border-gray-700">
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Current Program
+          </label>
+          <div className="text-sm text-gray-400 bg-gray-800 border border-gray-600 rounded-md px-3 py-2">
+            {programOptions[0]?.label || activeProgram}
+          </div>
         </div>
       )}
 
@@ -400,10 +521,16 @@ export default function Sidebar({
                   
                   // Special handling for Dashboard button - reset to default state
                   if (item.path === '/' && item.label === 'Dashboard') {
+                    const dashboardHref = buildHierarchicalUrl(item.path, {
+                      selectedCorporateClient,
+                      selectedProgram,
+                      userRole: user?.role
+                    });
+                    
                     return (
                       <Link
                         key={item.path}
-                        to={item.path}
+                        to={dashboardHref}
                         onClick={() => {
                           // Reset hierarchy to user's default level
                           if (user?.role === 'super_admin') {
@@ -428,11 +555,17 @@ export default function Sidebar({
                     );
                   }
                   
-                  // Regular navigation items
+                  // Regular navigation items - use hierarchical URLs for corporate admins
+                  const href = buildHierarchicalUrl(item.path, {
+                    selectedCorporateClient,
+                    selectedProgram,
+                    userRole: user?.role
+                  });
+                  
                   return (
                     <Link
                       key={item.path}
-                      to={item.path}
+                      to={href}
                       className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
                         isActive 
                           ? 'bg-blue-600 text-white' 

@@ -193,8 +193,21 @@ export default function FrequentLocationsPage() {
       });
       
       const params = new URLSearchParams();
-      if (selectedProgram) params.append('program_id', selectedProgram);
-      if (selectedCorporateClient) params.append('corporate_client_id', selectedCorporateClient);
+      
+      // For corporate_admin, always filter by their corporate_client_id for tenant isolation
+      if (user?.role === 'corporate_admin') {
+        const corporateClientId = (user as any).corporate_client_id || selectedCorporateClient;
+        if (corporateClientId) {
+          params.append('corporate_client_id', corporateClientId);
+        } else {
+          console.warn('⚠️ Corporate admin missing corporate_client_id for frequent locations');
+        }
+      } else {
+        // For other roles, use hierarchy-based filtering
+        if (selectedProgram) params.append('program_id', selectedProgram);
+        if (selectedCorporateClient) params.append('corporate_client_id', selectedCorporateClient);
+      }
+      
       if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
       if (locationTypeFilter !== 'all') params.append('location_type', locationTypeFilter);
       params.append('is_active', 'true');

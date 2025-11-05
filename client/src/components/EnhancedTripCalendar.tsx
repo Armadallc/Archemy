@@ -116,18 +116,49 @@ export default function EnhancedTripCalendar() {
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [colorMode, setColorMode] = useState<'status' | 'driver'>('status');
 
+  // Determine if we should enable the query based on user and hierarchy context
+  const shouldEnableQuery = () => {
+    if (!user) return false;
+    
+    // For corporate_admin, wait for corporate_client_id to be available
+    if (user.role === 'corporate_admin') {
+      const corporateClientId = (user as any).corporate_client_id || selectedCorporateClient;
+      return !!corporateClientId;
+    }
+    
+    // For super_admin, always enable
+    if (user.role === 'super_admin') return true;
+    
+    // For other roles, wait for program or corporate client selection
+    return !!(selectedProgram || selectedCorporateClient);
+  };
+
   // Fetch trips data based on hierarchy level
   const { data: tripsData, isLoading: tripsLoading, error: tripsError } = useQuery({
-    queryKey: ["/api/trips", level, selectedProgram, selectedCorporateClient, user?.role],
+    queryKey: ["/api/trips", level, selectedProgram, selectedCorporateClient, user?.role, (user as any)?.corporate_client_id],
     queryFn: async () => {
       let endpoint = "/api/trips";
       
-      if (level === 'program' && selectedProgram) {
+      // Determine endpoint based on hierarchy level and user role
+      if (user?.role === 'corporate_admin') {
+        // Corporate admin should always filter by their corporate client ID for tenant isolation
+        const corporateClientId = (user as any).corporate_client_id || selectedCorporateClient;
+        if (corporateClientId) {
+          endpoint = `/api/trips/corporate-client/${corporateClientId}`;
+        } else {
+          console.warn('⚠️ Calendar: Corporate admin missing corporate_client_id');
+          return []; // Return empty array instead of fetching all trips
+        }
+      } else if (level === 'program' && selectedProgram) {
         endpoint = `/api/trips/program/${selectedProgram}`;
       } else if (level === 'client' && selectedCorporateClient) {
+        // Corporate client level - filter by corporate client ID
         endpoint = `/api/trips/corporate-client/${selectedCorporateClient}`;
-      } else if (level === 'corporate') {
-        // For corporate level (super admin), use regular trips endpoint
+      } else if (level === 'corporate' && user?.role === 'super_admin') {
+        // Only super admin can see all trips at corporate level
+        endpoint = "/api/trips";
+      } else {
+        // Default fallback - use unfiltered trips endpoint (should only happen for super_admin)
         endpoint = "/api/trips";
       }
       
@@ -144,35 +175,43 @@ export default function EnhancedTripCalendar() {
         return [];
       } else {
         // For other roles, fetch hierarchy trips
+        // console.log('🗓️ Calendar: Fetching trips from endpoint:', endpoint); // Disabled to reduce console spam
         const response = await apiRequest("GET", endpoint);
-        return await response.json();
+        const data = await response.json();
+        // console.log('🗓️ Calendar: Received trips:', Array.isArray(data) ? data.length : 'not an array', data); // Disabled to reduce console spam
+        return data;
       }
     },
-    enabled: !!user,
+    enabled: shouldEnableQuery(),
   });
 
   // Enable real-time updates for trips
+  // Use useMemo to prevent queryKeys array from changing on every render (prevents infinite re-renders)
+  const queryKeysMemo = useMemo(() => {
+    return [`["/api/trips","${level}","${selectedProgram}","${selectedCorporateClient}","${user?.role}"]`];
+  }, [level, selectedProgram, selectedCorporateClient, user?.role]);
+  
   const { refreshNow } = useRealTimeUpdates({
     enabled: !!user,
     interval: 10000, // 10 seconds
-    queryKeys: [`["/api/trips","${level}","${selectedProgram}","${selectedCorporateClient}","${user?.role}"]`]
+    queryKeys: queryKeysMemo
   });
 
   // Ensure trips is always an array and wait for data to load
   const trips = Array.isArray(tripsData) ? tripsData : [];
   
-  // Debug logging (can be removed in production)
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🗓️ Calendar Debug:', {
-      level,
-      selectedProgram,
-      selectedCorporateClient,
-      tripsCount: trips.length,
-      tripsLoading,
-      tripsError: tripsError?.message,
-      userRole: user?.role
-    });
-  }
+  // Debug logging DISABLED to prevent console spam
+  // if (process.env.NODE_ENV === 'development') {
+  //   console.log('🗓️ Calendar Debug:', {
+  //     level,
+  //     selectedProgram,
+  //     selectedCorporateClient,
+  //     tripsCount: trips.length,
+  //     tripsLoading,
+  //     tripsError: tripsError?.message,
+  //     userRole: user?.role
+  //   });
+  // }
 
   // Fetch drivers for color coding
   const { data: drivers = [] } = useQuery({
@@ -275,7 +314,8 @@ export default function EnhancedTripCalendar() {
     }
   };
 
-  if (tripsLoading || !tripsData) {
+  // Show loading state only while actively loading
+  if (tripsLoading) {
     return (
       <Card>
         <CardHeader>
@@ -283,7 +323,7 @@ export default function EnhancedTripCalendar() {
         <CardContent>
           <div className="text-center py-8">
             Loading calendar data...
-            {tripsLoading && <div className="text-sm text-gray-500 mt-2">Fetching trips...</div>}
+            <div className="text-sm text-gray-500 mt-2">Fetching trips...</div>
           </div>
         </CardContent>
       </Card>
@@ -291,20 +331,25 @@ export default function EnhancedTripCalendar() {
   }
 
   if (tripsError) {
+    console.error('🗓️ Calendar Error:', tripsError);
     return (
       <Card>
         <CardHeader>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-red-600">
-            Error loading trips. Please try again.
+            <div className="font-semibold mb-2">Error loading trips</div>
+            <div className="text-sm text-gray-600">{tripsError?.message || 'Unknown error'}</div>
+            <div className="text-xs text-gray-500 mt-2">Please check the browser console for details</div>
           </div>
         </CardContent>
       </Card>
     );
   }
 
-  if (!selectedProgram && !selectedCorporateClient && level !== 'corporate') {
+  // For corporate_admin, they should have selectedCorporateClient set
+  // Only show "no selection" message for program-level users without a program
+  if (!selectedProgram && !selectedCorporateClient && level !== 'corporate' && user?.role !== 'corporate_admin') {
     return (
       <Card>
         <CardHeader>

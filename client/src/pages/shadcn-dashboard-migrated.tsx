@@ -40,6 +40,7 @@ import EnhancedAnalyticsWidget from "../components/dashboard/EnhancedAnalyticsWi
 import TaskManagementWidget from "../components/dashboard/TaskManagementWidget";
 import EnhancedActivityFeed from "../components/EnhancedActivityFeed";
 import DebugPanel from "../components/DebugPanel";
+import ElementMeasurer from "../components/scratch/ElementMeasurer";
 
 // Shadcn Header Component
 const ShadcnHeader = ({ title, subtitle }: { title: string; subtitle?: string }) => (
@@ -300,6 +301,9 @@ export default function ShadcnDashboardMigrated() {
           isOpen={showDebugPanel} 
           onClose={() => setShowDebugPanel(false)} 
         />
+
+        {/* Element Measurer - for measuring actual dashboard elements */}
+        <ElementMeasurer />
       </div>
     );
   }
@@ -448,6 +452,9 @@ export default function ShadcnDashboardMigrated() {
           isOpen={showDebugPanel} 
           onClose={() => setShowDebugPanel(false)} 
         />
+
+        {/* Element Measurer - for measuring actual dashboard elements */}
+        <ElementMeasurer />
       </div>
     );
   }
@@ -897,6 +904,9 @@ export default function ShadcnDashboardMigrated() {
           isOpen={showDebugPanel} 
           onClose={() => setShowDebugPanel(false)} 
         />
+
+        {/* Element Measurer - for measuring actual dashboard elements */}
+        <ElementMeasurer />
       </div>
     );
   }

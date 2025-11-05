@@ -194,6 +194,44 @@ export const locationsStorage = {
     return data || [];
   },
 
+  async getLocationsByCorporateClient(corporateClientId: string) {
+    // First, get all program IDs for this corporate client
+    const { data: programs, error: programsError } = await supabase
+      .from('programs')
+      .select('id')
+      .eq('corporate_client_id', corporateClientId)
+      .eq('is_active', true);
+    
+    if (programsError) throw programsError;
+    
+    if (!programs || programs.length === 0) {
+      // No programs for this corporate client, return empty array
+      return [];
+    }
+    
+    // Extract program IDs
+    const programIds = programs.map(p => p.id);
+    
+    // Now fetch locations for these programs
+    const { data, error } = await supabase
+      .from('locations')
+      .select(`
+        *,
+        programs:program_id (
+          id,
+          name,
+          corporate_clients:corporate_client_id (
+            id,
+            name
+          )
+        )
+      `)
+      .in('program_id', programIds)
+      .eq('is_active', true);
+    if (error) throw error;
+    return data || [];
+  },
+
   async createLocation(location: any) {
     const { data, error } = await supabase.from('locations').insert(location).select().single();
     if (error) throw error;
@@ -422,6 +460,69 @@ export const driversStorage = {
     );
   },
 
+  async getDriversByCorporateClient(corporateClientId: string) {
+    // First, get all program IDs for this corporate client
+    const { data: programs, error: programsError } = await supabase
+      .from('programs')
+      .select('id')
+      .eq('corporate_client_id', corporateClientId)
+      .eq('is_active', true);
+    
+    if (programsError) throw programsError;
+    
+    if (!programs || programs.length === 0) {
+      // No programs for this corporate client, return empty array
+      return [];
+    }
+    
+    // Extract program IDs
+    const programIds = programs.map(p => p.id);
+    
+    // Fetch all active drivers
+    const { data: allDrivers, error: driversError } = await supabase
+      .from('drivers')
+      .select(`
+        *,
+        users:user_id (
+          user_id,
+          user_name,
+          email,
+          role,
+          primary_program_id,
+          authorized_programs,
+          programs:primary_program_id (
+            id,
+            name,
+            corporate_clients:corporate_client_id (
+              id,
+              name
+            )
+          )
+        )
+      `)
+      .eq('is_active', true);
+    
+    if (driversError) throw driversError;
+    
+    // Filter drivers who belong to any program in this corporate client
+    return (allDrivers || []).filter(driver => {
+      const user = driver.users;
+      if (!user) return false;
+      
+      // Check if driver's primary program is in this corporate client
+      if (user.primary_program_id && programIds.includes(user.primary_program_id)) {
+        return true;
+      }
+      
+      // Check if driver's authorized programs include any program in this corporate client
+      if (user.authorized_programs && Array.isArray(user.authorized_programs)) {
+        return user.authorized_programs.some((progId: string) => programIds.includes(progId));
+      }
+      
+      return false;
+    });
+  },
+
   async createDriver(driver: any) {
     const { data, error } = await supabase.from('drivers').insert(driver).select().single();
     if (error) throw error;
@@ -546,9 +647,59 @@ export const clientsStorage = {
     return data || [];
   },
 
+  async getClientsByCorporateClient(corporateClientId: string) {
+    // First, get all program IDs for this corporate client
+    const { data: programs, error: programsError } = await supabase
+      .from('programs')
+      .select('id')
+      .eq('corporate_client_id', corporateClientId)
+      .eq('is_active', true);
+    
+    if (programsError) throw programsError;
+    
+    if (!programs || programs.length === 0) {
+      // No programs for this corporate client, return empty array
+      return [];
+    }
+    
+    // Extract program IDs
+    const programIds = programs.map(p => p.id);
+    
+    // Now fetch clients for these programs
+    const { data, error } = await supabase
+      .from('clients')
+      .select(`
+        *,
+        programs:program_id (
+          id,
+          name,
+          corporate_clients:corporate_client_id (
+            id,
+            name
+          )
+        ),
+        locations:location_id (
+          id,
+          name,
+          address
+        )
+      `)
+      .in('program_id', programIds)
+      .eq('is_active', true);
+    if (error) throw error;
+    return data || [];
+  },
+
   async createClient(client: any) {
+    // Defensive: Remove any fields that shouldn't be in the clients table
+    const { program_contacts, client_program_contacts, ...clientData } = client;
+    
+    // Additional safety: explicitly remove these fields if they somehow got through
+    delete clientData.program_contacts;
+    delete clientData.client_program_contacts;
+    
     // Database will auto-generate UUID for id field
-    const { data, error } = await supabase.from('clients').insert(client).select().single();
+    const { data, error } = await supabase.from('clients').insert(clientData).select().single();
     if (error) throw error;
     return data;
   },
@@ -561,6 +712,93 @@ export const clientsStorage = {
 
   async deleteClient(id: string) {
     const { data, error } = await supabase.from('clients').update({ is_active: false }).eq('id', id);
+    if (error) throw error;
+    return data;
+  }
+};
+
+// ============================================================================
+// CLIENT PROGRAM CONTACTS MANAGEMENT
+// ============================================================================
+
+export const clientProgramContactsStorage = {
+  async createProgramContact(contact: {
+    client_id: string;
+    first_name: string;
+    last_name: string;
+    role: string;
+    phone: string;
+    is_preferred_poc?: boolean;
+  }) {
+    const { data, error } = await supabase
+      .from('client_program_contacts')
+      .insert(contact)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async createProgramContacts(clientId: string, contacts: Array<{
+    first_name: string;
+    last_name: string;
+    role: string;
+    phone: string;
+    is_preferred_poc?: boolean;
+  }>) {
+    if (!contacts || contacts.length === 0) {
+      return [];
+    }
+
+    const contactsToInsert = contacts.map(contact => ({
+      client_id: clientId,
+      first_name: contact.first_name,
+      last_name: contact.last_name,
+      role: contact.role,
+      phone: contact.phone,
+      is_preferred_poc: contact.is_preferred_poc || false
+    }));
+
+    const { data, error } = await supabase
+      .from('client_program_contacts')
+      .insert(contactsToInsert)
+      .select();
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getProgramContactsByClient(clientId: string) {
+    const { data, error } = await supabase
+      .from('client_program_contacts')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async updateProgramContact(id: string, updates: Partial<{
+    first_name: string;
+    last_name: string;
+    role: string;
+    phone: string;
+    is_preferred_poc: boolean;
+  }>) {
+    const { data, error } = await supabase
+      .from('client_program_contacts')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async deleteProgramContact(id: string) {
+    const { data, error } = await supabase
+      .from('client_program_contacts')
+      .delete()
+      .eq('id', id);
     if (error) throw error;
     return data;
   }
@@ -764,6 +1002,24 @@ export const tripsStorage = {
   },
 
   async getTripsByCorporateClient(corporateClientId: string) {
+    // First, get all program IDs for this corporate client
+    const { data: programs, error: programsError } = await supabase
+      .from('programs')
+      .select('id')
+      .eq('corporate_client_id', corporateClientId)
+      .eq('is_active', true);
+    
+    if (programsError) throw programsError;
+    
+    if (!programs || programs.length === 0) {
+      // No programs for this corporate client, return empty array
+      return [];
+    }
+    
+    // Extract program IDs
+    const programIds = programs.map(p => p.id);
+    
+    // Now fetch trips for these programs
     const { data, error } = await supabase
       .from('trips')
       .select(`
@@ -807,7 +1063,7 @@ export const tripsStorage = {
           description
         )
       `)
-      .eq('programs.corporate_client_id', corporateClientId)
+      .in('program_id', programIds)
       .order('scheduled_pickup_time', { ascending: true });
     if (error) throw error;
     return data || [];
@@ -922,6 +1178,52 @@ export const clientGroupsStorage = {
         client_group_memberships(count)
       `)
       .eq('program_id', programId)
+      .eq('is_active', true);
+    if (error) throw error;
+    
+    // Add member_count to each group
+    const groupsWithCount = (data || []).map(group => ({
+      ...group,
+      member_count: group.client_group_memberships?.[0]?.count || 0
+    }));
+    
+    return groupsWithCount;
+  },
+
+  async getClientGroupsByCorporateClient(corporateClientId: string) {
+    // First, get all program IDs for this corporate client
+    const { data: programs, error: programsError } = await supabase
+      .from('programs')
+      .select('id')
+      .eq('corporate_client_id', corporateClientId)
+      .eq('is_active', true);
+    
+    if (programsError) throw programsError;
+    
+    if (!programs || programs.length === 0) {
+      // No programs for this corporate client, return empty array
+      return [];
+    }
+    
+    // Extract program IDs
+    const programIds = programs.map(p => p.id);
+    
+    // Now fetch client groups for these programs
+    const { data, error } = await supabase
+      .from('client_groups')
+      .select(`
+        *,
+        programs:program_id (
+          id,
+          name,
+          corporate_clients:corporate_client_id (
+            id,
+            name
+          )
+        ),
+        client_group_memberships(count)
+      `)
+      .in('program_id', programIds)
       .eq('is_active', true);
     if (error) throw error;
     

@@ -86,6 +86,18 @@ router.get("/programs", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_
   }
 });
 
+// IMPORTANT: More specific routes must come BEFORE generic :id routes
+router.get("/programs/corporate-client/:corporateClientId", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_PROGRAMS), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { corporateClientId } = req.params;
+    const programs = await programsStorage.getProgramsByCorporateClient(corporateClientId);
+    res.json(programs);
+  } catch (error) {
+    console.error("Error fetching programs by corporate client:", error);
+    res.status(500).json({ message: "Failed to fetch programs" });
+  }
+});
+
 router.get("/programs/:id", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_PROGRAMS), async (req: SupabaseAuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
@@ -99,17 +111,6 @@ router.get("/programs/:id", requireSupabaseAuth, requirePermission(PERMISSIONS.V
   } catch (error) {
     console.error("Error fetching program:", error);
     res.status(500).json({ message: "Failed to fetch program" });
-  }
-});
-
-router.get("/programs/corporate-client/:corporateClientId", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_PROGRAMS), async (req: SupabaseAuthenticatedRequest, res) => {
-  try {
-    const { corporateClientId } = req.params;
-    const programs = await programsStorage.getProgramsByCorporateClient(corporateClientId);
-    res.json(programs);
-  } catch (error) {
-    console.error("Error fetching programs by corporate client:", error);
-    res.status(500).json({ message: "Failed to fetch programs" });
   }
 });
 

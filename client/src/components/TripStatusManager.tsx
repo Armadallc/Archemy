@@ -104,13 +104,19 @@ export default function TripStatusManager({
 
   const updateStatusMutation = useMutation({
     mutationFn: async (newStatus: string) => {
-      const response = await apiRequest('PATCH', `/api/trips/${trip.id}/status`, {
+      // Use the generic PATCH endpoint which now includes status validation
+      const response = await apiRequest('PATCH', `/api/trips/${trip.id}`, {
         status: newStatus,
         updated_by: user?.user_id,
         updated_at: new Date().toISOString()
       });
       
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        // If it's a validation error, show the specific message
+        if (response.status === 400 && errorData.message) {
+          throw new Error(errorData.message);
+        }
         throw new Error('Failed to update trip status');
       }
       

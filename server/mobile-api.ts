@@ -246,26 +246,30 @@ export const mobileApi = {
   },
 
   // Update trip status from mobile
-  async updateTripStatus(tripId: string, status: string, actualTimes?: {
-    pickup?: string;
-    dropoff?: string;
-    return?: string;
-  }, driverId?: string) {
+  async updateTripStatus(
+    tripId: string, 
+    status: string, 
+    actualTimes?: {
+      pickup?: string;
+      dropoff?: string;
+      return?: string;
+    }, 
+    driverId?: string,
+    userId?: string
+  ) {
     try {
-      const trip = await enhancedTripsStorage.updateTripStatus(tripId, status as any, actualTimes);
-      
-      // Log the status change
-      await supabase
-        .from('trip_status_logs')
-        .insert({
-          id: `status_log_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          trip_id: tripId,
-          driver_id: driverId,
-          status,
-          actual_times: actualTimes,
-          timestamp: new Date().toISOString(),
-          created_at: new Date().toISOString()
-        });
+      // Use validated status update (validation happens inside updateTripStatus)
+      // Status logging also happens inside updateTripStatus, but we keep the mobile-specific logic
+      const trip = await enhancedTripsStorage.updateTripStatus(
+        tripId, 
+        status as any, 
+        actualTimes,
+        {
+          userId: userId || driverId, // Use provided userId or fallback to driverId
+          skipValidation: false,
+          skipTimestampAutoSet: false
+        }
+      );
 
       return trip;
     } catch (error) {

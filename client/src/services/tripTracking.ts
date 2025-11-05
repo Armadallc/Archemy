@@ -26,14 +26,34 @@ export class TripTracker {
       const location = await getCurrentLocation();
       console.log('📍 Location captured:', location);
       
-      const updateData: TripTrackingData = {
-        start_latitude: location.lat,
-        start_longitude: location.lng,
-        actual_pickup_time: new Date().toISOString(),
-        status: 'in_progress'
+      // First, update status with validation (without notes to avoid conflicts)
+      const statusUpdateData = {
+        status: 'in_progress',
+        actualTimes: {
+          pickup: new Date().toISOString()
+        }
       };
       
-      const response = await apiRequest('PUT', `/api/trips/${tripId}/status`, updateData);
+      // Use PATCH /api/trips/:id which includes status validation
+      const response = await apiRequest('PATCH', `/api/trips/${tripId}`, statusUpdateData);
+      
+      // If status update succeeds, update notes separately to preserve existing notes
+      try {
+        const currentTripResponse = await apiRequest('GET', `/api/trips/${tripId}`);
+        const currentTrip = await currentTripResponse.json();
+        
+        const locationNote = `Trip started at: ${location.lat}, ${location.lng} (accuracy: ${location.accuracy}m)`;
+        const existingNotes = currentTrip.notes || '';
+        const combinedNotes = existingNotes 
+          ? `${existingNotes}\n${locationNote}` 
+          : locationNote;
+        
+        // Update notes separately (non-status update)
+        await apiRequest('PATCH', `/api/trips/${tripId}`, { notes: combinedNotes });
+      } catch (notesError) {
+        // If notes update fails, log but don't fail the entire operation
+        console.warn('⚠️ Could not update trip notes with location info:', notesError);
+      }
       const data = await response.json();
       
       console.log('✅ Trip started successfully:', data);
@@ -56,13 +76,16 @@ export class TripTracker {
     try {
       console.log('🚗 Starting trip manually for:', tripId);
       
-      const updateData: TripTrackingData = {
-        actual_pickup_time: new Date().toISOString(),
+      const updateData = {
         status: 'in_progress',
-        driver_notes: manualLocation ? `Manual start location: ${manualLocation}` : 'Started manually without location'
+        driver_notes: manualLocation ? `Manual start location: ${manualLocation}` : 'Started manually without location',
+        actualTimes: {
+          pickup: new Date().toISOString()
+        }
       };
       
-      const response = await apiRequest('PUT', `/api/trips/${tripId}/status`, updateData);
+      // Use PATCH /api/trips/:id which includes status validation
+      const response = await apiRequest('PATCH', `/api/trips/${tripId}`, updateData);
       const data = await response.json();
       
       console.log('✅ Trip started manually:', data);
@@ -87,33 +110,22 @@ export class TripTracker {
       const tripResponse = await apiRequest('GET', `/api/trips/${tripId}`);
       const tripData = await tripResponse.json();
       
-      let updateData: TripTrackingData = {
-        actual_dropoff_time: new Date().toISOString(),
-        status: 'completed',
-        driver_notes: driverNotes || ''
-      };
-      
-      if (fuelCost && fuelCost > 0) {
-        updateData.fuel_cost = fuelCost;
-      }
+      let locationInfo = '';
+      let distanceInfo = '';
       
       // Try to get end location and calculate distance
       try {
         const endLocation = await getCurrentLocation();
         console.log('📍 End location captured:', endLocation);
+        locationInfo = `Trip ended at: ${endLocation.lat}, ${endLocation.lng} (accuracy: ${endLocation.accuracy}m)`;
         
-        updateData.end_latitude = endLocation.lat;
-        updateData.end_longitude = endLocation.lng;
-        
-        // Calculate distance if we have start coordinates
-        if (tripData.start_latitude && tripData.start_longitude) {
-          const distance = calculateDistance(
-            tripData.start_latitude,
-            tripData.start_longitude,
-            endLocation.lat,
-            endLocation.lng
-          );
-          updateData.distance_miles = distance;
+        // Try to extract start location from trip notes if available
+        const startLocationMatch = tripData.notes?.match(/Trip started at: ([\d.-]+), ([\d.-]+)/);
+        if (startLocationMatch) {
+          const startLat = parseFloat(startLocationMatch[1]);
+          const startLng = parseFloat(startLocationMatch[2]);
+          const distance = calculateDistance(startLat, startLng, endLocation.lat, endLocation.lng);
+          distanceInfo = ` Distance: ${distance.toFixed(2)} miles`;
           console.log('📏 Distance calculated:', distance, 'miles');
         }
       } catch (locationError) {
@@ -121,7 +133,21 @@ export class TripTracker {
         // Continue without end location - trip can still be completed
       }
       
-      const response = await apiRequest('PUT', `/api/trips/${tripId}/status`, updateData);
+      // Combine notes (preserve existing notes, add new location/distance info)
+      const existingNotes = tripData.notes || '';
+      const newNotes = [driverNotes, locationInfo + distanceInfo].filter(Boolean).join(' | ');
+      const combinedNotes = existingNotes ? `${existingNotes}\n${newNotes}` : newNotes;
+      
+      let updateData: any = {
+        status: 'completed',
+        notes: combinedNotes || '',
+        actualTimes: {
+          dropoff: new Date().toISOString()
+        }
+      };
+      
+      // Use PATCH /api/trips/:id which includes status validation
+      const response = await apiRequest('PATCH', `/api/trips/${tripId}`, updateData);
       const data = await response.json();
       
       console.log('✅ Trip completed successfully:', data);
@@ -143,10 +169,12 @@ export class TripTracker {
     try {
       console.log('🏁 Completing trip manually for:', tripId);
       
-      let updateData: TripTrackingData = {
-        actual_dropoff_time: new Date().toISOString(),
+      let updateData: any = {
         status: 'completed',
-        driver_notes: driverNotes || 'Completed manually without location'
+        driver_notes: driverNotes || 'Completed manually without location',
+        actualTimes: {
+          dropoff: new Date().toISOString()
+        }
       };
       
       if (fuelCost && fuelCost > 0) {
@@ -157,7 +185,8 @@ export class TripTracker {
         updateData.distance_miles = manualDistance;
       }
       
-      const response = await apiRequest('PUT', `/api/trips/${tripId}/status`, updateData);
+      // Use PATCH /api/trips/:id which includes status validation
+      const response = await apiRequest('PATCH', `/api/trips/${tripId}`, updateData);
       const data = await response.json();
       
       console.log('✅ Trip completed manually:', data);

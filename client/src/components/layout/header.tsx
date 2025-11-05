@@ -10,6 +10,7 @@ import GlobalSearch from "../search/GlobalSearch";
 import { useGlobalSearch } from "../../hooks/useGlobalSearch";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
 import RoleToggle from "../RoleToggle";
+import { DrillDownDropdown } from "../DrillDownDropdown";
 
 interface Program {
   id: string;
@@ -141,10 +142,15 @@ export default function Header({ currentProgram, kioskMode, setKioskMode }: Head
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
-        {/* Left side - Program info */}
+        {/* Left side - Hierarchy selector and context */}
         <div className="flex items-center space-x-4">
-          {/* Only show program info for non-super admin users */}
-          {user?.role !== 'super_admin' && (
+          {/* DrillDownDropdown for super_admin and corporate_admin */}
+          {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
+            <DrillDownDropdown />
+          )}
+          
+          {/* Program info for other roles */}
+          {user?.role !== 'super_admin' && user?.role !== 'corporate_admin' && (
             <div className="flex items-center space-x-2">
               <Building className="w-5 h-5 text-gray-600" />
               <span className="text-sm font-medium text-gray-900">
@@ -153,7 +159,8 @@ export default function Header({ currentProgram, kioskMode, setKioskMode }: Head
             </div>
           )}
           
-          {selectedCorporateClient && (
+          {/* Show corporate client name for corporate_admin */}
+          {user?.role === 'corporate_admin' && selectedCorporateClient && (
             <div className="flex items-center space-x-2 text-gray-500">
               <Building2 className="w-4 h-4" />
               <span className="text-sm">
@@ -161,13 +168,6 @@ export default function Header({ currentProgram, kioskMode, setKioskMode }: Head
               </span>
             </div>
           )}
-          
-          <div className="flex items-center space-x-2 text-gray-500">
-            <MapPin className="w-4 h-4" />
-            <span className="text-sm">
-              {getLocationName()}
-            </span>
-          </div>
         </div>
 
         {/* Center - Time and Kiosk mode */}

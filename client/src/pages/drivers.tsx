@@ -20,6 +20,7 @@ import { useHierarchy } from "../hooks/useHierarchy";
 import { getUserDisplayName } from "../lib/displayNames";
 import ExportButton from "../components/export/ExportButton";
 import { format } from "date-fns";
+import ElementMeasurer from "../components/scratch/ElementMeasurer";
 
 interface Driver {
   id: string;
@@ -612,6 +613,9 @@ export default function Drivers() {
           )}
         </div>
       )}
+
+      {/* Element Measurer Tool */}
+      <ElementMeasurer />
     </div>
   );
 }

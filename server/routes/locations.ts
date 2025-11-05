@@ -38,6 +38,29 @@ router.get("/", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_LOCATION
   }
 });
 
+// IMPORTANT: More specific routes must come BEFORE generic :id routes
+router.get("/corporate-client/:corporateClientId", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_LOCATIONS), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { corporateClientId } = req.params;
+    const locations = await locationsStorage.getLocationsByCorporateClient(corporateClientId);
+    res.json(locations);
+  } catch (error) {
+    console.error("Error fetching locations by corporate client:", error);
+    res.status(500).json({ message: "Failed to fetch locations" });
+  }
+});
+
+router.get("/program/:programId", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_LOCATIONS), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { programId } = req.params;
+    const locations = await locationsStorage.getLocationsByProgram(programId);
+    res.json(locations);
+  } catch (error) {
+    console.error("Error fetching locations by program:", error);
+    res.status(500).json({ message: "Failed to fetch locations" });
+  }
+});
+
 router.get("/:id", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_LOCATIONS), async (req: SupabaseAuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
@@ -51,17 +74,6 @@ router.get("/:id", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_LOCAT
   } catch (error) {
     console.error("Error fetching location:", error);
     res.status(500).json({ message: "Failed to fetch location" });
-  }
-});
-
-router.get("/program/:programId", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_LOCATIONS), async (req: SupabaseAuthenticatedRequest, res) => {
-  try {
-    const { programId } = req.params;
-    const locations = await locationsStorage.getLocationsByProgram(programId);
-    res.json(locations);
-  } catch (error) {
-    console.error("Error fetching locations by program:", error);
-    res.status(500).json({ message: "Failed to fetch locations" });
   }
 });
 

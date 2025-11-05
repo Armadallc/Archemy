@@ -38,6 +38,19 @@ router.get("/programs/:id", requireSupabaseAuth, requireSupabaseRole(['super_adm
   res.redirect(307, `/api/corporate/programs/${req.params.id}`);
 });
 
+// Legacy programs/corporate-client route - handle directly (not redirect) for API calls
+router.get("/programs/corporate-client/:corporateClientId", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_PROGRAMS), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { corporateClientId } = req.params;
+    const { programsStorage } = await import("../minimal-supabase");
+    const programs = await programsStorage.getProgramsByCorporateClient(corporateClientId);
+    res.json(programs);
+  } catch (error) {
+    console.error("Error fetching programs by corporate client:", error);
+    res.status(500).json({ message: "Failed to fetch programs" });
+  }
+});
+
 // Legacy service areas routes (redirect to new locations routes)
 router.get("/service-areas", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_LOCATIONS), async (req: SupabaseAuthenticatedRequest, res) => {
   // Redirect to new locations routes

@@ -14,6 +14,7 @@ import { requireSupabaseAuth, SupabaseAuthenticatedRequest } from './supabase-au
 const router = express.Router();
 
 console.log('🔍 File storage routes module loaded');
+console.log('🔍 File storage routes will be available at /api/files/*');
 
 // Configure multer for file uploads
 const upload = multer({

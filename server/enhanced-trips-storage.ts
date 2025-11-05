@@ -565,21 +565,97 @@ export const enhancedTripsStorage = {
     return data;
   },
 
-  // Update trip status
-  async updateTripStatus(id: string, status: EnhancedTrip['status'], actualTimes?: {
-    pickup?: string;
-    dropoff?: string;
-    return?: string;
-  }) {
+  // Update trip status with validation and automatic timestamp tracking
+  async updateTripStatus(
+    id: string, 
+    status: EnhancedTrip['status'], 
+    actualTimes?: {
+      pickup?: string;
+      dropoff?: string;
+      return?: string;
+    },
+    options?: {
+      userId?: string;
+      skipValidation?: boolean;
+      skipTimestampAutoSet?: boolean;
+    }
+  ) {
+    console.log('🔍 updateTripStatus called:', { id, status, actualTimes, options });
+    
+    // First, get the current trip to validate transition
+    const { data: currentTrip, error: fetchError } = await supabase
+      .from('trips')
+      .select('status, trip_type')
+      .eq('id', id)
+      .single();
+    
+    if (fetchError) {
+      console.error('❌ Error fetching current trip:', fetchError);
+      throw fetchError;
+    }
+    if (!currentTrip) {
+      console.error(`❌ Trip with id ${id} not found`);
+      throw new Error(`Trip with id ${id} not found`);
+    }
+    
+    console.log('✅ Current trip found:', { currentStatus: currentTrip.status, tripType: currentTrip.trip_type });
+
+    // Validate status transition unless explicitly skipped
+    if (!options?.skipValidation) {
+      const { validateStatusTransition, getTimestampForStatusChange } = await import('./trip-status-validator');
+      const validation = validateStatusTransition(
+        currentTrip.status as any,
+        status as any
+      );
+
+      if (!validation.isValid) {
+        throw new Error(`Invalid status transition: ${validation.reason}`);
+      }
+
+      // Auto-set timestamps based on status change (unless explicitly disabled or manually provided)
+      if (!options?.skipTimestampAutoSet) {
+        const timestampHints = getTimestampForStatusChange(
+          currentTrip.status as any,
+          status as any
+        );
+
+        const now = new Date().toISOString();
+
+        // Only auto-set if not manually provided
+        if (timestampHints.shouldSetPickupTime && !actualTimes?.pickup) {
+          if (!actualTimes) actualTimes = {};
+          actualTimes.pickup = now;
+        }
+
+        if (timestampHints.shouldSetDropoffTime && !actualTimes?.dropoff) {
+          if (!actualTimes) actualTimes = {};
+          actualTimes.dropoff = now;
+        }
+
+        // For round trips, set return time when dropoff is set
+        if (timestampHints.shouldSetDropoffTime && 
+            currentTrip.trip_type === 'round_trip' && 
+            !actualTimes?.return && 
+            !actualTimes?.dropoff) {
+          if (!actualTimes) actualTimes = {};
+          actualTimes.return = now;
+        }
+      }
+    }
+
+    // Build update object
     const updates: any = {
       status,
       updated_at: new Date().toISOString()
     };
     
+    // Set timestamps (manual takes precedence over auto-set)
     if (actualTimes?.pickup) updates.actual_pickup_time = actualTimes.pickup;
     if (actualTimes?.dropoff) updates.actual_dropoff_time = actualTimes.dropoff;
     if (actualTimes?.return) updates.actual_return_time = actualTimes.return;
     
+    // Update the trip
+    console.log('🔍 Updating trip with:', updates);
     const { data, error } = await supabase
       .from('trips')
       .update(updates)
@@ -587,7 +663,39 @@ export const enhancedTripsStorage = {
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Error updating trip in database:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
+      throw error;
+    }
+    
+    console.log('✅ Trip updated successfully:', data?.id);
+
+    // Log status change to trip_status_logs table (if it exists)
+    // Schema: id, trip_id, driver_id, status, actual_times, timestamp, created_at
+    try {
+      await supabase
+        .from('trip_status_logs')
+        .insert({
+          id: `status_log_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          trip_id: id,
+          driver_id: data.driver_id || null,
+          status: status, // Current status (new status)
+          actual_times: actualTimes || null,
+          timestamp: new Date().toISOString()
+          // created_at is auto-set by database
+        });
+    } catch (logError) {
+      // If trip_status_logs table doesn't exist or insert fails, just log a warning
+      console.warn('⚠️ Could not log status change to trip_status_logs:', logError);
+      // Don't throw - status update should succeed even if logging fails
+    }
+
     return data;
   }
 };
