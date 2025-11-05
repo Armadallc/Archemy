@@ -52,8 +52,10 @@
    - ❌ Status change notifications don't target specific users (driver, client)
 
 3. **Hierarchical Notification Scoping**
-   - ⚠️ Broadcasts may send to wrong hierarchical level
-   - ⚠️ Notifications may leak across programs/corporate clients
+   - ✅ **COMPLETED**: Tenant isolation implemented for data endpoints (clients, programs, client groups, locations)
+   - ✅ **COMPLETED**: Hierarchical URL routing implemented (`/corporate-client/:corporateClientId/*`)
+   - ✅ **COMPLETED**: Frontend queries updated to respect corporate client context
+   - ⚠️ **REMAINING**: Need to verify WebSocket notifications respect hierarchical boundaries
    - ⚠️ Need to verify notifications respect RLS (Row Level Security)
 
 4. **Status Transition Validation**
@@ -283,6 +285,24 @@
 
 ### **PHASE 5: Hierarchical Notification Scoping** (CRITICAL)
 
+#### ✅ **Step 5.0: Tenant Isolation for Data Endpoints** (COMPLETED - Nov 4, 2025)
+- [x] **Task**: Implement tenant isolation for data endpoints
+  - ✅ Clients endpoint: `/api/clients/corporate-client/:corporateClientId`
+  - ✅ Client Groups endpoint: `/api/clients/groups/corporate-client/:corporateClientId`
+  - ✅ Programs endpoint: `/api/programs/corporate-client/:corporateClientId`
+  - ✅ Locations endpoint: `/api/locations/corporate-client/:corporateClientId` (verified earlier)
+  - ✅ Hierarchical URL routing: `/corporate-client/:corporateClientId/*`
+  - ✅ Frontend queries updated to use corporate-client endpoints
+  - ✅ Corporate admin sidebar and drilldown fixed
+- **Files Modified**: 
+  - `server/routes/clients.ts` - Added corporate-client routes
+  - `server/minimal-supabase.ts` - Added storage methods
+  - `client/src/pages/clients.tsx` - Updated queries
+  - `client/src/pages/programs.tsx` - Updated queries
+  - `client/src/hooks/useHierarchy.tsx` - URL parsing improvements
+  - `client/src/lib/urlBuilder.ts` - New utility
+- **See**: `TENANT_ISOLATION_SUMMARY.md` for complete details
+
 #### 🎯 **Step 5.1: Verify and Fix Notification Scoping**
 - [ ] **Task**: Test notification isolation
   - Create trip in Program A → Only Program A users should receive
@@ -436,6 +456,48 @@ cancelled   cancelled    cancelled
 
 ---
 
-*Last Updated: Based on current codebase analysis*
+## 🎯 TENANT ISOLATION COMPLETION (Nov 4, 2025)
+
+### ✅ Completed Work
+
+#### Backend Endpoints
+- ✅ `GET /api/clients/corporate-client/:corporateClientId` - Filter clients by corporate client
+- ✅ `GET /api/clients/groups/corporate-client/:corporateClientId` - Filter client groups by corporate client
+- ✅ `GET /api/programs/corporate-client/:corporateClientId` - Filter programs by corporate client (already existed, frontend updated)
+- ✅ `GET /api/locations/corporate-client/:corporateClientId` - Filter locations by corporate client (verified earlier)
+
+#### Storage Methods
+- ✅ `getClientsByCorporateClient()` - Fetches clients for all programs under a corporate client
+- ✅ `getClientGroupsByCorporateClient()` - Fetches client groups for all programs under a corporate client
+
+#### Frontend Updates
+- ✅ Hierarchical URL routing: `/corporate-client/:corporateClientId/*`
+- ✅ URL builder utility: `client/src/lib/urlBuilder.ts`
+- ✅ Hierarchy hook improvements: Better URL parsing and state management
+- ✅ Corporate admin sidebar: Removed Drivers/Vehicles, added Locations
+- ✅ Drilldown dropdown: Filters programs by corporate client
+- ✅ Query updates: Clients, Programs, Client Groups pages use corporate-client endpoints
+
+#### Testing
+- ✅ Verified: Halcyon admin sees only Halcyon data
+- ✅ Verified: Monarch programs don't appear for Halcyon
+- ✅ Verified: No cross-tenant data leakage
+
+### 📋 Remaining Tenant Isolation Work
+
+#### Endpoints to Verify
+- [ ] Trips: `/api/trips/corporate-client/:corporateClientId` (exists but needs verification)
+- [ ] Drivers: `/api/drivers/corporate-client/:corporateClientId` (exists but needs verification)
+- [ ] Vehicles: May need corporate-client filtering
+- [ ] Users: May need corporate-client filtering
+
+#### WebSocket Notifications
+- [ ] Verify WebSocket notifications respect hierarchical boundaries
+- [ ] Test notification isolation between corporate clients
+- [ ] Ensure no cross-program/cross-corporate notification leakage
+
+---
+
+*Last Updated: November 4, 2025*
 *Next Review: After Phase 1 completion*
 
