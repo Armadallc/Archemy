@@ -9,12 +9,69 @@
  * Usage: node test-tenant-isolation-verification.js
  */
 
-const API_URL = process.env.API_URL || 'http://localhost:8081';
+import { createClient } from '@supabase/supabase-js';
+import 'dotenv/config';
 
-// Test credentials (adjust as needed)
-const HALCYON_ADMIN_TOKEN = process.env.HALCYON_ADMIN_TOKEN || '';
-const MONARCH_ADMIN_TOKEN = process.env.MONARCH_ADMIN_TOKEN || '';
-const SUPER_ADMIN_TOKEN = process.env.SUPER_ADMIN_TOKEN || '';
+const API_URL = process.env.API_URL || 'http://localhost:8081';
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('❌ Missing required environment variables: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY');
+  process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Test credentials
+const CREDENTIALS = {
+  halcyon: { email: 'admin@halcyon.com', password: 'admin123' },
+  monarch: { email: 'programadmin@monarch.com', password: 'programadmin123' },
+  superAdmin: { email: 'admin@monarch.com', password: 'admin123' }
+};
+
+let HALCYON_ADMIN_TOKEN = '';
+let MONARCH_ADMIN_TOKEN = '';
+let SUPER_ADMIN_TOKEN = '';
+
+async function authenticateUser(email, password) {
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      console.error(`❌ Authentication failed for ${email}:`, error.message);
+      return null;
+    }
+    return data.session.access_token;
+  } catch (error) {
+    console.error(`❌ Error authenticating ${email}:`, error.message);
+    return null;
+  }
+}
+
+async function initializeAuth() {
+  console.log('🔐 Authenticating users...\n');
+  
+  HALCYON_ADMIN_TOKEN = await authenticateUser(CREDENTIALS.halcyon.email, CREDENTIALS.halcyon.password);
+  if (HALCYON_ADMIN_TOKEN) {
+    console.log(`✅ Authenticated as Halcyon Admin: ${CREDENTIALS.halcyon.email}`);
+  } else {
+    console.log(`⚠️  Could not authenticate Halcyon Admin - tests may fail`);
+  }
+  
+  MONARCH_ADMIN_TOKEN = await authenticateUser(CREDENTIALS.monarch.email, CREDENTIALS.monarch.password);
+  if (MONARCH_ADMIN_TOKEN) {
+    console.log(`✅ Authenticated as Monarch Admin: ${CREDENTIALS.monarch.email}`);
+  } else {
+    console.log(`⚠️  Could not authenticate Monarch Admin - tests may fail`);
+  }
+  
+  SUPER_ADMIN_TOKEN = await authenticateUser(CREDENTIALS.superAdmin.email, CREDENTIALS.superAdmin.password);
+  if (SUPER_ADMIN_TOKEN) {
+    console.log(`✅ Authenticated as Super Admin: ${CREDENTIALS.superAdmin.email}`);
+  }
+  
+  console.log('');
+}
 
 async function makeRequest(method, endpoint, token, body = null) {
   const options = {
@@ -201,13 +258,12 @@ async function main() {
   console.log('🚀 Starting Tenant Isolation Verification\n');
   console.log(`API URL: ${API_URL}\n`);
   
-  if (!HALCYON_ADMIN_TOKEN && !MONARCH_ADMIN_TOKEN) {
-    console.log('⚠️  No authentication tokens provided. Set environment variables:');
-    console.log('   HALCYON_ADMIN_TOKEN=...');
-    console.log('   MONARCH_ADMIN_TOKEN=...');
-    console.log('   SUPER_ADMIN_TOKEN=...');
-    console.log('\n  Or run: node test-tenant-isolation-verification.js');
-    console.log('  (Tests will run but may fail without authentication)\n');
+  // Authenticate users first
+  await initializeAuth();
+  
+  if (!HALCYON_ADMIN_TOKEN || !MONARCH_ADMIN_TOKEN) {
+    console.log('⚠️  Warning: Some authentication tokens are missing.');
+    console.log('   Tests may fail or produce incomplete results.\n');
   }
   
   const results = {
@@ -245,9 +301,5 @@ async function main() {
 }
 
 // Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch(console.error);
-}
-
-module.exports = { testTripsEndpoint, testDriversEndpoint, testWebSocketNotificationIsolation };
+main().catch(console.error);
 
