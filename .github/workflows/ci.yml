@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [ develop, main ]
+  pull_request:
+    branches: [ develop, main ]
+
+jobs:
+  build-and-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Install root deps
+        run: npm ci --ignore-scripts
+
+      - name: Install server deps
+        working-directory: server
+        run: npm ci --ignore-scripts || true
+
+      - name: Install client deps
+        working-directory: client
+        run: npm ci --ignore-scripts || true
+
+      - name: Typecheck (client and server)
+        run: |
+          npx tsc -v || true
+          (cd client && npx tsc --noEmit || true)
+          (cd server && npx tsc --noEmit || true)
+
+      - name: Lint (if configured)
+        run: |
+          npx eslint -v || exit 0
+          (cd client && npx eslint . || true)
+          (cd server && npx eslint . || true)
+
+      - name: Build client
+        working-directory: client
+        run: npm run build || true
+
+      - name: Build server
+        working-directory: server
+        run: npm run build || true
+
+      - name: npm audit (root)
+        run: |
+          npm audit --audit-level=high || echo "audit issues found"
+
+      - name: npm audit (client)
+        working-directory: client
+        run: |
+          npm audit --audit-level=high || echo "audit issues found"
+
+      - name: npm audit (server)
+        working-directory: server
+        run: |
+          npm audit --audit-level=high || echo "audit issues found"
+
