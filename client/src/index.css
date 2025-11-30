@@ -1,0 +1,428 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================================
+   NOHEMI FONT FACE DECLARATIONS
+   ======================================== */
+
+@font-face {
+  font-family: 'Nohemi';
+  src: url('/fonts/Nohemi-Thin.woff2') format('woff2');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nohemi';
+  src: url('/fonts/Nohemi-ExtraLight.woff2') format('woff2');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nohemi';
+  src: url('/fonts/Nohemi-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nohemi';
+  src: url('/fonts/Nohemi-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nohemi';
+  src: url('/fonts/Nohemi-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nohemi';
+  src: url('/fonts/Nohemi-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nohemi';
+  src: url('/fonts/Nohemi-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nohemi';
+  src: url('/fonts/Nohemi-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nohemi';
+  src: url('/fonts/Nohemi-Black.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ========================================
+   HALCYON COLOR SYSTEM
+   ======================================== */
+
+:root {
+  /* Core Colors - Light Mode */
+  --background: #f5f5f5;
+  --foreground: #131320;
+  --card: #fafffb;
+  --card-foreground: #131320;
+  --popover: #ffffff;
+  --popover-foreground: #131320;
+  --primary: #cc33ab;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f3fc;
+  --secondary-foreground: #131320;
+  --muted: #f3f3fc;
+  --muted-foreground: #131320;
+  --accent: #33ccad;
+  --accent-foreground: #131320;
+  --destructive: #cc5833;
+  --destructive-foreground: #ffffff;
+  --border: #e1e5e7;
+  --input: #e1e5e7;
+  --ring: #cc33ab;
+  --chart-1: #cc33ab;
+  --chart-2: #8933cc;
+  --chart-3: #33bccc;
+  --chart-4: #33ccad;
+  --chart-5: #ccbd33;
+  --sidebar: #f3f3fc;
+  --sidebar-foreground: #131320;
+  --sidebar-primary: #cc33ab;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #33ccad;
+  --sidebar-accent-foreground: #131320;
+  --sidebar-border: #e1e5e7;
+  --sidebar-ring: #cc33ab;
+  --font-sans: Nohemi, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: Fira Code, monospace;
+  --radius: 0.5rem;
+  --shadow-x: 0px;
+  --shadow-y: 4px;
+  --shadow-blur: 8px;
+  --shadow-spread: -2px;
+  --shadow-opacity: 0.1;
+  --shadow-color: #1a1a1a;
+  --shadow-2xs: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.05);
+  --shadow-xs: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.05);
+  --shadow-sm: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.10), 0px 1px 2px -3px hsl(0 0% 10.1961% / 0.10);
+  --shadow: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.10), 0px 1px 2px -3px hsl(0 0% 10.1961% / 0.10);
+  --shadow-md: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.10), 0px 2px 4px -3px hsl(0 0% 10.1961% / 0.10);
+  --shadow-lg: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.10), 0px 4px 6px -3px hsl(0 0% 10.1961% / 0.10);
+  --shadow-xl: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.10), 0px 8px 10px -3px hsl(0 0% 10.1961% / 0.10);
+  --shadow-2xl: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.25);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+  
+  /* Trip Status Colors */
+  --scheduled: hsl(45, 100%, 51%);
+  --in-progress: hsl(36, 100%, 50%);
+  --completed: hsl(122, 39%, 49%);
+  --cancelled: hsl(0, 84%, 60%);
+  --confirmed: #cc33ab;
+  
+  /* Driver Assignment Colors */
+  --driver-color-1: #8B5CF6;
+  --driver-color-2: #EC4899;
+  --driver-color-3: #06B6D4;
+  --driver-color-4: #84CC16;
+  --driver-color-5: #F97316;
+  --driver-color-6: #6366F1;
+}
+
+.dark {
+  /* Core Colors - Dark Mode */
+  --background: #17171c;
+  --foreground: #eeeff2;
+  --card: #20222d;
+  --card-foreground: #eeeff2;
+  --popover: #252538;
+  --popover-foreground: #eeeff2;
+  --primary: #cc33ab;
+  --primary-foreground: #ffffff;
+  --secondary: #252538;
+  --secondary-foreground: #eeeff2;
+  --muted: #1a1a2b;
+  --muted-foreground: #888b9e;
+  --accent: #33ccad;
+  --accent-foreground: #131320;
+  --destructive: #cc5833;
+  --destructive-foreground: #ffffff;
+  --border: #383854;
+  --input: #383854;
+  --ring: #cc33ab;
+  --chart-1: #cc33ab;
+  --chart-2: #8933cc;
+  --chart-3: #33bccc;
+  --chart-4: #33ccad;
+  --chart-5: #ccbd33;
+  --sidebar: #131320;
+  --sidebar-foreground: #eeeff2;
+  --sidebar-primary: #cc33ab;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #33ccad;
+  --sidebar-accent-foreground: #131320;
+  --sidebar-border: #383854;
+  --sidebar-ring: #cc33ab;
+  --font-sans: Nohemi, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: Fira Code, monospace;
+  
+  /* Gradient Overlay for Dark Mode Backgrounds */
+  --gradient-overlay: linear-gradient(to bottom, rgba(56, 56, 84, 0.83), transparent);
+  --radius: 0.5rem;
+  --shadow-x: 0px;
+  --shadow-y: 4px;
+  --shadow-blur: 8px;
+  --shadow-spread: -2px;
+  --shadow-opacity: 0.1;
+  --shadow-color: #1a1a1a;
+  --shadow-2xs: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.05);
+  --shadow-xs: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.05);
+  --shadow-sm: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.10), 0px 1px 2px -3px hsl(0 0% 10.1961% / 0.10);
+  --shadow: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.10), 0px 1px 2px -3px hsl(0 0% 10.1961% / 0.10);
+  --shadow-md: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.10), 0px 2px 4px -3px hsl(0 0% 10.1961% / 0.10);
+  --shadow-lg: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.10), 0px 4px 6px -3px hsl(0 0% 10.1961% / 0.10);
+  --shadow-xl: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.10), 0px 8px 10px -3px hsl(0 0% 10.1961% / 0.10);
+  --shadow-2xl: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.25);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+  
+  /* Trip Status Colors (Same as Light Mode) */
+  --scheduled: hsl(45, 100%, 51%);
+  --in-progress: hsl(36, 100%, 50%);
+  --completed: hsl(122, 39%, 49%);
+  --cancelled: hsl(0, 84%, 60%);
+  --confirmed: #cc33ab;
+  
+  /* Driver Assignment Colors (Same as Light Mode) */
+  --driver-color-1: #8B5CF6;
+  --driver-color-2: #EC4899;
+  --driver-color-3: #06B6D4;
+  --driver-color-4: #84CC16;
+  --driver-color-5: #F97316;
+  --driver-color-6: #6366F1;
+}
+
+/* ========================================
+   BASE STYLES
+   ======================================== */
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  
+  html {
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
+  }
+  
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+  }
+  
+  h1 {
+    font-family: 'Nohemi', sans-serif;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  
+  h2, h3, h4, h5, h6 {
+    font-family: 'Nohemi', sans-serif;
+  }
+}
+
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+
+@layer utilities {
+  /* ========================================
+     TYPOGRAPHY SCALE - GOLDEN RATIO (1.618)
+     ======================================== */
+  
+  /* Display / Mega - Largest heading */
+  .text-display {
+    font-family: 'Nohemi', sans-serif;
+    font-size: 110px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+  }
+  
+  /* H1 - Major Section */
+  .text-h1 {
+    font-family: 'Nohemi', sans-serif;
+    font-size: 68px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+  }
+  
+  /* H2 - Subsection */
+  .text-h2 {
+    font-family: 'Nohemi', sans-serif;
+    font-size: 42px;
+    font-weight: 600;
+    line-height: 1.3;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+  }
+  
+  /* H3 - Sub-subsection */
+  .text-h3 {
+    font-family: 'Nohemi', sans-serif;
+    font-size: 26px;
+    font-weight: 600;
+    line-height: 1.4;
+    text-transform: uppercase;
+    letter-spacing: 0;
+  }
+  
+  /* Body Large */
+  .text-body-large {
+    font-family: 'Nohemi', sans-serif;
+    font-size: 20px;
+    font-weight: 400;
+    line-height: 1.5;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  
+  /* Body - Default body text */
+  .text-body {
+    font-family: 'Nohemi', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.5;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  
+  /* Body Small */
+  .text-body-small {
+    font-family: 'Nohemi', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.5;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  
+  /* Caption / Label */
+  .text-caption {
+    font-family: 'Nohemi', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  /* ========================================
+     RESPONSIVE TYPOGRAPHY (Mobile < 768px)
+     ======================================== */
+  
+  @media (max-width: 767px) {
+    .text-display {
+      font-size: 68px;
+    }
+    
+    .text-h1 {
+      font-size: 42px;
+    }
+    
+    .text-h2 {
+      font-size: 26px;
+    }
+    
+    .text-h3 {
+      font-size: 20px;
+    }
+  }
+  
+  /* ========================================
+     LEGACY CLASSES (Backward Compatibility)
+     ======================================== */
+  
+  .text-mega {
+    @apply text-display;
+  }
+  
+  .text-xl-display {
+    @apply text-h1;
+  }
+  
+  .text-brutalist-h1 {
+    @apply text-h1;
+  }
+  
+  .text-brutalist-h2 {
+    @apply text-h2;
+  }
+  
+  .text-brutalist-body {
+    @apply text-body-large;
+  }
+  
+  .text-brutalist-small {
+    @apply text-body-small;
+  }
+  
+  .text-brutalist-caption {
+    @apply text-caption;
+  }
+  
+  /* ========================================
+     GRADIENT OVERLAY UTILITY
+     ======================================== */
+  
+  .gradient-overlay {
+    position: relative;
+  }
+  
+  .gradient-overlay::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--gradient-overlay);
+    pointer-events: none;
+    z-index: 1;
+  }
+  
+  .gradient-overlay > * {
+    position: relative;
+    z-index: 2;
+  }
+}

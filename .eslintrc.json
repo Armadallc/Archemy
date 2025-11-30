@@ -1,0 +1,117 @@
+{
+  "env": {
+    "browser": true,
+    "es2021": true,
+    "node": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "@typescript-eslint/recommended"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    }
+  },
+  "plugins": ["@typescript-eslint"],
+  "rules": {
+    // NAMING CONVENTIONS
+    "@typescript-eslint/naming-convention": [
+      "error",
+      {
+        "selector": "default",
+        "format": ["camelCase"]
+      },
+      {
+        "selector": "variable",
+        "format": ["camelCase", "UPPER_CASE"]
+      },
+      {
+        "selector": "parameter",
+        "format": ["camelCase"],
+        "leadingUnderscore": "allow"
+      },
+      {
+        "selector": "memberLike",
+        "modifiers": ["private"],
+        "format": ["camelCase"],
+        "leadingUnderscore": "require"
+      },
+      {
+        "selector": "typeLike",
+        "format": ["PascalCase"]
+      },
+      {
+        "selector": "enumMember",
+        "format": ["UPPER_CASE"]
+      },
+      {
+        "selector": "property",
+        "format": ["camelCase", "snake_case"],
+        "filter": {
+          "regex": "^(user_id|primary_program_id|corporate_client_id|created_at|updated_at|is_active|avatar_url|billing_pin|program_id|location_id|client_id|driver_id|pickup_location_id|dropoff_location_id|trip_type|trip_status|passenger_count|scheduled_pickup_time|scheduled_return_time|actual_pickup_time|actual_dropoff_time|actual_return_time|special_requirements|recurring_trip_id|recurring_pattern|recurring_end_date|client_group_id|is_group_trip|trip_category_id|corporate_client_id|program_id|location_id|client_id|driver_id|pickup_location_id|dropoff_location_id|trip_type|trip_status|passenger_count|scheduled_pickup_time|scheduled_return_time|actual_pickup_time|actual_dropoff_time|actual_return_time|special_requirements|recurring_trip_id|recurring_pattern|recurring_end_date|client_group_id|is_group_trip|trip_category_id)$",
+          "match": true
+        }
+      }
+    ],
+    // EXCEPTIONS FOR STANDARD HTTP HEADERS
+    "@typescript-eslint/naming-convention": [
+      "error",
+      {
+        "selector": "default",
+        "format": ["camelCase"]
+      },
+      {
+        "selector": "variable",
+        "format": ["camelCase", "UPPER_CASE"]
+      },
+      {
+        "selector": "parameter",
+        "format": ["camelCase"],
+        "leadingUnderscore": "allow"
+      },
+      {
+        "selector": "memberLike",
+        "modifiers": ["private"],
+        "format": ["camelCase"],
+        "leadingUnderscore": "require"
+      },
+      {
+        "selector": "typeLike",
+        "format": ["PascalCase"]
+      },
+      {
+        "selector": "enumMember",
+        "format": ["UPPER_CASE"]
+      },
+      {
+        "selector": "property",
+        "format": ["camelCase", "snake_case"],
+        "filter": {
+          "regex": "^(user_id|primary_program_id|corporate_client_id|created_at|updated_at|is_active|avatar_url|billing_pin|program_id|location_id|client_id|driver_id|pickup_location_id|dropoff_location_id|trip_type|trip_status|passenger_count|scheduled_pickup_time|scheduled_return_time|actual_pickup_time|actual_dropoff_time|actual_return_time|special_requirements|recurring_trip_id|recurring_pattern|recurring_end_date|client_group_id|is_group_trip|trip_category_id|Content-Type|Cache-Control|Authorization|Accept|Origin|X-Requested-With)$",
+          "match": true
+        }
+      }
+    ],
+    // OTHER RULES
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "no-console": "warn",
+    "prefer-const": "error",
+    "no-var": "error"
+  },
+  "overrides": [
+    {
+      "files": ["*.js", "*.jsx"],
+      "rules": {
+        "@typescript-eslint/naming-convention": "off"
+      }
+    }
+  ]
+}
+
+
+

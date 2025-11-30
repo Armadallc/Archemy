@@ -1,0 +1,28 @@
+services:
+  # Backend API Service
+  - type: web
+    name: halcyon-backend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install
+    startCommand: npx tsx server/index.ts
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+    healthCheckPath: /api/health
+
+  # Frontend Static Site - NOT SUPPORTED IN BLUEPRINT
+  # Static sites must be created manually in Render Dashboard
+  # See docs/deployment/RENDER_STATIC_SITE_MANUAL.md for instructions
+

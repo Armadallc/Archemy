@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Monarch Driver",
+    "slug": "monarch-driver-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#3B82F6"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#3B82F6"
+      }
+    },
+    "web": {
+    },
+    "scheme": "monarch-driver",
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}

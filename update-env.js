@@ -1,0 +1,14 @@
+import fs from 'fs';
+
+const newEnvContent = `SUPABASE_URL=https://iuawurdssgbkbavyyvbs.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1YXd1cmRzc2dia2Jhdnl5dmJzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODg0NTUzMSwiZXhwIjoyMDc0NDIxNTMxfQ.p43LNk28V9bTfvWsbdW8ByZw_lb26-IKoDrHxkvp9fg
+DATABASE_URL=postgresql://postgres:ohmydogitselvis!@db.iuawurdssgbkbavyyvbs.supabase.co:5432/postgres
+SESSION_SECRET=supersecretdevkey123
+NODE_ENV=development
+VITE_SUPABASE_URL=https://iuawurdssgbkbavyyvbs.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1YXd1cmRzc2dia2Jhdnl5dmJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NDU1MzEsImV4cCI6MjA3NDQyMTUzMX0.JLcuSTI1mfEMGu_mP9UBnGQyG33vcoU2SzvKo8olkL4`;
+
+fs.writeFileSync('.env', newEnvContent);
+console.log('✅ .env file updated with new Supabase credentials');
+
+
