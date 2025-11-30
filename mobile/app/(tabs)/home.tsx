@@ -14,6 +14,7 @@ import { apiClient } from '../../services/api';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Trip {
   id: string;
@@ -57,6 +58,7 @@ interface Trip {
 export default function HomeScreen() {
   const { user } = useAuth();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
 
   const { data: trips = [], isLoading, refetch } = useQuery<Trip[]>({
@@ -176,6 +178,7 @@ export default function HomeScreen() {
     container: {
       flex: 1,
       backgroundColor: theme.colors.background,
+      paddingTop: insets.top,
     },
     content: {
       flex: 1,

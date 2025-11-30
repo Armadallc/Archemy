@@ -14,10 +14,12 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { emergencyService } from '../../services/emergency';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function MenuScreen() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme, theme: themeState } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const handleLogout = () => {
     if (Platform.OS === 'web') {
@@ -103,6 +105,7 @@ export default function MenuScreen() {
     container: {
       flex: 1,
       backgroundColor: theme.colors.background,
+      paddingTop: insets.top,
     },
     content: {
       flex: 1,

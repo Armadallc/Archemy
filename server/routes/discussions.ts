@@ -237,7 +237,16 @@ router.post("/:id/messages", requireSupabaseAuth, async (req: SupabaseAuthentica
       return res.status(400).json({ message: "Message content is required" });
     }
 
-    const message = await sendDiscussionMessage(id, req.user.userId, content.trim(), parent_message_id);
+    // Normalize parent_message_id: convert empty string, undefined, or invalid values to null
+    const normalizedParentMessageId = parent_message_id && 
+      typeof parent_message_id === 'string' && 
+      parent_message_id.trim() !== '' 
+      ? parent_message_id.trim() 
+      : null;
+
+    console.log('🔍 [DISCUSSIONS] Sending message with parent_message_id:', normalizedParentMessageId);
+
+    const message = await sendDiscussionMessage(id, req.user.userId, content.trim(), normalizedParentMessageId);
 
     res.status(201).json(message);
   } catch (error: any) {

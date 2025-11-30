@@ -15,6 +15,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { apiClient } from '../../services/api';
 import { useFeatureFlag } from '../../hooks/useFeatureFlag';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Trip {
   id: string;
@@ -59,6 +60,7 @@ export default function TripDetailsScreen() {
   const { tripId } = useLocalSearchParams();
   const { user } = useAuth();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   
   // Feature flag for mobile check-in
@@ -198,6 +200,7 @@ export default function TripDetailsScreen() {
     container: {
       flex: 1,
       backgroundColor: theme.colors.background,
+      paddingTop: insets.top,
     },
     centered: {
       justifyContent: 'center',

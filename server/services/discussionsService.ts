@@ -1,5 +1,5 @@
 import { supabase } from '../minimal-supabase';
-import { findMentionedUsers } from '../utils/mentionParser';
+import { findMentionedUsers, findUsersByMention } from '../utils/mentionParser';
 
 export interface MessageReaction {
   emoji: string;
@@ -216,8 +216,13 @@ export async function getDiscussions(
     .is('left_at', null); // Only get active participants
 
   // If is_pinned/is_muted columns don't exist, try without them
-  if (errorWithFlags && errorWithFlags.code === '42703' && 
-      (errorWithFlags.message?.includes('is_pinned') || errorWithFlags.message?.includes('is_muted'))) {
+  // Check for both PostgreSQL error code (42703) and PostgREST error code (PGRST204)
+  const isPinnedMutedColumnError = errorWithFlags && (
+    (errorWithFlags.code === '42703' && (errorWithFlags.message?.includes('is_pinned') || errorWithFlags.message?.includes('is_muted'))) ||
+    (errorWithFlags.code === 'PGRST204' && (errorWithFlags.message?.includes('is_pinned') || errorWithFlags.message?.includes('is_muted')))
+  );
+
+  if (isPinnedMutedColumnError) {
     console.log('⚠️ [DISCUSSIONS SERVICE] is_pinned/is_muted columns do not exist, fetching without them');
     const { data: participantsWithoutFlags, error: errorWithoutFlags } = await supabase
       .from('discussion_participants')
@@ -503,7 +508,13 @@ export async function getDiscussionMessages(
     .range(offset, offset + limit - 1);
 
   // If reactions column doesn't exist, try without it
-  if (errorWithReactions && errorWithReactions.code === '42703' && errorWithReactions.message?.includes('reactions')) {
+  // Check for both PostgreSQL error code (42703) and PostgREST error code (PGRST204)
+  const isReactionsColumnError = errorWithReactions && (
+    (errorWithReactions.code === '42703' && errorWithReactions.message?.includes('reactions')) ||
+    (errorWithReactions.code === 'PGRST204' && errorWithReactions.message?.includes('reactions'))
+  );
+
+  if (isReactionsColumnError) {
     console.log('⚠️ [DISCUSSIONS SERVICE] reactions column does not exist, fetching without it');
     const { data: messagesWithoutReactions, error: errorWithoutReactions } = await supabase
       .from('discussion_messages')
@@ -726,8 +737,31 @@ export async function createDiscussion(
     tagged_roles,
   } = data;
 
+  // Resolve usernames (starting with @) to user IDs
+  const resolvedParticipantIds: string[] = [];
+  for (const participant of participant_user_ids) {
+    if (participant.startsWith('@')) {
+      // This is a username mention, resolve it to user ID
+      const username = participant.substring(1); // Remove the @
+      console.log('🔍 [DISCUSSIONS SERVICE] Resolving username to user ID:', username);
+      const userIds = await findUsersByMention(username, supabase, userId);
+      if (userIds.length === 0) {
+        console.warn(`⚠️ [DISCUSSIONS SERVICE] Could not find user with username: ${username}`);
+        throw new Error(`User "${username}" not found`);
+      } else if (userIds.length > 1) {
+        console.warn(`⚠️ [DISCUSSIONS SERVICE] Multiple users found for username "${username}", using first: ${userIds[0]}`);
+        resolvedParticipantIds.push(userIds[0]);
+      } else {
+        resolvedParticipantIds.push(userIds[0]);
+      }
+    } else {
+      // This is already a user ID
+      resolvedParticipantIds.push(participant);
+    }
+  }
+
   // Ensure the creator is included in participants
-  const allParticipantIds = [...new Set([userId, ...participant_user_ids])];
+  const allParticipantIds = [...new Set([userId, ...resolvedParticipantIds])];
 
   // Determine actual discussion type based on participant count
   const actualDiscussionType = allParticipantIds.length === 2 ? 'personal' : 'group';
@@ -736,7 +770,7 @@ export async function createDiscussion(
   console.log('🔍 [DISCUSSIONS SERVICE] Checking for existing discussion before creating new one');
   const existingDiscussion = await findExistingDiscussion(
     userId,
-    participant_user_ids,
+    resolvedParticipantIds,
     actualDiscussionType
   );
 
@@ -818,6 +852,29 @@ export async function sendDiscussionMessage(
     throw new Error('User is not a participant in this discussion');
   }
 
+  // Validate parent_message_id if provided
+  if (parent_message_id) {
+    console.log('🔍 [DISCUSSIONS SERVICE] Validating parent_message_id:', parent_message_id);
+    const { data: parentMessage, error: parentError } = await supabase
+      .from('discussion_messages')
+      .select('id, discussion_id')
+      .eq('id', parent_message_id)
+      .is('deleted_at', null)
+      .single();
+
+    if (parentError || !parentMessage) {
+      console.error('❌ [DISCUSSIONS SERVICE] Parent message not found:', parentError);
+      throw new Error(`Parent message not found: ${parent_message_id}`);
+    }
+
+    if (parentMessage.discussion_id !== discussionId) {
+      console.error('❌ [DISCUSSIONS SERVICE] Parent message belongs to different discussion');
+      throw new Error('Parent message must belong to the same discussion');
+    }
+
+    console.log('✅ [DISCUSSIONS SERVICE] Parent message validated successfully');
+  }
+
   // Parse mentions from message content and find user IDs
   const mentionedUserIds = await findMentionedUsers(content, supabase, userId);
   console.log('🔍 [DISCUSSIONS SERVICE] Found mentioned user IDs:', mentionedUserIds);
@@ -861,8 +918,12 @@ export async function sendDiscussionMessage(
     }
   }
 
-  // Create the message
-  const { data: message, error: messageError } = await supabase
+  // Create the message (try with reactions column, fallback without if column doesn't exist)
+  let message: any = null;
+  let messageError: any = null;
+  
+  // First try with reactions column
+  const { data: messageWithReactions, error: errorWithReactions } = await supabase
     .from('discussion_messages')
     .insert({
       discussion_id: discussionId,
@@ -875,8 +936,40 @@ export async function sendDiscussionMessage(
     .select()
     .single();
 
+  // If reactions column doesn't exist, try without it
+  // Check for both PostgreSQL error code (42703) and PostgREST error code (PGRST204)
+  const isReactionsColumnError = errorWithReactions && (
+    (errorWithReactions.code === '42703' && errorWithReactions.message?.includes('reactions')) ||
+    (errorWithReactions.code === 'PGRST204' && errorWithReactions.message?.includes('reactions'))
+  );
+
+  if (isReactionsColumnError) {
+    console.log('⚠️ [DISCUSSIONS SERVICE] reactions column does not exist, inserting without it');
+    const { data: messageWithoutReactions, error: errorWithoutReactions } = await supabase
+      .from('discussion_messages')
+      .insert({
+        discussion_id: discussionId,
+        content,
+        created_by: userId,
+        parent_message_id: parent_message_id || null,
+        read_by: [userId], // Mark as read by sender
+      })
+      .select()
+      .single();
+    
+    message = messageWithoutReactions;
+    messageError = errorWithoutReactions;
+    // Add empty reactions array to the message object
+    if (message) {
+      message.reactions = [];
+    }
+  } else {
+    message = messageWithReactions;
+    messageError = errorWithReactions;
+  }
+
   if (messageError) {
-    console.error('Error creating message:', messageError);
+    console.error('❌ [DISCUSSIONS SERVICE] Error creating message:', messageError);
     throw messageError;
   }
 
@@ -1209,12 +1302,42 @@ export async function toggleMessageReaction(
   userId: string,
   emoji: string
 ): Promise<DiscussionMessage> {
-  // Get current message
-  const { data: message, error: messageError } = await supabase
+  // Get current message (try with reactions column, fallback without if column doesn't exist)
+  let message: any = null;
+  let messageError: any = null;
+  
+  // First try with reactions column
+  const { data: messageWithReactions, error: errorWithReactions } = await supabase
     .from('discussion_messages')
     .select('id, reactions')
     .eq('id', messageId)
     .single();
+
+  // If reactions column doesn't exist, try without it
+  // Check for both PostgreSQL error code (42703) and PostgREST error code (PGRST204)
+  const isReactionsColumnError = errorWithReactions && (
+    (errorWithReactions.code === '42703' && errorWithReactions.message?.includes('reactions')) ||
+    (errorWithReactions.code === 'PGRST204' && errorWithReactions.message?.includes('reactions'))
+  );
+
+  if (isReactionsColumnError) {
+    console.log('⚠️ [DISCUSSIONS SERVICE] reactions column does not exist, fetching without it');
+    const { data: messageWithoutReactions, error: errorWithoutReactions } = await supabase
+      .from('discussion_messages')
+      .select('id')
+      .eq('id', messageId)
+      .single();
+    
+    message = messageWithoutReactions;
+    messageError = errorWithoutReactions;
+    // Add empty reactions array
+    if (message) {
+      message.reactions = [];
+    }
+  } else {
+    message = messageWithReactions;
+    messageError = errorWithReactions;
+  }
 
   if (messageError || !message) {
     throw new Error('Message not found');
@@ -1243,13 +1366,44 @@ export async function toggleMessageReaction(
     ];
   }
 
-  // Update message
-  const { data: updatedMessage, error: updateError } = await supabase
+  // Update message (try with reactions column, fallback without if column doesn't exist)
+  let updatedMessage: any = null;
+  let updateError: any = null;
+  
+  // First try with reactions column
+  const { data: updatedWithReactions, error: errorUpdatingWithReactions } = await supabase
     .from('discussion_messages')
     .update({ reactions: updatedReactions })
     .eq('id', messageId)
     .select()
     .single();
+
+  // If reactions column doesn't exist, skip the update (reactions feature not available)
+  // Check for both PostgreSQL error code (42703) and PostgREST error code (PGRST204)
+  const isReactionsUpdateError = errorUpdatingWithReactions && (
+    (errorUpdatingWithReactions.code === '42703' && errorUpdatingWithReactions.message?.includes('reactions')) ||
+    (errorUpdatingWithReactions.code === 'PGRST204' && errorUpdatingWithReactions.message?.includes('reactions'))
+  );
+
+  if (isReactionsUpdateError) {
+    console.log('⚠️ [DISCUSSIONS SERVICE] reactions column does not exist, cannot update reactions');
+    // Fetch the message without reactions to return it
+    const { data: messageWithoutReactions, error: fetchError } = await supabase
+      .from('discussion_messages')
+      .select('*')
+      .eq('id', messageId)
+      .single();
+    
+    if (fetchError || !messageWithoutReactions) {
+      throw new Error('Message not found');
+    }
+    
+    updatedMessage = { ...messageWithoutReactions, reactions: [] };
+    updateError = null; // Don't treat this as an error - reactions just aren't available
+  } else {
+    updatedMessage = updatedWithReactions;
+    updateError = errorUpdatingWithReactions;
+  }
 
   if (updateError) {
     console.error('Error updating message reaction:', updateError);

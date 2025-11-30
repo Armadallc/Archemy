@@ -51,6 +51,7 @@ export default function ChatWidget() {
   const [newChatParticipants, setNewChatParticipants] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   
   // Fetch all discussions
   const { data: discussions = [], isLoading: discussionsLoading, error: discussionsError } = useDiscussions();
@@ -79,12 +80,25 @@ export default function ChatWidget() {
   // Fetch messages for selected discussion
   const { data: messages = [], isLoading: messagesLoading } = useDiscussionMessages(selectedDiscussionId, 50);
 
-  // Auto-scroll to bottom when messages change
+  // Auto-scroll to bottom when messages change (only if user is near bottom)
   useEffect(() => {
-    if (messages.length > 0 && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (messages.length > 0 && messagesContainerRef.current && messagesEndRef.current) {
+      const container = messagesContainerRef.current;
+      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+      
+      // Only auto-scroll if user is already near the bottom
+      if (isNearBottom) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
     }
   }, [messages]);
+
+  // Auto-scroll when a new message is sent
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   // Filter and sort discussions
   const filteredDiscussions = discussions
@@ -167,8 +181,9 @@ export default function ChatWidget() {
       });
       setMessageInput('');
       setReplyingTo(null);
-      // Focus back on input
+      // Scroll to bottom after sending
       setTimeout(() => {
+        scrollToBottom();
         messageInputRef.current?.focus();
       }, 100);
     } catch (error: any) {
@@ -317,7 +332,7 @@ export default function ChatWidget() {
   ];
 
   return (
-    <div className="flex h-full min-h-[600px] border-t">
+    <div className="flex h-full min-h-0 border-t">
       {discussionsLoading ? (
         <div className="flex items-center justify-center w-full h-full">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -334,7 +349,7 @@ export default function ChatWidget() {
       ) : (
         <>
           {/* Discussions Sidebar */}
-          <div className="w-80 border-r flex flex-col bg-muted/30">
+          <div className="w-80 border-r flex flex-col bg-muted/30 min-h-0">
             {/* Search */}
             <div className="px-4 pb-4 pt-4 border-b">
               <div className="relative">
@@ -350,7 +365,7 @@ export default function ChatWidget() {
             </div>
 
             {/* Discussions List */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto min-h-0">
               {discussions.length === 0 ? (
                 <div className="text-center py-8 px-4 text-sm text-muted-foreground">
                   <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -421,9 +436,26 @@ export default function ChatWidget() {
                                       )}
                                     </div>
                                     {lastMessage && (
-                                      <p className={`text-xs truncate ${isSelected ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
-                                        {lastMessage.content}
-                                      </p>
+                                      <div className="space-y-0.5">
+                                        {/* Sender name */}
+                                        {lastMessage.author && (
+                                          <p className={`text-xs font-medium truncate ${isSelected ? 'text-primary-foreground' : 'text-foreground'}`}>
+                                            {lastMessage.author.first_name && lastMessage.author.last_name
+                                              ? `${lastMessage.author.first_name} ${lastMessage.author.last_name}`
+                                              : lastMessage.author.user_name || lastMessage.author.email}
+                                          </p>
+                                        )}
+                                        {/* Subject (discussion title) if exists */}
+                                        {discussion.title && (
+                                          <p className={`text-xs font-medium truncate ${isSelected ? 'text-primary-foreground/90' : 'text-foreground/80'}`}>
+                                            {discussion.title}
+                                          </p>
+                                        )}
+                                        {/* Message preview */}
+                                        <p className={`text-xs truncate ${isSelected ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
+                                          {lastMessage.content}
+                                        </p>
+                                      </div>
                                     )}
                                   </div>
                                 </div>
@@ -568,7 +600,7 @@ export default function ChatWidget() {
             </div>
 
             {/* New Chat Button at Bottom (like reference) */}
-            <div className="p-4 border-t">
+            <div className="flex-shrink-0 p-4 border-t">
               <Dialog open={isNewChatDialogOpen} onOpenChange={setIsNewChatDialogOpen}>
                 <DialogTrigger asChild>
                   <Button className="w-full" size="sm">
@@ -669,7 +701,10 @@ export default function ChatWidget() {
                 </div>
 
                 {/* Messages - Scrollable */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+                <div 
+                  ref={messagesContainerRef}
+                  className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0"
+                >
                   {messagesLoading ? (
                     <div className="flex items-center justify-center h-32">
                       <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -701,7 +736,7 @@ export default function ChatWidget() {
                         return (
                           <div
                             key={message.id}
-                            className={`flex gap-3 group ${isCurrentUser ? 'flex-row-reverse' : ''}`}
+                            className={`flex gap-3 group ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'}`}
                             onMouseEnter={() => setHoveredMessageId(message.id)}
                             onMouseLeave={() => setHoveredMessageId(null)}
                           >
@@ -711,7 +746,7 @@ export default function ChatWidget() {
                                 {getUserInitials(author)}
                               </AvatarFallback>
                             </Avatar>
-                            <div className={`flex-1 min-w-0 ${isCurrentUser ? 'flex flex-col items-end' : ''}`}>
+                            <div className={`flex-1 min-w-0 flex flex-col ${isCurrentUser ? 'items-end' : ''}`}>
                               <div className={`flex items-center gap-2 mb-1 ${isCurrentUser ? 'flex-row-reverse' : ''}`}>
                                 <span className="text-sm font-medium">
                                   {isCurrentUser ? 'You' : getUserDisplayName(author)}
@@ -733,18 +768,18 @@ export default function ChatWidget() {
                                 </div>
                               )}
                               
-                              <div className="relative">
-                                <div className={`text-sm text-foreground break-words rounded-lg p-3 ${
+                              <div className="relative w-full">
+                                <div className={`text-sm text-foreground break-words rounded-lg p-3 w-fit max-w-[75%] ${
                                   isCurrentUser
-                                    ? 'bg-primary text-primary-foreground max-w-[80%]'
-                                    : 'bg-muted max-w-[80%]'
+                                    ? 'bg-primary text-primary-foreground ml-auto'
+                                    : 'bg-muted'
                                 }`}>
                                   {message.content}
                                 </div>
                                 
                                 {/* Hover menu */}
                                 {(isHovered || hoveredMessageId === message.id) && (
-                                  <div className={`absolute ${isCurrentUser ? 'left-0' : 'right-0'} top-0 flex items-center gap-1 bg-background border rounded-lg p-1 shadow-lg z-10`}>
+                                  <div className={`absolute ${isCurrentUser ? 'left-0' : 'right-0'} top-0 flex items-center gap-1 bg-white dark:bg-gray-800 border rounded-lg p-1 shadow-lg z-10`}>
                                     {/* Quick reactions */}
                                     {quickReactions.map(({ emoji, icon: Icon }) => {
                                       const hasReacted = reactions.some(r => r.emoji === emoji && r.user_id === user?.user_id);
@@ -817,6 +852,7 @@ export default function ChatWidget() {
                               </div>
                               
                               {/* Reactions */}
+                              {/* Reactions display */}
                               {Object.keys(reactionGroups).length > 0 && (
                                 <div className={`mt-1 flex flex-wrap gap-1 ${isCurrentUser ? 'justify-end' : ''}`}>
                                   {Object.entries(reactionGroups).map(([emoji, emojiReactions]) => {
@@ -828,8 +864,9 @@ export default function ChatWidget() {
                                         className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
                                           hasReacted
                                             ? 'bg-primary/20 border-primary text-primary'
-                                            : 'bg-muted border-border hover:bg-muted/80'
+                                            : 'bg-white dark:bg-gray-800 border-border hover:bg-muted/80'
                                         }`}
+                                        title={`${emojiReactions.length} reaction${emojiReactions.length !== 1 ? 's' : ''}`}
                                       >
                                         <span className="mr-1">{emoji}</span>
                                         <span>{emojiReactions.length}</span>

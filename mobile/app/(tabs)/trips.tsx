@@ -6,6 +6,7 @@ import { apiClient } from '../../services/api';
 import { useTheme } from '../../contexts/ThemeContext';
 import TripCalendar from '../../components/TripCalendar';
 import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Trip {
   id: string;
@@ -23,6 +24,7 @@ interface Trip {
 export default function TripsScreen() {
   const { user } = useAuth();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const { data: trips = [], isLoading } = useQuery<Trip[]>({
     queryKey: ['driver-trips'],
@@ -39,6 +41,7 @@ export default function TripsScreen() {
     container: {
       flex: 1,
       backgroundColor: theme.colors.background,
+      paddingTop: insets.top,
     },
   });
 

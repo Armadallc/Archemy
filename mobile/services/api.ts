@@ -224,6 +224,52 @@ class ApiClient {
       body: JSON.stringify(updates),
     });
   }
+
+  // Avatar upload method - handles FormData
+  async uploadAvatar(userId: string, imageUri: string, imageType: string = 'image/jpeg'): Promise<{ success: boolean; avatar_url: string; user: any }> {
+    const url = `${this.baseURL}/api/users/${userId}/avatar`;
+    const token = Platform.OS === 'web' 
+      ? localStorage.getItem('auth_token')
+      : (SecureStore ? await SecureStore.getItemAsync('auth_token') : null);
+
+    // Create FormData
+    const formData = new FormData();
+    
+    // For React Native, we need to append the file differently
+    if (Platform.OS === 'web') {
+      // For web, fetch the image as blob and append
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+      formData.append('avatar', blob, 'avatar.jpg');
+    } else {
+      // For React Native, use the URI directly
+      formData.append('avatar', {
+        uri: imageUri,
+        type: imageType,
+        name: 'avatar.jpg',
+      } as any);
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+        // Don't set Content-Type - let the browser/React Native set it with boundary
+      },
+      body: formData,
+    });
+
+    if (response.status === 401) {
+      throw new Error('Authentication required');
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Avatar upload failed: ${response.statusText} - ${errorText}`);
+    }
+
+    return response.json();
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

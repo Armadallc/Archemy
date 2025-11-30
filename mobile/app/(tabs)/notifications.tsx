@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface NotificationItem {
   id: string;
@@ -21,6 +22,7 @@ interface NotificationItem {
 }
 
 export default function NotificationsScreen() {
+  const insets = useSafeAreaInsets();
   const { 
     notifications, 
     clearNotifications, 
@@ -115,6 +117,155 @@ export default function NotificationsScreen() {
     </View>
   );
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: '#f5f5f5',
+      paddingTop: insets.top,
+    },
+    header: {
+      backgroundColor: 'white',
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: '#e0e0e0',
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: '#333',
+    },
+    headerActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    connectionStatus: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginRight: 16,
+    },
+    statusDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      marginRight: 6,
+    },
+    statusText: {
+      fontSize: 12,
+      color: '#666',
+      fontWeight: '500',
+    },
+    clearButton: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      backgroundColor: '#f0f0f0',
+      borderRadius: 6,
+    },
+    clearButtonText: {
+      fontSize: 12,
+      color: '#666',
+      fontWeight: '600',
+    },
+    unreadBanner: {
+      backgroundColor: '#EBF8FF',
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderBottomWidth: 1,
+      borderBottomColor: '#E0F2FE',
+    },
+    unreadText: {
+      fontSize: 14,
+      color: '#3B82F6',
+      fontWeight: '600',
+      marginLeft: 8,
+    },
+    listContainer: {
+      flexGrow: 1,
+    },
+    notificationItem: {
+      backgroundColor: 'white',
+      marginHorizontal: 16,
+      marginVertical: 4,
+      borderRadius: 12,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    unreadNotification: {
+      borderLeftWidth: 4,
+      borderLeftColor: '#3B82F6',
+    },
+    notificationContent: {
+      padding: 16,
+    },
+    notificationHeader: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+    },
+    iconContainer: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: '#f8f9fa',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 12,
+    },
+    notificationText: {
+      flex: 1,
+    },
+    notificationTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: '#333',
+      marginBottom: 4,
+    },
+    notificationBody: {
+      fontSize: 14,
+      color: '#666',
+      lineHeight: 20,
+    },
+    notificationMeta: {
+      alignItems: 'flex-end',
+    },
+    timestamp: {
+      fontSize: 12,
+      color: '#999',
+      marginBottom: 4,
+    },
+    unreadDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: '#3B82F6',
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 40,
+    },
+    emptyText: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: '#999',
+      marginTop: 16,
+      marginBottom: 8,
+    },
+    emptySubtext: {
+      fontSize: 14,
+      color: '#999',
+      textAlign: 'center',
+    },
+  });
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -160,153 +311,4 @@ export default function NotificationsScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    backgroundColor: 'white',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  connectionStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
-  },
-  statusText: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
-  },
-  clearButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 6,
-  },
-  clearButtonText: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '600',
-  },
-  unreadBanner: {
-    backgroundColor: '#EBF8FF',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0F2FE',
-  },
-  unreadText: {
-    fontSize: 14,
-    color: '#3B82F6',
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  listContainer: {
-    flexGrow: 1,
-  },
-  notificationItem: {
-    backgroundColor: 'white',
-    marginHorizontal: 16,
-    marginVertical: 4,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  unreadNotification: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#3B82F6',
-  },
-  notificationContent: {
-    padding: 16,
-  },
-  notificationHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  iconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#f8f9fa',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  notificationText: {
-    flex: 1,
-  },
-  notificationTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  notificationBody: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-  },
-  notificationMeta: {
-    alignItems: 'flex-end',
-  },
-  timestamp: {
-    fontSize: 12,
-    color: '#999',
-    marginBottom: 4,
-  },
-  unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#3B82F6',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 40,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#999',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#ccc',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-});
 

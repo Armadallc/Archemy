@@ -12,9 +12,11 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { emergencyService, EmergencyData } from '../../services/emergency';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function EmergencyScreen() {
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [isEmergencyActive, setIsEmergencyActive] = useState(false);
   const [showIncidentModal, setShowIncidentModal] = useState(false);
   const [incidentType, setIncidentType] = useState<EmergencyData['type']>('other');
@@ -109,6 +111,267 @@ export default function EmergencyScreen() {
       default: return 'help-circle';
     }
   };
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: '#f5f5f5',
+      paddingTop: insets.top,
+    },
+    header: {
+      backgroundColor: 'white',
+      paddingHorizontal: 20,
+      paddingVertical: 20,
+      borderBottomWidth: 1,
+      borderBottomColor: '#e0e0e0',
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: '#1F2937',
+      marginBottom: 4,
+    },
+    subtitle: {
+      fontSize: 16,
+      color: '#6B7280',
+    },
+    section: {
+      padding: 20,
+    },
+    sectionTitle: {
+      fontSize: 20,
+      fontWeight: '600',
+      color: '#1F2937',
+      marginBottom: 16,
+    },
+    panicButton: {
+      backgroundColor: '#EF4444',
+      borderRadius: 16,
+      padding: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 8,
+    },
+    panicButtonText: {
+      color: 'white',
+      fontSize: 24,
+      fontWeight: 'bold',
+      marginTop: 12,
+    },
+    panicButtonSubtext: {
+      color: 'white',
+      fontSize: 14,
+      marginTop: 4,
+      opacity: 0.9,
+    },
+    activeEmergencyContainer: {
+      backgroundColor: '#FEF2F2',
+      borderRadius: 16,
+      padding: 24,
+      borderWidth: 2,
+      borderColor: '#EF4444',
+    },
+    activeEmergencyHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    activeEmergencyTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: '#EF4444',
+      marginLeft: 12,
+    },
+    activeEmergencyText: {
+      fontSize: 16,
+      color: '#991B1B',
+      marginBottom: 16,
+      lineHeight: 24,
+    },
+    cancelEmergencyButton: {
+      backgroundColor: '#EF4444',
+      borderRadius: 12,
+      padding: 16,
+      alignItems: 'center',
+    },
+    cancelEmergencyText: {
+      color: 'white',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    actionButton: {
+      backgroundColor: 'white',
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 16,
+      borderRadius: 12,
+      marginBottom: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    actionButtonText: {
+      flex: 1,
+      fontSize: 16,
+      color: '#333',
+      marginLeft: 12,
+    },
+    infoCard: {
+      backgroundColor: 'white',
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      padding: 16,
+      borderRadius: 12,
+      marginBottom: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    infoText: {
+      flex: 1,
+      fontSize: 14,
+      color: '#666',
+      marginLeft: 12,
+      lineHeight: 20,
+    },
+    modalContainer: {
+      flex: 1,
+      backgroundColor: 'white',
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: '#e0e0e0',
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: '#333',
+    },
+    closeButton: {
+      padding: 8,
+    },
+    modalContent: {
+      flex: 1,
+      padding: 20,
+    },
+    inputGroup: {
+      marginBottom: 24,
+    },
+    inputLabel: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: '#333',
+      marginBottom: 12,
+    },
+    typeButtons: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    typeButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 20,
+      backgroundColor: '#f8f9fa',
+      borderWidth: 1,
+      borderColor: '#e0e0e0',
+    },
+    typeButtonActive: {
+      backgroundColor: '#3B82F6',
+      borderColor: '#3B82F6',
+    },
+    typeButtonText: {
+      fontSize: 14,
+      color: '#666',
+      marginLeft: 6,
+    },
+    typeButtonTextActive: {
+      color: 'white',
+    },
+    severityButtons: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    severityButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 20,
+      backgroundColor: '#f8f9fa',
+      borderWidth: 1,
+      borderColor: '#e0e0e0',
+    },
+    severityButtonActive: {
+      backgroundColor: '#3B82F6',
+      borderColor: '#3B82F6',
+    },
+    severityButtonText: {
+      fontSize: 14,
+      color: '#666',
+      marginLeft: 6,
+    },
+    severityButtonTextActive: {
+      color: 'white',
+    },
+    textInput: {
+      borderWidth: 1,
+      borderColor: '#e0e0e0',
+      borderRadius: 8,
+      padding: 12,
+      fontSize: 16,
+      minHeight: 100,
+      textAlignVertical: 'top',
+    },
+    submitButton: {
+      backgroundColor: '#3B82F6',
+      borderRadius: 12,
+      padding: 16,
+      alignItems: 'center',
+      marginTop: 8,
+    },
+    submitButtonText: {
+      color: 'white',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    modalFooter: {
+      flexDirection: 'row',
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      borderTopWidth: 1,
+      borderTopColor: '#e0e0e0',
+      gap: 12,
+    },
+    cancelModalButton: {
+      flex: 1,
+      backgroundColor: '#f0f0f0',
+      paddingVertical: 12,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    cancelModalButtonText: {
+      fontSize: 16,
+      color: '#666',
+      fontWeight: '600',
+    },
+  });
 
   return (
     <ScrollView style={styles.container}>
@@ -317,258 +580,4 @@ export default function EmergencyScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    backgroundColor: 'white',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-  },
-  section: {
-    margin: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
-  },
-  panicButton: {
-    backgroundColor: '#EF4444',
-    borderRadius: 16,
-    padding: 32,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  panicButtonText: {
-    color: 'white',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginTop: 12,
-  },
-  panicButtonSubtext: {
-    color: 'white',
-    fontSize: 14,
-    marginTop: 4,
-    opacity: 0.9,
-  },
-  activeEmergencyContainer: {
-    backgroundColor: '#FEF2F2',
-    borderRadius: 12,
-    padding: 20,
-    borderWidth: 2,
-    borderColor: '#EF4444',
-  },
-  activeEmergencyHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  activeEmergencyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#EF4444',
-    marginLeft: 12,
-  },
-  activeEmergencyText: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 16,
-  },
-  cancelEmergencyButton: {
-    backgroundColor: '#EF4444',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-  },
-  cancelEmergencyText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  actionButton: {
-    backgroundColor: 'white',
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  actionButtonText: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-    marginLeft: 12,
-  },
-  infoCard: {
-    backgroundColor: 'white',
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  infoText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 12,
-    lineHeight: 20,
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: 'white',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  closeButton: {
-    padding: 8,
-  },
-  modalContent: {
-    flex: 1,
-    padding: 20,
-  },
-  inputGroup: {
-    marginBottom: 24,
-  },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
-  },
-  typeButtons: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  typeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#f8f9fa',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  typeButtonActive: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
-  },
-  typeButtonText: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 6,
-  },
-  typeButtonTextActive: {
-    color: 'white',
-  },
-  severityButtons: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  severityButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: 'white',
-    borderWidth: 2,
-  },
-  severityButtonActive: {
-    backgroundColor: '#3B82F6',
-  },
-  severityButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  severityButtonTextActive: {
-    color: 'white',
-  },
-  textInput: {
-    backgroundColor: '#f8f9fa',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    minHeight: 100,
-  },
-  modalFooter: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    gap: 12,
-  },
-  cancelModalButton: {
-    flex: 1,
-    backgroundColor: '#f0f0f0',
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  cancelModalButtonText: {
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '600',
-  },
-  submitButton: {
-    flex: 1,
-    backgroundColor: '#3B82F6',
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  submitButtonText: {
-    fontSize: 16,
-    color: 'white',
-    fontWeight: '600',
-  },
-});
 

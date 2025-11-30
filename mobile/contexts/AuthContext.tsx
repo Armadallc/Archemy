@@ -19,6 +19,7 @@ interface User {
   role: string;
   program_id?: string;
   corporate_client_id?: string;
+  avatar_url?: string | null;
 }
 
 interface AuthContextType {
@@ -26,6 +27,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -59,7 +61,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name: response.user.user_name,
           role: response.user.role,
           program_id: response.user.primary_program_id,
-          corporate_client_id: response.user.corporate_client_id
+          corporate_client_id: response.user.corporate_client_id,
+          avatar_url: response.user.avatar_url
         };
         
         setUser(userData);
@@ -89,7 +92,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name: response.user.user_name,
         role: response.user.role,
         program_id: response.user.primary_program_id,
-        corporate_client_id: response.user.corporate_client_id
+        corporate_client_id: response.user.corporate_client_id,
+        avatar_url: response.user.avatar_url
       };
       
       console.log('🔍 AuthContext: Mapped user data:', userData);
@@ -101,6 +105,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('❌ AuthContext: Login failed:', error);
       throw error;
     }
+  };
+
+  const refreshUser = async () => {
+    await checkAuthStatus();
   };
 
   const logout = async () => {
@@ -129,7 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

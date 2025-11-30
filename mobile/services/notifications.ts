@@ -63,21 +63,35 @@ class NotificationService {
       }
 
       if (finalStatus !== 'granted') {
-        console.log('❌ Notification permission not granted');
+        console.log('⚠️ Notification permission not granted - notifications will be limited');
+        this.isInitialized = true; // Mark as initialized even without permission
         return;
       }
 
-      // Get push token
+      // Get push token (only on physical devices)
       if (Device.isDevice) {
-        this.expoPushToken = (await Notifications.getExpoPushTokenAsync()).data;
-        console.log('✅ Push token:', this.expoPushToken);
+        try {
+          // Try to get project ID from Constants, but don't require it
+          const projectId = Constants.expoConfig?.extra?.eas?.projectId || Constants.easConfig?.projectId;
+          const tokenOptions = projectId ? { projectId } : undefined;
+          
+          const tokenData = await Notifications.getExpoPushTokenAsync(tokenOptions);
+          this.expoPushToken = tokenData.data;
+          console.log('✅ Push token obtained:', this.expoPushToken);
+        } catch (tokenError: any) {
+          // Push token errors are non-critical - app can still work with local notifications
+          console.warn('⚠️ Could not get push token (local notifications will still work):', tokenError?.message || tokenError);
+        }
       } else {
-        console.log('⚠️ Must use physical device for push notifications');
+        console.log('ℹ️ Running on simulator/emulator - push notifications require a physical device');
       }
 
       this.isInitialized = true;
-    } catch (error) {
-      console.error('❌ Failed to initialize notifications:', error);
+      console.log('✅ Notifications initialized successfully');
+    } catch (error: any) {
+      // Don't throw - allow app to continue without notifications
+      console.warn('⚠️ Failed to initialize notifications (app will continue without push notifications):', error?.message || error);
+      this.isInitialized = true; // Mark as initialized to prevent retry loops
     }
   }
 
