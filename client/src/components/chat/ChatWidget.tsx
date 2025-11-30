@@ -168,6 +168,18 @@ export default function ChatWidget() {
     return (author?.user_name?.[0] || author?.email?.[0] || 'U').toUpperCase();
   };
 
+  // Get full avatar URL (handles relative paths)
+  const getAvatarUrl = (avatarUrl: string | null | undefined): string | null => {
+    if (!avatarUrl) return null;
+    // If it's already a full URL, return it as is
+    if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
+      return avatarUrl;
+    }
+    // Otherwise, construct the full URL using the API base URL
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8081';
+    return `${apiBaseUrl}${avatarUrl.startsWith('/') ? '' : '/'}${avatarUrl}`;
+  };
+
   // Handle sending a message
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -402,14 +414,14 @@ export default function ChatWidget() {
                                   <Avatar className="h-10 w-10 flex-shrink-0">
                                     {discussion.discussion_type === 'personal' && discussion.otherParticipant ? (
                                       <>
-                                        <AvatarImage src={discussion.otherParticipant.avatar_url || undefined} />
+                                        <AvatarImage src={getAvatarUrl(discussion.otherParticipant.avatar_url) || undefined} />
                                         <AvatarFallback>
                                           {getUserInitials(discussion.otherParticipant)}
                                         </AvatarFallback>
                                       </>
                                     ) : (
                                       <>
-                                        <AvatarImage src={discussion.participants?.[0]?.avatar_url || undefined} />
+                                        <AvatarImage src={getAvatarUrl(discussion.participants?.find(p => p.user_id !== user?.user_id)?.avatar_url || discussion.participants?.[0]?.avatar_url) || undefined} />
                                         <AvatarFallback>
                                           <Users className="h-5 w-5" />
                                         </AvatarFallback>
@@ -673,14 +685,14 @@ export default function ChatWidget() {
                     <Avatar className="h-10 w-10">
                       {selectedDiscussion?.discussion_type === 'personal' && selectedDiscussion?.otherParticipant ? (
                         <>
-                          <AvatarImage src={selectedDiscussion.otherParticipant.avatar_url || undefined} />
+                          <AvatarImage src={getAvatarUrl(selectedDiscussion.otherParticipant.avatar_url) || undefined} />
                           <AvatarFallback>
                             {getUserInitials(selectedDiscussion.otherParticipant)}
                           </AvatarFallback>
                         </>
                       ) : (
                         <>
-                          <AvatarImage src={selectedDiscussion?.participants?.[0]?.avatar_url || undefined} />
+                          <AvatarImage src={getAvatarUrl(selectedDiscussion?.participants?.[0]?.avatar_url) || undefined} />
                           <AvatarFallback>
                             <Users className="h-5 w-5" />
                           </AvatarFallback>
@@ -741,7 +753,7 @@ export default function ChatWidget() {
                             onMouseLeave={() => setHoveredMessageId(null)}
                           >
                             <Avatar className="h-8 w-8 flex-shrink-0">
-                              <AvatarImage src={author.avatar_url || undefined} alt={getUserDisplayName(author)} />
+                              <AvatarImage src={getAvatarUrl(author.avatar_url) || undefined} alt={getUserDisplayName(author)} />
                               <AvatarFallback className="text-xs">
                                 {getUserInitials(author)}
                               </AvatarFallback>

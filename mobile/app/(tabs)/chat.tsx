@@ -503,51 +503,100 @@ export default function ChatScreen() {
   }) => {
     const swipeAnim = useRef(new Animated.Value(0)).current;
     const [swipedDiscussionId, setSwipedDiscussionId] = useState<string | null>(null);
+    const [isSwiping, setIsSwiping] = useState(false);
+    const hasSwipedRef = useRef(false);
+    const swipeStartTimeRef = useRef<number>(0);
+    
+    // Reset swipe state when discussion changes or when swiped state changes
+    useEffect(() => {
+      if (swipedDiscussionId !== discussion.id && swipeAnim._value < 0) {
+        // Reset animation if this discussion is no longer swiped
+        Animated.spring(swipeAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+        }).start();
+      }
+    }, [swipedDiscussionId, discussion.id]);
     
     const panResponder = useRef(
       PanResponder.create({
         onStartShouldSetPanResponder: () => false,
         onMoveShouldSetPanResponder: (_, gestureState) => {
-          return Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 10;
+          // Only respond to horizontal swipes
+          const isHorizontalSwipe = Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 10;
+          if (isHorizontalSwipe) {
+            setIsSwiping(true);
+            hasSwipedRef.current = false;
+          }
+          return isHorizontalSwipe;
         },
         onPanResponderGrant: () => {
+          swipeStartTimeRef.current = Date.now();
+          hasSwipedRef.current = false;
+          // Close any other swiped discussions
           if (swipedDiscussionId && swipedDiscussionId !== discussion.id) {
             setSwipedDiscussionId(null);
           }
         },
         onPanResponderMove: (_, gestureState) => {
           if (gestureState.dx < 0) {
+            // Swiping left - reveal delete
             const clampedDx = Math.max(gestureState.dx, -120);
             swipeAnim.setValue(clampedDx);
+            hasSwipedRef.current = true;
           } else if (gestureState.dx > 0 && swipeAnim._value < 0) {
-            swipeAnim.setValue(gestureState.dx);
+            // Swiping right - close swipe
+            const newValue = Math.min(gestureState.dx, 0);
+            swipeAnim.setValue(newValue);
+            hasSwipedRef.current = true;
           }
         },
         onPanResponderRelease: (_, gestureState) => {
-          if (gestureState.dx < -80) {
+          setIsSwiping(false);
+          const currentValue = swipeAnim._value;
+          const swipeDuration = Date.now() - swipeStartTimeRef.current;
+          
+          // If user swiped left enough (threshold lowered to -50px), reveal delete button
+          if (gestureState.dx < -50 || currentValue < -50) {
             Animated.spring(swipeAnim, {
               toValue: -120,
               useNativeDriver: true,
-              tension: 50,
-              friction: 7,
+              tension: 100,
+              friction: 8,
             }).start();
             setSwipedDiscussionId(discussion.id);
-          } else {
+            hasSwipedRef.current = true;
+            // Reset after a short delay to allow tap detection
+            setTimeout(() => {
+              hasSwipedRef.current = false;
+            }, 300);
+          } 
+          // If user swiped right or didn't swipe enough, close
+          else if (gestureState.dx > 20 || (currentValue > -50 && currentValue >= 0)) {
             Animated.spring(swipeAnim, {
               toValue: 0,
               useNativeDriver: true,
-              tension: 50,
-              friction: 7,
+              tension: 100,
+              friction: 8,
             }).start();
             setSwipedDiscussionId(null);
+            hasSwipedRef.current = false;
+          }
+          // If it was a quick tap (not a swipe), don't mark as swiped
+          else if (swipeDuration < 100 && Math.abs(gestureState.dx) < 10) {
+            hasSwipedRef.current = false;
           }
         },
         onPanResponderTerminate: () => {
-          Animated.spring(swipeAnim, {
-            toValue: 0,
-            useNativeDriver: true,
-          }).start();
-          setSwipedDiscussionId(null);
+          setIsSwiping(false);
+          // Only close if it wasn't a significant swipe
+          if (swipeAnim._value > -60) {
+            Animated.spring(swipeAnim, {
+              toValue: 0,
+              useNativeDriver: true,
+            }).start();
+            setSwipedDiscussionId(null);
+          }
         },
       })
     ).current;
@@ -558,13 +607,18 @@ export default function ChatScreen() {
         <View style={styles.swipeActions}>
           <TouchableOpacity
             style={[styles.swipeAction, styles.swipeActionDelete]}
+            activeOpacity={0.8}
             onPress={() => {
-              onDelete();
+              // Close swipe first, then delete
               Animated.spring(swipeAnim, {
                 toValue: 0,
                 useNativeDriver: true,
-              }).start();
-              setSwipedDiscussionId(null);
+                tension: 100,
+                friction: 8,
+              }).start(() => {
+                setSwipedDiscussionId(null);
+                onDelete();
+              });
             }}
           >
             <Ionicons name="trash" size={20} color="#fff" />
@@ -585,40 +639,67 @@ export default function ChatScreen() {
               styles.discussionItem,
               isSelected && styles.discussionItemSelected,
             ]}
+            activeOpacity={0.7}
             onPress={() => {
+              // If swiped open, close it on tap
               if (swipedDiscussionId === discussion.id) {
                 Animated.spring(swipeAnim, {
                   toValue: 0,
                   useNativeDriver: true,
+                  tension: 100,
+                  friction: 8,
                 }).start();
                 setSwipedDiscussionId(null);
-              } else {
+              } 
+              // Only select if we didn't just swipe
+              else if (!hasSwipedRef.current && !isSwiping) {
                 onSelect();
               }
             }}
+            delayPressIn={swipedDiscussionId === discussion.id ? 0 : 50}
           >
             <Text style={styles.discussionName}>
               {getDiscussionName(discussion)}
             </Text>
             {discussion.lastMessage && (
               <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-                {/* Sender avatar */}
-                {discussion.lastMessage.author && (
+                {/* Conversation partner avatar */}
+                {(discussion.discussion_type === 'personal' && discussion.otherParticipant) ? (
                   <View style={styles.listAvatarContainer}>
-                    {getAvatarUrl(discussion.lastMessage.author.avatar_url) ? (
+                    {getAvatarUrl(discussion.otherParticipant.avatar_url) ? (
                       <Image 
-                        source={{ uri: getAvatarUrl(discussion.lastMessage.author.avatar_url)! }} 
+                        source={{ uri: getAvatarUrl(discussion.otherParticipant.avatar_url)! }} 
                         style={styles.listAvatar}
                       />
                     ) : (
                       <View style={[styles.listAvatar, styles.listAvatarPlaceholder]}>
                         <Text style={styles.listAvatarText}>
-                          {getUserInitials(discussion.lastMessage.author)}
+                          {getUserInitials(discussion.otherParticipant)}
                         </Text>
                       </View>
                     )}
                   </View>
-                )}
+                ) : discussion.participants && discussion.participants.length > 0 ? (
+                  (() => {
+                    const otherParticipant = discussion.participants.find(p => p.user_id !== user?.id) || discussion.participants[0];
+                    return (
+                      <View style={styles.listAvatarContainer}>
+                        {getAvatarUrl(otherParticipant.avatar_url) ? (
+                          <Image 
+                            source={{ uri: getAvatarUrl(otherParticipant.avatar_url)! }} 
+                            style={styles.listAvatar}
+                          />
+                        ) : (
+                          <View style={[styles.listAvatar, styles.listAvatarPlaceholder]}>
+                            <Text style={styles.listAvatarText}>
+                              {getUserInitials(otherParticipant)}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })()
+                ) : null}
                 <View style={{ flex: 1, marginLeft: 8 }}>
                   {/* Sender name with glow */}
                   {discussion.lastMessage.author && (
