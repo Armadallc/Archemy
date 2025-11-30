@@ -14,6 +14,7 @@ import {
   deleteDiscussionForUser,
   markDiscussionAsRead,
   toggleMessageReaction,
+  deleteMessage
 } from "../services/discussionsService";
 
 const router = express.Router();
@@ -363,6 +364,42 @@ router.patch("/:id/read", requireSupabaseAuth, async (req: SupabaseAuthenticated
     console.error("❌ [DISCUSSIONS] Error marking as read:", error);
     res.status(500).json({ 
       message: "Failed to mark as read",
+      error: error.message 
+    });
+  }
+});
+
+/**
+ * DELETE /api/discussions/:id/messages/:messageId
+ * Delete a message (soft delete)
+ * Only the message author can delete their own messages
+ */
+router.delete("/:id/messages/:messageId", requireSupabaseAuth, async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const { messageId } = req.params;
+
+    await deleteMessage(messageId, req.user.userId);
+    res.status(200).json({ message: "Message deleted successfully" });
+  } catch (error: any) {
+    console.error("❌ [DISCUSSIONS] Error deleting message:", error);
+    if (error.message === 'Message not found' || error.message === 'Message is already deleted') {
+      return res.status(404).json({ 
+        message: error.message,
+        error: error.message 
+      });
+    }
+    if (error.message === 'You can only delete your own messages') {
+      return res.status(403).json({ 
+        message: error.message,
+        error: error.message 
+      });
+    }
+    res.status(500).json({ 
+      message: "Failed to delete message",
       error: error.message 
     });
   }

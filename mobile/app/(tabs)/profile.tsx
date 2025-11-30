@@ -226,7 +226,12 @@ export default function ProfileScreen() {
     try {
       await logout();
       console.log('✅ [Profile] Logout successful, redirecting...');
-      router.replace('/(auth)/login');
+      if (Platform.OS === 'web') {
+        // Use window.location for web to ensure proper navigation
+        window.location.href = '/';
+      } else {
+        router.replace('/(auth)/login');
+      }
     } catch (error) {
       console.error('❌ [Profile] Logout error:', error);
       if (Platform.OS === 'web') {
@@ -712,37 +717,27 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {Platform.OS === 'web' ? (
-          <Pressable 
-            style={({ pressed }) => [
-              styles.logoutButton,
-              pressed && styles.logoutButtonPressed
-            ]}
-            onPress={(e) => {
-              console.log('🔍 [Profile] Logout button pressed (web)');
+        <TouchableOpacity 
+          style={styles.logoutButton} 
+          onPress={(e) => {
+            console.log('🔍 [Profile] Logout button pressed, Platform.OS:', Platform.OS);
+            if (Platform.OS === 'web') {
               e?.preventDefault?.();
-              handleLogout();
-            }}
-            onPressIn={() => console.log('🔍 [Profile] Logout button press started (web)')}
-          >
-            <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-            <Text style={styles.logoutText}>Logout</Text>
-          </Pressable>
-        ) : (
-          <TouchableOpacity 
-            style={styles.logoutButton} 
-            onPress={(e) => {
-              console.log('🔍 [Profile] Logout button pressed (native)');
               e?.stopPropagation?.();
-              handleLogout();
-            }}
-            activeOpacity={0.7}
-            onPressIn={() => console.log('🔍 [Profile] Logout button press started (native)')}
-          >
-            <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
-        )}
+            } else {
+              e?.stopPropagation?.();
+            }
+            // Call handleLogout immediately
+            handleLogout();
+          }}
+          onPressIn={() => {
+            console.log('🔍 [Profile] Logout button press started');
+          }}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="log-out-outline" size={20} color="#EF4444" />
+          <Text style={styles.logoutText}>Logout</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Logout Confirmation Modal */}
@@ -752,26 +747,49 @@ export default function ProfileScreen() {
         animationType="fade"
         onRequestClose={cancelLogout}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={cancelLogout}
+        >
+          <TouchableOpacity
+            style={styles.modalContent}
+            activeOpacity={1}
+            onPress={(e) => {
+              // Prevent closing when clicking inside modal
+              if (Platform.OS === 'web') {
+                e?.stopPropagation?.();
+              }
+            }}
+          >
             <Text style={styles.modalTitle}>Logout</Text>
             <Text style={styles.modalMessage}>Are you sure you want to logout?</Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalCancelButton]}
-                onPress={cancelLogout}
+                onPress={(e) => {
+                  if (Platform.OS === 'web') {
+                    e?.stopPropagation?.();
+                  }
+                  cancelLogout();
+                }}
               >
                 <Text style={styles.modalCancelButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalConfirmButton]}
-                onPress={confirmLogout}
+                onPress={(e) => {
+                  if (Platform.OS === 'web') {
+                    e?.stopPropagation?.();
+                  }
+                  confirmLogout();
+                }}
               >
                 <Text style={styles.modalConfirmButtonText}>Logout</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </ScrollView>
   );

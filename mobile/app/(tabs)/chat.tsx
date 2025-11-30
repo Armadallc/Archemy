@@ -14,6 +14,7 @@ import {
   Animated,
   PanResponder,
   Dimensions,
+  Image,
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
@@ -92,7 +93,6 @@ export default function ChatScreen() {
   const [messageInput, setMessageInput] = useState('');
   const [replyingTo, setReplyingTo] = useState<DiscussionMessage | null>(null);
   const [longPressedMessage, setLongPressedMessage] = useState<DiscussionMessage | null>(null);
-  const [swipedMessageId, setSwipedMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<FlatList>(null);
   const [screenData, setScreenData] = useState(Dimensions.get('window'));
   
@@ -109,6 +109,7 @@ export default function ChatScreen() {
 
   // Determine if we're on a mobile device (width < 768px)
   const isMobile = screenData.width < 768;
+
 
   // Fetch discussions
   const { data: discussionsRaw = [], isLoading: discussionsLoading } = useQuery({
@@ -149,9 +150,9 @@ export default function ChatScreen() {
     staleTime: 2000,
   });
 
-  // Auto-select first discussion (only on desktop/tablet, not mobile)
+  // Auto-select first discussion (only on desktop/tablet, not mobile or web view)
   useEffect(() => {
-    if (!isMobile && discussions.length > 0 && !selectedDiscussionId) {
+    if (!isMobile && Platform.OS !== 'web' && discussions.length > 0 && !selectedDiscussionId) {
       setSelectedDiscussionId(discussions[0].id);
     }
   }, [discussions, selectedDiscussionId, isMobile]);
@@ -159,7 +160,8 @@ export default function ChatScreen() {
   // Handle discussion selection
   const handleSelectDiscussion = (discussionId: string) => {
     setSelectedDiscussionId(discussionId);
-    if (isMobile) {
+    // Set viewingChatThread for mobile devices or web view (when screen is mobile-sized)
+    if (isMobile || Platform.OS === 'web') {
       setViewingChatThread(true);
     }
   };
@@ -252,30 +254,10 @@ export default function ChatScreen() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['discussions', selectedDiscussionId, 'messages'] });
-      setSwipedMessageId(null);
       setLongPressedMessage(null);
     },
   });
 
-  // Pin message mutation
-  const pinMessageMutation = useMutation({
-    mutationFn: async (messageId: string) => {
-      if (!selectedDiscussionId) throw new Error('No discussion selected');
-      // Note: Pin message functionality may need to be implemented in backend
-      // For now, we'll use the discussion pin endpoint as a placeholder
-      await apiClient.request(
-        `/api/discussions/${selectedDiscussionId}/pin`,
-        {
-          method: 'PATCH',
-          body: JSON.stringify({ pinned: true }),
-        }
-      );
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['discussions', selectedDiscussionId, 'messages'] });
-      setSwipedMessageId(null);
-    },
-  });
 
   const handleSendMessage = () => {
     if (!messageInput.trim() || !selectedDiscussionId) return;
@@ -354,15 +336,22 @@ export default function ChatScreen() {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => deleteMessageMutation.mutate(messageId),
+          onPress: () => {
+            deleteMessageMutation.mutate(messageId, {
+              onError: (error: any) => {
+                Alert.alert(
+                  'Error',
+                  error?.message || 'Failed to delete message. You can only delete your own messages.',
+                  [{ text: 'OK' }]
+                );
+              },
+            });
+          },
         },
       ]
     );
   };
 
-  const handlePin = (messageId: string) => {
-    pinMessageMutation.mutate(messageId);
-  };
 
   const getDiscussionName = (discussion: Discussion): string => {
     if (discussion.title) return discussion.title;
@@ -393,64 +382,50 @@ export default function ChatScreen() {
     return (author.user_name?.[0] || author.email?.[0] || 'U').toUpperCase();
   };
 
+  // Construct full avatar URL from relative path
+  const getAvatarUrl = (avatarUrl: string | null | undefined): string | null => {
+    if (!avatarUrl) return null;
+    // If it's already a full URL, return it as is
+    if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
+      return avatarUrl;
+    }
+    // Otherwise, construct the full URL using the API base URL
+    const apiBaseUrl = apiClient.getBaseURL();
+    return `${apiBaseUrl}${avatarUrl}`;
+  };
+
   const selectedDiscussion = discussions.find(d => d.id === selectedDiscussionId);
 
-  // Swipeable Message Component
-  const SwipeableMessage = ({ message, isCurrentUser, author }: {
+  // Simple Message Component (no swipe functionality)
+  const MessageComponent = ({ message, isCurrentUser, author }: {
     message: DiscussionMessage;
     isCurrentUser: boolean;
     author: DiscussionParticipant;
   }) => {
-    const swipeAnim = useRef(new Animated.Value(0)).current;
-    const [showSwipeActions, setShowSwipeActions] = useState(false);
-    
-    const panResponder = useRef(
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: (_, gestureState) => {
-          return Math.abs(gestureState.dx) > 10;
-        },
-        onPanResponderMove: (_, gestureState) => {
-          if (gestureState.dx < 0) {
-            swipeAnim.setValue(gestureState.dx);
-          }
-        },
-        onPanResponderRelease: (_, gestureState) => {
-          if (gestureState.dx < -100) {
-            Animated.spring(swipeAnim, {
-              toValue: -120,
-              useNativeDriver: true,
-            }).start();
-            setShowSwipeActions(true);
-            setSwipedMessageId(message.id);
-          } else {
-            Animated.spring(swipeAnim, {
-              toValue: 0,
-              useNativeDriver: true,
-            }).start();
-            setShowSwipeActions(false);
-            setSwipedMessageId(null);
-          }
-        },
-      })
-    ).current;
-
     return (
-      <View style={{ position: 'relative' }}>
-        <Animated.View
-          style={[
-            {
-              transform: [{ translateX: swipeAnim }],
-            },
-          ]}
-          {...panResponder.panHandlers}
-        >
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onLongPress={() => handleLongPress(message)}
-            delayLongPress={500}
-          >
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onLongPress={() => handleLongPress(message)}
+        delayLongPress={500}
+      >
             <View style={isCurrentUser ? styles.messageRowReverse : styles.messageRow}>
+              {/* Avatar for incoming messages */}
+              {!isCurrentUser && (
+                <View style={styles.messageAvatarContainer}>
+                  {getAvatarUrl(author.avatar_url) ? (
+                    <Image 
+                      source={{ uri: getAvatarUrl(author.avatar_url)! }} 
+                      style={styles.messageAvatar}
+                    />
+                  ) : (
+                    <View style={[styles.messageAvatar, styles.messageAvatarPlaceholder]}>
+                      <Text style={styles.messageAvatarText}>
+                        {getUserInitials(author)}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
               <View
                 style={[
                   styles.messageBubble,
@@ -460,11 +435,13 @@ export default function ChatScreen() {
                 ]}
               >
                 {!isCurrentUser && (
-                  <Text style={styles.messageAuthor}>
-                    {author.first_name && author.last_name
-                      ? `${author.first_name} ${author.last_name}`
-                      : author.user_name || 'Unknown'}
-                  </Text>
+                  <View style={styles.messageAuthorContainer}>
+                    <Text style={styles.messageAuthor}>
+                      {author.first_name && author.last_name
+                        ? `${author.first_name} ${author.last_name}`
+                        : author.user_name || 'Unknown'}
+                    </Text>
+                  </View>
                 )}
                 {message.parentMessage && (
                   <View style={styles.replyPreview}>
@@ -514,39 +491,160 @@ export default function ChatScreen() {
               </View>
             </View>
           </TouchableOpacity>
-        </Animated.View>
-        {showSwipeActions && (
-          <View style={[styles.swipeActions, { position: 'absolute', right: 0, top: 0, bottom: 0 }]}>
-            {isCurrentUser && (
-              <TouchableOpacity
-                style={[styles.swipeAction, styles.swipeActionDelete]}
-                onPress={() => {
-                  handleDelete(message.id);
-                  setShowSwipeActions(false);
-                  Animated.spring(swipeAnim, {
-                    toValue: 0,
-                    useNativeDriver: true,
-                  }).start();
-                }}
-              >
-                <Ionicons name="trash" size={20} color="#fff" />
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              style={[styles.swipeAction, styles.swipeActionPin]}
-              onPress={() => {
-                handlePin(message.id);
-                setShowSwipeActions(false);
+    );
+  };
+
+  // Swipeable Discussion Item Component
+  const SwipeableDiscussionItem = ({ discussion, isSelected, onSelect, onDelete }: {
+    discussion: Discussion;
+    isSelected: boolean;
+    onSelect: () => void;
+    onDelete: () => void;
+  }) => {
+    const swipeAnim = useRef(new Animated.Value(0)).current;
+    const [swipedDiscussionId, setSwipedDiscussionId] = useState<string | null>(null);
+    
+    const panResponder = useRef(
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (_, gestureState) => {
+          return Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 10;
+        },
+        onPanResponderGrant: () => {
+          if (swipedDiscussionId && swipedDiscussionId !== discussion.id) {
+            setSwipedDiscussionId(null);
+          }
+        },
+        onPanResponderMove: (_, gestureState) => {
+          if (gestureState.dx < 0) {
+            const clampedDx = Math.max(gestureState.dx, -120);
+            swipeAnim.setValue(clampedDx);
+          } else if (gestureState.dx > 0 && swipeAnim._value < 0) {
+            swipeAnim.setValue(gestureState.dx);
+          }
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          if (gestureState.dx < -80) {
+            Animated.spring(swipeAnim, {
+              toValue: -120,
+              useNativeDriver: true,
+              tension: 50,
+              friction: 7,
+            }).start();
+            setSwipedDiscussionId(discussion.id);
+          } else {
+            Animated.spring(swipeAnim, {
+              toValue: 0,
+              useNativeDriver: true,
+              tension: 50,
+              friction: 7,
+            }).start();
+            setSwipedDiscussionId(null);
+          }
+        },
+        onPanResponderTerminate: () => {
+          Animated.spring(swipeAnim, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+          setSwipedDiscussionId(null);
+        },
+      })
+    ).current;
+
+    return (
+      <View style={styles.swipeableDiscussionContainer}>
+        {/* Swipe actions - behind the discussion item */}
+        <View style={styles.swipeActions}>
+          <TouchableOpacity
+            style={[styles.swipeAction, styles.swipeActionDelete]}
+            onPress={() => {
+              onDelete();
+              Animated.spring(swipeAnim, {
+                toValue: 0,
+                useNativeDriver: true,
+              }).start();
+              setSwipedDiscussionId(null);
+            }}
+          >
+            <Ionicons name="trash" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
+        {/* Discussion item - can be swiped left to reveal actions */}
+        <Animated.View
+          style={[
+            styles.swipeableDiscussionContent,
+            {
+              transform: [{ translateX: swipeAnim }],
+            },
+          ]}
+          {...panResponder.panHandlers}
+        >
+          <TouchableOpacity
+            style={[
+              styles.discussionItem,
+              isSelected && styles.discussionItemSelected,
+            ]}
+            onPress={() => {
+              if (swipedDiscussionId === discussion.id) {
                 Animated.spring(swipeAnim, {
                   toValue: 0,
                   useNativeDriver: true,
                 }).start();
-              }}
-            >
-              <Ionicons name="pin" size={20} color="#fff" />
-            </TouchableOpacity>
-          </View>
-        )}
+                setSwipedDiscussionId(null);
+              } else {
+                onSelect();
+              }
+            }}
+          >
+            <Text style={styles.discussionName}>
+              {getDiscussionName(discussion)}
+            </Text>
+            {discussion.lastMessage && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                {/* Sender avatar */}
+                {discussion.lastMessage.author && (
+                  <View style={styles.listAvatarContainer}>
+                    {getAvatarUrl(discussion.lastMessage.author.avatar_url) ? (
+                      <Image 
+                        source={{ uri: getAvatarUrl(discussion.lastMessage.author.avatar_url)! }} 
+                        style={styles.listAvatar}
+                      />
+                    ) : (
+                      <View style={[styles.listAvatar, styles.listAvatarPlaceholder]}>
+                        <Text style={styles.listAvatarText}>
+                          {getUserInitials(discussion.lastMessage.author)}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+                <View style={{ flex: 1, marginLeft: 8 }}>
+                  {/* Sender name with glow */}
+                  {discussion.lastMessage.author && (
+                    <View style={styles.senderNameContainer}>
+                      <Text style={styles.senderNameGlow} numberOfLines={1}>
+                        {discussion.lastMessage.author.first_name && discussion.lastMessage.author.last_name
+                          ? `${discussion.lastMessage.author.first_name} ${discussion.lastMessage.author.last_name}`
+                          : discussion.lastMessage.author.user_name || discussion.lastMessage.author.email}
+                      </Text>
+                    </View>
+                  )}
+                  {/* Subject (discussion title) if exists */}
+                  {discussion.title && (
+                    <Text style={[styles.discussionPreview, { fontWeight: '500', marginBottom: 2 }]} numberOfLines={1}>
+                      {discussion.title}
+                    </Text>
+                  )}
+                  {/* Message preview */}
+                  <Text style={styles.discussionPreview} numberOfLines={1}>
+                    {discussion.lastMessage.content}
+                  </Text>
+                </View>
+              </View>
+            )}
+          </TouchableOpacity>
+        </Animated.View>
       </View>
     );
   };
@@ -554,20 +652,25 @@ export default function ChatScreen() {
   const styles = StyleSheet.create({
     container: {
       flex: 1,
+      width: Platform.OS === 'web' ? '100%' : undefined,
+      height: Platform.OS === 'web' ? '100vh' : undefined,
       backgroundColor: theme.colors.background,
       paddingTop: insets.top,
     },
     twoColumnLayout: {
       flex: 1,
+      width: Platform.OS === 'web' ? '100%' : undefined,
+      height: Platform.OS === 'web' ? '100%' : undefined,
       flexDirection: isMobile ? 'column' : 'row',
     },
     sidebar: {
-      width: isMobile ? '100%' : 300,
-      flex: isMobile ? 1 : 0,
-      borderRightWidth: isMobile ? 0 : 1,
+      width: (isMobile || Platform.OS === 'web') ? '100%' : 300,
+      flex: (isMobile || Platform.OS === 'web') ? 1 : 0,
+      height: Platform.OS === 'web' ? '100%' : undefined,
+      borderRightWidth: (isMobile || Platform.OS === 'web') ? 0 : 1,
       borderRightColor: theme.colors.border,
       backgroundColor: theme.colors.card,
-      display: isMobile && viewingChatThread ? 'none' : 'flex',
+      display: (isMobile || Platform.OS === 'web') && viewingChatThread ? 'none' : 'flex',
     },
     sidebarHeader: {
       padding: 16,
@@ -602,10 +705,41 @@ export default function ChatScreen() {
       ...theme.typography.caption,
       color: theme.colors.mutedForeground,
     },
+    listAvatarContainer: {
+      marginRight: 8,
+    },
+    listAvatar: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+    },
+    listAvatarPlaceholder: {
+      backgroundColor: theme.colors.primary + '20',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    listAvatarText: {
+      fontSize: 10,
+      fontWeight: '600',
+      color: theme.colors.primary,
+    },
+    senderNameContainer: {
+      marginBottom: 2,
+    },
+    senderNameGlow: {
+      ...theme.typography.caption,
+      fontWeight: '600',
+      color: theme.colors.foreground,
+      textShadowColor: theme.colors.primary + '40',
+      textShadowOffset: { width: 0, height: 0 },
+      textShadowRadius: 8,
+    },
     messagesContainer: {
       flex: 1,
+      width: Platform.OS === 'web' ? '100%' : undefined,
+      height: Platform.OS === 'web' ? '100%' : undefined,
       backgroundColor: theme.colors.background,
-      display: isMobile && !viewingChatThread ? 'none' : 'flex',
+      display: (isMobile || Platform.OS === 'web') && !viewingChatThread ? 'none' : 'flex',
     },
     messagesHeader: {
       padding: 16,
@@ -640,6 +774,28 @@ export default function ChatScreen() {
     },
     messageRowReverse: {
       flexDirection: 'row-reverse',
+    },
+    messageAvatarContainer: {
+      marginRight: 8,
+      marginBottom: 4,
+    },
+    messageAvatar: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+    },
+    messageAvatarPlaceholder: {
+      backgroundColor: theme.colors.primary + '20',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    messageAvatarText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: theme.colors.primary,
+    },
+    messageAuthorContainer: {
+      marginBottom: 4,
     },
     messageBubble: {
       maxWidth: '75%',
@@ -682,7 +838,7 @@ export default function ChatScreen() {
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
       backgroundColor: theme.colors.card,
-      alignItems: 'flex-end',
+      alignItems: 'center',
     },
     input: {
       flex: 1,
@@ -759,6 +915,15 @@ export default function ChatScreen() {
       fontSize: 12,
       color: theme.colors.foreground,
     },
+    swipeableDiscussionContainer: {
+      position: 'relative',
+      overflow: 'hidden',
+    },
+    swipeableDiscussionContent: {
+      backgroundColor: theme.colors.card,
+      zIndex: 1,
+      width: '100%',
+    },
     swipeActions: {
       position: 'absolute',
       right: 0,
@@ -766,6 +931,7 @@ export default function ChatScreen() {
       bottom: 0,
       flexDirection: 'row',
       alignItems: 'center',
+      zIndex: 0,
     },
     swipeAction: {
       width: 60,
@@ -775,9 +941,6 @@ export default function ChatScreen() {
     },
     swipeActionDelete: {
       backgroundColor: theme.colors.destructive,
-    },
-    swipeActionPin: {
-      backgroundColor: theme.colors.primary,
     },
     actionSheet: {
       backgroundColor: theme.colors.card,
@@ -880,39 +1043,12 @@ export default function ChatScreen() {
             renderItem={({ item }) => {
               const isSelected = item.id === selectedDiscussionId;
               return (
-                <TouchableOpacity
-                  style={[
-                    styles.discussionItem,
-                    isSelected && styles.discussionItemSelected,
-                  ]}
-                  onPress={() => handleSelectDiscussion(item.id)}
-                >
-                  <Text style={styles.discussionName}>
-                    {getDiscussionName(item)}
-                  </Text>
-                  {item.lastMessage && (
-                    <View>
-                      {/* Sender name */}
-                      {item.lastMessage.author && (
-                        <Text style={[styles.discussionPreview, { fontWeight: '600', marginBottom: 2 }]} numberOfLines={1}>
-                          {item.lastMessage.author.first_name && item.lastMessage.author.last_name
-                            ? `${item.lastMessage.author.first_name} ${item.lastMessage.author.last_name}`
-                            : item.lastMessage.author.user_name || item.lastMessage.author.email}
-                        </Text>
-                      )}
-                      {/* Subject (discussion title) if exists */}
-                      {item.title && (
-                        <Text style={[styles.discussionPreview, { fontWeight: '500', marginBottom: 2 }]} numberOfLines={1}>
-                          {item.title}
-                        </Text>
-                      )}
-                      {/* Message preview */}
-                      <Text style={styles.discussionPreview} numberOfLines={1}>
-                        {item.lastMessage.content}
-                      </Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
+                <SwipeableDiscussionItem
+                  discussion={item}
+                  isSelected={isSelected}
+                  onSelect={() => handleSelectDiscussion(item.id)}
+                  onDelete={() => handleDeleteDiscussion(item.id)}
+                />
               );
             }}
             ListEmptyComponent={
@@ -942,7 +1078,7 @@ export default function ChatScreen() {
           {selectedDiscussionId ? (
             <>
               <View style={styles.messagesHeader}>
-                {isMobile && (
+                {(isMobile || Platform.OS === 'web') && (
                   <TouchableOpacity
                     style={styles.backButton}
                     onPress={handleBack}
@@ -976,7 +1112,7 @@ export default function ChatScreen() {
 
                     return (
                       <View style={styles.messageItem}>
-                        <SwipeableMessage
+                        <MessageComponent
                           message={item}
                           isCurrentUser={isCurrentUser}
                           author={author}

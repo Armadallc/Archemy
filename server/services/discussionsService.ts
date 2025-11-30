@@ -1432,3 +1432,50 @@ export async function toggleMessageReaction(
   };
 }
 
+/**
+ * Delete a message (soft delete)
+ * Only the message author can delete their own messages
+ */
+export async function deleteMessage(
+  messageId: string,
+  userId: string
+): Promise<void> {
+  // First, verify the message exists and belongs to the user
+  const { data: message, error: fetchError } = await supabase
+    .from('discussion_messages')
+    .select('id, created_by, deleted_at')
+    .eq('id', messageId)
+    .single();
+
+  if (fetchError || !message) {
+    throw new Error('Message not found');
+  }
+
+  // Check if message is already deleted
+  if (message.deleted_at) {
+    throw new Error('Message is already deleted');
+  }
+
+  // Verify user is the author
+  if (message.created_by !== userId) {
+    throw new Error('You can only delete your own messages');
+  }
+
+  // Soft delete by setting deleted_at timestamp
+  const { error: deleteError } = await supabase
+    .from('discussion_messages')
+    .update({ 
+      deleted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', messageId)
+    .eq('created_by', userId);
+
+  if (deleteError) {
+    console.error('Error deleting message:', deleteError);
+    throw deleteError;
+  }
+
+  console.log('✅ [DISCUSSIONS SERVICE] Message deleted successfully:', messageId);
+}
+
