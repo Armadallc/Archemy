@@ -412,7 +412,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
         <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mb-6">
           Complete list of all semantic color CSS variables from the Fire design system
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Backgrounds & Surfaces */}
           <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
             <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-3">Backgrounds & Surfaces</h4>
@@ -543,6 +543,8 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
             <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-2">Status Colors</h4>
             <p className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-3">Derived from Fire palette</p>
             {[
+              { cssVar: '--status-pending', value: '#f7ffdf', label: 'Pending', derived: 'Light lime shade' },
+              { cssVar: '--status-pending-bg', value: 'rgba(247, 255, 223, 0.15)', label: 'Pending BG', derived: '15% opacity' },
               { cssVar: '--status-success', value: '#3bfec9', label: 'Success', derived: 'From Lime (#f1fec9) - Red: 3B' },
               { cssVar: '--status-success-bg', value: 'rgba(59, 254, 201, 0.15)', label: 'Success BG', derived: '15% opacity' },
               { cssVar: '--status-warning', value: '#f1fe60', label: 'Warning', derived: 'From Lime (#f1fec9) - Blue: 60' },
@@ -630,6 +632,41 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
                   <div 
                     className="w-8 h-8 rounded-lg border-2 border-white/30 dark:border-white/20 shadow-md flex-shrink-0"
                     style={{ backgroundColor: value }}
+                  />
+                  <Input
+                    value={cssVar}
+                    readOnly
+                    className="flex-1 text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                  />
+                </div>
+                <div className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60 ml-10">{value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Priority Classification Colors */}
+          <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
+            <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-3">Priority Classification</h4>
+            {[
+              { cssVar: '--priority-high', value: '#ff7a80', label: 'High Priority', glow: 'rgba(255, 122, 128, 0.4)' },
+              { cssVar: '--priority-high-bg', value: 'rgba(255, 122, 128, 0.15)', label: 'High Priority BG', glow: null },
+              { cssVar: '--priority-high-glow', value: 'rgba(255, 122, 128, 0.4)', label: 'High Priority Glow', glow: null },
+              { cssVar: '--priority-medium', value: '#7afffe', label: 'Medium Priority', glow: 'rgba(122, 255, 254, 0.4)' },
+              { cssVar: '--priority-medium-bg', value: 'rgba(122, 255, 254, 0.15)', label: 'Medium Priority BG', glow: null },
+              { cssVar: '--priority-medium-glow', value: 'rgba(122, 255, 254, 0.4)', label: 'Medium Priority Glow', glow: null },
+              { cssVar: '--priority-low', value: '#b8e8e7', label: 'Low Priority', glow: 'rgba(184, 232, 231, 0.3)' },
+              { cssVar: '--priority-low-bg', value: 'rgba(184, 232, 231, 0.15)', label: 'Low Priority BG', glow: null },
+              { cssVar: '--priority-low-glow', value: 'rgba(184, 232, 231, 0.3)', label: 'Low Priority Glow', glow: null },
+            ].map(({ cssVar, value, label, glow }) => (
+              <div key={cssVar} className="space-y-2">
+                <Label className="text-sm text-[#26282b]/80 dark:text-[#eaeaea]/80">{label}</Label>
+                <div className="flex items-center space-x-2">
+                  <div 
+                    className="w-8 h-8 rounded-lg border-2 border-white/30 dark:border-white/20 shadow-md flex-shrink-0"
+                    style={{ 
+                      backgroundColor: value,
+                      boxShadow: glow ? `0 0 8px ${glow}, 0 0 12px ${glow}` : undefined
+                    }}
                   />
                   <Input
                     value={cssVar}

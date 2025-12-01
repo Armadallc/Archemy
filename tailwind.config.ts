@@ -89,6 +89,8 @@ export default {
         },
         // Status colors
         status: {
+          pending: "var(--status-pending)",
+          "pending-bg": "var(--status-pending-bg)",
           success: "var(--status-success)",
           "success-bg": "var(--status-success-bg)",
           warning: "var(--status-warning)",
@@ -97,6 +99,18 @@ export default {
           "error-bg": "var(--status-error-bg)",
           info: "var(--status-info)",
           "info-bg": "var(--status-info-bg)",
+        },
+        // Priority classification
+        priority: {
+          high: "var(--priority-high)",
+          "high-bg": "var(--priority-high-bg)",
+          "high-glow": "var(--priority-high-glow)",
+          medium: "var(--priority-medium)",
+          "medium-bg": "var(--priority-medium-bg)",
+          "medium-glow": "var(--priority-medium-glow)",
+          low: "var(--priority-low)",
+          "low-bg": "var(--priority-low-bg)",
+          "low-glow": "var(--priority-low-glow)",
         },
         // Trip status
         scheduled: "var(--scheduled)",

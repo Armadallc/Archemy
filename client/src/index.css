@@ -206,6 +206,11 @@
   /* ----------------------------------------------------------
      STATUS COLORS - Derived from Fire Palette
      ---------------------------------------------------------- */
+  /* Pending: Light lime shade */
+  --status-pending: #f7ffdf;
+  --status-pending-bg: rgba(247, 255, 223, 0.15);
+  --status-pending-border: rgba(247, 255, 223, 0.3);
+  
   /* Success: Derived from Lime (#f1fec9) - Red: 3B, Green: FE, Blue: C9 */
   --status-success: #3bfec9;
   --status-success-bg: rgba(59, 254, 201, 0.15);
@@ -226,6 +231,24 @@
   --status-info-bg: rgba(122, 255, 254, 0.15);
   --status-info-border: rgba(122, 255, 254, 0.3);
   
+  /* ----------------------------------------------------------
+     PRIORITY CLASSIFICATION COLORS
+     ---------------------------------------------------------- */
+  /* High Priority: Coral Light */
+  --priority-high: #ff7a80;
+  --priority-high-bg: rgba(255, 122, 128, 0.15);
+  --priority-high-glow: rgba(255, 122, 128, 0.4);
+  
+  /* Medium Priority: Brighter Lime / Ice */
+  --priority-medium: #7afffe;
+  --priority-medium-bg: rgba(122, 255, 254, 0.15);
+  --priority-medium-glow: rgba(122, 255, 254, 0.4);
+  
+  /* Low Priority: Muted Ice */
+  --priority-low: #b8e8e7;
+  --priority-low-bg: rgba(184, 232, 231, 0.15);
+  --priority-low-glow: rgba(184, 232, 231, 0.3);
+
   /* Trip Status Colors - Derived from Fire Palette */
   /* Scheduled: Derived from Ice (#e8fffe) - Red: 7A, Green: FF, Blue: FE */
   --scheduled: #7afffe;
@@ -432,6 +455,10 @@
   --popover-foreground: var(--color-cloud);
 
   /* Status Colors - Dark Mode (same as light mode, derived from Fire palette) */
+  --status-pending: #f7ffdf;
+  --status-pending-bg: rgba(247, 255, 223, 0.15);
+  --status-pending-border: rgba(247, 255, 223, 0.3);
+  
   --status-success: #3bfec9;
   --status-success-bg: rgba(59, 254, 201, 0.15);
   --status-success-border: rgba(59, 254, 201, 0.3);
@@ -448,6 +475,19 @@
   --status-info-bg: rgba(122, 255, 254, 0.15);
   --status-info-border: rgba(122, 255, 254, 0.3);
   
+  /* Priority Classification Colors - Dark Mode (same as light mode) */
+  --priority-high: #ff7a80;
+  --priority-high-bg: rgba(255, 122, 128, 0.15);
+  --priority-high-glow: rgba(255, 122, 128, 0.4);
+  
+  --priority-medium: #7afffe;
+  --priority-medium-bg: rgba(122, 255, 254, 0.15);
+  --priority-medium-glow: rgba(122, 255, 254, 0.4);
+  
+  --priority-low: #b8e8e7;
+  --priority-low-bg: rgba(184, 232, 231, 0.15);
+  --priority-low-glow: rgba(184, 232, 231, 0.3);
+
   /* Trip Status Colors - Dark Mode (same as light mode, derived from Fire palette) */
   --scheduled: #7afffe;
   --scheduled-bg: rgba(122, 255, 254, 0.15);

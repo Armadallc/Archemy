@@ -113,15 +113,15 @@ export default function EnhancedAnalyticsWidget({ className }: AnalyticsWidgetPr
   });
 
   const getTrendIcon = (change: number) => {
-    if (change > 0) return <TrendingUp className="h-4 w-4 text-green-500" />;
-    if (change < 0) return <TrendingDown className="h-4 w-4 text-red-500" />;
+    if (change > 0) return <TrendingUp className="h-4 w-4 text-status-success" />;
+    if (change < 0) return <TrendingDown className="h-4 w-4 text-status-error" />;
     return null;
   };
 
   const getTrendColor = (change: number) => {
-    if (change > 0) return 'text-green-500';
-    if (change < 0) return 'text-red-500';
-    return 'text-gray-500';
+    if (change > 0) return 'text-status-success';
+    if (change < 0) return 'text-status-error';
+    return 'text-muted-foreground';
   };
 
   // Chart configurations
@@ -131,12 +131,23 @@ export default function EnhancedAnalyticsWidget({ className }: AnalyticsWidgetPr
       {
         label: 'Revenue ($)',
         data: analyticsData?.revenueByMonth.map(item => item.revenue) || [],
-        borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        borderColor: 'rgb(255, 85, 93)', // --primary (coral)
+        backgroundColor: 'rgba(255, 85, 93, 0.1)', // --primary with opacity
         tension: 0.4,
         fill: true,
       },
     ],
+  };
+
+  // Map trip status to Fire palette colors
+  const getTripStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'completed': return 'rgb(59, 254, 201)'; // --completed
+      case 'in progress': return 'rgb(241, 254, 96)'; // --in-progress
+      case 'scheduled': return 'rgb(122, 255, 254)'; // --scheduled
+      case 'cancelled': return 'rgb(224, 72, 80)'; // --cancelled (coral-dark)
+      default: return 'rgb(122, 255, 254)'; // Default to scheduled
+    }
   };
 
   const tripsStatusData = {
@@ -144,12 +155,7 @@ export default function EnhancedAnalyticsWidget({ className }: AnalyticsWidgetPr
     datasets: [
       {
         data: analyticsData?.tripsByStatus.map(item => item.count) || [],
-        backgroundColor: [
-          'rgb(34, 197, 94)',
-          'rgb(251, 191, 36)',
-          'rgb(59, 130, 246)',
-          'rgb(239, 68, 68)',
-        ],
+        backgroundColor: analyticsData?.tripsByStatus.map(item => getTripStatusColor(item.status)) || [],
         borderWidth: 0,
       },
     ],
@@ -161,8 +167,8 @@ export default function EnhancedAnalyticsWidget({ className }: AnalyticsWidgetPr
       {
         label: 'Trips',
         data: analyticsData?.peakHours.map(item => item.trips) || [],
-        backgroundColor: 'rgba(99, 102, 241, 0.8)',
-        borderColor: 'rgb(99, 102, 241)',
+        backgroundColor: 'rgba(255, 85, 93, 0.8)', // --primary (coral) with opacity
+        borderColor: 'rgb(255, 85, 93)', // --primary (coral)
         borderWidth: 1,
       },
     ],
@@ -268,10 +274,10 @@ export default function EnhancedAnalyticsWidget({ className }: AnalyticsWidgetPr
           <TabsTrigger value="performance">Performance</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6 shadow-xl">
+        <TabsContent value="overview" className="space-y-6">
           {/* Key Metrics */}
           <div className="grid grid-cols-2 gap-4">
-            <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+            <Card className="bg-card/25 dark:bg-card/25 backdrop-blur-md border border-border/20 dark:border-border/20 shadow-xl">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <h5 className="text-sm font-medium text-foreground-secondary">Total Revenue</h5>
@@ -288,7 +294,7 @@ export default function EnhancedAnalyticsWidget({ className }: AnalyticsWidgetPr
               </CardContent>
             </Card>
 
-            <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+            <Card className="bg-card/25 dark:bg-card/25 backdrop-blur-md border border-border/20 dark:border-border/20 shadow-xl">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <h5 className="text-sm font-medium text-foreground-secondary">Trips Completed</h5>
@@ -305,7 +311,7 @@ export default function EnhancedAnalyticsWidget({ className }: AnalyticsWidgetPr
               </CardContent>
             </Card>
 
-            <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+            <Card className="bg-card/25 dark:bg-card/25 backdrop-blur-md border border-border/20 dark:border-border/20 shadow-xl">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <h5 className="text-sm font-medium text-foreground-secondary">Active Drivers</h5>
@@ -322,7 +328,7 @@ export default function EnhancedAnalyticsWidget({ className }: AnalyticsWidgetPr
               </CardContent>
             </Card>
 
-            <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+            <Card className="bg-card/25 dark:bg-card/25 backdrop-blur-md border border-border/20 dark:border-border/20 shadow-xl">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <h5 className="text-sm font-medium text-foreground-secondary">Completion Rate</h5>
@@ -412,13 +418,13 @@ export default function EnhancedAnalyticsWidget({ className }: AnalyticsWidgetPr
                       {driver.name.split(' ').map(n => n[0]).join('')}
                     </div>
                     <div>
-                      <h6 className="font-medium text-gray-900 dark:text-gray-100">{driver.name}</h6>
+                      <h6 className="font-medium text-foreground">{driver.name}</h6>
                       <p className="text-sm text-muted-foreground">{driver.trips} trips completed</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="flex items-center space-x-1">
-                      <span className="font-semibold text-gray-900 dark:text-gray-100">{driver.rating}</span>
+                      <span className="font-semibold text-foreground">{driver.rating}</span>
                       <span className="text-yellow-500">★</span>
                     </div>
                     <p className="text-sm text-muted-foreground">Rating</p>

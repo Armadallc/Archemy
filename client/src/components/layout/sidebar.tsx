@@ -30,8 +30,7 @@ import {
   Sun,
   Moon,
   ChevronUp,
-  BarChart3,
-  Activity
+  BarChart3
 } from "lucide-react";
 import { useTheme } from "../theme-provider";
 import { useAuth } from "../../hooks/useAuth";
@@ -81,7 +80,6 @@ const StatusDot = ({ status }: { status: PageStatus }) => {
 // Maps each navigation item to the required permission(s)
 const navigationItemPermissions: Record<string, string | string[]> = {
   "/": "view_calendar", // Dashboard
-  "/activity-feed": "view_calendar", // Activity Feed
   "/trips": "view_trips",
   "/calendar": "view_calendar",
   "/drivers": "view_drivers",
@@ -109,8 +107,7 @@ const navigationCategories = [
     icon: Home,
     roles: ["super_admin", "corporate_admin", "program_admin", "program_user", "driver"],
     items: [
-      { path: "/", label: "Dashboard", icon: Home, roles: ["super_admin", "corporate_admin", "program_admin", "program_user", "driver"], status: "completed" as PageStatus },
-      { path: "/activity-feed", label: "Activity Feed", icon: Activity, roles: ["super_admin", "corporate_admin", "program_admin", "program_user", "driver"], status: "completed" as PageStatus }
+      { path: "/", label: "Dashboard", icon: Home, roles: ["super_admin", "corporate_admin", "program_admin", "program_user", "driver"], status: "completed" as PageStatus }
     ]
   },
   {
@@ -412,9 +409,9 @@ export default function Sidebar({
   };
 
   return (
-    <div className={`transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} h-screen flex flex-col overflow-hidden pt-6 bg-sidebar/25 dark:bg-sidebar/25 backdrop-blur-md border-r border-sidebar-border/20 dark:border-sidebar-border/20 shadow-xl`}>
+    <div className={`transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} h-screen flex flex-col overflow-hidden pt-6`} style={{ color: 'var(--gray-12)', backgroundColor: 'var(--gray-1)' }}>
       {/* Header */}
-      <div className="p-4 border-b flex-shrink-0 border-sidebar-border/20 dark:border-sidebar-border/20">
+      <div className="p-4 border-b flex-shrink-0" style={{ borderColor: 'var(--gray-7)', backgroundColor: 'var(--gray-1)' }}>
         <div className="flex items-center justify-between">
           {!isCollapsed && (
             <div className="flex items-center space-x-3">
@@ -429,7 +426,7 @@ export default function Sidebar({
                 />
               )}
               <div>
-                <h2 className="text-sidebar-foreground" style={{ fontSize: '42px' }}>{getCorporateClientName()}</h2>
+                <h2 style={{ fontSize: '42px' }}>{getCorporateClientName()}</h2>
               </div>
             </div>
           )}
@@ -446,7 +443,10 @@ export default function Sidebar({
           {setIsCollapsed && (
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-1 rounded transition-colors bg-sidebar/20 dark:bg-sidebar/10 hover:bg-sidebar/30 dark:hover:bg-sidebar/20 text-sidebar-foreground backdrop-blur-sm"
+              className="p-1 rounded transition-colors"
+              style={{ '--hover-bg': 'var(--gray-3)' } as React.CSSProperties & { '--hover-bg': string }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gray-3)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
               aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
@@ -461,13 +461,13 @@ export default function Sidebar({
         user?.role === 'corporate_admin' || 
         user?.role === 'program_admin' || 
         user?.role === 'program_user') && (
-        <div className="p-4 border-b flex-shrink-0 border-sidebar-border/20 dark:border-sidebar-border/20">
+        <div className="p-4 border-b flex-shrink-0" style={{ borderColor: 'var(--gray-7)', backgroundColor: 'var(--gray-1)' }}>
           <DrillDownDropdown />
         </div>
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-4 overflow-y-auto">
+      <nav className="flex-1 p-4 space-y-4 overflow-y-auto" style={{ backgroundColor: 'var(--gray-1)' }}>
         {visibleCategories.map((category, index) => {
           const CategoryIcon = category.icon;
           
@@ -500,16 +500,19 @@ export default function Sidebar({
                       toggleCategory(category.id);
                     }
                   }}
-                  className="flex items-center justify-between w-full px-2 py-1 rounded transition-colors group focus:outline-none focus:ring-2 focus:ring-inset bg-sidebar/10 dark:bg-sidebar/5 hover:bg-sidebar/20 dark:hover:bg-sidebar/10 text-sidebar-foreground backdrop-blur-sm"
-                  onFocus={(e) => e.currentTarget.style.boxShadow = '0 0 0 2px rgba(255, 85, 93, 0.3) inset'}
+                  className="flex items-center justify-between w-full px-2 py-1 rounded transition-colors group focus:outline-none focus:ring-2 focus:ring-inset"
+                  style={{ '--hover-bg': 'var(--gray-2)', '--focus-ring': 'var(--blue-9)' } as React.CSSProperties & { '--hover-bg': string; '--focus-ring': string }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gray-2)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  onFocus={(e) => e.currentTarget.style.boxShadow = '0 0 0 2px var(--blue-9) inset'}
                   onBlur={(e) => e.currentTarget.style.boxShadow = ''}
-                  aria-expanded={isExpanded ? "true" : "false"}
+                  aria-expanded={isExpanded}
                   aria-controls={`category-${category.id}-items`}
                   tabIndex={0}
                 >
                   <div className="flex items-center space-x-2">
                     {!isCollapsed && (
-                      <span className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground-muted">
+                      <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--gray-9)' }}>
                         {category.label}
                       </span>
                     )}
@@ -517,9 +520,9 @@ export default function Sidebar({
                   {!isCollapsed && (
                     <div className="flex items-center">
                       {isExpanded ? (
-                        <ChevronDown className="w-3 h-3 transition-colors text-sidebar-foreground-muted hover:text-sidebar-foreground" />
+                        <ChevronDown className="w-3 h-3 transition-colors" style={{ color: 'var(--gray-9)' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--gray-11)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--gray-9)'} />
                       ) : (
-                        <ChevronRight className="w-3 h-3 transition-colors text-sidebar-foreground-muted hover:text-sidebar-foreground" />
+                        <ChevronRight className="w-3 h-3 transition-colors" style={{ color: 'var(--gray-9)' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--gray-11)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--gray-9)'} />
                       )}
                     </div>
                   )}
@@ -562,15 +565,16 @@ export default function Sidebar({
                           }
                           // For other roles, the hierarchy will be reset by the route change
                         }}
-                        className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
-                          isActive 
-                            ? 'bg-sidebar-primary/20 text-sidebar-primary-foreground shadow-lg' 
-                            : 'text-sidebar-foreground-muted hover:bg-sidebar/20 dark:hover:bg-sidebar/10'
-                        } backdrop-blur-sm`}
+                        className="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors"
+                        style={isActive ? { backgroundColor: 'var(--blue-9)', color: 'var(--gray-12)' } : { color: 'var(--gray-11)' }}
+                        onMouseEnter={(e) => !isActive && (e.currentTarget.style.backgroundColor = 'var(--gray-3)')}
+                        onMouseLeave={(e) => !isActive && (e.currentTarget.style.backgroundColor = 'transparent')}
                       >
+                        <Icon className="w-5 h-5 flex-shrink-0" />
                         {!isCollapsed && (
                           <div className="flex items-center space-x-2 flex-1">
                             <span className="text-sm font-medium">{item.label}</span>
+                            {item.status && <StatusDot status={item.status} />}
                           </div>
                         )}
                       </Link>
@@ -588,15 +592,16 @@ export default function Sidebar({
                     <Link
                       key={item.path}
                       to={href}
-                      className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
-                        isActive 
-                          ? 'bg-sidebar-primary/20 dark:bg-sidebar-primary/20 text-sidebar-primary-foreground dark:text-sidebar-primary-foreground shadow-lg' 
-                          : 'text-sidebar-foreground-muted dark:text-sidebar-foreground-muted hover:bg-sidebar/20 dark:hover:bg-sidebar/10'
-                      } backdrop-blur-sm`}
+                      className="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors"
+                      style={isActive ? { backgroundColor: 'var(--blue-9)', color: 'var(--gray-12)' } : { color: 'var(--gray-11)' }}
+                      onMouseEnter={(e) => !isActive && (e.currentTarget.style.backgroundColor = 'var(--gray-3)')}
+                      onMouseLeave={(e) => !isActive && (e.currentTarget.style.backgroundColor = 'transparent')}
                     >
+                      <Icon className="w-5 h-5 flex-shrink-0" />
                       {!isCollapsed && (
                         <div className="flex items-center space-x-2 flex-1">
                           <span className="text-sm font-medium">{item.label}</span>
+                          {item.status && <StatusDot status={item.status} />}
                         </div>
                       )}
                     </Link>
@@ -609,14 +614,16 @@ export default function Sidebar({
       </nav>
 
       {/* User Menu */}
-      <div className="p-4 border-t relative user-menu-container flex-shrink-0 border-sidebar-border/20 dark:border-sidebar-border/20">
+      <div className="p-4 border-t relative user-menu-container flex-shrink-0" style={{ borderColor: 'var(--gray-7)', backgroundColor: 'var(--gray-1)' }}>
         {!isCollapsed && user && (
           <div className="flex items-center space-x-3">
             <button
               onClick={toggleUserMenu}
-              className="flex items-center space-x-3 w-full p-2 rounded-lg transition-colors bg-sidebar/10 dark:bg-sidebar/5 hover:bg-sidebar/20 dark:hover:bg-sidebar/10 backdrop-blur-sm"
+              className="flex items-center space-x-3 w-full p-2 rounded-lg transition-colors"
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gray-3)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
-              <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-primary">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--blue-9)' }}>
                 {user.avatar_url ? (
                   <img 
                     src={user.avatar_url} 
@@ -628,30 +635,31 @@ export default function Sidebar({
                     }}
                   />
                 ) : null}
-                <span className="text-sm font-medium hidden text-white">
+                <span className="text-sm font-medium hidden">
                   {user.user_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
                 </span>
               </div>
               <div className="flex-1 min-w-0 text-left">
-                <p className="text-sm font-medium truncate text-sidebar-foreground">
-                  {user.first_name && user.last_name 
-                    ? `${user.first_name} ${user.last_name}`
-                    : user.user_name || user.email}
+                <p className="text-sm font-medium truncate" style={{ color: 'var(--gray-12)' }}>
+                  seffe
                 </p>
                 {userRole !== 'super_admin' && (
-                  <p className="text-xs capitalize text-sidebar-foreground-muted">
+                  <p className="text-xs capitalize" style={{ color: 'var(--gray-9)' }}>
                     {userRole.replace('_', ' ')}
                   </p>
                 )}
               </div>
-              <ChevronUp className={`w-4 h-4 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''} text-sidebar-foreground-muted`} />
+              <ChevronUp className={`w-4 h-4 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} style={{ color: 'var(--gray-9)' }} />
             </button>
           </div>
         )}
         {isCollapsed && user && (
           <button
             onClick={toggleUserMenu}
-            className="w-8 h-8 rounded-full flex items-center justify-center mx-auto transition-colors bg-primary hover:bg-primary-hover backdrop-blur-sm"
+            className="w-8 h-8 rounded-full flex items-center justify-center mx-auto transition-colors"
+            style={{ backgroundColor: 'var(--blue-9)' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--blue-10)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--blue-9)'}
           >
             {user.avatar_url ? (
               <img 
@@ -664,7 +672,7 @@ export default function Sidebar({
                 }}
               />
             ) : null}
-            <span className="text-sm font-medium hidden text-white">
+            <span className="text-sm font-medium hidden">
               {user.user_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
             </span>
           </button>
@@ -672,7 +680,7 @@ export default function Sidebar({
         
         {/* Slide-up User Menu */}
         {isUserMenuOpen && (
-          <div className="absolute bottom-full left-0 right-0 mb-2 rounded-lg shadow-xl overflow-hidden bg-popover/25 dark:bg-popover/25 backdrop-blur-md border border-sidebar-border/20 dark:border-sidebar-border/20">
+          <div className="absolute bottom-full left-0 right-0 mb-2 rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: 'var(--gray-2)', borderColor: 'var(--gray-7)', borderWidth: '1px', borderStyle: 'solid' }}>
             <div className="py-2">
               {/* User Settings */}
               <button
@@ -681,7 +689,10 @@ export default function Sidebar({
                   console.log('Navigate to user settings');
                   setIsUserMenuOpen(false);
                 }}
-                className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors text-popover-foreground hover:bg-popover/20 dark:hover:bg-popover/10"
+                className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors"
+                style={{ color: 'var(--gray-11)' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gray-3)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <User className="w-4 h-4" />
                 <span>User Settings</span>
@@ -691,7 +702,10 @@ export default function Sidebar({
               {darkModeEnabled && (
                 <button
                   onClick={toggleTheme}
-                  className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors text-popover-foreground hover:bg-popover/20 dark:hover:bg-popover/10"
+                  className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors"
+                  style={{ color: 'var(--gray-11)' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gray-3)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 >
                   {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                   <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
@@ -699,12 +713,15 @@ export default function Sidebar({
               )}
               
               {/* Divider */}
-              <div className="border-t my-1 border-sidebar-border/20 dark:border-sidebar-border/20"></div>
+              <div className="border-t my-1" style={{ borderColor: 'var(--gray-7)' }}></div>
               
               {/* Logout */}
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors text-destructive hover:bg-popover/20 dark:hover:bg-popover/10"
+                className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors"
+                style={{ color: 'rgb(248, 113, 113)' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gray-3)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <LogOut className="w-4 h-4" />
                 <span>Logout</span>

@@ -14,10 +14,30 @@ export default function TaskManagementWidget({ className }: TaskManagementWidget
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high': return 'text-red-600 bg-red-100 dark:bg-red-900/20';
-      case 'medium': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/20';
-      case 'low': return 'text-green-600 bg-green-100 dark:bg-green-900/20';
-      default: return 'text-gray-600 bg-gray-100 dark:bg-gray-900/20';
+      case 'high': 
+        return { 
+          color: 'var(--color-cloud)', 
+          backgroundColor: 'var(--priority-high)',
+          boxShadow: '0 0 8px var(--priority-high-glow), 0 0 12px var(--priority-high-glow)'
+        };
+      case 'medium': 
+        return { 
+          color: 'var(--color-charcoal)', 
+          backgroundColor: 'var(--priority-medium)',
+          boxShadow: '0 0 8px var(--priority-medium-glow), 0 0 12px var(--priority-medium-glow)'
+        };
+      case 'low': 
+        return { 
+          color: 'var(--color-charcoal)', 
+          backgroundColor: 'var(--priority-low)',
+          boxShadow: '0 0 6px var(--priority-low-glow), 0 0 10px var(--priority-low-glow)'
+        };
+      default: 
+        return { 
+          color: 'var(--foreground)', 
+          backgroundColor: 'var(--muted)',
+          boxShadow: 'none'
+        };
     }
   };
 
@@ -76,30 +96,33 @@ export default function TaskManagementWidget({ className }: TaskManagementWidget
       <div className="space-y-4">
         {/* Task Summary */}
         <div className="grid grid-cols-3 gap-4">
-          <div className="text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-            <div className="text-2xl font-bold text-red-600 dark:text-red-400">{pendingTasks.length}</div>
-            <div className="text-xs text-muted-foreground">Pending</div>
+          <div className="text-center p-3 rounded-lg" style={{ backgroundColor: 'var(--status-pending)', color: 'var(--color-charcoal)' }}>
+            <div className="text-2xl font-bold">{pendingTasks.length}</div>
+            <div className="text-xs opacity-80">Pending</div>
           </div>
-          <div className="text-center p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-            <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{inProgressTasks.length}</div>
-            <div className="text-xs text-muted-foreground">In Progress</div>
+          <div className="text-center p-3 rounded-lg" style={{ backgroundColor: 'var(--in-progress)', color: 'var(--color-charcoal)' }}>
+            <div className="text-2xl font-bold">{inProgressTasks.length}</div>
+            <div className="text-xs opacity-80">In Progress</div>
           </div>
-          <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-            <div className="text-2xl font-bold text-green-600 dark:text-green-400">{completedTasks.length}</div>
-            <div className="text-xs text-muted-foreground">Completed</div>
+          <div className="text-center p-3 rounded-lg" style={{ backgroundColor: 'var(--completed)', color: 'var(--color-charcoal)' }}>
+            <div className="text-2xl font-bold">{completedTasks.length}</div>
+            <div className="text-xs opacity-80">Completed</div>
           </div>
         </div>
 
         {/* Task List */}
         <div className="space-y-2">
           {tasks && tasks.length > 0 ? tasks.slice(0, 4).map((task) => (
-            <div key={task.id} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <div key={task.id} className="p-3 bg-surface-muted dark:bg-surface-muted rounded-lg">
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center space-x-2">
                   {getTypeIcon(task.type)}
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{task.title}</span>
+                  <span className="text-sm font-medium text-foreground">{task.title}</span>
                 </div>
-                <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs ${getPriorityColor(task.priority)}`}>
+                <div 
+                  className="flex items-center space-x-1 px-2 py-1 rounded-full text-xs"
+                  style={getPriorityColor(task.priority)}
+                >
                   {getPriorityIcon(task.priority)}
                   <span className="capitalize">{task.priority}</span>
                 </div>
@@ -114,9 +137,9 @@ export default function TaskManagementWidget({ className }: TaskManagementWidget
               </div>
             </div>
           )) : (
-            <div className="text-center text-gray-500 dark:text-gray-400 py-4">
-              <CheckSquare className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-              <p className="text-sm text-gray-900 dark:text-gray-100">No tasks available</p>
+            <div className="text-center text-muted-foreground py-4">
+              <CheckSquare className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-sm text-foreground">No tasks available</p>
             </div>
           )}
         </div>

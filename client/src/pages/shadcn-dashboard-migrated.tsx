@@ -372,30 +372,30 @@ export default function ShadcnDashboardMigrated() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <EnhancedAnalyticsWidget />
               <TaskManagementWidget />
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-card/25 dark:bg-card/25 backdrop-blur-md border border-border/20 dark:border-border/20 shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-foreground">System Health</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
                       <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-green-700 dark:text-green-400">Database</span>
+                        <div className="w-2 h-2 bg-status-success rounded-full"></div>
+                        <span className="text-sm font-medium text-status-success dark:text-status-success">Database</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
                       <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-green-700 dark:text-green-400">API</span>
+                        <div className="w-2 h-2 bg-status-success rounded-full"></div>
+                        <span className="text-sm font-medium text-status-success dark:text-status-success">API</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
                       <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-green-700 dark:text-green-400">WebSocket</span>
+                        <div className="w-2 h-2 bg-status-success rounded-full"></div>
+                        <span className="text-sm font-medium text-status-success dark:text-status-success">WebSocket</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
@@ -509,30 +509,30 @@ export default function ShadcnDashboardMigrated() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <EnhancedAnalyticsWidget />
               <TaskManagementWidget />
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-card/25 dark:bg-card/25 backdrop-blur-md border border-border/20 dark:border-border/20 shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-foreground">System Health</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
                       <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-green-700 dark:text-green-400">Database</span>
+                        <div className="w-2 h-2 bg-status-success rounded-full"></div>
+                        <span className="text-sm font-medium text-status-success dark:text-status-success">Database</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
                       <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-green-700 dark:text-green-400">API</span>
+                        <div className="w-2 h-2 bg-status-success rounded-full"></div>
+                        <span className="text-sm font-medium text-status-success dark:text-status-success">API</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
                       <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-green-700 dark:text-green-400">WebSocket</span>
+                        <div className="w-2 h-2 bg-status-success rounded-full"></div>
+                        <span className="text-sm font-medium text-status-success dark:text-status-success">WebSocket</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
@@ -647,30 +647,30 @@ export default function ShadcnDashboardMigrated() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <EnhancedAnalyticsWidget />
               <TaskManagementWidget />
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-card/25 dark:bg-card/25 backdrop-blur-md border border-border/20 dark:border-border/20 shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-foreground">System Health</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
                       <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-green-700 dark:text-green-400">Database</span>
+                        <div className="w-2 h-2 bg-status-success rounded-full"></div>
+                        <span className="text-sm font-medium text-status-success dark:text-status-success">Database</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
                       <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-green-700 dark:text-green-400">API</span>
+                        <div className="w-2 h-2 bg-status-success rounded-full"></div>
+                        <span className="text-sm font-medium text-status-success dark:text-status-success">API</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
                       <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-green-700 dark:text-green-400">WebSocket</span>
+                        <div className="w-2 h-2 bg-status-success rounded-full"></div>
+                        <span className="text-sm font-medium text-status-success dark:text-status-success">WebSocket</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
@@ -785,30 +785,30 @@ export default function ShadcnDashboardMigrated() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <EnhancedAnalyticsWidget />
               <TaskManagementWidget />
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-card/25 dark:bg-card/25 backdrop-blur-md border border-border/20 dark:border-border/20 shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-foreground">System Health</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
                       <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-green-700 dark:text-green-400">Database</span>
+                        <div className="w-2 h-2 bg-status-success rounded-full"></div>
+                        <span className="text-sm font-medium text-status-success dark:text-status-success">Database</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
                       <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-green-700 dark:text-green-400">API</span>
+                        <div className="w-2 h-2 bg-status-success rounded-full"></div>
+                        <span className="text-sm font-medium text-status-success dark:text-status-success">API</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
                       <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-green-700 dark:text-green-400">WebSocket</span>
+                        <div className="w-2 h-2 bg-status-success rounded-full"></div>
+                        <span className="text-sm font-medium text-status-success dark:text-status-success">WebSocket</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
@@ -915,30 +915,30 @@ export default function ShadcnDashboardMigrated() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <EnhancedAnalyticsWidget />
               <TaskManagementWidget />
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-card/25 dark:bg-card/25 backdrop-blur-md border border-border/20 dark:border-border/20 shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-foreground">System Health</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
                       <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-green-700 dark:text-green-400">Database</span>
+                        <div className="w-2 h-2 bg-status-success rounded-full"></div>
+                        <span className="text-sm font-medium text-status-success dark:text-status-success">Database</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
                       <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-green-700 dark:text-green-400">API</span>
+                        <div className="w-2 h-2 bg-status-success rounded-full"></div>
+                        <span className="text-sm font-medium text-status-success dark:text-status-success">API</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
                       <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-green-700 dark:text-green-400">WebSocket</span>
+                        <div className="w-2 h-2 bg-status-success rounded-full"></div>
+                        <span className="text-sm font-medium text-status-success dark:text-status-success">WebSocket</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
