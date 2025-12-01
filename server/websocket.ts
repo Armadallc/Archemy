@@ -1,6 +1,6 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { createServer } from 'http';
-import { verifySupabaseToken } from './supabase-auth';
+import { verifySupabaseToken, isTokenExpired } from './supabase-auth';
 
 export interface AuthenticatedWebSocket extends WebSocket {
   userId?: string;
@@ -65,18 +65,21 @@ export class RealtimeWebSocketServer {
   }
 
   private async verifyClient(info: any): Promise<boolean> {
+    const DEBUG_MODE = process.env.NODE_ENV === 'development' || process.env.DEBUG_AUTH === 'true';
+    
     try {
-      console.log('🔍 WebSocket verification started');
-      console.log('🔍 Request URL:', info.req.url);
-      console.log('🔍 Request headers:', JSON.stringify(info.req.headers, null, 2));
+      if (DEBUG_MODE) {
+        console.log('🔍 WebSocket verification started');
+        console.log('🔍 Request URL:', info.req.url);
+      }
       
       const url = new URL(info.req.url || '', `http://${info.req.headers.host || 'localhost:8081'}`);
       const token = url.searchParams.get('token');
       
-      console.log('🔍 Token received:', token ? `${token.substring(0, 20)}... (${token.length} chars)` : 'null');
-      
       if (!token) {
-        console.log('❌ WebSocket connection rejected: No token provided');
+        if (DEBUG_MODE) {
+          console.log('❌ WebSocket connection rejected: No token provided');
+        }
         return false;
       }
 
@@ -84,36 +87,56 @@ export class RealtimeWebSocketServer {
       let user;
       if (token.startsWith('eyJ')) {
         // It's a Supabase JWT token
-        console.log('🔍 Detected JWT token, verifying...');
+        // Check if token is expired before attempting verification
+        if (isTokenExpired(token)) {
+          if (DEBUG_MODE) {
+            console.log('❌ WebSocket connection rejected: Token is expired');
+          }
+          return false;
+        }
+
+        if (DEBUG_MODE) {
+          console.log('🔍 Detected JWT token, verifying...');
+        }
         user = await verifySupabaseToken(token);
+        
+        if (!user) {
+          if (DEBUG_MODE) {
+            console.log('❌ WebSocket connection rejected: Invalid or expired token');
+          }
+          return false;
+        }
       } else {
         // It's an auth_user_id, look up user directly
-        console.log('🔍 Detected auth_user_id, looking up user...');
+        if (DEBUG_MODE) {
+          console.log('🔍 Detected auth_user_id, looking up user...');
+        }
         const { createClient } = await import('@supabase/supabase-js');
         const supabaseAdmin = createClient(
           process.env.SUPABASE_URL!,
           process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
         
-        console.log('🔍 Querying users table for auth_user_id:', token);
+        if (DEBUG_MODE) {
+          console.log('🔍 Querying users table for auth_user_id:', token);
+        }
         const { data: dbUser, error } = await supabaseAdmin
           .from('users')
           .select('*')
           .eq('auth_user_id', token)
           .single();
         
-        if (error) {
-          console.log('❌ Database query error:', error.message, error);
-        }
-        
         if (error || !dbUser) {
-          console.log('❌ WebSocket connection rejected: User not found in database');
-          console.log('   Error details:', error?.message || 'No error');
-          console.log('   User data:', dbUser ? 'Found' : 'Not found');
+          if (DEBUG_MODE) {
+            console.log('❌ WebSocket connection rejected: User not found in database');
+            console.log('   Error details:', error?.message || 'No error');
+          }
           return false;
         }
 
-        console.log('✅ User found in database:', dbUser.email, dbUser.role);
+        if (DEBUG_MODE) {
+          console.log('✅ User found in database:', dbUser.email, dbUser.role);
+        }
         user = {
           userId: dbUser.user_id,
           email: dbUser.email,
@@ -125,17 +148,23 @@ export class RealtimeWebSocketServer {
       }
 
       if (!user) {
-        console.log('❌ WebSocket connection rejected: Invalid token (user verification failed)');
+        if (DEBUG_MODE) {
+          console.log('❌ WebSocket connection rejected: Invalid token (user verification failed)');
+        }
         return false;
       }
 
       // Store user info in the request object for later use
       info.req.user = user;
-      console.log('✅ WebSocket connection verified for user:', user.email, user.role);
+      if (DEBUG_MODE) {
+        console.log('✅ WebSocket connection verified for user:', user.email, user.role);
+      }
       return true;
     } catch (error) {
       console.error('❌ WebSocket verification error:', error);
-      console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack');
+      if (DEBUG_MODE && error instanceof Error) {
+        console.error('❌ Error stack:', error.stack);
+      }
       return false;
     }
   }

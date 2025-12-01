@@ -8,7 +8,7 @@ import { HierarchyProvider } from "./hooks/useHierarchy";
 import MainLayout from "./components/layout/main-layout";
 import Login from "./pages/login";
 import { useAuth } from "./hooks/useAuth";
-// Toaster will be added when sonner component is available
+import { Toaster } from "./components/ui/toaster";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 function AppContent() {
@@ -50,6 +50,7 @@ export default function App() {
             <Router>
               <AppContent />
             </Router>
+            <Toaster />
           </AuthProvider>
         </ThemeProvider>
       </QueryClientProvider>

@@ -20,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
 import { useTheme } from '../components/theme-provider';
+import { ThemeController } from '../components/design-system/ThemeController';
 import { 
   Palette, 
   Type, 
@@ -2182,6 +2183,13 @@ export default function DesignSystem() {
           <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
             <CardContent className="p-6">
               <ThemeManager currentTokens={tokens} />
+            </CardContent>
+          </Card>
+
+          {/* Theme Controller */}
+          <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+            <CardContent className="p-6">
+              <ThemeController />
             </CardContent>
           </Card>
         </div>
