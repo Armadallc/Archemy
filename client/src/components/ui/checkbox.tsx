@@ -18,14 +18,14 @@ const Checkbox = React.forwardRef<
         className={cn(
           "peer shrink-0 rounded-full border-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
           "h-[16px] w-[16px] min-h-[16px] min-w-[16px] max-h-[16px] max-w-[16px]",
-          "border-[#312F2C] data-[state=checked]:bg-[#DAFF61] data-[state=checked]:border-[#312F2C]",
+          "border-foreground data-[state=checked]:bg-accent data-[state=checked]:border-foreground",
           className
         )}
         style={{ borderRadius: '50%' }}
         {...props}
       >
         <CheckboxPrimitive.Indicator className={cn("flex items-center justify-center")}>
-          <div className="h-2 w-2 rounded-full bg-[#312F2C]" />
+          <div className="h-2 w-2 rounded-full bg-foreground" />
         </CheckboxPrimitive.Indicator>
       </CheckboxPrimitive.Root>
     );

@@ -86,12 +86,12 @@ const getCSSVariable = (variable: string): string => {
 // Export both function and value versions for compatibility
 const getStatusColor = (status: string): string => {
   const colorMap: Record<string, string> = {
-    scheduled: getCSSVariable('--scheduled') || 'hsl(45, 100%, 51%)',
-    in_progress: getCSSVariable('--in-progress') || 'hsl(36, 100%, 50%)',
-    completed: getCSSVariable('--completed') || 'hsl(122, 39%, 49%)',
-    cancelled: getCSSVariable('--cancelled') || 'hsl(0, 84%, 60%)',
+    scheduled: getCSSVariable('--scheduled') || '#7afffe', // Fire palette: Ice-derived
+    in_progress: getCSSVariable('--in-progress') || '#f1fe60', // Fire palette: Lime-derived
+    completed: getCSSVariable('--completed') || '#3bfec9', // Fire palette: Lime-derived
+    cancelled: getCSSVariable('--cancelled') || '#e04850', // Fire palette: Coral-dark
   };
-  return colorMap[status] || getCSSVariable('--muted-foreground') || '#6B7280';
+  return colorMap[status] || getCSSVariable('--muted-foreground') || '#5c6166'; // Fire palette: charcoal-muted
 };
 
 // Export statusColors as an object with getter functions for compatibility
@@ -127,12 +127,12 @@ const getTripDisplayName = (trip: Trip, getClientName: (id: string) => string): 
 // Export as a function to avoid Fast Refresh issues with array exports
 export function getDriverColors(): Array<() => string> {
   return [
-    () => getCSSVariable('--driver-color-1') || '#8B5CF6', // violet
-    () => getCSSVariable('--driver-color-2') || '#EC4899', // pink
-    () => getCSSVariable('--driver-color-3') || '#06B6D4', // cyan
-    () => getCSSVariable('--driver-color-4') || '#84CC16', // lime
-    () => getCSSVariable('--driver-color-5') || '#F97316', // orange
-    () => getCSSVariable('--driver-color-6') || '#6366F1', // indigo
+    () => getCSSVariable('--driver-color-1') || '#3b82f6', // blue (from CSS variable definition)
+    () => getCSSVariable('--driver-color-2') || '#22c55e', // green (from CSS variable definition)
+    () => getCSSVariable('--driver-color-3') || '#f59e0b', // amber (from CSS variable definition)
+    () => getCSSVariable('--driver-color-4') || '#8b5cf6', // purple (from CSS variable definition)
+    () => getCSSVariable('--driver-color-5') || '#ec4899', // pink (from CSS variable definition)
+    () => getCSSVariable('--driver-color-6') || '#06b6d4', // cyan (from CSS variable definition)
   ];
 }
 
@@ -167,7 +167,7 @@ export default function EnhancedTripCalendar() {
     }, [sidebarDate]);
 
     return (
-      <div className="w-64 rounded-lg p-3 bg-card" style={{ border: '1px solid #cc33ab' }}>
+      <div className="w-64 rounded-lg p-3 bg-card" style={{ border: `1px solid var(--in-progress)` }}>
         <div className="text-center">
           {/* Month Navigation */}
           <div className="flex items-center justify-between mb-2">
@@ -357,7 +357,7 @@ export default function EnhancedTripCalendar() {
     drivers.forEach((driver: any, index: number) => {
       const driverColorsArray = getDriverColors();
       const colorFn = driverColorsArray[index % driverColorsArray.length];
-      map.set(driver.id, colorFn ? colorFn() : getCSSVariable('--muted-foreground') || '#6B7280');
+      map.set(driver.id, colorFn ? colorFn() : getCSSVariable('--muted-foreground') || '#5c6166'); // Fire palette: charcoal-muted
     });
     return map;
   }, [drivers]);
@@ -402,7 +402,7 @@ export default function EnhancedTripCalendar() {
       return getStatusColor(trip.status);
     } else {
       const driverColor = driverColorMap.get(trip.driver_id);
-      return driverColor || getCSSVariable('--muted-foreground') || '#6B7280';
+      return driverColor || getCSSVariable('--muted-foreground') || '#5c6166'; // Fire palette: charcoal-muted
     }
   };
 

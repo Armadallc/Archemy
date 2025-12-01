@@ -459,7 +459,7 @@ export type KanbanBoardColumnProps = {
 };
 
 export const kanbanBoardColumnClassNames =
-  'w-64 flex-shrink-0 rounded-xl border flex flex-col border-white/20 dark:border-white/10 dev-lab-glass-light dark:dev-lab-glass-dark bg-white/25 dark:bg-[#2f3235]/25 py-2 max-h-full shadow-xl';
+  'w-64 flex-shrink-0 rounded-xl border flex flex-col border-white/20 dark:border-white/10 dev-lab-glass-light dark:dev-lab-glass-dark bg-white/25 dark:bg-card/25 py-2 max-h-full shadow-xl';
 
 export const KanbanBoardColumn = forwardRef<
   HTMLElement,
@@ -473,7 +473,7 @@ export const KanbanBoardColumn = forwardRef<
       aria-labelledby={`column-${columnId}-title`}
       className={cn(
         kanbanBoardColumnClassNames,
-        isDropTarget && 'border-[#ff555d] shadow-[0_0_20px_rgba(255,85,93,0.3)]',
+        isDropTarget && 'border-primary shadow-[0_0_20px_rgba(255,85,93,0.3)]',
         className,
       )}
       onDragLeave={() => {
@@ -668,7 +668,7 @@ export const KanbanBoardColumnButton = forwardRef<
   return (
     <Button
       className={cn(
-        'bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#ff555d] hover:text-[#ff444c] hover:bg-white/40 dark:hover:bg-white/20 w-full justify-start transition-all',
+        'bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-primary hover:text-primary-hover hover:bg-white/40 dark:hover:bg-white/20 w-full justify-start transition-all',
         className,
       )}
       variant="outline"
@@ -905,7 +905,7 @@ export function KanbanBoardCardButton({
     <Tooltip>
       <TooltipTrigger asChild>{button}</TooltipTrigger>
 
-      <TooltipContent align="center" side="bottom" className="dev-lab-glass-light dark:dev-lab-glass-dark border-white/20 dark:border-white/10 bg-white/25 dark:bg-[#2f3235]/25 dev-lab-text-primary">
+      <TooltipContent align="center" side="bottom" className="dev-lab-glass-light dark:dev-lab-glass-dark border-white/20 dark:border-white/10 bg-white/25 dark:bg-card/25 dev-lab-text-primary">
         {tooltip}
       </TooltipContent>
     </Tooltip>

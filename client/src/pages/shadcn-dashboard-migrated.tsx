@@ -90,10 +90,10 @@ const ShadcnHeader = ({ title, subtitle }: { title: string; subtitle?: string })
   };
 
   return (
-    <div className="px-6 py-6 flex items-center justify-between border-b rounded-lg bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+    <div className="px-6 py-6 flex items-center justify-between border-b rounded-lg bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
       <div className="flex items-center gap-3">
         <div 
-          className="flex items-center text-[#26282b] dark:text-[#eaeaea]"
+          className="flex items-center text-foreground"
           style={{
             fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
             fontWeight: 700,
@@ -111,7 +111,7 @@ const ShadcnHeader = ({ title, subtitle }: { title: string; subtitle?: string })
           variant="outline"
           size="sm"
           onClick={openSearch}
-          className="flex items-center space-x-2 bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 hover:bg-white/40 dark:hover:bg-white/20 text-[#26282b] dark:text-[#eaeaea] backdrop-blur-sm"
+          className="flex items-center space-x-2 bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 hover:bg-white/40 dark:hover:bg-white/20 text-foreground backdrop-blur-sm"
         >
           <Search className="w-4 h-4" />
           <span>Search</span>
@@ -283,55 +283,55 @@ export default function ShadcnDashboardMigrated() {
           <div className="space-y-6">
             {/* Stats Cards - Shadcn Style */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-[#26282b] dark:text-[#eaeaea]">Total Trips</CardTitle>
-                  <Calendar className="h-4 w-4 text-[#26282b]/70 dark:text-[#eaeaea]/70" />
+                  <CardTitle className="text-sm font-medium text-foreground">Total Trips</CardTitle>
+                  <Calendar className="h-4 w-4 text-foreground-secondary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]">{realTimeUniversalTrips?.length || 0}</div>
+                  <div className="text-2xl font-bold text-foreground">{realTimeUniversalTrips?.length || 0}</div>
                   <p className="text-xs text-green-400">All programs</p>
-                  <p className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70">System-wide trips</p>
+                  <p className="text-xs text-foreground-secondary">System-wide trips</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-[#26282b] dark:text-[#eaeaea]">Active Drivers</CardTitle>
-                  <Car className="h-4 w-4 text-[#26282b]/70 dark:text-[#eaeaea]/70" />
+                  <CardTitle className="text-sm font-medium text-foreground">Active Drivers</CardTitle>
+                  <Car className="h-4 w-4 text-foreground-secondary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]">
+                  <div className="text-2xl font-bold text-foreground">
                     {realTimeDrivers?.filter((d: any) => d.is_active).length || 0}
                   </div>
                   <p className="text-xs text-green-400">On duty</p>
-                  <p className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70">Fleet capacity</p>
+                  <p className="text-xs text-foreground-secondary">Fleet capacity</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-[#26282b] dark:text-[#eaeaea]">Corporate Clients</CardTitle>
-                  <Users className="h-4 w-4 text-[#26282b]/70 dark:text-[#eaeaea]/70" />
+                  <CardTitle className="text-sm font-medium text-foreground">Corporate Clients</CardTitle>
+                  <Users className="h-4 w-4 text-foreground-secondary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]">
+                  <div className="text-2xl font-bold text-foreground">
                     {realTimeCorporateClients?.filter((cc: any) => cc.is_active === true).length || 0}
                   </div>
                   <p className="text-xs text-green-400">Active clients</p>
-                  <p className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70">System-wide</p>
+                  <p className="text-xs text-foreground-secondary">System-wide</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-[#26282b] dark:text-[#eaeaea]">Programs</CardTitle>
-                  <Folder className="h-4 w-4 text-[#26282b]/70 dark:text-[#eaeaea]/70" />
+                  <CardTitle className="text-sm font-medium text-foreground">Programs</CardTitle>
+                  <Folder className="h-4 w-4 text-foreground-secondary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]">{realTimePrograms?.length || 0}</div>
+                  <div className="text-2xl font-bold text-foreground">{realTimePrograms?.length || 0}</div>
                   <p className="text-xs text-green-400">Active programs</p>
-                  <p className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70">System-wide</p>
+                  <p className="text-xs text-foreground-secondary">System-wide</p>
                 </CardContent>
               </Card>
             </div>
@@ -355,7 +355,7 @@ export default function ShadcnDashboardMigrated() {
 
               {/* Right Side: Activity Log (50%) - Scrollable, matching left column height */}
               <div className="flex">
-                <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl flex flex-col w-full" style={{ height: '481.033px' }}>
+                <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl flex flex-col w-full" style={{ height: '481.033px' }}>
                   <CardContent className="p-0 flex-1 overflow-hidden flex flex-col min-h-0">
                     <ActivityFeed />
                   </CardContent>
@@ -372,9 +372,9 @@ export default function ShadcnDashboardMigrated() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <EnhancedAnalyticsWidget />
               <TaskManagementWidget />
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-[#26282b] dark:text-[#eaeaea]">System Health</CardTitle>
+                  <CardTitle className="text-foreground">System Health</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -405,9 +405,9 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
             {/* Recent Activity - Preserved */}
-            <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+            <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
               <CardHeader>
-                <CardTitle className="text-[#26282b] dark:text-[#eaeaea]">Recent Activity</CardTitle>
+                <CardTitle className="text-foreground">Recent Activity</CardTitle>
               </CardHeader>
               <CardContent>
                 <ActivityFeed />
@@ -432,13 +432,13 @@ export default function ShadcnDashboardMigrated() {
           <div className="space-y-6">
             {/* Stats Cards - Shadcn Style */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-[#26282b] dark:text-[#eaeaea]">Today's Trips</CardTitle>
-                  <Calendar className="h-4 w-4 text-[#26282b]/70 dark:text-[#eaeaea]/70" />
+                  <CardTitle className="text-sm font-medium text-foreground">Today's Trips</CardTitle>
+                  <Calendar className="h-4 w-4 text-foreground-secondary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]">
+                  <div className="text-2xl font-bold text-foreground">
                     {realTimeTrips?.filter((t: any) => {
                       const today = new Date().toDateString();
                       const tripDate = new Date(t.scheduled_pickup_time).toDateString();
@@ -446,45 +446,45 @@ export default function ShadcnDashboardMigrated() {
                     }).length || 0}
                   </div>
                   <p className="text-xs text-green-400">Scheduled today</p>
-                  <p className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70">Transportation requests</p>
+                  <p className="text-xs text-foreground-secondary">Transportation requests</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-[#26282b] dark:text-[#eaeaea]">Active Drivers</CardTitle>
-                  <Car className="h-4 w-4 text-[#26282b]/70 dark:text-[#eaeaea]/70" />
+                  <CardTitle className="text-sm font-medium text-foreground">Active Drivers</CardTitle>
+                  <Car className="h-4 w-4 text-foreground-secondary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]">
+                  <div className="text-2xl font-bold text-foreground">
                     {realTimeDrivers?.filter((d: any) => d.is_active).length || 0}
                   </div>
                   <p className="text-xs text-green-400">On duty</p>
-                  <p className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70">Fleet capacity</p>
+                  <p className="text-xs text-foreground-secondary">Fleet capacity</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-[#26282b] dark:text-[#eaeaea]">Total Clients</CardTitle>
-                  <Users className="h-4 w-4 text-[#26282b]/70 dark:text-[#eaeaea]/70" />
+                  <CardTitle className="text-sm font-medium text-foreground">Total Clients</CardTitle>
+                  <Users className="h-4 w-4 text-foreground-secondary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]">{realTimeClients?.length || 0}</div>
+                  <div className="text-2xl font-bold text-foreground">{realTimeClients?.length || 0}</div>
                   <p className="text-xs text-green-400">Registered clients</p>
-                  <p className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70">Service recipients</p>
+                  <p className="text-xs text-foreground-secondary">Service recipients</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-[#26282b] dark:text-[#eaeaea]">Programs</CardTitle>
-                  <Folder className="h-4 w-4 text-[#26282b]/70 dark:text-[#eaeaea]/70" />
+                  <CardTitle className="text-sm font-medium text-foreground">Programs</CardTitle>
+                  <Folder className="h-4 w-4 text-foreground-secondary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]">{realTimePrograms?.length || 0}</div>
+                  <div className="text-2xl font-bold text-foreground">{realTimePrograms?.length || 0}</div>
                   <p className="text-xs text-green-400">Active programs</p>
-                  <p className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70">Under management</p>
+                  <p className="text-xs text-foreground-secondary">Under management</p>
                 </CardContent>
               </Card>
             </div>
@@ -509,9 +509,9 @@ export default function ShadcnDashboardMigrated() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <EnhancedAnalyticsWidget />
               <TaskManagementWidget />
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-[#26282b] dark:text-[#eaeaea]">System Health</CardTitle>
+                  <CardTitle className="text-foreground">System Health</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -542,9 +542,9 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
             {/* Recent Activity - Preserved */}
-            <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+            <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
               <CardHeader>
-                <CardTitle className="text-[#26282b] dark:text-[#eaeaea]">Recent Activity</CardTitle>
+                <CardTitle className="text-foreground">Recent Activity</CardTitle>
               </CardHeader>
               <CardContent>
                 <ActivityFeed />
@@ -571,13 +571,13 @@ export default function ShadcnDashboardMigrated() {
           <div className="space-y-6">
             {/* Stats Cards - Shadcn Style */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-[#26282b] dark:text-[#eaeaea]">Today's Trips</CardTitle>
-                  <Calendar className="h-4 w-4 text-[#26282b]/70 dark:text-[#eaeaea]/70" />
+                  <CardTitle className="text-sm font-medium text-foreground">Today's Trips</CardTitle>
+                  <Calendar className="h-4 w-4 text-foreground-secondary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]">
+                  <div className="text-2xl font-bold text-foreground">
                     {realTimeTrips?.filter((t: any) => {
                       const today = new Date().toDateString();
                       const tripDate = new Date(t.scheduled_pickup_time).toDateString();
@@ -585,45 +585,45 @@ export default function ShadcnDashboardMigrated() {
                     }).length || 0}
                   </div>
                   <p className="text-xs text-green-400">Scheduled today</p>
-                  <p className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70">Transportation requests</p>
+                  <p className="text-xs text-foreground-secondary">Transportation requests</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Active Drivers</CardTitle>
                   <Car className="h-4 w-4" style={{ color: 'var(--muted-foreground)' }} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]">
+                  <div className="text-2xl font-bold text-foreground">
                     {realTimeDrivers?.filter((d: any) => d.is_active).length || 0}
                   </div>
                   <p className="text-xs text-green-400">On duty</p>
-                  <p className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70">Fleet capacity</p>
+                  <p className="text-xs text-foreground-secondary">Fleet capacity</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-[#26282b] dark:text-[#eaeaea]">Total Clients</CardTitle>
-                  <Users className="h-4 w-4 text-[#26282b]/70 dark:text-[#eaeaea]/70" />
+                  <CardTitle className="text-sm font-medium text-foreground">Total Clients</CardTitle>
+                  <Users className="h-4 w-4 text-foreground-secondary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]">{realTimeClients?.length || 0}</div>
+                  <div className="text-2xl font-bold text-foreground">{realTimeClients?.length || 0}</div>
                   <p className="text-xs text-green-400">Registered clients</p>
-                  <p className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70">Service recipients</p>
+                  <p className="text-xs text-foreground-secondary">Service recipients</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-[#26282b] dark:text-[#eaeaea]">Revenue</CardTitle>
-                  <DollarSign className="h-4 w-4 text-[#26282b]/70 dark:text-[#eaeaea]/70" />
+                  <CardTitle className="text-sm font-medium text-foreground">Revenue</CardTitle>
+                  <DollarSign className="h-4 w-4 text-foreground-secondary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]">$12,450</div>
+                  <div className="text-2xl font-bold text-foreground">$12,450</div>
                   <p className="text-xs text-green-400">+12.5% from last month</p>
-                  <p className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70">Monthly revenue</p>
+                  <p className="text-xs text-foreground-secondary">Monthly revenue</p>
                 </CardContent>
               </Card>
             </div>
@@ -647,9 +647,9 @@ export default function ShadcnDashboardMigrated() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <EnhancedAnalyticsWidget />
               <TaskManagementWidget />
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-[#26282b] dark:text-[#eaeaea]">System Health</CardTitle>
+                  <CardTitle className="text-foreground">System Health</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -680,9 +680,9 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
             {/* Recent Activity - Preserved */}
-            <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+            <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
               <CardHeader>
-                <CardTitle className="text-[#26282b] dark:text-[#eaeaea]">Recent Activity</CardTitle>
+                <CardTitle className="text-foreground">Recent Activity</CardTitle>
               </CardHeader>
               <CardContent>
                 <ActivityFeed />
@@ -709,13 +709,13 @@ export default function ShadcnDashboardMigrated() {
           <div className="space-y-6">
             {/* Stats Cards - Shadcn Style */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-[#26282b] dark:text-[#eaeaea]">Today's Trips</CardTitle>
-                  <Calendar className="h-4 w-4 text-[#26282b]/70 dark:text-[#eaeaea]/70" />
+                  <CardTitle className="text-sm font-medium text-foreground">Today's Trips</CardTitle>
+                  <Calendar className="h-4 w-4 text-foreground-secondary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]">
+                  <div className="text-2xl font-bold text-foreground">
                     {realTimeTrips?.filter((t: any) => {
                       const today = new Date().toDateString();
                       const tripDate = new Date(t.scheduled_pickup_time).toDateString();
@@ -723,45 +723,45 @@ export default function ShadcnDashboardMigrated() {
                     }).length || 0}
                   </div>
                   <p className="text-xs text-green-400">Scheduled today</p>
-                  <p className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70">Transportation requests</p>
+                  <p className="text-xs text-foreground-secondary">Transportation requests</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Active Drivers</CardTitle>
                   <Car className="h-4 w-4" style={{ color: 'var(--muted-foreground)' }} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]">
+                  <div className="text-2xl font-bold text-foreground">
                     {realTimeDrivers?.filter((d: any) => d.is_active).length || 0}
                   </div>
                   <p className="text-xs text-green-400">On duty</p>
-                  <p className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70">Fleet capacity</p>
+                  <p className="text-xs text-foreground-secondary">Fleet capacity</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-[#26282b] dark:text-[#eaeaea]">Total Clients</CardTitle>
-                  <Users className="h-4 w-4 text-[#26282b]/70 dark:text-[#eaeaea]/70" />
+                  <CardTitle className="text-sm font-medium text-foreground">Total Clients</CardTitle>
+                  <Users className="h-4 w-4 text-foreground-secondary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]">{realTimeClients?.length || 0}</div>
+                  <div className="text-2xl font-bold text-foreground">{realTimeClients?.length || 0}</div>
                   <p className="text-xs text-green-400">Registered clients</p>
-                  <p className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70">Service recipients</p>
+                  <p className="text-xs text-foreground-secondary">Service recipients</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-[#26282b] dark:text-[#eaeaea]">Revenue</CardTitle>
-                  <DollarSign className="h-4 w-4 text-[#26282b]/70 dark:text-[#eaeaea]/70" />
+                  <CardTitle className="text-sm font-medium text-foreground">Revenue</CardTitle>
+                  <DollarSign className="h-4 w-4 text-foreground-secondary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]">$12,450</div>
+                  <div className="text-2xl font-bold text-foreground">$12,450</div>
                   <p className="text-xs text-green-400">+12.5% from last month</p>
-                  <p className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70">Monthly revenue</p>
+                  <p className="text-xs text-foreground-secondary">Monthly revenue</p>
                 </CardContent>
               </Card>
             </div>
@@ -785,9 +785,9 @@ export default function ShadcnDashboardMigrated() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <EnhancedAnalyticsWidget />
               <TaskManagementWidget />
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-[#26282b] dark:text-[#eaeaea]">System Health</CardTitle>
+                  <CardTitle className="text-foreground">System Health</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -837,13 +837,13 @@ export default function ShadcnDashboardMigrated() {
           <div className="space-y-6">
             {/* Stats Cards - Shadcn Style */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-[#26282b] dark:text-[#eaeaea]">Today's Trips</CardTitle>
-                  <Calendar className="h-4 w-4 text-[#26282b]/70 dark:text-[#eaeaea]/70" />
+                  <CardTitle className="text-sm font-medium text-foreground">Today's Trips</CardTitle>
+                  <Calendar className="h-4 w-4 text-foreground-secondary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]">
+                  <div className="text-2xl font-bold text-foreground">
                     {realTimeTrips?.filter((t: any) => {
                       const today = new Date().toDateString();
                       const tripDate = new Date(t.scheduled_pickup_time).toDateString();
@@ -851,47 +851,47 @@ export default function ShadcnDashboardMigrated() {
                     }).length || 0}
                   </div>
                   <p className="text-xs text-green-400">Scheduled today</p>
-                  <p className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70">Your assignments</p>
+                  <p className="text-xs text-foreground-secondary">Your assignments</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-[#26282b] dark:text-[#eaeaea]">Completed</CardTitle>
-                  <Car className="h-4 w-4 text-[#26282b]/70 dark:text-[#eaeaea]/70" />
+                  <CardTitle className="text-sm font-medium text-foreground">Completed</CardTitle>
+                  <Car className="h-4 w-4 text-foreground-secondary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]">
+                  <div className="text-2xl font-bold text-foreground">
                     {realTimeTrips?.filter((t: any) => t.status === 'completed').length || 0}
                   </div>
                   <p className="text-xs text-green-400">This week</p>
-                  <p className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70">Successful trips</p>
+                  <p className="text-xs text-foreground-secondary">Successful trips</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-[#26282b] dark:text-[#eaeaea]">In Progress</CardTitle>
-                  <MapPin className="h-4 w-4 text-[#26282b]/70 dark:text-[#eaeaea]/70" />
+                  <CardTitle className="text-sm font-medium text-foreground">In Progress</CardTitle>
+                  <MapPin className="h-4 w-4 text-foreground-secondary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]">
+                  <div className="text-2xl font-bold text-foreground">
                     {realTimeTrips?.filter((t: any) => t.status === 'in_progress').length || 0}
                   </div>
                   <p className="text-xs text-green-400">Active now</p>
-                  <p className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70">Current trips</p>
+                  <p className="text-xs text-foreground-secondary">Current trips</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-[#26282b] dark:text-[#eaeaea]">Rating</CardTitle>
-                  <BarChart3 className="h-4 w-4 text-[#26282b]/70 dark:text-[#eaeaea]/70" />
+                  <CardTitle className="text-sm font-medium text-foreground">Rating</CardTitle>
+                  <BarChart3 className="h-4 w-4 text-foreground-secondary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]">4.8</div>
+                  <div className="text-2xl font-bold text-foreground">4.8</div>
                   <p className="text-xs text-green-400">+0.2 this month</p>
-                  <p className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70">Customer satisfaction</p>
+                  <p className="text-xs text-foreground-secondary">Customer satisfaction</p>
                 </CardContent>
               </Card>
             </div>
@@ -915,9 +915,9 @@ export default function ShadcnDashboardMigrated() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <EnhancedAnalyticsWidget />
               <TaskManagementWidget />
-              <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-[#26282b] dark:text-[#eaeaea]">System Health</CardTitle>
+                  <CardTitle className="text-foreground">System Health</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -948,9 +948,9 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
             {/* Recent Activity - Preserved */}
-            <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+            <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
               <CardHeader>
-                <CardTitle className="text-[#26282b] dark:text-[#eaeaea]">Recent Activity</CardTitle>
+                <CardTitle className="text-foreground">Recent Activity</CardTitle>
               </CardHeader>
               <CardContent>
                 <ActivityFeed />

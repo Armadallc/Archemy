@@ -412,9 +412,9 @@ export default function Sidebar({
   };
 
   return (
-    <div className={`transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} h-screen flex flex-col overflow-hidden pt-6 bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border-r border-white/20 dark:border-white/10 shadow-xl`}>
+    <div className={`transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} h-screen flex flex-col overflow-hidden pt-6 bg-sidebar/25 dark:bg-sidebar/25 backdrop-blur-md border-r border-sidebar-border/20 dark:border-sidebar-border/20 shadow-xl`}>
       {/* Header */}
-      <div className="p-4 border-b flex-shrink-0 border-white/20 dark:border-white/10">
+      <div className="p-4 border-b flex-shrink-0 border-sidebar-border/20 dark:border-sidebar-border/20">
         <div className="flex items-center justify-between">
           {!isCollapsed && (
             <div className="flex items-center space-x-3">
@@ -429,7 +429,7 @@ export default function Sidebar({
                 />
               )}
               <div>
-                <h2 className="text-[#26282b] dark:text-[#eaeaea]" style={{ fontSize: '42px' }}>{getCorporateClientName()}</h2>
+                <h2 className="text-sidebar-foreground" style={{ fontSize: '42px' }}>{getCorporateClientName()}</h2>
               </div>
             </div>
           )}
@@ -446,7 +446,7 @@ export default function Sidebar({
           {setIsCollapsed && (
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-1 rounded transition-colors bg-white/20 dark:bg-white/10 hover:bg-white/30 dark:hover:bg-white/20 text-[#26282b] dark:text-[#eaeaea] backdrop-blur-sm"
+              className="p-1 rounded transition-colors bg-sidebar/20 dark:bg-sidebar/10 hover:bg-sidebar/30 dark:hover:bg-sidebar/20 text-sidebar-foreground backdrop-blur-sm"
               title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
               aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
@@ -461,7 +461,7 @@ export default function Sidebar({
         user?.role === 'corporate_admin' || 
         user?.role === 'program_admin' || 
         user?.role === 'program_user') && (
-        <div className="p-4 border-b flex-shrink-0 border-white/20 dark:border-white/10">
+        <div className="p-4 border-b flex-shrink-0 border-sidebar-border/20 dark:border-sidebar-border/20">
           <DrillDownDropdown />
         </div>
       )}
@@ -500,7 +500,7 @@ export default function Sidebar({
                       toggleCategory(category.id);
                     }
                   }}
-                  className="flex items-center justify-between w-full px-2 py-1 rounded transition-colors group focus:outline-none focus:ring-2 focus:ring-inset bg-white/10 dark:bg-white/5 hover:bg-white/20 dark:hover:bg-white/10 text-[#26282b] dark:text-[#eaeaea] backdrop-blur-sm"
+                  className="flex items-center justify-between w-full px-2 py-1 rounded transition-colors group focus:outline-none focus:ring-2 focus:ring-inset bg-sidebar/10 dark:bg-sidebar/5 hover:bg-sidebar/20 dark:hover:bg-sidebar/10 text-sidebar-foreground backdrop-blur-sm"
                   onFocus={(e) => e.currentTarget.style.boxShadow = '0 0 0 2px rgba(255, 85, 93, 0.3) inset'}
                   onBlur={(e) => e.currentTarget.style.boxShadow = ''}
                   aria-expanded={isExpanded ? "true" : "false"}
@@ -509,7 +509,7 @@ export default function Sidebar({
                 >
                   <div className="flex items-center space-x-2">
                     {!isCollapsed && (
-                      <span className="text-xs font-semibold uppercase tracking-wider text-[#26282b]/70 dark:text-[#eaeaea]/70">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground-muted">
                         {category.label}
                       </span>
                     )}
@@ -517,9 +517,9 @@ export default function Sidebar({
                   {!isCollapsed && (
                     <div className="flex items-center">
                       {isExpanded ? (
-                        <ChevronDown className="w-3 h-3 transition-colors text-[#26282b]/70 dark:text-[#eaeaea]/70 hover:text-[#26282b] dark:hover:text-[#eaeaea]" />
+                        <ChevronDown className="w-3 h-3 transition-colors text-sidebar-foreground-muted hover:text-sidebar-foreground" />
                       ) : (
-                        <ChevronRight className="w-3 h-3 transition-colors text-[#26282b]/70 dark:text-[#eaeaea]/70 hover:text-[#26282b] dark:hover:text-[#eaeaea]" />
+                        <ChevronRight className="w-3 h-3 transition-colors text-sidebar-foreground-muted hover:text-sidebar-foreground" />
                       )}
                     </div>
                   )}
@@ -564,8 +564,8 @@ export default function Sidebar({
                         }}
                         className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
                           isActive 
-                            ? 'bg-[#ff555d]/20 dark:bg-[#ff555d]/20 text-[#26282b] dark:text-[#eaeaea] shadow-lg' 
-                            : 'text-[#26282b]/70 dark:text-[#eaeaea]/70 hover:bg-white/20 dark:hover:bg-white/10'
+                            ? 'bg-sidebar-primary/20 text-sidebar-primary-foreground shadow-lg' 
+                            : 'text-sidebar-foreground-muted hover:bg-sidebar/20 dark:hover:bg-sidebar/10'
                         } backdrop-blur-sm`}
                       >
                         {!isCollapsed && (
@@ -590,8 +590,8 @@ export default function Sidebar({
                       to={href}
                       className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
                         isActive 
-                          ? 'bg-[#ff555d]/20 dark:bg-[#ff555d]/20 text-[#26282b] dark:text-[#eaeaea] shadow-lg' 
-                          : 'text-[#26282b]/70 dark:text-[#eaeaea]/70 hover:bg-white/20 dark:hover:bg-white/10'
+                          ? 'bg-sidebar-primary/20 dark:bg-sidebar-primary/20 text-sidebar-primary-foreground dark:text-sidebar-primary-foreground shadow-lg' 
+                          : 'text-sidebar-foreground-muted dark:text-sidebar-foreground-muted hover:bg-sidebar/20 dark:hover:bg-sidebar/10'
                       } backdrop-blur-sm`}
                     >
                       {!isCollapsed && (
@@ -609,14 +609,14 @@ export default function Sidebar({
       </nav>
 
       {/* User Menu */}
-      <div className="p-4 border-t relative user-menu-container flex-shrink-0 border-white/20 dark:border-white/10">
+      <div className="p-4 border-t relative user-menu-container flex-shrink-0 border-sidebar-border/20 dark:border-sidebar-border/20">
         {!isCollapsed && user && (
           <div className="flex items-center space-x-3">
             <button
               onClick={toggleUserMenu}
-              className="flex items-center space-x-3 w-full p-2 rounded-lg transition-colors bg-white/10 dark:bg-white/5 hover:bg-white/20 dark:hover:bg-white/10 backdrop-blur-sm"
+              className="flex items-center space-x-3 w-full p-2 rounded-lg transition-colors bg-sidebar/10 dark:bg-sidebar/5 hover:bg-sidebar/20 dark:hover:bg-sidebar/10 backdrop-blur-sm"
             >
-              <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-[#ff555d]">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-primary">
                 {user.avatar_url ? (
                   <img 
                     src={user.avatar_url} 
@@ -633,25 +633,25 @@ export default function Sidebar({
                 </span>
               </div>
               <div className="flex-1 min-w-0 text-left">
-                <p className="text-sm font-medium truncate text-[#26282b] dark:text-[#eaeaea]">
+                <p className="text-sm font-medium truncate text-sidebar-foreground">
                   {user.first_name && user.last_name 
-                    ? `${user.first_name} ${user.last_name}` 
+                    ? `${user.first_name} ${user.last_name}`
                     : user.user_name || user.email}
                 </p>
                 {userRole !== 'super_admin' && (
-                  <p className="text-xs capitalize text-[#26282b]/70 dark:text-[#eaeaea]/70">
+                  <p className="text-xs capitalize text-sidebar-foreground-muted">
                     {userRole.replace('_', ' ')}
                   </p>
                 )}
               </div>
-              <ChevronUp className={`w-4 h-4 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''} text-[#26282b]/70 dark:text-[#eaeaea]/70`} />
+              <ChevronUp className={`w-4 h-4 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''} text-sidebar-foreground-muted`} />
             </button>
           </div>
         )}
         {isCollapsed && user && (
           <button
             onClick={toggleUserMenu}
-            className="w-8 h-8 rounded-full flex items-center justify-center mx-auto transition-colors bg-[#ff555d] hover:bg-[#ff444c] backdrop-blur-sm"
+            className="w-8 h-8 rounded-full flex items-center justify-center mx-auto transition-colors bg-primary hover:bg-primary-hover backdrop-blur-sm"
           >
             {user.avatar_url ? (
               <img 
@@ -672,7 +672,7 @@ export default function Sidebar({
         
         {/* Slide-up User Menu */}
         {isUserMenuOpen && (
-          <div className="absolute bottom-full left-0 right-0 mb-2 rounded-lg shadow-xl overflow-hidden bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10">
+          <div className="absolute bottom-full left-0 right-0 mb-2 rounded-lg shadow-xl overflow-hidden bg-popover/25 dark:bg-popover/25 backdrop-blur-md border border-sidebar-border/20 dark:border-sidebar-border/20">
             <div className="py-2">
               {/* User Settings */}
               <button
@@ -681,7 +681,7 @@ export default function Sidebar({
                   console.log('Navigate to user settings');
                   setIsUserMenuOpen(false);
                 }}
-                className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors text-[#26282b] dark:text-[#eaeaea] hover:bg-white/20 dark:hover:bg-white/10"
+                className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors text-popover-foreground hover:bg-popover/20 dark:hover:bg-popover/10"
               >
                 <User className="w-4 h-4" />
                 <span>User Settings</span>
@@ -691,7 +691,7 @@ export default function Sidebar({
               {darkModeEnabled && (
                 <button
                   onClick={toggleTheme}
-                  className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors text-[#26282b] dark:text-[#eaeaea] hover:bg-white/20 dark:hover:bg-white/10"
+                  className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors text-popover-foreground hover:bg-popover/20 dark:hover:bg-popover/10"
                 >
                   {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                   <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
@@ -699,12 +699,12 @@ export default function Sidebar({
               )}
               
               {/* Divider */}
-              <div className="border-t my-1 border-white/20 dark:border-white/10"></div>
+              <div className="border-t my-1 border-sidebar-border/20 dark:border-sidebar-border/20"></div>
               
               {/* Logout */}
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors text-[#cc5833] hover:bg-white/20 dark:hover:bg-white/10"
+                className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors text-destructive hover:bg-popover/20 dark:hover:bg-popover/10"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Logout</span>

@@ -926,7 +926,7 @@ function MyKanbanBoardColumn({
                 </KanbanBoardColumnIconButton>
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent align="end" className="dev-lab-glass-light dark:dev-lab-glass-dark border-white/20 dark:border-white/10 bg-white/25 dark:bg-[#2f3235]/25">
+              <DropdownMenuContent align="end" className="dev-lab-glass-light dark:dev-lab-glass-dark border-white/20 dark:border-white/10 bg-white/25 dark:bg-card/25">
                 <DropdownMenuLabel className="dev-lab-text-primary">Column</DropdownMenuLabel>
 
                 <DropdownMenuGroup>
@@ -1199,7 +1199,7 @@ function MyNewKanbanBoardCard({
         </div>
 
         <KanbanBoardColumnFooter>
-          <Button ref={submitButtonReference} size="sm" type="submit" className="bg-[#ff555d] hover:bg-[#ff444c] text-white transition-all hover:scale-105 shadow-lg dev-lab-accent-glow">
+          <Button ref={submitButtonReference} size="sm" type="submit" className="bg-primary hover:bg-primary-hover text-primary-foreground transition-all hover:scale-105 shadow-lg dev-lab-accent-glow">
             Add
           </Button>
 
@@ -1324,7 +1324,7 @@ function MyNewKanbanBoardColumn({
         </Button>
       </TooltipTrigger>
 
-      <TooltipContent className="dev-lab-glass-light dark:dev-lab-glass-dark border-white/20 dark:border-white/10 bg-white/25 dark:bg-[#2f3235]/25 dev-lab-text-primary">
+      <TooltipContent className="dev-lab-glass-light dark:dev-lab-glass-dark border-white/20 dark:border-white/10 bg-white/25 dark:bg-card/25 dev-lab-text-primary">
         Add a new column to the board
       </TooltipContent>
     </Tooltip>

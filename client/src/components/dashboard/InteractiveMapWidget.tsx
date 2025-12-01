@@ -227,24 +227,24 @@ export default function InteractiveMapWidget({ className }: InteractiveMapWidget
       case 'completed':
         return { backgroundColor: getCSSVariable('--completed') || 'hsl(122, 39%, 49%)' };
       case 'break':
-        return { backgroundColor: getCSSVariable('--driver-color-5') || '#F97316' };
+        return { backgroundColor: getCSSVariable('--driver-color-5') || '#f59e0b' }; // Fire palette: amber (from CSS variable definition)
       default:
-        return { backgroundColor: getCSSVariable('--muted-foreground') || '#6b7280' };
+        return { backgroundColor: getCSSVariable('--muted-foreground') || '#5c6166' }; // Fire palette: charcoal-muted
     }
   };
 
   const getRouteColor = (status: string) => {
     switch (status) {
       case 'scheduled':
-        return getCSSVariable('--scheduled') || 'hsl(45, 100%, 51%)';
+        return getCSSVariable('--scheduled') || '#7afffe'; // Fire palette: Ice-derived
       case 'in_progress':
-        return getCSSVariable('--in-progress') || 'hsl(36, 100%, 50%)';
+        return getCSSVariable('--in-progress') || '#f1fe60'; // Fire palette: Lime-derived
       case 'completed':
-        return getCSSVariable('--completed') || 'hsl(122, 39%, 49%)';
+        return getCSSVariable('--completed') || '#3bfec9'; // Fire palette: Lime-derived
       case 'cancelled':
-        return getCSSVariable('--cancelled') || 'hsl(0, 84%, 60%)';
+        return getCSSVariable('--cancelled') || '#e04850'; // Fire palette: Coral-dark
       default:
-        return getCSSVariable('--muted-foreground') || '#6b7280';
+        return getCSSVariable('--muted-foreground') || '#5c6166'; // Fire palette: charcoal-muted
     }
   };
 

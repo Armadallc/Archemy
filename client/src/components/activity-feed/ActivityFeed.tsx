@@ -407,9 +407,19 @@ export default function ActivityFeed() {
                             variant="outline" 
                             className="text-xs font-normal"
                             style={{
-                              borderColor: activity.source_type === 'trip' ? '#ccbd33' : activity.source_type === 'task' ? '#cc5833' : undefined,
-                              backgroundColor: activity.source_type === 'trip' ? '#ccbd33' : activity.source_type === 'task' ? '#cc5833' : undefined,
-                              color: (activity.source_type === 'trip' || activity.source_type === 'task') ? '#000000' : undefined,
+                              borderColor: activity.source_type === 'trip' 
+                                ? 'var(--in-progress)' 
+                                : activity.source_type === 'task' 
+                                  ? 'var(--cancelled)' 
+                                  : undefined,
+                              backgroundColor: activity.source_type === 'trip' 
+                                ? 'var(--in-progress-bg)' 
+                                : activity.source_type === 'task' 
+                                  ? 'var(--cancelled-bg)' 
+                                  : undefined,
+                              color: (activity.source_type === 'trip' || activity.source_type === 'task') 
+                                ? 'var(--foreground)' 
+                                : undefined,
                             }}
                           >
                             ({getSourceTypeBadge(activity.source_type)})
@@ -443,9 +453,9 @@ export default function ActivityFeed() {
                                         variant="outline" 
                                         className="text-xs font-normal"
                                         style={{
-                                          borderColor: '#33bccc',
-                                          backgroundColor: '#33bccc',
-                                          color: '#000000',
+                                          borderColor: 'var(--status-info)',
+                                          backgroundColor: 'var(--status-info-bg)',
+                                          color: 'var(--foreground)',
                                         }}
                                       >
                                         (client)
@@ -461,9 +471,9 @@ export default function ActivityFeed() {
                                         variant="outline" 
                                         className="text-xs font-normal"
                                         style={{
-                                          borderColor: '#33bccc',
-                                          backgroundColor: '#33bccc',
-                                          color: '#000000',
+                                          borderColor: 'var(--status-info)',
+                                          backgroundColor: 'var(--status-info-bg)',
+                                          color: 'var(--foreground)',
                                         }}
                                       >
                                         (clients)

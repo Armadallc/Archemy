@@ -271,70 +271,70 @@ export default function EnhancedAnalyticsWidget({ className }: AnalyticsWidgetPr
         <TabsContent value="overview" className="space-y-6 shadow-xl">
           {/* Key Metrics */}
           <div className="grid grid-cols-2 gap-4">
-            <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+            <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
-                  <h5 className="text-sm font-medium text-[#26282b]/70 dark:text-[#eaeaea]/70">Total Revenue</h5>
-                  <DollarSign className="h-4 w-4 text-[#26282b]/70 dark:text-[#eaeaea]/70" />
+                  <h5 className="text-sm font-medium text-foreground-secondary">Total Revenue</h5>
+                  <DollarSign className="h-4 w-4 text-foreground-secondary" />
                 </div>
-                <p className="text-2xl font-bold mt-1 text-[#26282b] dark:text-[#eaeaea]">${analyticsData?.totalRevenue.toLocaleString()}</p>
+                <p className="text-2xl font-bold mt-1 text-foreground">${analyticsData?.totalRevenue.toLocaleString()}</p>
                 <div className="flex items-center text-sm mt-1">
                   {getTrendIcon(analyticsData?.revenueChange || 0)}
                   <span className={`ml-1 ${getTrendColor(analyticsData?.revenueChange || 0)}`}>
                     {Math.abs(analyticsData?.revenueChange || 0)}%
                   </span>
-                  <span className="ml-1 text-[#26282b]/70 dark:text-[#eaeaea]/70">vs last period</span>
+                  <span className="ml-1 text-foreground-secondary">vs last period</span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+            <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
-                  <h5 className="text-sm font-medium text-[#26282b]/70 dark:text-[#eaeaea]/70">Trips Completed</h5>
-                  <CheckCircle className="h-4 w-4 text-[#26282b]/70 dark:text-[#eaeaea]/70" />
+                  <h5 className="text-sm font-medium text-foreground-secondary">Trips Completed</h5>
+                  <CheckCircle className="h-4 w-4 text-foreground-secondary" />
                 </div>
-                <p className="text-2xl font-bold mt-1 text-[#26282b] dark:text-[#eaeaea]">{analyticsData?.tripsCompleted.toLocaleString()}</p>
+                <p className="text-2xl font-bold mt-1 text-foreground">{analyticsData?.tripsCompleted.toLocaleString()}</p>
                 <div className="flex items-center text-sm mt-1">
                   {getTrendIcon(analyticsData?.tripsChange || 0)}
                   <span className={`ml-1 ${getTrendColor(analyticsData?.tripsChange || 0)}`}>
                     {Math.abs(analyticsData?.tripsChange || 0)}%
                   </span>
-                  <span className="ml-1 text-[#26282b]/70 dark:text-[#eaeaea]/70">vs last period</span>
+                  <span className="ml-1 text-foreground-secondary">vs last period</span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+            <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
-                  <h5 className="text-sm font-medium text-[#26282b]/70 dark:text-[#eaeaea]/70">Active Drivers</h5>
-                  <Car className="h-4 w-4 text-[#26282b]/70 dark:text-[#eaeaea]/70" />
+                  <h5 className="text-sm font-medium text-foreground-secondary">Active Drivers</h5>
+                  <Car className="h-4 w-4 text-foreground-secondary" />
                 </div>
-                <p className="text-2xl font-bold mt-1 text-[#26282b] dark:text-[#eaeaea]">{analyticsData?.activeDrivers}</p>
+                <p className="text-2xl font-bold mt-1 text-foreground">{analyticsData?.activeDrivers}</p>
                 <div className="flex items-center text-sm mt-1">
                   {getTrendIcon(analyticsData?.driversChange || 0)}
                   <span className={`ml-1 ${getTrendColor(analyticsData?.driversChange || 0)}`}>
                     {Math.abs(analyticsData?.driversChange || 0)}%
                   </span>
-                  <span className="ml-1 text-[#26282b]/70 dark:text-[#eaeaea]/70">vs last period</span>
+                  <span className="ml-1 text-foreground-secondary">vs last period</span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+            <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
-                  <h5 className="text-sm font-medium text-[#26282b]/70 dark:text-[#eaeaea]/70">Completion Rate</h5>
-                  <CheckCircle className="h-4 w-4 text-[#26282b]/70 dark:text-[#eaeaea]/70" />
+                  <h5 className="text-sm font-medium text-foreground-secondary">Completion Rate</h5>
+                  <CheckCircle className="h-4 w-4 text-foreground-secondary" />
                 </div>
-                <p className="text-2xl font-bold mt-1 text-[#26282b] dark:text-[#eaeaea]">{analyticsData?.completionRate}%</p>
+                <p className="text-2xl font-bold mt-1 text-foreground">{analyticsData?.completionRate}%</p>
                 <div className="flex items-center text-sm mt-1">
                   {getTrendIcon(analyticsData?.completionRateChange || 0)}
                   <span className={`ml-1 ${getTrendColor(analyticsData?.completionRateChange || 0)}`}>
                     {Math.abs(analyticsData?.completionRateChange || 0)}%
                   </span>
-                  <span className="ml-1 text-[#26282b]/70 dark:text-[#eaeaea]/70">vs last period</span>
+                  <span className="ml-1 text-foreground-secondary">vs last period</span>
                 </div>
               </CardContent>
             </Card>
@@ -343,14 +343,14 @@ export default function EnhancedAnalyticsWidget({ className }: AnalyticsWidgetPr
           {/* Trips Status Distribution */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h5 className="text-lg font-semibold mb-3 text-[#26282b] dark:text-[#eaeaea]">Trip Status Distribution</h5>
+              <h5 className="text-lg font-semibold mb-3 text-foreground">Trip Status Distribution</h5>
               <div className="h-64">
                 <Doughnut data={tripsStatusData} options={doughnutOptions} />
               </div>
             </div>
 
             <div>
-              <h5 className="text-lg font-semibold mb-3 text-[#26282b] dark:text-[#eaeaea]">Peak Hours</h5>
+              <h5 className="text-lg font-semibold mb-3 text-foreground">Peak Hours</h5>
               <div className="h-64">
                 <Bar data={peakHoursData} options={chartOptions} />
               </div>

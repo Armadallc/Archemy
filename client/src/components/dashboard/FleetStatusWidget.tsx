@@ -37,10 +37,10 @@ export default function FleetStatusWidget({ className, drivers, trips }: FleetSt
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'text-green-600 bg-green-100 dark:bg-green-900/20';
-      case 'break': return 'text-orange-600 bg-orange-100 dark:bg-orange-900/20';
-      case 'maintenance': return 'text-red-600 bg-red-100 dark:bg-red-900/20';
-      default: return 'text-gray-600 bg-gray-100 dark:bg-gray-900/20';
+      case 'active': return 'text-status-success bg-status-success-bg';
+      case 'break': return 'text-status-warning bg-status-warning-bg';
+      case 'maintenance': return 'text-status-error bg-status-error-bg';
+      default: return 'text-muted-foreground bg-muted';
     }
   };
 
@@ -53,14 +53,14 @@ export default function FleetStatusWidget({ className, drivers, trips }: FleetSt
     }
   };
 
-  // Get trip status color for battery indicator
+  // Get trip status color for battery indicator - using Fire palette CSS variables
   const getTripStatusColor = (status: string) => {
     switch (status) {
-      case 'scheduled': return '#ccbd33';
-      case 'in_progress': return '#cc33ab';
-      case 'completed': return '#33ccad';
-      case 'cancelled': return '#cc5833';
-      default: return '#6b7280'; // muted grey
+      case 'scheduled': return 'var(--scheduled)';
+      case 'in_progress': return 'var(--in-progress)';
+      case 'completed': return 'var(--completed)';
+      case 'cancelled': return 'var(--cancelled)';
+      default: return 'var(--muted-foreground)';
     }
   };
   
@@ -95,14 +95,14 @@ export default function FleetStatusWidget({ className, drivers, trips }: FleetSt
             const statusColor = getTripStatusColor(vehicle.tripStatus);
             
             return (
-              <div key={vehicle.id} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div key={vehicle.id} className="p-4 bg-surface-muted dark:bg-surface-muted rounded-lg">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-3">
                     <div className={`p-2 rounded-full ${getStatusColor(vehicle.status)}`}>
                       {getStatusIcon(vehicle.status)}
                     </div>
                     <div>
-                      <p className="font-medium text-sm text-gray-900 dark:text-gray-100">{vehicle.vehicle}</p>
+                      <p className="font-medium text-sm text-foreground">{vehicle.vehicle}</p>
                       <p className="text-xs text-muted-foreground">{vehicle.driver}</p>
                     </div>
                   </div>
@@ -114,11 +114,11 @@ export default function FleetStatusWidget({ className, drivers, trips }: FleetSt
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-muted-foreground text-xs">Location</p>
-                    <p className="font-medium text-gray-900 dark:text-gray-100">{vehicle.location}</p>
+                    <p className="font-medium text-foreground">{vehicle.location}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground text-xs">Trip Status</p>
-                    <p className="font-medium text-gray-900 dark:text-gray-100 capitalize">{vehicle.tripStatus.replace('_', ' ')}</p>
+                    <p className="font-medium text-foreground capitalize">{vehicle.tripStatus.replace('_', ' ')}</p>
                   </div>
                 </div>
                 
@@ -127,7 +127,7 @@ export default function FleetStatusWidget({ className, drivers, trips }: FleetSt
                     <span className="text-muted-foreground">Progress</span>
                     <span style={{ color: statusColor }}>{batteryPercent}%</span>
                   </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div className="w-full bg-muted rounded-full h-2">
                     <div 
                       className="h-2 rounded-full transition-all"
                       style={{ 
@@ -142,7 +142,7 @@ export default function FleetStatusWidget({ className, drivers, trips }: FleetSt
           })
         ) : (
           <div className="p-8 text-center opacity-50 grayscale">
-            <Car className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+            <Car className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">No active trips</p>
             <p className="text-xs text-muted-foreground mt-1">Fleet is idle</p>
           </div>
@@ -152,22 +152,22 @@ export default function FleetStatusWidget({ className, drivers, trips }: FleetSt
         {hasActiveTrips && (
           <div className="grid grid-cols-3 gap-4 pt-2 pb-2 border-t">
             <div className="text-center shadow-xl">
-              <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]">
+              <div className="text-2xl font-bold text-foreground">
                 {inProgressTrips.length}
               </div>
-              <div className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70">In Progress</div>
+              <div className="text-xs text-foreground-secondary">In Progress</div>
             </div>
             <div className="text-center shadow-xl">
-              <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]">
+              <div className="text-2xl font-bold text-foreground">
                 {trips?.filter((t: any) => t.status === 'scheduled').length || 0}
               </div>
-              <div className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70">Scheduled</div>
+              <div className="text-xs text-foreground-secondary">Scheduled</div>
             </div>
             <div className="text-center shadow-xl">
-              <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]">
+              <div className="text-2xl font-bold text-foreground">
                 {trips?.filter((t: any) => t.status === 'completed').length || 0}
               </div>
-              <div className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70">Completed</div>
+              <div className="text-xs text-foreground-secondary">Completed</div>
             </div>
           </div>
         )}

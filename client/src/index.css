@@ -158,8 +158,8 @@
   
   /* Text */
   --foreground: var(--color-charcoal);
-  --foreground-secondary: #5c6166;
-  --foreground-muted: #8a8f94;
+  --foreground-secondary: var(--color-charcoal-muted);
+  --foreground-muted: #8a8f94; /* Intermediate between charcoal-muted and silver - keep for readability */
   --foreground-inverse: #ffffff;
   
   /* Primary Action Color */
@@ -173,9 +173,9 @@
   --accent-foreground: var(--color-charcoal);
   
   /* Borders */
-  --border: #d4d7da;
+  --border: #d4d7da; /* Light gray border - derived from silver/charcoal mix, keep for subtlety */
   --border-muted: var(--color-silver);
-  --border-strong: #b8bcc0;
+  --border-strong: var(--color-charcoal-muted);
   
   /* Input Fields */
   --input: #ffffff;
@@ -187,13 +187,13 @@
   --ring-offset: var(--background);
   
   /* Destructive/Error */
-  --destructive: #dc2626;
-  --destructive-hover: #b91c1c;
+  --destructive: var(--color-coral-dark); /* Use coral-dark for destructive actions */
+  --destructive-hover: #b91c1c; /* Slightly darker for hover - keep for accessibility */
   --destructive-foreground: #ffffff;
   
   /* Muted (Disabled, Subtle) */
   --muted: var(--color-silver);
-  --muted-foreground: #6b7280;
+  --muted-foreground: var(--color-charcoal-muted); /* Use charcoal-muted for consistency */
   
   /* Card (Shadcn compatibility) */
   --card: #ffffff;
@@ -386,8 +386,8 @@
   
   /* Text */
   --foreground: var(--color-cloud);
-  --foreground-secondary: #b8bcc0;
-  --foreground-muted: #8a8f94;
+  --foreground-secondary: #b8bcc0; /* Lighter gray for dark mode - good contrast, keep */
+  --foreground-muted: #8a8f94; /* Same as light mode for consistency */
   --foreground-inverse: var(--color-charcoal);
   
   /* Primary */
@@ -401,13 +401,13 @@
   --accent-foreground: var(--color-charcoal);
   
   /* Borders */
-  --border: #464a4f;
+  --border: var(--color-charcoal-lighter);
   --border-muted: var(--color-charcoal-light);
-  --border-strong: #5c6166;
+  --border-strong: var(--color-charcoal-muted);
   
   /* Input Fields */
   --input: var(--color-charcoal-light);
-  --input-border: #464a4f;
+  --input-border: var(--color-charcoal-lighter);
   --input-focus: var(--color-coral);
   
   /* Ring */
@@ -421,7 +421,7 @@
   
   /* Muted */
   --muted: var(--color-charcoal-light);
-  --muted-foreground: #9ca3af;
+  --muted-foreground: #9ca3af; /* Lighter muted text for dark mode - keep for readability */
   
   /* Card */
   --card: var(--color-charcoal-light);
@@ -465,10 +465,10 @@
   --confirmed-bg: rgba(194, 180, 254, 0.15);
 
   /* Sidebar */
-  --sidebar: #1a1c1e;
+  --sidebar: var(--color-charcoal); /* Using charcoal for sidebar - #26282b */
   --sidebar-foreground: var(--color-cloud);
-  --sidebar-foreground-muted: #6b7280;
-  --sidebar-border: #2d3035;
+  --sidebar-foreground-muted: var(--color-charcoal-muted); /* Use charcoal-muted for consistency */
+  --sidebar-border: var(--color-charcoal-light); /* Slightly lighter than sidebar - keep for subtle border */
 
   /* Neumorphic shadows (dark mode) */
   --neu-shadow-light: rgba(255, 255, 255, 0.05);
