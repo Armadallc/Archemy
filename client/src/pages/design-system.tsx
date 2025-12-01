@@ -58,7 +58,6 @@ const getCssVariableName = (path: string): string | null => {
     
     // Secondary/Muted colors
     'colors.secondary.100': '--secondary',
-    'colors.secondary.100': '--muted',
     
     // Accent colors
     'colors.info.500': '--accent',
@@ -68,7 +67,6 @@ const getCssVariableName = (path: string): string | null => {
     
     // Border/Input colors
     'colors.semantic.border.primary': '--border',
-    'colors.semantic.border.primary': '--input',
     'colors.primary.500': '--ring',
     
     // Typography - Font Families (need to convert array to string)
@@ -83,9 +81,7 @@ const getCssVariableName = (path: string): string | null => {
     'colors.semantic.status.active': '--completed',
     'colors.semantic.status.inactive': '--cancelled',
     'colors.semantic.status.pending': '--scheduled',
-    'colors.semantic.status.error': '--cancelled',
     'colors.semantic.status.warning': '--in-progress',
-    'colors.semantic.status.info': '--accent',
   };
   
   return mapping[path] || null;
@@ -124,11 +120,9 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
       'colors.primary.500': '--primary',
       'colors.semantic.text.inverse': '--primary-foreground',
       'colors.secondary.100': '--secondary',
-      'colors.secondary.100': '--muted',
       'colors.info.500': '--accent',
       'colors.error.500': '--destructive',
       'colors.semantic.border.primary': '--border',
-      'colors.semantic.border.primary': '--input',
       'colors.primary.500': '--ring',
       'spacing.borderRadius.base': '--radius',
       
@@ -136,9 +130,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
       'colors.semantic.status.active': '--completed',
       'colors.semantic.status.inactive': '--cancelled',
       'colors.semantic.status.pending': '--scheduled',
-      'colors.semantic.status.error': '--cancelled',
       'colors.semantic.status.warning': '--in-progress',
-      'colors.semantic.status.info': '--accent',
     };
     
     Object.entries(mapping).forEach(([path, cssVar]) => {
@@ -294,36 +286,88 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
 
   const renderColorEditor = () => (
     <div className="space-y-6 mt-6">
+      {/* Fire Palette Colors */}
       <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
-        <h3 className="text-lg font-semibold mb-4 text-[#26282b] dark:text-[#eaeaea]">Dev Lab Colors</h3>
+        <h3 className="text-lg font-semibold mb-2 text-[#26282b] dark:text-[#eaeaea]">Fire Palette - Core Colors</h3>
         <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mb-4">
-          Glass morphism design system colors from Dev Lab styling reference
+          Your "Fire" color palette - the foundation of the HALCYON design system
         </p>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          {[
+            { name: 'Charcoal', value: '#26282b', cssVar: '--color-charcoal', usage: 'Dark backgrounds, light mode text' },
+            { name: 'Ice', value: '#e8fffe', cssVar: '--color-ice', usage: 'Light accent backgrounds' },
+            { name: 'Lime', value: '#f1fec9', cssVar: '--color-lime', usage: 'Elevated surfaces, accent' },
+            { name: 'Coral', value: '#ff555d', cssVar: '--color-coral', usage: 'Primary actions, highlights' },
+            { name: 'Silver', value: '#eaeaea', cssVar: '--color-silver', usage: 'Borders, muted backgrounds' },
+            { name: 'Cloud', value: '#f4f4f4', cssVar: '--color-cloud', usage: 'Light mode background' },
+          ].map(({ name, value, cssVar, usage }) => (
+            <div key={name} className="space-y-2 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
+              <div 
+                className="w-full h-20 rounded-lg border-2 border-white/30 dark:border-white/20 shadow-md mb-2"
+                style={{ backgroundColor: value }}
+              />
+              <div className="text-sm font-semibold text-[#26282b] dark:text-[#eaeaea]">{name}</div>
+              <div className="text-xs font-mono text-[#26282b]/70 dark:text-[#eaeaea]/70">{value}</div>
+              <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mt-1">{usage}</div>
+              <div className="text-xs font-mono text-[#26282b]/50 dark:text-[#eaeaea]/50 mt-1">{cssVar}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Extended Palette */}
+      <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
+        <h3 className="text-lg font-semibold mb-4 text-[#26282b] dark:text-[#eaeaea]">Extended Palette</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { name: 'Charcoal Light', value: '#363a3e', cssVar: '--color-charcoal-light' },
+            { name: 'Charcoal Lighter', value: '#464a4f', cssVar: '--color-charcoal-lighter' },
+            { name: 'Charcoal Muted', value: '#5c6166', cssVar: '--color-charcoal-muted' },
+            { name: 'Lime Dark', value: '#d4e5a8', cssVar: '--color-lime-dark' },
+            { name: 'Lime Light', value: '#f7ffdf', cssVar: '--color-lime-light' },
+            { name: 'Coral Dark', value: '#e04850', cssVar: '--color-coral-dark' },
+            { name: 'Coral Light', value: '#ff7a80', cssVar: '--color-coral-light' },
+          ].map(({ name, value, cssVar }) => (
+            <div key={name} className="space-y-2 bg-white/20 dark:bg-white/10 rounded-lg p-3 border border-white/20 dark:border-white/10">
+              <div 
+                className="w-full h-16 rounded-lg border-2 border-white/30 dark:border-white/20 shadow-md mb-2"
+                style={{ backgroundColor: value }}
+              />
+              <div className="text-xs font-semibold text-[#26282b] dark:text-[#eaeaea]">{name}</div>
+              <div className="text-xs font-mono text-[#26282b]/70 dark:text-[#eaeaea]/70">{value}</div>
+              <div className="text-xs font-mono text-[#26282b]/50 dark:text-[#eaeaea]/50">{cssVar}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Semantic Colors - Light Mode */}
+      <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
+        <h3 className="text-lg font-semibold mb-4 text-[#26282b] dark:text-[#eaeaea]">Semantic Colors - Light Mode</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Light Mode Colors */}
           <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
-            <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-3">Light Mode</h4>
+            <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-3">Backgrounds & Surfaces</h4>
             {[
-              { key: 'background', value: '#eaeaea', label: 'Background' },
-              { key: 'card-surface', value: '#ffffff', label: 'Card Surface' },
-              { key: 'muted-secondary', value: '#f5f5f5', label: 'Muted Secondary' },
-              { key: 'accent', value: '#ff555d', label: 'Accent' },
-              { key: 'text-primary', value: '#26282b', label: 'Text Primary' },
-              { key: 'text-primary-alt', value: '#1a1c1e', label: 'Text Primary Alt' },
-            ].map(({ key, value, label }) => (
+              { key: 'background', value: 'var(--background)', label: 'Background', color: '#f4f4f4' },
+              { key: 'background-secondary', value: 'var(--background-secondary)', label: 'Background Secondary', color: '#eaeaea' },
+              { key: 'background-tertiary', value: 'var(--background-tertiary)', label: 'Background Tertiary', color: '#e8fffe' },
+              { key: 'surface', value: 'var(--surface)', label: 'Surface', color: '#ffffff' },
+              { key: 'surface-elevated', value: 'var(--surface-elevated)', label: 'Surface Elevated', color: '#f1fec9' },
+              { key: 'surface-muted', value: 'var(--surface-muted)', label: 'Surface Muted', color: '#eaeaea' },
+            ].map(({ key, value, label, color }) => (
               <div key={key} className="space-y-2">
-                <Label htmlFor={`dev-lab-light-${key}`} className="text-sm text-[#26282b] dark:text-[#eaeaea]">
+                <Label htmlFor={`semantic-light-${key}`} className="text-sm text-[#26282b] dark:text-[#eaeaea]">
                   {label}
                 </Label>
                 <div className="flex items-center space-x-2">
                   <div 
                     className="w-8 h-8 rounded-lg border-2 border-white/30 dark:border-white/20 shadow-md flex-shrink-0"
-                    style={{ backgroundColor: value }}
+                    style={{ backgroundColor: color }}
                   />
                   <Input
-                    id={`dev-lab-light-${key}`}
+                    id={`semantic-light-${key}`}
                     value={value}
-                    onChange={(e) => updateColor(`colors.devLab.light.${key}`, e.target.value)}
+                    readOnly
                     className="flex-1 text-sm bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea] placeholder:text-[#26282b]/50 dark:placeholder:text-[#eaeaea]/50 backdrop-blur-sm"
                   />
                 </div>
@@ -331,30 +375,28 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
             ))}
           </div>
 
-          {/* Dark Mode Colors */}
           <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
-            <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-3">Dark Mode</h4>
+            <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-3">Actions & Text</h4>
             {[
-              { key: 'background', value: '#26282b', label: 'Background' },
-              { key: 'card-surface', value: '#2f3235', label: 'Card Surface' },
-              { key: 'muted-secondary', value: '#383b3e', label: 'Muted Secondary' },
-              { key: 'accent', value: '#ff555d', label: 'Accent' },
-              { key: 'text-primary', value: '#eaeaea', label: 'Text Primary' },
-              { key: 'text-primary-alt', value: '#f5f5f5', label: 'Text Primary Alt' },
-            ].map(({ key, value, label }) => (
+              { key: 'primary', value: 'var(--primary)', label: 'Primary', color: '#ff555d' },
+              { key: 'accent', value: 'var(--accent)', label: 'Accent', color: '#f1fec9' },
+              { key: 'foreground', value: 'var(--foreground)', label: 'Foreground', color: '#26282b' },
+              { key: 'foreground-secondary', value: 'var(--foreground-secondary)', label: 'Foreground Secondary', color: '#5c6166' },
+              { key: 'foreground-muted', value: 'var(--foreground-muted)', label: 'Foreground Muted', color: '#8a8f94' },
+            ].map(({ key, value, label, color }) => (
               <div key={key} className="space-y-2">
-                <Label htmlFor={`dev-lab-dark-${key}`} className="text-sm text-[#26282b] dark:text-[#eaeaea]">
+                <Label htmlFor={`semantic-light-${key}`} className="text-sm text-[#26282b] dark:text-[#eaeaea]">
                   {label}
                 </Label>
                 <div className="flex items-center space-x-2">
                   <div 
                     className="w-8 h-8 rounded-lg border-2 border-white/30 dark:border-white/20 shadow-md flex-shrink-0"
-                    style={{ backgroundColor: value }}
+                    style={{ backgroundColor: color }}
                   />
                   <Input
-                    id={`dev-lab-dark-${key}`}
+                    id={`semantic-light-${key}`}
                     value={value}
-                    onChange={(e) => updateColor(`colors.devLab.dark.${key}`, e.target.value)}
+                    readOnly
                     className="flex-1 text-sm bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea] placeholder:text-[#26282b]/50 dark:placeholder:text-[#eaeaea]/50 backdrop-blur-sm"
                   />
                 </div>
@@ -364,35 +406,241 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
         </div>
       </div>
 
+      {/* Complete Semantic Colors - All CSS Variables */}
       <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
-        <h3 className="text-lg font-semibold mb-4 text-[#26282b] dark:text-[#eaeaea]">Semantic Colors</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {Object.entries(tokens.colors.semantic).map(([category, colors]) => (
-            <div key={category} className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
-              <h4 className="font-medium capitalize text-[#26282b] dark:text-[#eaeaea]">{category}</h4>
-              <div className="space-y-3">
-                {Object.entries(colors as any).map(([key, value]) => (
-                  <div key={key} className="space-y-2">
-                    <Label htmlFor={`${category}-${key}`} className="text-sm text-[#26282b]/80 dark:text-[#eaeaea]/80">
-                      {category} {key}
-                    </Label>
-                    <div className="flex items-center space-x-2">
-                      <div 
-                        className="w-8 h-8 rounded-lg border-2 border-white/30 dark:border-white/20 shadow-md flex-shrink-0"
-                        style={{ backgroundColor: value as string }}
-                      />
-                      <Input
-                        id={`${category}-${key}`}
-                        value={value as string}
-                        onChange={(e) => updateColor(`colors.semantic.${category}.${key}`, e.target.value)}
-                        className="flex-1 text-sm bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea] placeholder:text-[#26282b]/50 dark:placeholder:text-[#eaeaea]/50 backdrop-blur-sm"
-                      />
-                    </div>
-                  </div>
-                ))}
+        <h3 className="text-lg font-semibold mb-4 text-[#26282b] dark:text-[#eaeaea]">All Semantic Colors</h3>
+        <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mb-6">
+          Complete list of all semantic color CSS variables from the Fire design system
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Backgrounds & Surfaces */}
+          <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
+            <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-3">Backgrounds & Surfaces</h4>
+            {[
+              { cssVar: '--background', value: '#f4f4f4', label: 'Background' },
+              { cssVar: '--background-secondary', value: '#eaeaea', label: 'Background Secondary' },
+              { cssVar: '--background-tertiary', value: '#e8fffe', label: 'Background Tertiary' },
+              { cssVar: '--surface', value: '#ffffff', label: 'Surface' },
+              { cssVar: '--surface-elevated', value: '#f1fec9', label: 'Surface Elevated' },
+              { cssVar: '--surface-muted', value: '#eaeaea', label: 'Surface Muted' },
+              { cssVar: '--card', value: '#ffffff', label: 'Card' },
+              { cssVar: '--popover', value: '#ffffff', label: 'Popover' },
+            ].map(({ cssVar, value, label }) => (
+              <div key={cssVar} className="space-y-2">
+                <Label className="text-sm text-[#26282b]/80 dark:text-[#eaeaea]/80">{label}</Label>
+                <div className="flex items-center space-x-2">
+                  <div 
+                    className="w-8 h-8 rounded-lg border-2 border-white/30 dark:border-white/20 shadow-md flex-shrink-0"
+                    style={{ backgroundColor: value }}
+                  />
+                  <Input
+                    value={cssVar}
+                    readOnly
+                    className="flex-1 text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                  />
+                </div>
+                <div className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60 ml-10">{value}</div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+
+          {/* Text & Foreground */}
+          <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
+            <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-3">Text & Foreground</h4>
+            {[
+              { cssVar: '--foreground', value: '#26282b', label: 'Foreground' },
+              { cssVar: '--foreground-secondary', value: '#5c6166', label: 'Foreground Secondary' },
+              { cssVar: '--foreground-muted', value: '#8a8f94', label: 'Foreground Muted' },
+              { cssVar: '--foreground-inverse', value: '#ffffff', label: 'Foreground Inverse' },
+              { cssVar: '--card-foreground', value: '#26282b', label: 'Card Foreground' },
+              { cssVar: '--popover-foreground', value: '#26282b', label: 'Popover Foreground' },
+              { cssVar: '--muted-foreground', value: '#6b7280', label: 'Muted Foreground' },
+            ].map(({ cssVar, value, label }) => (
+              <div key={cssVar} className="space-y-2">
+                <Label className="text-sm text-[#26282b]/80 dark:text-[#eaeaea]/80">{label}</Label>
+                <div className="flex items-center space-x-2">
+                  <div 
+                    className="w-8 h-8 rounded-lg border-2 border-white/30 dark:border-white/20 shadow-md flex-shrink-0"
+                    style={{ backgroundColor: value }}
+                  />
+                  <Input
+                    value={cssVar}
+                    readOnly
+                    className="flex-1 text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                  />
+                </div>
+                <div className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60 ml-10">{value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Actions */}
+          <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
+            <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-3">Actions</h4>
+            {[
+              { cssVar: '--primary', value: '#ff555d', label: 'Primary' },
+              { cssVar: '--primary-hover', value: '#e04850', label: 'Primary Hover' },
+              { cssVar: '--primary-foreground', value: '#ffffff', label: 'Primary Foreground' },
+              { cssVar: '--accent', value: '#f1fec9', label: 'Accent' },
+              { cssVar: '--accent-hover', value: '#d4e5a8', label: 'Accent Hover' },
+              { cssVar: '--accent-foreground', value: '#26282b', label: 'Accent Foreground' },
+              { cssVar: '--destructive', value: '#dc2626', label: 'Destructive' },
+              { cssVar: '--destructive-hover', value: '#b91c1c', label: 'Destructive Hover' },
+              { cssVar: '--destructive-foreground', value: '#ffffff', label: 'Destructive Foreground' },
+            ].map(({ cssVar, value, label }) => (
+              <div key={cssVar} className="space-y-2">
+                <Label className="text-sm text-[#26282b]/80 dark:text-[#eaeaea]/80">{label}</Label>
+                <div className="flex items-center space-x-2">
+                  <div 
+                    className="w-8 h-8 rounded-lg border-2 border-white/30 dark:border-white/20 shadow-md flex-shrink-0"
+                    style={{ backgroundColor: value }}
+                  />
+                  <Input
+                    value={cssVar}
+                    readOnly
+                    className="flex-1 text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                  />
+                </div>
+                <div className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60 ml-10">{value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Borders & Inputs */}
+          <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
+            <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-3">Borders & Inputs</h4>
+            {[
+              { cssVar: '--border', value: '#d4d7da', label: 'Border' },
+              { cssVar: '--border-muted', value: '#eaeaea', label: 'Border Muted' },
+              { cssVar: '--border-strong', value: '#b8bcc0', label: 'Border Strong' },
+              { cssVar: '--input', value: '#ffffff', label: 'Input' },
+              { cssVar: '--input-border', value: '#d4d7da', label: 'Input Border' },
+              { cssVar: '--input-focus', value: '#ff555d', label: 'Input Focus' },
+              { cssVar: '--ring', value: '#ff555d', label: 'Ring' },
+              { cssVar: '--ring-offset', value: '#f4f4f4', label: 'Ring Offset' },
+              { cssVar: '--muted', value: '#eaeaea', label: 'Muted' },
+            ].map(({ cssVar, value, label }) => (
+              <div key={cssVar} className="space-y-2">
+                <Label className="text-sm text-[#26282b]/80 dark:text-[#eaeaea]/80">{label}</Label>
+                <div className="flex items-center space-x-2">
+                  <div 
+                    className="w-8 h-8 rounded-lg border-2 border-white/30 dark:border-white/20 shadow-md flex-shrink-0"
+                    style={{ backgroundColor: value }}
+                  />
+                  <Input
+                    value={cssVar}
+                    readOnly
+                    className="flex-1 text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                  />
+                </div>
+                <div className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60 ml-10">{value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Status Colors - Derived from Fire Palette */}
+          <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
+            <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-2">Status Colors</h4>
+            <p className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-3">Derived from Fire palette</p>
+            {[
+              { cssVar: '--status-success', value: '#3bfec9', label: 'Success', derived: 'From Lime (#f1fec9) - Red: 3B' },
+              { cssVar: '--status-success-bg', value: 'rgba(59, 254, 201, 0.15)', label: 'Success BG', derived: '15% opacity' },
+              { cssVar: '--status-warning', value: '#f1fe60', label: 'Warning', derived: 'From Lime (#f1fec9) - Blue: 60' },
+              { cssVar: '--status-warning-bg', value: 'rgba(241, 254, 96, 0.15)', label: 'Warning BG', derived: '15% opacity' },
+              { cssVar: '--status-error', value: '#e04850', label: 'Error', derived: 'From Coral (#ff555d) - darker' },
+              { cssVar: '--status-error-bg', value: 'rgba(224, 72, 80, 0.15)', label: 'Error BG', derived: '15% opacity' },
+              { cssVar: '--status-info', value: '#7afffe', label: 'Info', derived: 'From Ice (#e8fffe) - Red: 7A' },
+              { cssVar: '--status-info-bg', value: 'rgba(122, 255, 254, 0.15)', label: 'Info BG', derived: '15% opacity' },
+            ].map(({ cssVar, value, label, derived }) => (
+              <div key={cssVar} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm text-[#26282b]/80 dark:text-[#eaeaea]/80">{label}</Label>
+                  {derived && <span className="text-xs text-[#26282b]/50 dark:text-[#eaeaea]/50 italic">{derived}</span>}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div 
+                    className="w-8 h-8 rounded-lg border-2 border-white/30 dark:border-white/20 shadow-md flex-shrink-0"
+                    style={{ backgroundColor: value }}
+                  />
+                  <Input
+                    value={cssVar}
+                    readOnly
+                    className="flex-1 text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                  />
+                </div>
+                <div className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60 ml-10">{value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Trip Status Colors - Derived from Fire Palette */}
+          <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
+            <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-2">Trip Status Colors</h4>
+            <p className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-3">Derived from Fire palette</p>
+            {[
+              { cssVar: '--scheduled', value: '#7afffe', label: 'Scheduled', derived: 'From Ice (#e8fffe) - Red: 7A' },
+              { cssVar: '--scheduled-bg', value: 'rgba(122, 255, 254, 0.15)', label: 'Scheduled BG', derived: '15% opacity' },
+              { cssVar: '--in-progress', value: '#f1fe60', label: 'In Progress', derived: 'From Lime (#f1fec9) - Blue: 60' },
+              { cssVar: '--in-progress-bg', value: 'rgba(241, 254, 96, 0.15)', label: 'In Progress BG', derived: '15% opacity' },
+              { cssVar: '--completed', value: '#3bfec9', label: 'Completed', derived: 'From Lime (#f1fec9) - Red: 3B' },
+              { cssVar: '--completed-bg', value: 'rgba(59, 254, 201, 0.15)', label: 'Completed BG', derived: '15% opacity' },
+              { cssVar: '--cancelled', value: '#e04850', label: 'Cancelled', derived: 'From Coral (#ff555d) - darker' },
+              { cssVar: '--cancelled-bg', value: 'rgba(224, 72, 80, 0.15)', label: 'Cancelled BG', derived: '15% opacity' },
+              { cssVar: '--confirmed', value: '#c2b4fe', label: 'Confirmed', derived: 'From Ice (#e8fffe) - Red: C2, Green: B4' },
+              { cssVar: '--confirmed-bg', value: 'rgba(194, 180, 254, 0.15)', label: 'Confirmed BG', derived: '15% opacity' },
+            ].map(({ cssVar, value, label, derived }) => (
+              <div key={cssVar} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm text-[#26282b]/80 dark:text-[#eaeaea]/80">{label}</Label>
+                  {derived && <span className="text-xs text-[#26282b]/50 dark:text-[#eaeaea]/50 italic">{derived}</span>}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div 
+                    className="w-8 h-8 rounded-lg border-2 border-white/30 dark:border-white/20 shadow-md flex-shrink-0"
+                    style={{ backgroundColor: value }}
+                  />
+                  <Input
+                    value={cssVar}
+                    readOnly
+                    className="flex-1 text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                  />
+                </div>
+                <div className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60 ml-10">{value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Sidebar Colors */}
+          <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
+            <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-3">Sidebar Colors</h4>
+            {[
+              { cssVar: '--sidebar', value: '#26282b', label: 'Sidebar' },
+              { cssVar: '--sidebar-foreground', value: '#f4f4f4', label: 'Sidebar Foreground' },
+              { cssVar: '--sidebar-foreground-muted', value: '#9ca3af', label: 'Sidebar Foreground Muted' },
+              { cssVar: '--sidebar-primary', value: '#ff555d', label: 'Sidebar Primary' },
+              { cssVar: '--sidebar-primary-foreground', value: '#ffffff', label: 'Sidebar Primary FG' },
+              { cssVar: '--sidebar-accent', value: '#f1fec9', label: 'Sidebar Accent' },
+              { cssVar: '--sidebar-accent-foreground', value: '#26282b', label: 'Sidebar Accent FG' },
+              { cssVar: '--sidebar-border', value: '#363a3e', label: 'Sidebar Border' },
+              { cssVar: '--sidebar-ring', value: '#ff555d', label: 'Sidebar Ring' },
+            ].map(({ cssVar, value, label }) => (
+              <div key={cssVar} className="space-y-2">
+                <Label className="text-sm text-[#26282b]/80 dark:text-[#eaeaea]/80">{label}</Label>
+                <div className="flex items-center space-x-2">
+                  <div 
+                    className="w-8 h-8 rounded-lg border-2 border-white/30 dark:border-white/20 shadow-md flex-shrink-0"
+                    style={{ backgroundColor: value }}
+                  />
+                  <Input
+                    value={cssVar}
+                    readOnly
+                    className="flex-1 text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                  />
+                </div>
+                <div className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60 ml-10">{value}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -400,6 +648,84 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
 
   const renderTypographyEditor = () => (
     <div className="space-y-6 mt-6">
+      {/* Font Families */}
+      <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
+        <h3 className="text-lg font-semibold mb-4 text-[#26282b] dark:text-[#eaeaea]">Font Families</h3>
+        <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mb-6">
+          Fire design system typography - Nohemi for headings, Space Grotesk for body text
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Nohemi - Headings */}
+          <div className="space-y-4 bg-white/20 dark:bg-white/10 rounded-lg p-6 border border-white/20 dark:border-white/10">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold text-[#26282b] dark:text-[#eaeaea]">Nohemi</Label>
+                <span className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60">--font-heading</span>
+              </div>
+              <Input
+                value="'Nohemi', system-ui, -apple-system, sans-serif"
+                readOnly
+                className="text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+              />
+              <p className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60">
+                Used for headings, titles, and bold text
+              </p>
+            </div>
+            <div className="space-y-3 pt-4 border-t border-white/20 dark:border-white/10">
+              <div className="space-y-2">
+                <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
+                  The Quick Brown Fox
+                </div>
+                <div className="text-lg font-semibold text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
+                  Jumps Over The Lazy Dog
+                </div>
+                <div className="text-base font-medium text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
+                  ABCDEFGHIJKLMNOPQRSTUVWXYZ
+                </div>
+                <div className="text-sm font-normal text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
+                  0123456789 !@#$%^&*()
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Space Grotesk - Body */}
+          <div className="space-y-4 bg-white/20 dark:bg-white/10 rounded-lg p-6 border border-white/20 dark:border-white/10">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold text-[#26282b] dark:text-[#eaeaea]">Space Grotesk</Label>
+                <span className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60">--font-body</span>
+              </div>
+              <Input
+                value="'Space Grotesk', system-ui, -apple-system, sans-serif"
+                readOnly
+                className="text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+              />
+              <p className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60">
+                Used for body text, UI elements, and general content
+              </p>
+            </div>
+            <div className="space-y-3 pt-4 border-t border-white/20 dark:border-white/10">
+              <div className="space-y-2">
+                <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-body)' }}>
+                  The Quick Brown Fox
+                </div>
+                <div className="text-lg font-semibold text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-body)' }}>
+                  Jumps Over The Lazy Dog
+                </div>
+                <div className="text-base font-normal text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-body)' }}>
+                  ABCDEFGHIJKLMNOPQRSTUVWXYZ
+                </div>
+                <div className="text-sm font-normal text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-body)' }}>
+                  0123456789 !@#$%^&*()
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Font Sizes */}
       <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
         <h3 className="text-lg font-semibold mb-4 text-[#26282b] dark:text-[#eaeaea]">Font Sizes</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -424,56 +750,175 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
           ))}
         </div>
       </div>
+
+      {/* Typography Scale Preview */}
+      <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
+        <h3 className="text-lg font-semibold mb-4 text-[#26282b] dark:text-[#eaeaea]">Typography Scale Preview</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Headings with Nohemi */}
+          <div className="space-y-4 bg-white/20 dark:bg-white/10 rounded-lg p-6 border border-white/20 dark:border-white/10">
+            <h4 className="text-sm font-semibold text-[#26282b] dark:text-[#eaeaea] mb-4">Headings (Nohemi)</h4>
+            <div className="space-y-4">
+              <div>
+                <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-1">Display / 4xl</div>
+                <div className="text-4xl font-black text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
+                  Display Heading
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-1">Heading 1 / 3xl</div>
+                <div className="text-3xl font-bold text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
+                  Heading One
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-1">Heading 2 / 2xl</div>
+                <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
+                  Heading Two
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-1">Heading 3 / xl</div>
+                <div className="text-xl font-semibold text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
+                  Heading Three
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-1">Heading 4 / lg</div>
+                <div className="text-lg font-semibold text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
+                  Heading Four
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Body Text with Space Grotesk */}
+          <div className="space-y-4 bg-white/20 dark:bg-white/10 rounded-lg p-6 border border-white/20 dark:border-white/10">
+            <h4 className="text-sm font-semibold text-[#26282b] dark:text-[#eaeaea] mb-4">Body Text (Space Grotesk)</h4>
+            <div className="space-y-4">
+              <div>
+                <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-1">Body Large / lg</div>
+                <div className="text-lg font-normal text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-body)' }}>
+                  The quick brown fox jumps over the lazy dog. This is body large text.
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-1">Body / base</div>
+                <div className="text-base font-normal text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-body)' }}>
+                  The quick brown fox jumps over the lazy dog. This is regular body text.
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-1">Body Small / sm</div>
+                <div className="text-sm font-normal text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-body)' }}>
+                  The quick brown fox jumps over the lazy dog. This is small body text.
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-1">Caption / xs</div>
+                <div className="text-xs font-normal text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-body)' }}>
+                  The quick brown fox jumps over the lazy dog. This is caption text.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 
   const renderSpacingEditor = () => (
     <div className="space-y-6 mt-6">
+      {/* Border Radius - Fire Design System */}
       <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
-        <h3 className="text-lg font-semibold mb-4 text-[#26282b] dark:text-[#eaeaea]">Border Radius</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {tokens.spacing?.borderRadius && Object.entries(tokens.spacing.borderRadius).map(([key, value]) => (
-            <div key={key} className="space-y-2 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
+        <h3 className="text-lg font-semibold mb-2 text-[#26282b] dark:text-[#eaeaea]">Border Radius</h3>
+        <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mb-6">
+          Fire design system border radius values
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[
+            { cssVar: '--radius', value: '0.5rem', label: 'Base Radius', description: 'Default border radius' },
+            { cssVar: '--radius-sm', value: 'calc(var(--radius) - 2px)', label: 'Small', description: '0.375rem (8px - 2px)' },
+            { cssVar: '--radius-md', value: 'var(--radius)', label: 'Medium', description: '0.5rem (8px)' },
+            { cssVar: '--radius-lg', value: 'calc(var(--radius) + 2px)', label: 'Large', description: '0.625rem (8px + 2px)' },
+            { cssVar: '--radius-xl', value: 'calc(var(--radius) + 6px)', label: 'Extra Large', description: '0.875rem (8px + 6px)' },
+            { cssVar: '--radius-full', value: '9999px', label: 'Full', description: 'Fully rounded (pill/circle)' },
+          ].map(({ cssVar, value, label, description }) => (
+            <div key={cssVar} className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
               <div className="flex items-center justify-between">
-                <Label htmlFor={`borderRadius-${key}`} className="text-[#26282b] dark:text-[#eaeaea]">{key}</Label>
-                <span className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70">{String(value)}</span>
+                <Label className="text-sm font-semibold text-[#26282b] dark:text-[#eaeaea]">{label}</Label>
+                <span className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60">{cssVar}</span>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3">
                 <div 
-                  className="h-12 w-20 bg-gradient-to-br from-[#ff555d] to-[#ff444c] rounded-lg border-2 border-white/30 dark:border-white/20 shadow-lg flex-shrink-0"
-                  style={{ borderRadius: value as string }}
-                />
-                <Input
-                  id={`borderRadius-${key}`}
-                  value={value as string}
-                  onChange={(e) => updateSpacing(`spacing.borderRadius.${key}`, e.target.value)}
-                  className="flex-1 bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea] placeholder:text-[#26282b]/50 dark:placeholder:text-[#eaeaea]/50 backdrop-blur-sm"
-                />
+                  className="h-16 w-16 bg-gradient-to-br from-[#ff555d] to-[#e04850] border-2 border-white/30 dark:border-white/20 shadow-lg flex-shrink-0 flex items-center justify-center"
+                  style={{ 
+                    borderRadius: value === '0.5rem' ? '0.5rem' : 
+                                 value.includes('calc') && value.includes('- 2px') ? '0.375rem' :
+                                 value.includes('calc') && value.includes('+ 2px') ? '0.625rem' :
+                                 value.includes('calc') && value.includes('+ 6px') ? '0.875rem' :
+                                 value === '9999px' ? '9999px' : '0.5rem'
+                  }}
+                >
+                  <div className="text-xs font-bold text-white">R</div>
+                </div>
+                <div className="flex-1 space-y-1">
+                  <Input
+                    value={cssVar}
+                    readOnly
+                    className="text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                  />
+                  <div className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60">{value}</div>
+                  {description && (
+                    <div className="text-xs text-[#26282b]/50 dark:text-[#eaeaea]/50">{description}</div>
+                  )}
+                </div>
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      {/* Spacing Scale - Fire Design System */}
       <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
-        <h3 className="text-lg font-semibold mb-4 text-[#26282b] dark:text-[#eaeaea]">Spacing Scale</h3>
-        <div className="space-y-3 max-h-96 overflow-y-auto">
-          {tokens.spacing?.scale && Object.entries(tokens.spacing.scale).map(([key, value]) => (
-            <div key={key} className="space-y-2 bg-white/20 dark:bg-white/10 rounded-lg p-3 border border-white/20 dark:border-white/10">
+        <h3 className="text-lg font-semibold mb-2 text-[#26282b] dark:text-[#eaeaea]">Spacing Scale</h3>
+        <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mb-6">
+          Fire design system spacing values for consistent layout
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[
+            { cssVar: '--spacing-xs', value: '0.25rem', label: 'Extra Small', pixels: '4px', usage: 'Tight spacing, icon padding' },
+            { cssVar: '--spacing-sm', value: '0.5rem', label: 'Small', pixels: '8px', usage: 'Compact spacing, button padding' },
+            { cssVar: '--spacing-md', value: '1rem', label: 'Medium', pixels: '16px', usage: 'Default spacing, card padding' },
+            { cssVar: '--spacing-lg', value: '1.5rem', label: 'Large', pixels: '24px', usage: 'Comfortable spacing, section gaps' },
+            { cssVar: '--spacing-xl', value: '2rem', label: 'Extra Large', pixels: '32px', usage: 'Wide spacing, major sections' },
+            { cssVar: '--spacing-2xl', value: '3rem', label: '2X Large', pixels: '48px', usage: 'Maximum spacing, page sections' },
+          ].map(({ cssVar, value, label, pixels, usage }) => (
+            <div key={cssVar} className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
               <div className="flex items-center justify-between">
-                <Label htmlFor={`spacing-${key}`} className="text-[#26282b] dark:text-[#eaeaea]">{key}</Label>
-                <span className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70">{String(value)}</span>
+                <div>
+                  <Label className="text-sm font-semibold text-[#26282b] dark:text-[#eaeaea]">{label}</Label>
+                  <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mt-0.5">{usage}</div>
+                </div>
+                <span className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60">{cssVar}</span>
               </div>
-              <div className="flex items-center space-x-2">
-                <div 
-                  className="h-6 bg-gradient-to-r from-[#ff555d] to-[#ff444c] rounded-lg border border-white/30 dark:border-white/20 shadow-md flex-shrink-0"
-                  style={{ width: `min(${value as string}, 200px)` }}
-                />
-                <Input
-                  id={`spacing-${key}`}
-                  value={value as string}
-                  onChange={(e) => updateSpacing(`spacing.scale.${key}`, e.target.value)}
-                  className="w-24 bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea] placeholder:text-[#26282b]/50 dark:placeholder:text-[#eaeaea]/50 backdrop-blur-sm"
-                />
+              <div className="space-y-2">
+                <div className="flex items-center space-x-3">
+                  <div 
+                    className="h-8 bg-gradient-to-r from-[#ff555d] to-[#e04850] rounded border border-white/30 dark:border-white/20 shadow-md flex-shrink-0 flex items-center justify-center"
+                    style={{ width: `min(${value}, 120px)` }}
+                  >
+                    <span className="text-xs font-bold text-white px-1">{pixels}</span>
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <Input
+                      value={cssVar}
+                      readOnly
+                      className="text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                    />
+                    <div className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60">{value} ({pixels})</div>
+                  </div>
+                </div>
               </div>
             </div>
           ))}
@@ -568,159 +1013,158 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
         </TabsContent>
         <TabsContent value="shadows" className="mt-6">
           <div className="space-y-6">
-            {/* Dev Lab Glass Morphism Shadows */}
+            {/* Standard Shadows - Fire Design System */}
             <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
-              <h3 className="text-lg font-semibold mb-4 text-[#26282b] dark:text-[#eaeaea]">Dev Lab Glass Morphism Shadows</h3>
+              <h3 className="text-lg font-semibold mb-2 text-[#26282b] dark:text-[#eaeaea]">Standard Shadows</h3>
               <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mb-6">
-                Glass morphism shadow effects used in the Dev Lab design system
+                Fire design system standard elevation shadows for general use
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Light Mode Glass Shadow */}
-                <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
-                  <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] text-sm">Light Mode Glass</h4>
-                  <div 
-                    className="w-full h-24 rounded-xl border border-white/20 bg-white/25 backdrop-blur-md mx-auto mb-3"
-                    style={{ 
-                      boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
-                      border: '1px solid rgba(255, 255, 255, 0.18)'
-                    }}
-                  />
-                  <div className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70 font-mono break-all">
-                    <div className="mb-1">box-shadow:</div>
-                    <div>0 8px 32px 0</div>
-                    <div>rgba(31, 38, 135, 0.37)</div>
-                  </div>
-                </div>
-
-                {/* Dark Mode Glass Shadow */}
-                <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
-                  <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] text-sm">Dark Mode Glass</h4>
-                  <div 
-                    className="w-full h-24 rounded-xl border border-white/10 bg-[#2f3235]/25 backdrop-blur-md mx-auto mb-3"
-                    style={{ 
-                      boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)'
-                    }}
-                  />
-                  <div className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70 font-mono break-all">
-                    <div className="mb-1">box-shadow:</div>
-                    <div>0 8px 32px 0</div>
-                    <div>rgba(0, 0, 0, 0.37)</div>
-                  </div>
-                </div>
-
-                {/* Accent Glow Shadow */}
-                <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
-                  <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] text-sm">Accent Glow</h4>
-                  <div 
-                    className="w-full h-24 rounded-xl border border-[#ff555d]/30 bg-[#ff555d]/20 backdrop-blur-md mx-auto mb-3"
-                    style={{ 
-                      boxShadow: '0 0 20px rgba(255, 85, 93, 0.3)',
-                      border: '1px solid rgba(255, 85, 93, 0.3)'
-                    }}
-                  />
-                  <div className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70 font-mono break-all">
-                    <div className="mb-1">box-shadow:</div>
-                    <div>0 0 20px</div>
-                    <div>rgba(255, 85, 93, 0.3)</div>
-                  </div>
-                </div>
-
-                {/* Card Shadow XL */}
-                <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
-                  <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] text-sm">Card Shadow XL</h4>
-                  <div 
-                    className="w-full h-24 rounded-xl border border-white/20 bg-white/25 backdrop-blur-md mx-auto mb-3"
-                    style={{ 
-                      boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
-                      border: '1px solid rgba(255, 255, 255, 0.18)'
-                    }}
-                  />
-                  <div className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70 font-mono break-all">
-                    <div className="mb-1">shadow-xl</div>
-                    <div>Used on cards</div>
-                  </div>
-                </div>
-
-                {/* Hover Shadow */}
-                <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
-                  <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] text-sm">Hover Shadow</h4>
-                  <div 
-                    className="w-full h-24 rounded-xl border border-white/20 bg-white/25 backdrop-blur-md mx-auto mb-3 transition-shadow hover:shadow-2xl"
-                    style={{ 
-                      boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
-                      border: '1px solid rgba(255, 255, 255, 0.18)'
-                    }}
-                  />
-                  <div className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70 font-mono break-all">
-                    <div className="mb-1">hover:shadow-2xl</div>
-                    <div>Interactive elements</div>
-                  </div>
-                </div>
-
-                {/* Button Shadow */}
-                <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
-                  <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] text-sm">Button Shadow</h4>
-                  <div 
-                    className="w-full h-24 rounded-xl border border-[#ff555d]/30 bg-[#ff555d]/30 backdrop-blur-md mx-auto mb-3"
-                    style={{ 
-                      boxShadow: '0 4px 14px 0 rgba(255, 85, 93, 0.3)',
-                      border: '1px solid rgba(255, 85, 93, 0.3)'
-                    }}
-                  />
-                  <div className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70 font-mono break-all">
-                    <div className="mb-1">shadow-lg</div>
-                    <div>Accent buttons</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Standard Shadow System */}
-            <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
-              <h3 className="text-lg font-semibold mb-4 text-[#26282b] dark:text-[#eaeaea]">Standard Shadow System</h3>
-              <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mb-6">
-                Standard elevation and depth shadows for general use
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {tokens.shadows?.box && Object.entries(tokens.shadows.box).map(([key, value]) => (
-                  <div key={key} className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
-                    <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] text-sm capitalize">{key}</h4>
-                    <div 
-                      className="w-full h-20 rounded-lg border border-white/20 bg-white/30 dark:bg-white/10 mx-auto mb-3"
-                      style={{ boxShadow: value as string }}
-                    />
-                    <div className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70 font-mono break-all">
-                      {String(value)}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                {[
+                  { cssVar: '--shadow-xs', value: '0 1px 2px 0 rgb(0 0 0 / 0.05)', label: 'Extra Small', usage: 'Subtle depth, borders' },
+                  { cssVar: '--shadow-sm', value: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)', label: 'Small', usage: 'Cards, inputs' },
+                  { cssVar: '--shadow-md', value: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)', label: 'Medium', usage: 'Panels, modals' },
+                  { cssVar: '--shadow-lg', value: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)', label: 'Large', usage: 'Elevated cards' },
+                  { cssVar: '--shadow-xl', value: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)', label: 'Extra Large', usage: 'Top-level modals' },
+                ].map(({ cssVar, value, label, usage }) => (
+                  <div key={cssVar} className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium text-sm text-[#26282b] dark:text-[#eaeaea]">{label}</h4>
+                      <span className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60">{cssVar}</span>
                     </div>
+                    <div 
+                      className="w-full h-20 rounded-lg border border-white/20 bg-white/30 dark:bg-white/10 mx-auto mb-2"
+                      style={{ boxShadow: value }}
+                    />
+                    <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-1">{usage}</div>
+                    <Input
+                      value={cssVar}
+                      readOnly
+                      className="text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                    />
+                    <div className="text-xs font-mono text-[#26282b]/50 dark:text-[#eaeaea]/50 break-all">{value}</div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Elevation System */}
-            {tokens.shadows?.elevation && (
-              <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
-                <h3 className="text-lg font-semibold mb-4 text-[#26282b] dark:text-[#eaeaea]">Elevation System</h3>
-                <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mb-6">
-                  Material design-like depth system for layered components
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                  {Object.entries(tokens.shadows.elevation).map(([key, value]) => (
-                    <div key={key} className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
-                      <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] text-sm">Elevation {key}</h4>
-                      <div 
-                        className="w-full h-20 rounded-lg border border-white/20 bg-white/30 dark:bg-white/10 mx-auto mb-3"
-                        style={{ boxShadow: value as string }}
-                      />
-                      <div className="text-xs text-[#26282b]/70 dark:text-[#eaeaea]/70 font-mono break-all">
-                        {String(value)}
-                      </div>
+            {/* Neumorphic Shadows - Fire Design System */}
+            <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
+              <h3 className="text-lg font-semibold mb-2 text-[#26282b] dark:text-[#eaeaea]">Neumorphic Shadows</h3>
+              <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mb-6">
+                Fire design system neumorphic shadows for soft, tactile depth effects
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  { 
+                    cssVar: '--shadow-neu-flat', 
+                    value: '5px 5px 10px var(--neu-shadow-dark), -5px -5px 10px var(--neu-shadow-light)', 
+                    label: 'Flat', 
+                    usage: 'Default state, neutral depth',
+                    computed: '5px 5px 10px rgba(174, 174, 192, 0.4), -5px -5px 10px #ffffff'
+                  },
+                  { 
+                    cssVar: '--shadow-neu-raised', 
+                    value: '8px 8px 16px var(--neu-shadow-dark), -8px -8px 16px var(--neu-shadow-light)', 
+                    label: 'Raised', 
+                    usage: 'Hover state, elevated elements',
+                    computed: '8px 8px 16px rgba(174, 174, 192, 0.4), -8px -8px 16px #ffffff'
+                  },
+                  { 
+                    cssVar: '--shadow-neu-pressed', 
+                    value: 'inset 4px 4px 8px var(--neu-shadow-dark), inset -4px -4px 8px var(--neu-shadow-light)', 
+                    label: 'Pressed', 
+                    usage: 'Active/pressed state, buttons',
+                    computed: 'inset 4px 4px 8px rgba(174, 174, 192, 0.4), inset -4px -4px 8px #ffffff'
+                  },
+                  { 
+                    cssVar: '--shadow-neu-subtle', 
+                    value: '3px 3px 6px var(--neu-shadow-dark), -3px -3px 6px var(--neu-shadow-light)', 
+                    label: 'Subtle', 
+                    usage: 'Minimal depth, subtle elevation',
+                    computed: '3px 3px 6px rgba(174, 174, 192, 0.4), -3px -3px 6px #ffffff'
+                  },
+                ].map(({ cssVar, value, label, usage, computed }) => (
+                  <div key={cssVar} className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium text-sm text-[#26282b] dark:text-[#eaeaea]">{label}</h4>
+                      <span className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60">{cssVar}</span>
                     </div>
-                  ))}
-                </div>
+                    <div 
+                      className="w-full h-20 rounded-lg border border-white/20 bg-white/30 dark:bg-white/10 mx-auto mb-2"
+                      style={{ boxShadow: computed }}
+                    />
+                    <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-1">{usage}</div>
+                    <Input
+                      value={cssVar}
+                      readOnly
+                      className="text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                    />
+                    <div className="text-xs font-mono text-[#26282b]/50 dark:text-[#eaeaea]/50 break-all">{value}</div>
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
+
+            {/* Glass Effect - Fire Design System */}
+            <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
+              <h3 className="text-lg font-semibold mb-2 text-[#26282b] dark:text-[#eaeaea]">Glass Effect</h3>
+              <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mb-6">
+                Fire design system glass morphism effects for modern UI elements
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[
+                  { 
+                    cssVar: '--glass-blur', 
+                    value: 'blur(12px)', 
+                    label: 'Glass Blur', 
+                    usage: 'Backdrop filter blur amount',
+                    preview: true
+                  },
+                  { 
+                    cssVar: '--glass-bg', 
+                    value: 'rgba(255, 255, 255, 0.7)', 
+                    label: 'Glass Background', 
+                    usage: 'Light mode glass background',
+                    preview: true
+                  },
+                  { 
+                    cssVar: '--glass-border', 
+                    value: 'rgba(255, 255, 255, 0.2)', 
+                    label: 'Glass Border', 
+                    usage: 'Light mode glass border',
+                    preview: true
+                  },
+                ].map(({ cssVar, value, label, usage, preview }) => (
+                  <div key={cssVar} className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium text-sm text-[#26282b] dark:text-[#eaeaea]">{label}</h4>
+                      <span className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60">{cssVar}</span>
+                    </div>
+                    {preview && (
+                      <div 
+                        className="w-full h-20 rounded-lg border mx-auto mb-2 flex items-center justify-center"
+                        style={{ 
+                          backdropFilter: cssVar === '--glass-blur' ? value : 'blur(12px)',
+                          backgroundColor: cssVar === '--glass-bg' ? value : 'rgba(255, 255, 255, 0.7)',
+                          borderColor: cssVar === '--glass-border' ? value : 'rgba(255, 255, 255, 0.2)',
+                          borderWidth: '1px'
+                        }}
+                      >
+                        <span className="text-xs text-[#26282b] font-medium">Glass Preview</span>
+                      </div>
+                    )}
+                    <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-1">{usage}</div>
+                    <Input
+                      value={cssVar}
+                      readOnly
+                      className="text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                    />
+                    <div className="text-xs font-mono text-[#26282b]/50 dark:text-[#eaeaea]/50 break-all">{value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </TabsContent>
       </Tabs>

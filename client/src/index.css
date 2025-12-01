@@ -1,35 +1,26 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* ============================================================
+   HALCYON Design System - CSS Variables
+   ============================================================
+   
+   PALETTE ("Fire" Colors):
+   - Dark:       #26282b (Charcoal)
+   - Light Mint: #e8fffe (Ice)
+   - Light Lime: #f1fec9 (Lime)
+   - Accent:     #ff555d (Coral)
+   - Neutral:    #eaeaea (Silver)
+   - Light:      #f4f4f4 (Cloud)
+   
+   FONTS:
+   - Headings: Nohemi
+   - Body: Space Grotesk
+   
+   ============================================================ */
 
-/* ========================================
-   NOHEMI FONT FACE DECLARATIONS
-   ======================================== */
+/* ============================================================
+   FONT FACES
+   ============================================================ */
 
-@font-face {
-  font-family: 'Nohemi';
-  src: url('/fonts/Nohemi-Thin.woff2') format('woff2');
-  font-weight: 100;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Nohemi';
-  src: url('/fonts/Nohemi-ExtraLight.woff2') format('woff2');
-  font-weight: 200;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Nohemi';
-  src: url('/fonts/Nohemi-Light.woff2') format('woff2');
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
-
+/* Nohemi - Headlines & Bold Text */
 @font-face {
   font-family: 'Nohemi';
   src: url('/fonts/Nohemi-Regular.woff2') format('woff2');
@@ -78,351 +69,667 @@
   font-display: swap;
 }
 
-/* ========================================
-   HALCYON COLOR SYSTEM
-   ======================================== */
+/* Space Grotesk - Body & UI Text */
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('/fonts/SpaceGrotesk-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('/fonts/SpaceGrotesk-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('/fonts/SpaceGrotesk-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('/fonts/SpaceGrotesk-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('/fonts/SpaceGrotesk-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ============================================================
+   TAILWIND BASE
+   ============================================================ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   CSS CUSTOM PROPERTIES - LIGHT MODE (Default)
+   ============================================================ */
 
 :root {
-  /* Core Colors - Light Mode */
-  --background: #f5f5f5;
-  --foreground: #131320;
-  --card: #fafffb;
-  --card-foreground: #131320;
-  --popover: #ffffff;
-  --popover-foreground: #131320;
-  --primary: #cc33ab;
+  /* ----------------------------------------------------------
+     COLOR PALETTE - Raw Values
+     ---------------------------------------------------------- */
+  --color-charcoal: #26282b;
+  --color-ice: #e8fffe;
+  --color-lime: #f1fec9;
+  --color-coral: #ff555d;
+  --color-silver: #eaeaea;
+  --color-cloud: #f4f4f4;
+  
+  /* Extended palette */
+  --color-charcoal-light: #363a3e;
+  --color-charcoal-lighter: #464a4f;
+  --color-charcoal-muted: #5c6166;
+  --color-lime-dark: #d4e5a8;
+  --color-lime-light: #f7ffdf;
+  --color-coral-dark: #e04850;
+  --color-coral-light: #ff7a80;
+
+  /* ----------------------------------------------------------
+     SEMANTIC COLORS - Light Mode
+     ---------------------------------------------------------- */
+  
+  /* Backgrounds */
+  --background: var(--color-cloud);
+  --background-secondary: var(--color-silver);
+  --background-tertiary: var(--color-ice);
+  
+  /* Surfaces (Cards, Panels, Modals) */
+  --surface: #ffffff;
+  --surface-elevated: var(--color-lime);
+  --surface-muted: var(--color-silver);
+  
+  /* Text */
+  --foreground: var(--color-charcoal);
+  --foreground-secondary: #5c6166;
+  --foreground-muted: #8a8f94;
+  --foreground-inverse: #ffffff;
+  
+  /* Primary Action Color */
+  --primary: var(--color-coral);
+  --primary-hover: var(--color-coral-dark);
   --primary-foreground: #ffffff;
-  --secondary: #f3f3fc;
-  --secondary-foreground: #131320;
-  --muted: #f3f3fc;
-  --muted-foreground: #131320;
-  --accent: #33ccad;
-  --accent-foreground: #131320;
-  --destructive: #cc5833;
+  
+  /* Accent (Secondary Actions, Highlights) */
+  --accent: var(--color-lime);
+  --accent-hover: var(--color-lime-dark);
+  --accent-foreground: var(--color-charcoal);
+  
+  /* Borders */
+  --border: #d4d7da;
+  --border-muted: var(--color-silver);
+  --border-strong: #b8bcc0;
+  
+  /* Input Fields */
+  --input: #ffffff;
+  --input-border: var(--border);
+  --input-focus: var(--color-coral);
+  
+  /* Ring (Focus States) */
+  --ring: var(--color-coral);
+  --ring-offset: var(--background);
+  
+  /* Destructive/Error */
+  --destructive: #dc2626;
+  --destructive-hover: #b91c1c;
   --destructive-foreground: #ffffff;
-  --border: #e1e5e7;
-  --input: #e1e5e7;
-  --ring: #cc33ab;
-  --chart-1: #cc33ab;
-  --chart-2: #8933cc;
-  --chart-3: #33bccc;
-  --chart-4: #33ccad;
-  --chart-5: #ccbd33;
-  --sidebar: #f3f3fc;
-  --sidebar-foreground: #131320;
-  --sidebar-primary: #cc33ab;
+  
+  /* Muted (Disabled, Subtle) */
+  --muted: var(--color-silver);
+  --muted-foreground: #6b7280;
+  
+  /* Card (Shadcn compatibility) */
+  --card: #ffffff;
+  --card-foreground: var(--color-charcoal);
+  
+  /* Popover (Shadcn compatibility) */
+  --popover: #ffffff;
+  --popover-foreground: var(--color-charcoal);
+
+  /* ----------------------------------------------------------
+     STATUS COLORS - Derived from Fire Palette
+     ---------------------------------------------------------- */
+  /* Success: Derived from Lime (#f1fec9) - Red: 3B, Green: FE, Blue: C9 */
+  --status-success: #3bfec9;
+  --status-success-bg: rgba(59, 254, 201, 0.15);
+  --status-success-border: rgba(59, 254, 201, 0.3);
+  
+  /* Warning: Derived from Lime (#f1fec9) - Red: F1, Green: FE, Blue: 60 */
+  --status-warning: #f1fe60;
+  --status-warning-bg: rgba(241, 254, 96, 0.15);
+  --status-warning-border: rgba(241, 254, 96, 0.3);
+  
+  /* Error: Derived from Coral (#ff555d) - using darker shade */
+  --status-error: var(--color-coral-dark);
+  --status-error-bg: rgba(224, 72, 80, 0.15);
+  --status-error-border: rgba(224, 72, 80, 0.3);
+  
+  /* Info: Derived from Ice (#e8fffe) - Red: 7A, Green: FF, Blue: FE */
+  --status-info: #7afffe;
+  --status-info-bg: rgba(122, 255, 254, 0.15);
+  --status-info-border: rgba(122, 255, 254, 0.3);
+  
+  /* Trip Status Colors - Derived from Fire Palette */
+  /* Scheduled: Derived from Ice (#e8fffe) - Red: 7A, Green: FF, Blue: FE */
+  --scheduled: #7afffe;
+  --scheduled-bg: rgba(122, 255, 254, 0.15);
+  
+  /* In Progress: Derived from Lime (#f1fec9) - Red: F1, Green: FE, Blue: 60 */
+  --in-progress: #f1fe60;
+  --in-progress-bg: rgba(241, 254, 96, 0.15);
+  
+  /* Completed: Derived from Lime (#f1fec9) - Red: 3B, Green: FE, Blue: C9 */
+  --completed: #3bfec9;
+  --completed-bg: rgba(59, 254, 201, 0.15);
+  
+  /* Cancelled: Derived from Coral (#ff555d) - using darker shade */
+  --cancelled: var(--color-coral-dark);
+  --cancelled-bg: rgba(224, 72, 80, 0.15);
+  
+  /* Confirmed: Derived from Ice (#e8fffe) - Red: C2, Green: B4, Blue: FE */
+  --confirmed: #c2b4fe;
+  --confirmed-bg: rgba(194, 180, 254, 0.15);
+
+  /* ----------------------------------------------------------
+     DRIVER ASSIGNMENT COLORS
+     ---------------------------------------------------------- */
+  --driver-color-1: #3b82f6;
+  --driver-color-2: #22c55e;
+  --driver-color-3: #f59e0b;
+  --driver-color-4: #8b5cf6;
+  --driver-color-5: #ec4899;
+  --driver-color-6: #06b6d4;
+
+  /* ----------------------------------------------------------
+     SIDEBAR
+     ---------------------------------------------------------- */
+  --sidebar: var(--color-charcoal);
+  --sidebar-foreground: var(--color-cloud);
+  --sidebar-foreground-muted: #9ca3af;
+  --sidebar-primary: var(--color-coral);
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #33ccad;
-  --sidebar-accent-foreground: #131320;
-  --sidebar-border: #e1e5e7;
-  --sidebar-ring: #cc33ab;
-  --font-sans: Nohemi, sans-serif;
-  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-mono: Fira Code, monospace;
+  --sidebar-accent: var(--color-lime);
+  --sidebar-accent-foreground: var(--color-charcoal);
+  --sidebar-border: var(--color-charcoal-light);
+  --sidebar-ring: var(--color-coral);
+
+  /* ----------------------------------------------------------
+     TYPOGRAPHY
+     ---------------------------------------------------------- */
+  --font-heading: 'Nohemi', system-ui, -apple-system, sans-serif;
+  --font-body: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  
+  /* Font Sizes */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  
+  /* Line Heights */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+  
+  /* Letter Spacing */
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.025em;
+
+  /* ----------------------------------------------------------
+     SPACING & LAYOUT
+     ---------------------------------------------------------- */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  
+  /* Border Radius */
   --radius: 0.5rem;
-  --shadow-x: 0px;
-  --shadow-y: 4px;
-  --shadow-blur: 8px;
-  --shadow-spread: -2px;
-  --shadow-opacity: 0.1;
-  --shadow-color: #1a1a1a;
-  --shadow-2xs: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.05);
-  --shadow-xs: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.05);
-  --shadow-sm: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.10), 0px 1px 2px -3px hsl(0 0% 10.1961% / 0.10);
-  --shadow: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.10), 0px 1px 2px -3px hsl(0 0% 10.1961% / 0.10);
-  --shadow-md: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.10), 0px 2px 4px -3px hsl(0 0% 10.1961% / 0.10);
-  --shadow-lg: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.10), 0px 4px 6px -3px hsl(0 0% 10.1961% / 0.10);
-  --shadow-xl: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.10), 0px 8px 10px -3px hsl(0 0% 10.1961% / 0.10);
-  --shadow-2xl: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.25);
-  --tracking-normal: 0em;
-  --spacing: 0.25rem;
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 6px);
+  --radius-full: 9999px;
+
+  /* ----------------------------------------------------------
+     SHADOWS - Neumorphic Style
+     ---------------------------------------------------------- */
   
-  /* Trip Status Colors */
-  --scheduled: hsl(45, 100%, 51%);
-  --in-progress: hsl(36, 100%, 50%);
-  --completed: hsl(122, 39%, 49%);
-  --cancelled: hsl(0, 84%, 60%);
-  --confirmed: #cc33ab;
+  /* Standard shadows */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
   
-  /* Driver Assignment Colors */
-  --driver-color-1: #8B5CF6;
-  --driver-color-2: #EC4899;
-  --driver-color-3: #06B6D4;
-  --driver-color-4: #84CC16;
-  --driver-color-5: #F97316;
-  --driver-color-6: #6366F1;
+  /* Neumorphic shadows (light mode) */
+  --neu-shadow-light: #ffffff;
+  --neu-shadow-dark: rgba(174, 174, 192, 0.4);
+  
+  --shadow-neu-flat: 
+    5px 5px 10px var(--neu-shadow-dark),
+    -5px -5px 10px var(--neu-shadow-light);
+  
+  --shadow-neu-raised: 
+    8px 8px 16px var(--neu-shadow-dark),
+    -8px -8px 16px var(--neu-shadow-light);
+  
+  --shadow-neu-pressed: 
+    inset 4px 4px 8px var(--neu-shadow-dark),
+    inset -4px -4px 8px var(--neu-shadow-light);
+  
+  --shadow-neu-subtle: 
+    3px 3px 6px var(--neu-shadow-dark),
+    -3px -3px 6px var(--neu-shadow-light);
+
+  /* Glass effect */
+  --glass-blur: blur(12px);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.2);
+
+  /* ----------------------------------------------------------
+     TRANSITIONS
+     ---------------------------------------------------------- */
+  --transition-fast: 150ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow: 300ms ease;
+
+  /* ----------------------------------------------------------
+     Z-INDEX SCALE
+     ---------------------------------------------------------- */
+  --z-dropdown: 50;
+  --z-sticky: 100;
+  --z-modal: 200;
+  --z-popover: 300;
+  --z-tooltip: 400;
+  --z-toast: 500;
 }
+
+/* ============================================================
+   CSS CUSTOM PROPERTIES - DARK MODE
+   ============================================================ */
 
 .dark {
-  /* Core Colors - Dark Mode */
-  --background: #17171c;
-  --foreground: #eeeff2;
-  --card: #20222d;
-  --card-foreground: #eeeff2;
-  --popover: #252538;
-  --popover-foreground: #eeeff2;
-  --primary: #cc33ab;
+  /* Backgrounds */
+  --background: var(--color-charcoal);
+  --background-secondary: var(--color-charcoal-light);
+  --background-tertiary: var(--color-charcoal-lighter);
+  
+  /* Surfaces */
+  --surface: var(--color-charcoal-light);
+  --surface-elevated: var(--color-charcoal-lighter);
+  --surface-muted: var(--color-charcoal-light);
+  
+  /* Text */
+  --foreground: var(--color-cloud);
+  --foreground-secondary: #b8bcc0;
+  --foreground-muted: #8a8f94;
+  --foreground-inverse: var(--color-charcoal);
+  
+  /* Primary */
+  --primary: var(--color-coral);
+  --primary-hover: var(--color-coral-light);
   --primary-foreground: #ffffff;
-  --secondary: #252538;
-  --secondary-foreground: #eeeff2;
-  --muted: #1a1a2b;
-  --muted-foreground: #888b9e;
-  --accent: #33ccad;
-  --accent-foreground: #131320;
-  --destructive: #cc5833;
+  
+  /* Accent */
+  --accent: var(--color-lime);
+  --accent-hover: var(--color-lime-light);
+  --accent-foreground: var(--color-charcoal);
+  
+  /* Borders */
+  --border: #464a4f;
+  --border-muted: var(--color-charcoal-light);
+  --border-strong: #5c6166;
+  
+  /* Input Fields */
+  --input: var(--color-charcoal-light);
+  --input-border: #464a4f;
+  --input-focus: var(--color-coral);
+  
+  /* Ring */
+  --ring: var(--color-coral);
+  --ring-offset: var(--background);
+  
+  /* Destructive */
+  --destructive: #f87171;
+  --destructive-hover: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #383854;
-  --input: #383854;
-  --ring: #cc33ab;
-  --chart-1: #cc33ab;
-  --chart-2: #8933cc;
-  --chart-3: #33bccc;
-  --chart-4: #33ccad;
-  --chart-5: #ccbd33;
-  --sidebar: #131320;
-  --sidebar-foreground: #eeeff2;
-  --sidebar-primary: #cc33ab;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #33ccad;
-  --sidebar-accent-foreground: #131320;
-  --sidebar-border: #383854;
-  --sidebar-ring: #cc33ab;
-  --font-sans: Nohemi, sans-serif;
-  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-mono: Fira Code, monospace;
   
-  /* Gradient Overlay for Dark Mode Backgrounds */
-  --gradient-overlay: linear-gradient(to bottom, rgba(56, 56, 84, 0.83), transparent);
-  --radius: 0.5rem;
-  --shadow-x: 0px;
-  --shadow-y: 4px;
-  --shadow-blur: 8px;
-  --shadow-spread: -2px;
-  --shadow-opacity: 0.1;
-  --shadow-color: #1a1a1a;
-  --shadow-2xs: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.05);
-  --shadow-xs: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.05);
-  --shadow-sm: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.10), 0px 1px 2px -3px hsl(0 0% 10.1961% / 0.10);
-  --shadow: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.10), 0px 1px 2px -3px hsl(0 0% 10.1961% / 0.10);
-  --shadow-md: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.10), 0px 2px 4px -3px hsl(0 0% 10.1961% / 0.10);
-  --shadow-lg: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.10), 0px 4px 6px -3px hsl(0 0% 10.1961% / 0.10);
-  --shadow-xl: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.10), 0px 8px 10px -3px hsl(0 0% 10.1961% / 0.10);
-  --shadow-2xl: 0px 4px 8px -2px hsl(0 0% 10.1961% / 0.25);
-  --tracking-normal: 0em;
-  --spacing: 0.25rem;
+  /* Muted */
+  --muted: var(--color-charcoal-light);
+  --muted-foreground: #9ca3af;
   
-  /* Trip Status Colors (Same as Light Mode) */
-  --scheduled: hsl(45, 100%, 51%);
-  --in-progress: hsl(36, 100%, 50%);
-  --completed: hsl(122, 39%, 49%);
-  --cancelled: hsl(0, 84%, 60%);
-  --confirmed: #cc33ab;
+  /* Card */
+  --card: var(--color-charcoal-light);
+  --card-foreground: var(--color-cloud);
   
-  /* Driver Assignment Colors (Same as Light Mode) */
-  --driver-color-1: #8B5CF6;
-  --driver-color-2: #EC4899;
-  --driver-color-3: #06B6D4;
-  --driver-color-4: #84CC16;
-  --driver-color-5: #F97316;
-  --driver-color-6: #6366F1;
+  /* Popover */
+  --popover: var(--color-charcoal-light);
+  --popover-foreground: var(--color-cloud);
+
+  /* Status Colors - Dark Mode (same as light mode, derived from Fire palette) */
+  --status-success: #3bfec9;
+  --status-success-bg: rgba(59, 254, 201, 0.15);
+  --status-success-border: rgba(59, 254, 201, 0.3);
+  
+  --status-warning: #f1fe60;
+  --status-warning-bg: rgba(241, 254, 96, 0.15);
+  --status-warning-border: rgba(241, 254, 96, 0.3);
+  
+  --status-error: var(--color-coral-dark);
+  --status-error-bg: rgba(224, 72, 80, 0.15);
+  --status-error-border: rgba(224, 72, 80, 0.3);
+  
+  --status-info: #7afffe;
+  --status-info-bg: rgba(122, 255, 254, 0.15);
+  --status-info-border: rgba(122, 255, 254, 0.3);
+  
+  /* Trip Status Colors - Dark Mode (same as light mode, derived from Fire palette) */
+  --scheduled: #7afffe;
+  --scheduled-bg: rgba(122, 255, 254, 0.15);
+  
+  --in-progress: #f1fe60;
+  --in-progress-bg: rgba(241, 254, 96, 0.15);
+  
+  --completed: #3bfec9;
+  --completed-bg: rgba(59, 254, 201, 0.15);
+  
+  --cancelled: var(--color-coral-dark);
+  --cancelled-bg: rgba(224, 72, 80, 0.15);
+  
+  --confirmed: #c2b4fe;
+  --confirmed-bg: rgba(194, 180, 254, 0.15);
+
+  /* Sidebar */
+  --sidebar: #1a1c1e;
+  --sidebar-foreground: var(--color-cloud);
+  --sidebar-foreground-muted: #6b7280;
+  --sidebar-border: #2d3035;
+
+  /* Neumorphic shadows (dark mode) */
+  --neu-shadow-light: rgba(255, 255, 255, 0.05);
+  --neu-shadow-dark: rgba(0, 0, 0, 0.5);
+  
+  --shadow-neu-flat: 
+    5px 5px 10px var(--neu-shadow-dark),
+    -5px -5px 10px var(--neu-shadow-light);
+  
+  --shadow-neu-raised: 
+    8px 8px 16px var(--neu-shadow-dark),
+    -8px -8px 16px var(--neu-shadow-light);
+  
+  --shadow-neu-pressed: 
+    inset 4px 4px 8px var(--neu-shadow-dark),
+    inset -4px -4px 8px var(--neu-shadow-light);
+
+  /* Glass effect - dark mode */
+  --glass-bg: rgba(38, 40, 43, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.1);
 }
 
-/* ========================================
+/* ============================================================
    BASE STYLES
-   ======================================== */
+   ============================================================ */
 
 @layer base {
   * {
     border-color: var(--border);
   }
   
-  html {
-    text-size-adjust: 100%;
-    -webkit-text-size-adjust: 100%;
-  }
-  
   body {
     background-color: var(--background);
     color: var(--foreground);
-    font-family: var(--font-sans);
-  }
-  
-  h1 {
-    font-family: 'Nohemi', sans-serif;
-    font-weight: 600;
-    text-transform: uppercase;
-  }
-  
-  h2, h3, h4, h5, h6 {
-    font-family: 'Nohemi', sans-serif;
+    font-family: var(--font-body);
+    line-height: var(--leading-normal);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
-/* ========================================
-   UTILITY CLASSES
-   ======================================== */
+/* ============================================================
+   UTILITY CLASSES - Reusable Component Patterns
+   ============================================================ */
 
-@layer utilities {
-  /* ========================================
-     TYPOGRAPHY SCALE - GOLDEN RATIO (1.618)
-     ======================================== */
-  
-  /* Display / Mega - Largest heading */
-  .text-display {
-    font-family: 'Nohemi', sans-serif;
-    font-size: 110px;
-    font-weight: 700;
-    line-height: 1.2;
-    text-transform: uppercase;
-    letter-spacing: -0.02em;
+@layer components {
+  /* Cards */
+  .card-default {
+    @apply bg-card rounded-lg shadow-sm;
+    border: 1px solid var(--border);
   }
-  
-  /* H1 - Major Section */
-  .text-h1 {
-    font-family: 'Nohemi', sans-serif;
-    font-size: 68px;
-    font-weight: 700;
-    line-height: 1.2;
-    text-transform: uppercase;
-    letter-spacing: -0.01em;
+
+  .card-elevated {
+    background-color: var(--surface-elevated);
+    @apply rounded-lg shadow-md;
+    border: 1px solid var(--border-muted);
   }
-  
-  /* H2 - Subsection */
-  .text-h2 {
-    font-family: 'Nohemi', sans-serif;
-    font-size: 42px;
-    font-weight: 600;
-    line-height: 1.3;
-    text-transform: uppercase;
-    letter-spacing: -0.01em;
+
+  .card-glass {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    @apply rounded-lg;
   }
-  
-  /* H3 - Sub-subsection */
-  .text-h3 {
-    font-family: 'Nohemi', sans-serif;
-    font-size: 26px;
-    font-weight: 600;
-    line-height: 1.4;
-    text-transform: uppercase;
-    letter-spacing: 0;
+
+  .card-neu {
+    background-color: var(--background);
+    @apply rounded-lg;
+    box-shadow: var(--shadow-neu-raised);
   }
-  
-  /* Body Large */
-  .text-body-large {
-    font-family: 'Nohemi', sans-serif;
-    font-size: 20px;
-    font-weight: 400;
-    line-height: 1.5;
-    text-transform: none;
-    letter-spacing: 0;
+
+  .card-neu-flat {
+    background-color: var(--background);
+    @apply rounded-lg;
+    box-shadow: var(--shadow-neu-flat);
   }
-  
-  /* Body - Default body text */
+
+  .card-neu-pressed {
+    background-color: var(--background);
+    @apply rounded-lg;
+    box-shadow: var(--shadow-neu-pressed);
+  }
+
+  /* Typography Presets */
+  .text-page-title {
+    font-family: var(--font-heading);
+    @apply text-3xl font-bold leading-tight tracking-tight;
+    color: var(--foreground);
+  }
+
+  .text-section-header {
+    font-family: var(--font-heading);
+    @apply text-xl font-semibold leading-tight;
+    color: var(--foreground);
+  }
+
+  .text-card-title {
+    font-family: var(--font-heading);
+    @apply text-lg font-semibold;
+    color: var(--foreground);
+  }
+
   .text-body {
-    font-family: 'Nohemi', sans-serif;
-    font-size: 16px;
-    font-weight: 400;
-    line-height: 1.5;
-    text-transform: none;
-    letter-spacing: 0;
+    font-family: var(--font-body);
+    @apply text-base leading-normal;
+    color: var(--foreground);
   }
-  
-  /* Body Small */
-  .text-body-small {
-    font-family: 'Nohemi', sans-serif;
-    font-size: 14px;
-    font-weight: 400;
-    line-height: 1.5;
-    text-transform: none;
-    letter-spacing: 0;
+
+  .text-body-sm {
+    font-family: var(--font-body);
+    @apply text-sm leading-normal;
+    color: var(--foreground-secondary);
   }
-  
-  /* Caption / Label */
+
   .text-caption {
-    font-family: 'Nohemi', sans-serif;
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 1.4;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    font-family: var(--font-body);
+    @apply text-xs leading-normal;
+    color: var(--foreground-muted);
   }
-  
-  /* ========================================
-     RESPONSIVE TYPOGRAPHY (Mobile < 768px)
-     ======================================== */
-  
-  @media (max-width: 767px) {
-    .text-display {
-      font-size: 68px;
-    }
-    
-    .text-h1 {
-      font-size: 42px;
-    }
-    
-    .text-h2 {
-      font-size: 26px;
-    }
-    
-    .text-h3 {
-      font-size: 20px;
-    }
+
+  .text-label {
+    font-family: var(--font-body);
+    @apply text-sm font-medium;
+    color: var(--foreground);
   }
-  
-  /* ========================================
-     LEGACY CLASSES (Backward Compatibility)
-     ======================================== */
-  
-  .text-mega {
-    @apply text-display;
+
+  /* Status Badges */
+  .badge-success {
+    background-color: var(--status-success-bg);
+    color: var(--status-success);
+    border: 1px solid var(--status-success-border);
+    @apply px-2 py-1 rounded-md text-xs font-medium;
   }
-  
-  .text-xl-display {
-    @apply text-h1;
+
+  .badge-warning {
+    background-color: var(--status-warning-bg);
+    color: var(--status-warning);
+    border: 1px solid var(--status-warning-border);
+    @apply px-2 py-1 rounded-md text-xs font-medium;
   }
-  
-  .text-brutalist-h1 {
-    @apply text-h1;
+
+  .badge-error {
+    background-color: var(--status-error-bg);
+    color: var(--status-error);
+    border: 1px solid var(--status-error-border);
+    @apply px-2 py-1 rounded-md text-xs font-medium;
   }
-  
-  .text-brutalist-h2 {
-    @apply text-h2;
+
+  .badge-info {
+    background-color: var(--status-info-bg);
+    color: var(--status-info);
+    border: 1px solid var(--status-info-border);
+    @apply px-2 py-1 rounded-md text-xs font-medium;
   }
-  
-  .text-brutalist-body {
-    @apply text-body-large;
+
+  /* Trip Status Badges */
+  .badge-scheduled {
+    background-color: var(--scheduled-bg);
+    color: var(--scheduled);
+    @apply px-2 py-1 rounded-md text-xs font-medium;
   }
-  
-  .text-brutalist-small {
-    @apply text-body-small;
+
+  .badge-in-progress {
+    background-color: var(--in-progress-bg);
+    color: var(--in-progress);
+    @apply px-2 py-1 rounded-md text-xs font-medium;
   }
-  
-  .text-brutalist-caption {
-    @apply text-caption;
+
+  .badge-completed {
+    background-color: var(--completed-bg);
+    color: var(--completed);
+    @apply px-2 py-1 rounded-md text-xs font-medium;
   }
-  
-  /* ========================================
-     GRADIENT OVERLAY UTILITY
-     ======================================== */
-  
-  .gradient-overlay {
-    position: relative;
+
+  .badge-cancelled {
+    background-color: var(--cancelled-bg);
+    color: var(--cancelled);
+    @apply px-2 py-1 rounded-md text-xs font-medium;
   }
-  
-  .gradient-overlay::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: var(--gradient-overlay);
-    pointer-events: none;
-    z-index: 1;
+
+  .badge-confirmed {
+    background-color: var(--confirmed-bg);
+    color: var(--confirmed);
+    @apply px-2 py-1 rounded-md text-xs font-medium;
   }
-  
-  .gradient-overlay > * {
-    position: relative;
-    z-index: 2;
+
+  /* Buttons */
+  .btn-primary {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+    @apply rounded-md px-4 py-2 font-medium;
+    transition: background-color var(--transition-fast);
   }
+
+  .btn-primary:hover {
+    background-color: var(--primary-hover);
+  }
+
+  .btn-accent {
+    background-color: var(--accent);
+    color: var(--accent-foreground);
+    @apply rounded-md px-4 py-2 font-medium;
+    transition: background-color var(--transition-fast);
+  }
+
+  .btn-accent:hover {
+    background-color: var(--accent-hover);
+  }
+
+  .btn-neu {
+    background-color: var(--background);
+    color: var(--foreground);
+    @apply rounded-md px-4 py-2 font-medium;
+    box-shadow: var(--shadow-neu-flat);
+    transition: box-shadow var(--transition-fast);
+  }
+
+  .btn-neu:hover {
+    box-shadow: var(--shadow-neu-raised);
+  }
+
+  .btn-neu:active {
+    box-shadow: var(--shadow-neu-pressed);
+  }
+
+  /* Focus States */
+  .focus-ring {
+    @apply outline-none;
+    box-shadow: 0 0 0 2px var(--ring-offset), 0 0 0 4px var(--ring);
+  }
+}
+
+/* ============================================================
+   SCROLLBAR STYLING
+   ============================================================ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background-secondary);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--foreground-muted);
+}
+
+/* ============================================================
+   SELECTION
+   ============================================================ */
+
+::selection {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
 }
