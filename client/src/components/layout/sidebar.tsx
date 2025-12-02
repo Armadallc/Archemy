@@ -31,8 +31,7 @@ import {
   Moon,
   ChevronUp,
   BarChart3,
-  MessageSquare,
-  Blocks
+  MessageSquare
 } from "lucide-react";
 import { useTheme } from "../theme-provider";
 import { useAuth } from "../../hooks/useAuth";
@@ -97,7 +96,6 @@ const navigationItemPermissions: Record<string, string | string[]> = {
   "/analytics": "manage_users", // Super admin only
   "/role-templates": "manage_users", // Super admin only
   "/design-system": "manage_users", // Super admin only
-  "/minimal-color-demo": "manage_users", // Super admin only
   "/design-system-demo": "manage_users", // Super admin only
   "/calendar-experiment": "view_calendar",
   "/chat": "view_calendar", // All users can access chat
@@ -161,7 +159,6 @@ const navigationCategories = [
     roles: ["super_admin"],
     items: [
       { path: "/design-system", label: "Design System", icon: Palette, roles: ["super_admin"], status: "completed" as PageStatus },
-      { path: "/minimal-color-demo", label: "Minimal Color Demo", icon: Blocks, roles: ["super_admin"], status: "completed" as PageStatus },
       { path: "/design-system-demo", label: "Design Demo", icon: Star, roles: ["super_admin"], status: "completed" as PageStatus },
       { path: "/calendar-experiment", label: "Experiment", icon: Calendar, roles: ["super_admin", "corporate_admin", "program_admin"], status: "completed" as PageStatus },
     ]

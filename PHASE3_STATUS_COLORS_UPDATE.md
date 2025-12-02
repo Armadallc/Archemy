@@ -88,3 +88,4 @@ Phase 3 is complete! All status colors now use Fire-derived CSS variables.
 - Review and update old design tokens file (`client/src/design-system/tokens/colors.ts`)
 - Consider creating a status color utility function for consistency
 
+

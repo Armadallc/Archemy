@@ -174,3 +174,4 @@ This document identifies all hardcoded color values that should be replaced with
 - Some colors like `#ffffff` (white) are standard and should remain hardcoded
 - Status colors should use the new Fire-derived CSS variables we created
 
+

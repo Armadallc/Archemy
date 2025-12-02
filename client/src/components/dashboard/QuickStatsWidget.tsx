@@ -41,3 +41,4 @@ export default function QuickStatsWidget({ className, trips = [] }: QuickStatsWi
   );
 }
 
+
