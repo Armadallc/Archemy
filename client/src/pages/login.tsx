@@ -3,9 +3,10 @@ import { useAuth } from "../hooks/useAuth";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { Card, CardContent } from "../components/ui/card";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { GradientBackground } from "../components/ui/gradient-background";
 
 export default function Login() {
   const { login, superAdminLogin } = useAuth();
@@ -47,13 +48,36 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gradient-overlay" style={{ backgroundColor: 'var(--background)' }}>
-      <h1 className="text-4xl font-semibold mb-8" style={{ fontFamily: 'Nohemi', fontWeight: 600, textTransform: 'uppercase' }}>halcyon.</h1>
-      <Card className="w-full max-w-md">
+    <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
+      {/* Animated gradient background */}
+      <GradientBackground className="absolute inset-0 -z-10" />
+      
+      {/* Content */}
+      <h1 
+        className="text-4xl mb-8 lowercase"
+        style={{ 
+          fontFamily: "'Nohemi', sans-serif", 
+          fontWeight: 500, 
+          color: "#e8fffe",
+        }}
+      >
+        halcyon.
+      </h1>
+      <Card 
+        className="w-full max-w-md backdrop-blur-sm"
+        style={{
+          backgroundColor: "rgba(232, 255, 254, 0.05)", // ice 5%
+          borderColor: "#e8fffe", // ice 100%
+          borderWidth: "1px",
+          fontFamily: "'Space Grotesk', sans-serif",
+        }}
+      >
         <CardContent className="pt-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" style={{ color: "#e8fffe", fontFamily: "'Space Grotesk', sans-serif" }}>
+                Email
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -61,11 +85,20 @@ export default function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 required
+                style={{
+                  backgroundColor: "rgba(59, 254, 201, 0.05)", // lime 5%
+                  borderColor: "#e8fffe",
+                  color: "#e8fffe",
+                  fontFamily: "'Space Grotesk', sans-serif",
+                }}
+                className="placeholder:text-[#e8fffe]/50"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" style={{ color: "#e8fffe", fontFamily: "'Space Grotesk', sans-serif" }}>
+                Password
+              </Label>
               <Input
                 id="password"
                 type="password"
@@ -73,16 +106,35 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
                 required
+                style={{
+                  backgroundColor: "rgba(59, 254, 201, 0.05)", // lime 5%
+                  borderColor: "#e8fffe",
+                  color: "#e8fffe",
+                  fontFamily: "'Space Grotesk', sans-serif",
+                }}
+                className="placeholder:text-[#e8fffe]/50"
               />
             </div>
 
             {error && (
               <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  {error}
+                </AlertDescription>
               </Alert>
             )}
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={isLoading}
+              style={{
+                backgroundColor: "#e8fffe",
+                color: "#1a1c1e",
+                fontFamily: "'Space Grotesk', sans-serif",
+                fontWeight: 500,
+              }}
+            >
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -97,10 +149,19 @@ export default function Login() {
           <div className="mt-4">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
+                <span className="w-full border-t" style={{ borderColor: "rgba(232, 255, 254, 0.3)" }} />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white dark:bg-gray-900 px-2 text-gray-500">Quick Access</span>
+                <span 
+                  className="px-2"
+                  style={{ 
+                    backgroundColor: "rgba(232, 255, 254, 0.05)",
+                    color: "rgba(232, 255, 254, 0.6)",
+                    fontFamily: "'Space Grotesk', sans-serif",
+                  }}
+                >
+                  Quick Access
+                </span>
               </div>
             </div>
             
@@ -110,6 +171,12 @@ export default function Login() {
               className="w-full mt-4" 
               disabled={isLoading}
               onClick={handleSuperAdminLogin}
+              style={{
+                backgroundColor: "transparent",
+                borderColor: "#e8fffe",
+                color: "#e8fffe",
+                fontFamily: "'Space Grotesk', sans-serif",
+              }}
             >
               {isLoading ? (
                 <>
@@ -123,7 +190,13 @@ export default function Login() {
           </div>
 
           <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p 
+              className="text-sm"
+              style={{ 
+                color: "rgba(232, 255, 254, 0.6)",
+                fontFamily: "'Space Grotesk', sans-serif",
+              }}
+            >
               Need access? Contact your Program Admin
             </p>
           </div>
