@@ -31,6 +31,7 @@ const NotFound = lazy(() => import("../../pages/not-found"));
 // Design System Pages (lazy loaded - rarely used)
 const DesignSystem = lazy(() => import("../../pages/design-system"));
 const DesignSystemDemo = lazy(() => import("../../pages/design-system-demo"));
+const MinimalColorDemo = lazy(() => import("../../pages/minimal-color-demo"));
 const ScratchPage = lazy(() => import("../../pages/scratch"));
 const TypographyTest = lazy(() => import("../../pages/typography-test"));
 const Analytics = lazy(() => import("../../pages/analytics"));
@@ -291,6 +292,9 @@ export default function MainLayout({
               </Route>
               <Route path="/design-system-demo">
                 <DesignSystemDemo />
+              </Route>
+              <Route path="/minimal-color-demo">
+                <MinimalColorDemo />
               </Route>
               <Route path="/typography-test">
                 <TypographyTest />

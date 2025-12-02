@@ -30,7 +30,9 @@ import {
   Sun,
   Moon,
   ChevronUp,
-  BarChart3
+  BarChart3,
+  MessageSquare,
+  Blocks
 } from "lucide-react";
 import { useTheme } from "../theme-provider";
 import { useAuth } from "../../hooks/useAuth";
@@ -95,8 +97,10 @@ const navigationItemPermissions: Record<string, string | string[]> = {
   "/analytics": "manage_users", // Super admin only
   "/role-templates": "manage_users", // Super admin only
   "/design-system": "manage_users", // Super admin only
+  "/minimal-color-demo": "manage_users", // Super admin only
   "/design-system-demo": "manage_users", // Super admin only
   "/calendar-experiment": "view_calendar",
+  "/chat": "view_calendar", // All users can access chat
 };
 
 // Category-based navigation structure
@@ -107,7 +111,8 @@ const navigationCategories = [
     icon: Home,
     roles: ["super_admin", "corporate_admin", "program_admin", "program_user", "driver"],
     items: [
-      { path: "/", label: "Dashboard", icon: Home, roles: ["super_admin", "corporate_admin", "program_admin", "program_user", "driver"], status: "completed" as PageStatus }
+      { path: "/", label: "Dashboard", icon: Home, roles: ["super_admin", "corporate_admin", "program_admin", "program_user", "driver"], status: "completed" as PageStatus },
+      { path: "/chat", label: "Chat", icon: MessageSquare, roles: ["super_admin", "corporate_admin", "program_admin", "program_user", "driver"], status: "completed" as PageStatus }
     ]
   },
   {
@@ -156,6 +161,7 @@ const navigationCategories = [
     roles: ["super_admin"],
     items: [
       { path: "/design-system", label: "Design System", icon: Palette, roles: ["super_admin"], status: "completed" as PageStatus },
+      { path: "/minimal-color-demo", label: "Minimal Color Demo", icon: Blocks, roles: ["super_admin"], status: "completed" as PageStatus },
       { path: "/design-system-demo", label: "Design Demo", icon: Star, roles: ["super_admin"], status: "completed" as PageStatus },
       { path: "/calendar-experiment", label: "Experiment", icon: Calendar, roles: ["super_admin", "corporate_admin", "program_admin"], status: "completed" as PageStatus },
     ]
@@ -570,11 +576,11 @@ export default function Sidebar({
                         onMouseEnter={(e) => !isActive && (e.currentTarget.style.backgroundColor = 'var(--gray-3)')}
                         onMouseLeave={(e) => !isActive && (e.currentTarget.style.backgroundColor = 'transparent')}
                       >
-                        <Icon className="w-5 h-5 flex-shrink-0" />
+                        {/* Icon removed per user request */}
                         {!isCollapsed && (
                           <div className="flex items-center space-x-2 flex-1">
                             <span className="text-sm font-medium">{item.label}</span>
-                            {item.status && <StatusDot status={item.status} />}
+                            {/* Status indicator removed per user request */}
                           </div>
                         )}
                       </Link>
@@ -597,11 +603,11 @@ export default function Sidebar({
                       onMouseEnter={(e) => !isActive && (e.currentTarget.style.backgroundColor = 'var(--gray-3)')}
                       onMouseLeave={(e) => !isActive && (e.currentTarget.style.backgroundColor = 'transparent')}
                     >
-                      <Icon className="w-5 h-5 flex-shrink-0" />
+                      {/* Icon removed per user request */}
                       {!isCollapsed && (
                         <div className="flex items-center space-x-2 flex-1">
                           <span className="text-sm font-medium">{item.label}</span>
-                          {item.status && <StatusDot status={item.status} />}
+                          {/* Status indicator removed per user request */}
                         </div>
                       )}
                     </Link>
