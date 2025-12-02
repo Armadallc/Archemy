@@ -108,14 +108,16 @@ export function TripEventPopup({
     return trips.find(trip => trip.id === event.id);
   };
 
+  // Fire Design System status colors - using CSS variables for high contrast
   const getStatusColor = (status: string) => {
+    // All status backgrounds are light, so use charcoal text for contrast
     switch (status) {
-      case 'scheduled': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'confirmed': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'in_progress': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'completed': return 'bg-green-100 text-green-800 border-green-200';
-      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'scheduled': return 'bg-scheduled/20 text-[var(--color-charcoal)] border-scheduled/50';
+      case 'confirmed': return 'bg-confirmed/20 text-[var(--color-charcoal)] border-confirmed/50';
+      case 'in_progress': return 'bg-in-progress/20 text-[var(--color-charcoal)] border-in-progress/50';
+      case 'completed': return 'bg-completed/20 text-[var(--color-charcoal)] border-completed/50';
+      case 'cancelled': return 'bg-cancelled/20 text-[var(--color-charcoal)] border-cancelled/50';
+      default: return 'bg-muted text-[var(--color-charcoal)] border-border';
     }
   };
 
@@ -153,13 +155,17 @@ export function TripEventPopup({
             return (
               <div
                 key={event.id}
-                className="cursor-pointer border rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                className="cursor-pointer border rounded-lg p-3 hover:bg-muted transition-colors"
+                style={{ 
+                  backgroundColor: 'var(--card)', 
+                  borderColor: 'var(--border)' 
+                }}
                 onClick={() => handleEventClick(event)}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <h4 className="font-medium text-sm">{event.title}</h4>
+                      <h4 className="font-medium text-sm" style={{ color: 'var(--foreground)' }}>{event.title}</h4>
                       {trip && (
                         <span className={`px-2 py-1 text-xs rounded-full border ${getStatusColor(trip.status)}`}>
                           {getTripStatusText(trip.status)}
@@ -167,7 +173,7 @@ export function TripEventPopup({
                       )}
                     </div>
                     
-                    <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400">
+                    <div className="space-y-1 text-xs" style={{ color: 'var(--muted-foreground)' }}>
                       <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         <span>{format(eventStart, 'h:mm a')} - {format(eventEnd, 'h:mm a')}</span>
@@ -207,7 +213,8 @@ export function TripEventPopup({
                           e.stopPropagation();
                           handleTripEdit(trip);
                         }}
-                        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+                        className="p-1 hover:bg-muted rounded"
+                        style={{ color: 'var(--muted-foreground)' }}
                         title="Edit trip"
                       >
                         <Edit className="h-3 w-3" />
@@ -217,7 +224,8 @@ export function TripEventPopup({
                           e.stopPropagation();
                           setShowDeleteConfirm(trip.id);
                         }}
-                        className="p-1 hover:bg-red-200 dark:hover:bg-red-700 rounded text-red-600"
+                        className="p-1 rounded"
+                        style={{ color: 'var(--color-coral)' }}
                         title="Delete trip"
                       >
                         <Trash2 className="h-3 w-3" />
@@ -228,8 +236,17 @@ export function TripEventPopup({
 
                 {/* Delete confirmation */}
                 {showDeleteConfirm === trip?.id && (
-                  <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
-                    <p className="text-xs text-red-800 dark:text-red-200 mb-2">
+                  <div 
+                    className="mt-2 p-2 rounded border"
+                    style={{ 
+                      backgroundColor: 'rgba(255, 85, 93, 0.1)', 
+                      borderColor: 'rgba(255, 85, 93, 0.3)' 
+                    }}
+                  >
+                    <p 
+                      className="text-xs mb-2"
+                      style={{ color: 'var(--color-coral)' }}
+                    >
                       Are you sure you want to delete this trip?
                     </p>
                     <div className="flex gap-2">
@@ -238,7 +255,11 @@ export function TripEventPopup({
                           e.stopPropagation();
                           handleTripDelete(trip);
                         }}
-                        className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+                        className="px-2 py-1 text-xs rounded"
+                        style={{ 
+                          backgroundColor: 'var(--color-coral)', 
+                          color: 'var(--color-ice)' 
+                        }}
                       >
                         Delete
                       </button>
@@ -247,7 +268,11 @@ export function TripEventPopup({
                           e.stopPropagation();
                           setShowDeleteConfirm(null);
                         }}
-                        className="px-2 py-1 text-xs bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+                        className="px-2 py-1 text-xs rounded"
+                        style={{ 
+                          backgroundColor: 'var(--muted)', 
+                          color: 'var(--foreground)' 
+                        }}
                       >
                         Cancel
                       </button>

@@ -91,12 +91,22 @@ interface TripHoverCardProps {
   children: React.ReactElement;
 }
 
+// Fire Design System status colors - high contrast
 const statusColors = {
-  scheduled: "bg-blue-50 text-blue-700 border-blue-200",
-  confirmed: "bg-green-50 text-green-700 border-green-200", 
-  in_progress: "bg-yellow-50 text-yellow-700 border-yellow-200",
-  completed: "bg-gray-50 text-gray-700 border-gray-200",
-  cancelled: "bg-red-50 text-red-700 border-red-200",
+  scheduled: "bg-scheduled/20 text-charcoal border-scheduled/50",
+  confirmed: "bg-confirmed/20 text-charcoal border-confirmed/50", 
+  in_progress: "bg-in-progress/20 text-charcoal border-in-progress/50",
+  completed: "bg-completed/20 text-charcoal border-completed/50",
+  cancelled: "bg-cancelled/20 text-charcoal border-cancelled/50",
+};
+
+// Helper function for text contrast
+// Rule: Light backgrounds (ice, silver, cloud) = charcoal/coral text
+//       Dark backgrounds (charcoal, coral) = ice/silver/cloud text
+const getContrastText = (bgColor: string): string => {
+  const lightBgs = ['ice', 'silver', 'cloud', 'lime', 'scheduled', 'confirmed', 'in-progress', 'completed'];
+  const isLightBg = lightBgs.some(c => bgColor.toLowerCase().includes(c));
+  return isLightBg ? 'var(--color-charcoal)' : 'var(--color-ice)';
 };
 
 export function TripHoverCard({ trip, children }: TripHoverCardProps) {
@@ -376,17 +386,22 @@ export function TripHoverCard({ trip, children }: TripHoverCardProps) {
         {children}
       </HoverCardTrigger>
       <HoverCardContent 
-        className="w-[400px] p-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-lg z-[100]" 
+        className="w-[400px] p-0 shadow-lg z-[100]" 
+        style={{
+          backgroundColor: 'var(--card)',
+          borderColor: 'var(--border)',
+          borderWidth: '1px',
+        }}
         side="top" 
         align="start"
         sideOffset={8}
         avoidCollisions={true}
       >
-        <div className="space-y-4 p-4 bg-white dark:bg-gray-900">
+        <div className="space-y-4 p-4" style={{ backgroundColor: 'var(--card)' }}>
           {/* Header */}
           <div className="flex items-start justify-between">
             <div className="space-y-1">
-              <h4 className="font-semibold text-base leading-none">
+              <h4 className="font-semibold text-base leading-none" style={{ color: 'var(--foreground)' }}>
                 {clientName}
               </h4>
               <div className="flex items-center gap-2">
@@ -402,8 +417,8 @@ export function TripHoverCard({ trip, children }: TripHoverCardProps) {
 
           {/* Time */}
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">
+            <Clock className="h-4 w-4" style={{ color: 'var(--muted-foreground)' }} />
+            <span className="text-sm" style={{ color: 'var(--foreground)' }}>
               <span className="font-medium">{pickupTime}</span>
               {trip.scheduled_return_time && (
                 <span className="text-muted-foreground">
@@ -446,17 +461,17 @@ export function TripHoverCard({ trip, children }: TripHoverCardProps) {
           {/* Addresses */}
           <div className="space-y-3">
             <div className="flex items-start gap-2">
-              <MapPin className="h-4 w-4 text-green-600 mt-0.5" />
+              <MapPin className="h-4 w-4 mt-0.5" style={{ color: 'var(--color-lime)' }} />
               <div className="text-sm">
-                <span className="font-medium">From:</span>
-                <p className="text-xs text-muted-foreground mt-0.5">{trip.pickup_address}</p>
+                <span className="font-medium" style={{ color: 'var(--foreground)' }}>From:</span>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>{trip.pickup_address}</p>
               </div>
             </div>
             <div className="flex items-start gap-2">
-              <MapPin className="h-4 w-4 text-red-600 mt-0.5" />
+              <MapPin className="h-4 w-4 mt-0.5" style={{ color: 'var(--color-coral)' }} />
               <div className="text-sm">
-                <span className="font-medium">To:</span>
-                <p className="text-xs text-muted-foreground mt-0.5">{trip.dropoff_address}</p>
+                <span className="font-medium" style={{ color: 'var(--foreground)' }}>To:</span>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>{trip.dropoff_address}</p>
               </div>
             </div>
           </div>
@@ -529,12 +544,18 @@ export function TripHoverCard({ trip, children }: TripHoverCardProps) {
           {locationPermission === 'denied' && trip.status === 'scheduled' && (
             <>
               <Separator />
-              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+              <div 
+                className="rounded-md p-3"
+                style={{ 
+                  backgroundColor: 'rgba(255, 122, 128, 0.1)', 
+                  border: '1px solid rgba(255, 122, 128, 0.3)' 
+                }}
+              >
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5" />
+                  <AlertTriangle className="h-4 w-4 mt-0.5" style={{ color: 'var(--color-coral)' }} />
                   <div className="text-sm">
-                    <p className="font-medium text-yellow-800">Location Access Needed</p>
-                    <p className="text-yellow-700 text-xs mt-1">
+                    <p className="font-medium" style={{ color: 'var(--color-coral)' }}>Location Access Needed</p>
+                    <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>
                       Enable location access for automatic trip tracking, or use manual entry option.
                     </p>
                   </div>

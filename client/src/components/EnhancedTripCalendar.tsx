@@ -94,6 +94,27 @@ const getStatusColor = (status: string): string => {
   return colorMap[status] || getCSSVariable('--muted-foreground') || '#5c6166'; // Fire palette: charcoal-muted
 };
 
+// FIRE DESIGN SYSTEM CONTRAST RULE:
+// Light backgrounds (ice, silver, cloud, lime) = charcoal or coral text
+// Dark backgrounds (charcoal, coral) = ice, silver, or cloud text
+const getContrastTextColor = (bgColor: string): string => {
+  const charcoal = getCSSVariable('--color-charcoal') || '#26282b';
+  const ice = getCSSVariable('--color-ice') || '#e8fffe';
+  
+  // Determine if background is light by checking if it's a light Fire color
+  // Light Fire colors: ice (#e8fffe), silver (#d1e0e4), cloud (#f1f5f4), lime (#3bfec9), 
+  // scheduled (#7afffe), in_progress (#f1fe60), completed (#3bfec9)
+  const lightColors = ['e8fffe', 'd1e0e4', 'f1f5f4', '3bfec9', '7afffe', 'f1fe60', 'fff', 'fef', 'ffe', 'f5f', 'e0e', 'd1d'];
+  const normalizedBg = bgColor.toLowerCase().replace('#', '');
+  
+  // Check if it's a light color that needs dark text
+  const isLightBg = lightColors.some(c => normalizedBg.includes(c)) || 
+                    // Also check by luminance approximation for hex colors
+                    (normalizedBg.length >= 3 && parseInt(normalizedBg.slice(0, 2), 16) > 180);
+  
+  return isLightBg ? charcoal : ice;
+};
+
 // Export statusColors as an object with getter functions for compatibility
 export const statusColors = {
   scheduled: () => getStatusColor('scheduled'),
@@ -624,7 +645,7 @@ export default function EnhancedTripCalendar() {
                           <Badge 
                             style={{ 
                               backgroundColor: getTripColor(trip),
-                              color: 'white'
+                              color: getContrastTextColor(getTripColor(trip))
                             }}
                           >
                             {colorMode === 'status' ? trip.status.replace('_', ' ') : 'Driver'}
@@ -723,7 +744,7 @@ export default function EnhancedTripCalendar() {
                                 style={{
                                   top: `${top}px`,
                                   backgroundColor: getTripColor(trip),
-                                  color: 'white',
+                                  color: getContrastTextColor(getTripColor(trip)),
                                   borderColor: 'var(--border)',
                                   minHeight: '20px',
                                 }}
@@ -786,10 +807,13 @@ export default function EnhancedTripCalendar() {
                     {dayTrips.slice(0, 3).map((trip: Trip) => (
                       <TripHoverCard key={trip.id} trip={trip}>
                         <div
-                          className={`text-xs p-1 rounded text-white truncate cursor-pointer hover:opacity-80 transition-opacity ${
+                          className={`text-xs p-1 rounded truncate cursor-pointer hover:opacity-80 transition-opacity ${
                             !isCurrentMonth ? 'opacity-60' : ''
                           }`}
-                          style={{ backgroundColor: getTripColor(trip) }}
+                          style={{ 
+                            backgroundColor: getTripColor(trip),
+                            color: getContrastTextColor(getTripColor(trip))
+                          }}
                         >
                           {format(parseISO(trip.scheduled_pickup_time), 'h:mm a')} {getTripDisplayName(trip, getClientName)}
                         </div>

@@ -1,12 +1,14 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { BarChart3, DollarSign, TrendingUp, Users, Car, MapPin, Calendar, AlertCircle } from "lucide-react";
+import { BarChart3, DollarSign, TrendingUp, Users, Car, MapPin, Calendar, AlertCircle, Calculator, ChevronRight } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useDashboardData } from "../hooks/useDashboardData";
 import RevenueWidget from "../components/dashboard/RevenueWidget";
 import PerformanceMetricsWidget from "../components/dashboard/PerformanceMetricsWidget";
 import EIAGasolinePrices from "../components/dashboard/EIAGasolinePrices";
+import { Button } from "../components/ui/button";
 import { usePageAccess } from "../hooks/use-page-access";
+import { Link } from "wouter";
 
 export default function Analytics() {
   // Check page access - super_admin only
@@ -65,21 +67,51 @@ export default function Analytics() {
               {/* EIA Gasoline Prices - Colorado/Denver */}
               <EIAGasolinePrices />
               
-              {/* Break-Even Calculator Placeholder */}
-              <Card style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px', borderStyle: 'solid' }}>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <DollarSign className="h-5 w-5" />
-                    <span>Break-Even Calculator</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p className="text-sm">Break-even calculator coming soon</p>
-                    <p className="text-xs mt-2">This will include fixed & variable costs, revenue analysis, and PPM/CPM calculations</p>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* PROPHET Calculator Quick Access */}
+              <Link href="/prophet">
+                <Card 
+                  className="cursor-pointer hover:border-primary transition-colors h-full"
+                  style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px', borderStyle: 'solid' }}
+                >
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Calculator className="h-5 w-5" style={{ color: 'var(--primary)' }} />
+                        <span>PROPHET Calculator</span>
+                      </div>
+                      <ChevronRight className="h-5 w-5" style={{ color: 'var(--muted-foreground)' }} />
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                        Precision Revenue Outcome Planning for Healthcare Expense Tracking
+                      </p>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="p-2 rounded" style={{ backgroundColor: 'var(--muted)' }}>
+                          <span style={{ color: 'var(--muted-foreground)' }}>Fixed & Variable Costs</span>
+                        </div>
+                        <div className="p-2 rounded" style={{ backgroundColor: 'var(--muted)' }}>
+                          <span style={{ color: 'var(--muted-foreground)' }}>Service Code Library</span>
+                        </div>
+                        <div className="p-2 rounded" style={{ backgroundColor: 'var(--muted)' }}>
+                          <span style={{ color: 'var(--muted-foreground)' }}>Treatment Facilities</span>
+                        </div>
+                        <div className="p-2 rounded" style={{ backgroundColor: 'var(--muted)' }}>
+                          <span style={{ color: 'var(--muted-foreground)' }}>Scenario Builder</span>
+                        </div>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        className="w-full mt-2"
+                        style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
+                      >
+                        Open PROPHET Calculator
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             </div>
           </div>
 

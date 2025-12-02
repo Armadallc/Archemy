@@ -34,6 +34,7 @@ const DesignSystemDemo = lazy(() => import("../../pages/design-system-demo"));
 const ScratchPage = lazy(() => import("../../pages/scratch"));
 const TypographyTest = lazy(() => import("../../pages/typography-test"));
 const Analytics = lazy(() => import("../../pages/analytics"));
+const ProphetPage = lazy(() => import("../../pages/prophet"));
 const ActivityFeedPage = lazy(() => import("../../pages/activity-feed"));
 const KanbanPage = lazy(() => import("../../pages/kanban"));
 const GanttPage = lazy(() => import("../../pages/gantt"));
@@ -270,6 +271,9 @@ export default function MainLayout({
               </Route>
               <Route path="/analytics">
                 <Analytics />
+              </Route>
+              <Route path="/prophet">
+                <ProphetPage />
               </Route>
               <Route path="/activity-feed">
                 <ActivityFeedPage />

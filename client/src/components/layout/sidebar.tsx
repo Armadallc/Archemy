@@ -31,7 +31,8 @@ import {
   Moon,
   ChevronUp,
   BarChart3,
-  MessageSquare
+  MessageSquare,
+  Calculator
 } from "lucide-react";
 import { useTheme } from "../theme-provider";
 import { useAuth } from "../../hooks/useAuth";
@@ -95,6 +96,7 @@ const navigationItemPermissions: Record<string, string | string[]> = {
   "/billing": "view_reports", // Placeholder - billing might need its own permission
   "/analytics": "manage_users", // Super admin only
   "/role-templates": "manage_users", // Super admin only
+  "/prophet": "manage_users", // Super admin only - PROPHET Calculator
   "/design-system": "manage_users", // Super admin only
   "/design-system-demo": "manage_users", // Super admin only
   "/calendar-experiment": "view_calendar",
@@ -148,6 +150,7 @@ const navigationCategories = [
       { path: "/settings", label: "System Settings", icon: Settings, roles: ["super_admin", "corporate_admin", "program_admin"], status: "completed" as PageStatus },
       { path: "/users", label: "User Management", icon: UserCheck, roles: ["super_admin", "corporate_admin", "program_admin"], status: "completed" as PageStatus },
       { path: "/analytics", label: "Analytics", icon: BarChart3, roles: ["super_admin"], status: "in-progress" as PageStatus },
+      { path: "/prophet", label: "PROPHET", icon: Calculator, roles: ["super_admin"], status: "completed" as PageStatus },
       { path: "/billing", label: "Billing", icon: DollarSign, roles: ["super_admin", "corporate_admin", "program_admin"], status: "not-started" as PageStatus },
       { path: "/role-templates", label: "Role Templates", icon: Shield, roles: ["super_admin"], status: "completed" as PageStatus }
     ]
