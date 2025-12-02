@@ -5,6 +5,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useDashboardData } from "../hooks/useDashboardData";
 import RevenueWidget from "../components/dashboard/RevenueWidget";
 import PerformanceMetricsWidget from "../components/dashboard/PerformanceMetricsWidget";
+import EIAGasolinePrices from "../components/dashboard/EIAGasolinePrices";
 import { usePageAccess } from "../hooks/use-page-access";
 
 export default function Analytics() {
@@ -57,9 +58,12 @@ export default function Analytics() {
           {/* Financial Section */}
           <div className="space-y-4">
             <h2 className="text-2xl font-semibold" style={{ color: 'var(--foreground)' }}>Financial</h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Revenue Widget - Moved from Dashboard */}
               <RevenueWidget trips={realTimeTrips} />
+              
+              {/* EIA Gasoline Prices - Colorado/Denver */}
+              <EIAGasolinePrices />
               
               {/* Break-Even Calculator Placeholder */}
               <Card style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px', borderStyle: 'solid' }}>
