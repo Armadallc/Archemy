@@ -277,7 +277,7 @@ export default function EnhancedAnalyticsWidget({ className }: AnalyticsWidgetPr
         <TabsContent value="overview" className="space-y-6">
           {/* Key Metrics */}
           <div className="grid grid-cols-2 gap-4">
-            <Card className="bg-card/25 dark:bg-card/25 backdrop-blur-md border border-border/20 dark:border-border/20 shadow-xl">
+            <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <h5 className="text-sm font-medium text-foreground-secondary">Total Revenue</h5>
@@ -294,7 +294,7 @@ export default function EnhancedAnalyticsWidget({ className }: AnalyticsWidgetPr
               </CardContent>
             </Card>
 
-            <Card className="bg-card/25 dark:bg-card/25 backdrop-blur-md border border-border/20 dark:border-border/20 shadow-xl">
+            <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <h5 className="text-sm font-medium text-foreground-secondary">Trips Completed</h5>
@@ -311,7 +311,7 @@ export default function EnhancedAnalyticsWidget({ className }: AnalyticsWidgetPr
               </CardContent>
             </Card>
 
-            <Card className="bg-card/25 dark:bg-card/25 backdrop-blur-md border border-border/20 dark:border-border/20 shadow-xl">
+            <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <h5 className="text-sm font-medium text-foreground-secondary">Active Drivers</h5>
@@ -328,7 +328,7 @@ export default function EnhancedAnalyticsWidget({ className }: AnalyticsWidgetPr
               </CardContent>
             </Card>
 
-            <Card className="bg-card/25 dark:bg-card/25 backdrop-blur-md border border-border/20 dark:border-border/20 shadow-xl">
+            <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <h5 className="text-sm font-medium text-foreground-secondary">Completion Rate</h5>

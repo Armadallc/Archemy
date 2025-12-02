@@ -90,7 +90,7 @@ const ShadcnHeader = ({ title, subtitle }: { title: string; subtitle?: string })
   };
 
   return (
-    <div className="px-6 py-6 flex items-center justify-between border-b rounded-lg bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+    <div className="px-6 py-6 flex items-center justify-between border-b rounded-lg backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
       <div className="flex items-center gap-3">
         <div 
           className="flex items-center text-foreground"
@@ -111,7 +111,7 @@ const ShadcnHeader = ({ title, subtitle }: { title: string; subtitle?: string })
           variant="outline"
           size="sm"
           onClick={openSearch}
-          className="flex items-center space-x-2 bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 hover:bg-white/40 dark:hover:bg-white/20 text-foreground backdrop-blur-sm"
+          className="flex items-center space-x-2 text-foreground backdrop-blur-sm hover:opacity-80" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
         >
           <Search className="w-4 h-4" />
           <span>Search</span>
@@ -202,7 +202,7 @@ export default function ShadcnDashboardMigrated() {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="w-full max-w-md px-4">
-          <div className="relative h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div className="relative h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--muted)' }}>
             <div 
               className="absolute h-full rounded-full"
               style={{
@@ -235,7 +235,7 @@ export default function ShadcnDashboardMigrated() {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="w-full max-w-md px-4">
-          <div className="relative h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div className="relative h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--muted)' }}>
             <div 
               className="absolute h-full rounded-full"
               style={{
@@ -272,7 +272,7 @@ export default function ShadcnDashboardMigrated() {
     console.log('🔒 SUPER ADMIN ROLE CONFIRMED - PROTECTED SECTION ACCESS');
     
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#eaeaea] to-[#f5f5f5] dark:from-[#26282b] dark:to-[#383b3e]">
+      <div className="min-h-screen" style={{ backgroundColor: 'var(--page-background)' }}>
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
           <div className="px-6 pt-6">
@@ -283,7 +283,7 @@ export default function ShadcnDashboardMigrated() {
           <div className="space-y-6">
             {/* Stats Cards - Shadcn Style */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Total Trips</CardTitle>
                   <Calendar className="h-4 w-4 text-foreground-secondary" />
@@ -295,7 +295,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Active Drivers</CardTitle>
                   <Car className="h-4 w-4 text-foreground-secondary" />
@@ -309,7 +309,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Corporate Clients</CardTitle>
                   <Users className="h-4 w-4 text-foreground-secondary" />
@@ -323,7 +323,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Programs</CardTitle>
                   <Folder className="h-4 w-4 text-foreground-secondary" />
@@ -372,7 +372,7 @@ export default function ShadcnDashboardMigrated() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <EnhancedAnalyticsWidget />
               <TaskManagementWidget />
-              <Card className="bg-card/25 dark:bg-card/25 backdrop-blur-md border border-border/20 dark:border-border/20 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader>
                   <CardTitle className="text-foreground">System Health</CardTitle>
                 </CardHeader>
@@ -405,7 +405,7 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
             {/* Recent Activity - Preserved */}
-            <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+            <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
               <CardHeader>
                 <CardTitle className="text-foreground">Recent Activity</CardTitle>
               </CardHeader>
@@ -423,7 +423,7 @@ export default function ShadcnDashboardMigrated() {
   // Corporate Admin Dashboard
   if (realTimeUserRole === "corporate_admin") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#eaeaea] to-[#f5f5f5] dark:from-[#26282b] dark:to-[#383b3e]">
+      <div className="min-h-screen" style={{ backgroundColor: 'var(--page-background)' }}>
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
           <ShadcnHeader title={getRoleBasedTitle()} subtitle={`Managing ${selectedCorporateClient || "corporate"} operations`} />
@@ -432,7 +432,7 @@ export default function ShadcnDashboardMigrated() {
           <div className="space-y-6">
             {/* Stats Cards - Shadcn Style */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Today's Trips</CardTitle>
                   <Calendar className="h-4 w-4 text-foreground-secondary" />
@@ -450,7 +450,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Active Drivers</CardTitle>
                   <Car className="h-4 w-4 text-foreground-secondary" />
@@ -464,7 +464,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Total Clients</CardTitle>
                   <Users className="h-4 w-4 text-foreground-secondary" />
@@ -476,7 +476,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Programs</CardTitle>
                   <Folder className="h-4 w-4 text-foreground-secondary" />
@@ -509,7 +509,7 @@ export default function ShadcnDashboardMigrated() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <EnhancedAnalyticsWidget />
               <TaskManagementWidget />
-              <Card className="bg-card/25 dark:bg-card/25 backdrop-blur-md border border-border/20 dark:border-border/20 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader>
                   <CardTitle className="text-foreground">System Health</CardTitle>
                 </CardHeader>
@@ -542,7 +542,7 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
             {/* Recent Activity - Preserved */}
-            <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+            <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
               <CardHeader>
                 <CardTitle className="text-foreground">Recent Activity</CardTitle>
               </CardHeader>
@@ -560,7 +560,7 @@ export default function ShadcnDashboardMigrated() {
   // Program Admin Dashboard
   if (realTimeUserRole === "program_admin") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#eaeaea] to-[#f5f5f5] dark:from-[#26282b] dark:to-[#383b3e]">
+      <div className="min-h-screen" style={{ backgroundColor: 'var(--page-background)' }}>
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
           <ShadcnHeader title={getRoleBasedTitle()} subtitle={`Managing ${selectedProgram || "program"} operations`} />
@@ -571,7 +571,7 @@ export default function ShadcnDashboardMigrated() {
           <div className="space-y-6">
             {/* Stats Cards - Shadcn Style */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Today's Trips</CardTitle>
                   <Calendar className="h-4 w-4 text-foreground-secondary" />
@@ -589,7 +589,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Active Drivers</CardTitle>
                   <Car className="h-4 w-4" style={{ color: 'var(--muted-foreground)' }} />
@@ -603,7 +603,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Total Clients</CardTitle>
                   <Users className="h-4 w-4 text-foreground-secondary" />
@@ -615,7 +615,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Revenue</CardTitle>
                   <DollarSign className="h-4 w-4 text-foreground-secondary" />
@@ -647,7 +647,7 @@ export default function ShadcnDashboardMigrated() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <EnhancedAnalyticsWidget />
               <TaskManagementWidget />
-              <Card className="bg-card/25 dark:bg-card/25 backdrop-blur-md border border-border/20 dark:border-border/20 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader>
                   <CardTitle className="text-foreground">System Health</CardTitle>
                 </CardHeader>
@@ -680,7 +680,7 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
             {/* Recent Activity - Preserved */}
-            <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+            <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
               <CardHeader>
                 <CardTitle className="text-foreground">Recent Activity</CardTitle>
               </CardHeader>
@@ -698,7 +698,7 @@ export default function ShadcnDashboardMigrated() {
   // Program User Dashboard
   if (realTimeUserRole === "program_user") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#eaeaea] to-[#f5f5f5] dark:from-[#26282b] dark:to-[#383b3e]">
+      <div className="min-h-screen" style={{ backgroundColor: 'var(--page-background)' }}>
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
           <ShadcnHeader title={getRoleBasedTitle()} subtitle={`Viewing ${selectedProgram || "program"} data`} />
@@ -709,7 +709,7 @@ export default function ShadcnDashboardMigrated() {
           <div className="space-y-6">
             {/* Stats Cards - Shadcn Style */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Today's Trips</CardTitle>
                   <Calendar className="h-4 w-4 text-foreground-secondary" />
@@ -727,7 +727,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Active Drivers</CardTitle>
                   <Car className="h-4 w-4" style={{ color: 'var(--muted-foreground)' }} />
@@ -741,7 +741,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Total Clients</CardTitle>
                   <Users className="h-4 w-4 text-foreground-secondary" />
@@ -753,7 +753,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Revenue</CardTitle>
                   <DollarSign className="h-4 w-4 text-foreground-secondary" />
@@ -785,7 +785,7 @@ export default function ShadcnDashboardMigrated() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <EnhancedAnalyticsWidget />
               <TaskManagementWidget />
-              <Card className="bg-card/25 dark:bg-card/25 backdrop-blur-md border border-border/20 dark:border-border/20 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader>
                   <CardTitle className="text-foreground">System Health</CardTitle>
                 </CardHeader>
@@ -826,7 +826,7 @@ export default function ShadcnDashboardMigrated() {
   // Driver Dashboard
   if (realTimeUserRole === "driver") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#eaeaea] to-[#f5f5f5] dark:from-[#26282b] dark:to-[#383b3e]">
+      <div className="min-h-screen" style={{ backgroundColor: 'var(--page-background)' }}>
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
           <ShadcnHeader title={getRoleBasedTitle()} subtitle="Your daily operations and trip management" />
@@ -837,7 +837,7 @@ export default function ShadcnDashboardMigrated() {
           <div className="space-y-6">
             {/* Stats Cards - Shadcn Style */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Today's Trips</CardTitle>
                   <Calendar className="h-4 w-4 text-foreground-secondary" />
@@ -855,7 +855,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Completed</CardTitle>
                   <Car className="h-4 w-4 text-foreground-secondary" />
@@ -869,7 +869,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">In Progress</CardTitle>
                   <MapPin className="h-4 w-4 text-foreground-secondary" />
@@ -883,7 +883,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Rating</CardTitle>
                   <BarChart3 className="h-4 w-4 text-foreground-secondary" />
@@ -915,7 +915,7 @@ export default function ShadcnDashboardMigrated() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <EnhancedAnalyticsWidget />
               <TaskManagementWidget />
-              <Card className="bg-card/25 dark:bg-card/25 backdrop-blur-md border border-border/20 dark:border-border/20 shadow-xl">
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader>
                   <CardTitle className="text-foreground">System Health</CardTitle>
                 </CardHeader>
@@ -948,7 +948,7 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
             {/* Recent Activity - Preserved */}
-            <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+            <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
               <CardHeader>
                 <CardTitle className="text-foreground">Recent Activity</CardTitle>
               </CardHeader>

@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { AuthProvider } from "./hooks/useAuth";
 import { ThemeProvider } from "./components/theme-provider";
+import { FireThemeProvider } from "./components/fire-theme-provider";
 import { HierarchyProvider } from "./hooks/useHierarchy";
 import MainLayout from "./components/layout/main-layout";
 import Login from "./pages/login";
@@ -46,12 +47,14 @@ export default function App() {
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
-            <Router>
-              <AppContent />
-            </Router>
-            <Toaster />
-          </AuthProvider>
+          <FireThemeProvider>
+            <AuthProvider>
+              <Router>
+                <AppContent />
+              </Router>
+              <Toaster />
+            </AuthProvider>
+          </FireThemeProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>

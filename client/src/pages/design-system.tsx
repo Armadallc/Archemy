@@ -21,6 +21,7 @@ import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
 import { useTheme } from '../components/theme-provider';
 import { ThemeController } from '../components/design-system/ThemeController';
+import { FireThemePanel } from '../components/fire-theme-panel';
 import { 
   StatusBadge, 
   StatusIcon,
@@ -2131,7 +2132,7 @@ export default function DesignSystem() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#eaeaea] to-[#f5f5f5] dark:from-[#26282b] dark:to-[#383b3e]">
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--page-background)' }}>
       {/* Header */}
       <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border-b border-white/20 dark:border-white/10 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -2168,6 +2169,9 @@ export default function DesignSystem() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-8">
+          {/* Fire Theme Panel - Persistent Theme Controller */}
+          <FireThemePanel />
+
           {/* Design Tokens */}
           <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
             <CardContent className="p-6">
@@ -2193,13 +2197,6 @@ export default function DesignSystem() {
           <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
             <CardContent className="p-6">
               <ThemeManager currentTokens={tokens} />
-            </CardContent>
-          </Card>
-
-          {/* Theme Controller */}
-          <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
-            <CardContent className="p-6">
-              <ThemeController />
             </CardContent>
           </Card>
 
