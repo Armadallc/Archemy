@@ -130,8 +130,36 @@ export default function ProfilePage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // TODO: Implement API call to update user profile
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session?.access_token) {
+        throw new Error('Authentication required. Please log in again.');
+      }
+
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8081';
+      
+      const response = await fetch(`${apiBaseUrl}/api/users/${user?.user_id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          phone: formData.phone,
+          address: formData.address,
+          job_title: formData.job_title,
+          company: formData.company,
+          bio: formData.bio,
+          location: formData.location,
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to update profile');
+      }
       
       toast({
         title: 'Profile updated',
@@ -140,10 +168,10 @@ export default function ProfilePage() {
       
       setIsEditing(false);
       await refreshUser();
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: 'Error',
-        description: 'Failed to update profile. Please try again.',
+        description: error.message || 'Failed to update profile. Please try again.',
         variant: 'destructive',
       });
     } finally {

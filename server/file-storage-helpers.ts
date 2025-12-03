@@ -47,6 +47,9 @@ export type FileCategory =
   | 'insurance_document' 
   | 'inspection_report' 
   | 'signature' 
+  | 'user_avatar'
+  | 'corporate_logo'
+  | 'program_logo'
   | 'other';
 
 export interface UploadFileParams {
@@ -563,6 +566,9 @@ function validateFileType(file: File, category: FileCategory): { valid: boolean;
     insurance_document: ['application/pdf', 'image/jpeg', 'image/png'],
     inspection_report: ['application/pdf', 'image/jpeg', 'image/png'],
     signature: ['image/jpeg', 'image/png', 'image/webp'],
+    user_avatar: ['image/jpeg', 'image/png', 'image/webp', 'image/heic'],
+    corporate_logo: ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'],
+    program_logo: ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'],
     other: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png']
   };
 
@@ -583,6 +589,12 @@ function validateFileType(file: File, category: FileCategory): { valid: boolean;
  */
 function getBucketForCategory(category: FileCategory): string {
   const photoCategories = ['trip_photo', 'signature'];
+  const avatarCategories = ['user_avatar', 'corporate_logo', 'program_logo'];
+  
+  if (avatarCategories.includes(category)) {
+    return 'avatars';
+  }
+  
   return photoCategories.includes(category) ? 'photos' : 'documents';
 }
 

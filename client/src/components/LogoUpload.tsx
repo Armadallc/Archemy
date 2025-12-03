@@ -50,9 +50,12 @@ export function LogoUpload({ organizationId, currentLogoUrl, onLogoUpdate, type 
 
       const endpoint = type === 'program' 
         ? `/api/programs/${organizationId}/logo`
-        : `/api/corporate-clients/${organizationId}/logo`;
+        : `/api/corporate/clients/${organizationId}/logo`;
       
-      const response = await fetch(endpoint, {
+      // Use API base URL (not relative URL)
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8081';
+      
+      const response = await fetch(`${apiBaseUrl}${endpoint}`, {
         method: 'POST',
         body: formData,
         headers: {
@@ -90,8 +93,9 @@ export function LogoUpload({ organizationId, currentLogoUrl, onLogoUpdate, type 
     try {
       const endpoint = type === 'program' 
         ? `/api/programs/${organizationId}/logo`
-        : `/api/corporate-clients/${organizationId}/logo`;
+        : `/api/corporate/clients/${organizationId}/logo`;
       
+      // apiRequest already handles the API base URL
       await apiRequest("DELETE", endpoint);
       onLogoUpdate(null);
       

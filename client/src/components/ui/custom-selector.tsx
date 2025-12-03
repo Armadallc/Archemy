@@ -60,23 +60,14 @@ export const CustomSelector: React.FC<CustomSelectorProps> = ({
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
         className={cn(
-          "flex items-center gap-3 flex-1 w-full px-3 py-2 text-left text-sm border rounded-md focus:outline-none focus:ring-2 transition-colors",
+          "flex items-center gap-3 flex-1 w-full px-3 py-2 text-left text-sm border rounded-md focus:outline-none focus:ring-2 transition-colors bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700",
           disabled && "opacity-50 cursor-not-allowed",
           className
         )}
         style={{ 
           borderColor: 'var(--border)', 
           borderWidth: '1px', 
-          borderStyle: 'solid',
-          backgroundColor: 'var(--background)'
-        }}
-        onMouseEnter={(e) => {
-          if (!disabled) {
-            e.currentTarget.style.backgroundColor = 'var(--muted)';
-          }
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = 'var(--background)';
+          borderStyle: 'solid'
         }}
         onFocus={(e) => {
           e.currentTarget.style.boxShadow = '0 0 0 2px var(--blue-9)';
@@ -97,7 +88,7 @@ export const CustomSelector: React.FC<CustomSelectorProps> = ({
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 rounded-md shadow-lg" style={{ backgroundColor: 'var(--popover)', borderColor: 'var(--border)', borderWidth: '1px', borderStyle: 'solid' }}>
+        <div className="absolute z-50 w-full mt-1 rounded-md shadow-lg bg-white dark:bg-gray-800" style={{ borderColor: 'var(--border)', borderWidth: '1px', borderStyle: 'solid' }}>
           {options.map((option) => (
             <button
               key={option.value}

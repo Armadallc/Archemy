@@ -30,7 +30,7 @@ const EditTrip = lazy(() => import("../../pages/edit-trip"));
 const NotFound = lazy(() => import("../../pages/not-found"));
 // Design System Pages (lazy loaded - rarely used)
 const DesignSystem = lazy(() => import("../../pages/design-system"));
-const DesignSystemDemo = lazy(() => import("../../pages/design-system-demo"));
+// DesignSystemDemo removed - consolidated into DesignSystem page
 const ScratchPage = lazy(() => import("../../pages/scratch"));
 const TypographyTest = lazy(() => import("../../pages/typography-test"));
 const Analytics = lazy(() => import("../../pages/analytics"));
@@ -39,6 +39,7 @@ const ActivityFeedPage = lazy(() => import("../../pages/activity-feed"));
 const KanbanPage = lazy(() => import("../../pages/kanban"));
 const GanttPage = lazy(() => import("../../pages/gantt"));
 const ChatPage = lazy(() => import("../../pages/chat"));
+const ProfilePage = lazy(() => import("../../pages/profile"));
 
 interface MainLayoutProps {
   children?: ReactNode;
@@ -216,6 +217,9 @@ export default function MainLayout({
               <Route path="/users">
                 <Users />
               </Route>
+              <Route path="/profile">
+                <ProfilePage />
+              </Route>
               <Route path="/role-templates">
                 <RoleTemplatesPage />
               </Route>
@@ -293,9 +297,7 @@ export default function MainLayout({
               <Route path="/design-system">
                 <DesignSystem />
               </Route>
-              <Route path="/design-system-demo">
-                <DesignSystemDemo />
-              </Route>
+              {/* DesignSystemDemo route removed - consolidated into DesignSystem */}
               <Route path="/typography-test">
                 <TypographyTest />
               </Route>

@@ -11,6 +11,7 @@ import { Textarea } from "../components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Switch } from "../components/ui/switch";
 import { MapPin, Plus, Search, Edit, Trash2, Users, Building2, Globe, Map, Phone, Mail } from "lucide-react";
+import { PhoneInput } from "../components/ui/phone-input";
 import { apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "../hooks/use-toast";
 import { useAuth } from "../hooks/useAuth";
@@ -500,11 +501,10 @@ export default function Locations() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="phone">Phone</Label>
-                <Input
+                <PhoneInput
                   id="phone"
                   value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  placeholder="(555) 123-4567"
+                  onChange={(value) => setFormData({...formData, phone: value})}
                 />
               </div>
               <div className="flex items-center space-x-2">
@@ -638,10 +638,10 @@ export default function Locations() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="edit-phone">Phone</Label>
-                <Input
+                <PhoneInput
                   id="edit-phone"
                   value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  onChange={(value) => setFormData({...formData, phone: value})}
                 />
               </div>
               <div className="flex items-center space-x-2">

@@ -56,6 +56,7 @@ export interface SupabaseAuthenticatedRequest extends express.Request {
     role: string;
     primaryProgramId: string | null;
     corporateClientId: string | null;
+    authorizedPrograms?: string[];
   };
 }
 

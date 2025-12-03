@@ -239,11 +239,10 @@ export default function CorporateClients() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="contact_phone">Contact Phone</Label>
-                  <Input
+                  <PhoneInput
                     id="contact_phone"
-                    value={formData.contact_phone}
-                    onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
-                    placeholder="(555) 123-4567"
+                    value={formData.contact_phone || ''}
+                    onChange={(value) => setFormData({ ...formData, contact_phone: value })}
                   />
                 </div>
               </div>

@@ -163,10 +163,23 @@ function PreviewCard({ mode }: { mode: "light" | "dark" }) {
             border: "none",
           },
         };
+      default:
+        // Fallback to solid style
+        return {
+          className: base,
+          style: {
+            backgroundColor: palette[slots.buttonBackground] || palette.coral,
+            color: palette[slots.buttonText] || palette.ice,
+            border: "none",
+          },
+        };
     }
   };
 
-  const buttonProps = getButtonStyle();
+  const buttonProps = getButtonStyle() || {
+    className: "px-3 py-1 rounded text-xs font-medium transition-all",
+    style: { backgroundColor: palette.coral, color: palette.ice, border: "none" }
+  };
 
   // Border weight mapping
   const borderWeights = { none: "0px", thin: "1px", medium: "2px", thick: "3px" };

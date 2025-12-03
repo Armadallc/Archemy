@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { PhoneInput } from "../components/ui/phone-input";
 import { Textarea } from "../components/ui/textarea";
 import { Switch } from "../components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
@@ -115,7 +116,7 @@ function getVisibleTabs(userRole?: string) {
 }
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { level, selectedCorporateClient, selectedProgram, getFilterParams, getPageTitle } = useHierarchy();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("profile");
@@ -403,7 +404,15 @@ export default function Settings() {
               <div className="flex items-center space-x-6">
                 <AvatarUpload 
                   userId={user?.user_id || ''} 
-                  onAvatarUpdate={() => {}} 
+                  currentAvatarUrl={user?.avatar_url}
+                  onAvatarUpdate={async (newAvatarUrl) => {
+                    // Refresh user data to get updated avatar
+                    // This will update the sidebar automatically
+                    if (refreshUser) {
+                      await refreshUser();
+                    }
+                  }}
+                  userName={user?.user_name}
                 />
                 <div>
                   <h3 className="text-lg font-medium">{user?.user_name || 'User'}</h3>
@@ -505,11 +514,10 @@ export default function Settings() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="corp-phone">Phone</Label>
-                  <Input
+                  <PhoneInput
                     id="corp-phone"
                     value={corporateClientSettings.phone || ''}
-                    onChange={(e) => setCorporateClientSettings({...corporateClientSettings, phone: e.target.value})}
-                    placeholder="+1 (555) 123-4567"
+                    onChange={(value) => setCorporateClientSettings({...corporateClientSettings, phone: value})}
                   />
                 </div>
                 <div className="space-y-2">
@@ -801,10 +809,10 @@ export default function Settings() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="support-phone">Support Phone</Label>
-                  <Input
+                  <PhoneInput
                     id="support-phone"
                     value={systemSettings.support_phone}
-                    onChange={(e) => setSystemSettings({...systemSettings, support_phone: e.target.value})}
+                    onChange={(value) => setSystemSettings({...systemSettings, support_phone: value})}
                   />
                 </div>
                 <div className="space-y-2">

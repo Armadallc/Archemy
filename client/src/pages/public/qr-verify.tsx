@@ -325,12 +325,10 @@ export default function QRVerifyPage() {
             {/* Phone Number */}
             <div className="space-y-2">
               <Label htmlFor="phoneNumber" className="text-gray-900 dark:text-gray-100">Phone Number (optional but recommended)</Label>
-              <Input
+              <PhoneInput
                 id="phoneNumber"
-                type="tel"
                 value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder="(555) 123-4567"
+                onChange={(value) => setPhoneNumber(value)}
                 className="text-gray-900 dark:text-gray-100"
               />
             </div>

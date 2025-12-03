@@ -11,8 +11,10 @@ import { tripCategoriesStorage } from "../trip-categories-storage";
 import { enhancedTripsStorage, EnhancedTrip } from "../enhanced-trips-storage";
 import { broadcastTripUpdate, broadcastTripCreated } from "../websocket-instance";
 import { pushNotificationService } from "../services/push-notification-service";
-import { driversStorage } from "../minimal-supabase";
+import { driversStorage, clientsStorage } from "../minimal-supabase";
 import { supabase } from "../db";
+// TODO: Implement logTripActivity when activity logging is needed
+// import { logTripActivity } from "../services/activityLogService";
 
 const router = express.Router();
 
@@ -220,6 +222,76 @@ router.post("/recurring-trips", requireSupabaseAuth, requireSupabaseRole(['super
       broadcastTripCreated(trip);
     });
 
+    // Log trip creation activity (single log entry for all recurring trips)
+    try {
+      const metadata: any = {
+        trip_count: createdTrips.length,
+      };
+      
+      // Get client/group info from first trip (all trips in series have same client/group)
+      if (createdTrips.length > 0) {
+        const firstTrip = createdTrips[0];
+        
+        // Handle single client trip
+        if (client_id) {
+          try {
+            const client = await clientsStorage.getClient(client_id);
+            if (client) {
+              metadata.client_id = client.id;
+              const clientName = [client.first_name, client.last_name].filter(Boolean).join(' ');
+              if (clientName) {
+                metadata.client_name = clientName;
+              }
+            }
+          } catch (clientError) {
+            console.warn('Could not fetch client for activity log:', clientError);
+          }
+        }
+        
+        // Handle group trip
+        if (client_group_id) {
+          try {
+            const { data: group } = await supabase
+              .from('client_groups')
+              .select('id, name')
+              .eq('id', client_group_id)
+              .single();
+            if (group) {
+              metadata.client_group_id = group.id;
+              metadata.client_group_name = group.name;
+            }
+          } catch (groupError) {
+            console.warn('Could not fetch client group for activity log:', groupError);
+          }
+        }
+      }
+
+      // Get program corporate_client_id for scoping
+      let programCorporateClientId: string | null = null;
+      try {
+        const { programsStorage } = await import('../minimal-supabase');
+        const program = await programsStorage.getProgram(program_id);
+        if (program?.corporate_client_id) {
+          programCorporateClientId = program.corporate_client_id;
+        }
+      } catch (programError) {
+        console.warn("Could not fetch program for activity log:", programError);
+      }
+
+      // Log activity using first trip ID (all trips in series share same metadata)
+      // TODO: Re-enable when logTripActivity is implemented
+      // await logTripActivity(
+      //   createdTrips[0].id,
+      //   req.user!.userId,
+      //   metadata,
+      //   programCorporateClientId || req.user?.corporateClientId || null,
+      //   program_id
+      // );
+    } catch (activityError) {
+      console.error('Error logging recurring trip activity:', activityError);
+      // Don't throw - activity logging is non-critical
+    }
+
     res.status(201).json({
       message: `Successfully created ${createdTrips.length} recurring trips`,
       recurring_trip_id: createdTrips[0]?.recurring_trip_id,
@@ -307,14 +379,66 @@ router.post("/", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corpo
       corporateClientId: programCorporateClientId || req.user?.corporateClientId || undefined
     });
 
-    // Fetch trip with client data for push notifications
-    // Send push notification to client(s) for new trip (async, don't block response)
-    tripsStorage.getTrip(trip.id).then((tripWithClient) => {
+    // Fetch trip with client data for push notifications and activity logging
+    tripsStorage.getTrip(trip.id).then(async (tripWithClient) => {
       if (tripWithClient) {
+        // Send push notification to client(s) for new trip (async, don't block response)
         sendClientPushNotifications(tripWithClient, undefined, 'scheduled').catch((error) => {
           console.error('Error sending client push notification for new trip:', error);
           // Don't throw - push notifications are non-critical
         });
+
+        // Log trip creation activity
+        try {
+          console.log('🔍 [Trip Activity] Starting activity log for trip:', trip.id);
+          const metadata: any = {};
+          
+          // Handle single client trip
+          if (tripWithClient.client_id && tripWithClient.clients) {
+            const client = Array.isArray(tripWithClient.clients) ? tripWithClient.clients[0] : tripWithClient.clients;
+            if (client) {
+              metadata.client_id = client.id;
+              const clientName = [client.first_name, client.last_name].filter(Boolean).join(' ');
+              if (clientName) {
+                metadata.client_name = clientName;
+              }
+              console.log('🔍 [Trip Activity] Client info:', { client_id: client.id, client_name: metadata.client_name });
+            }
+          }
+          
+          // Handle group trip
+          if (tripWithClient.client_group_id && tripWithClient.client_groups) {
+            const group = Array.isArray(tripWithClient.client_groups) ? tripWithClient.client_groups[0] : tripWithClient.client_groups;
+            if (group) {
+              metadata.client_group_id = group.id;
+              metadata.client_group_name = group.name;
+              console.log('🔍 [Trip Activity] Group info:', { group_id: group.id, group_name: group.name });
+            }
+          }
+
+          console.log('🔍 [Trip Activity] Logging with:', {
+            tripId: trip.id,
+            userId: req.user!.userId,
+            programId: trip.program_id,
+            corporateClientId: programCorporateClientId || req.user?.corporateClientId || null,
+            metadata,
+          });
+
+          // TODO: Re-enable when logTripActivity is implemented
+          // await logTripActivity(
+          //   trip.id,
+          //   req.user!.userId,
+          //   metadata,
+          //   programCorporateClientId || req.user?.corporateClientId || null,
+          //   trip.program_id
+          // );
+          
+          console.log('⏭️ [Trip Activity] Activity logging skipped (not implemented)');
+        } catch (activityError) {
+          console.error('❌ [Trip Activity] Error logging trip activity:', activityError);
+          console.error('❌ [Trip Activity] Error stack:', activityError instanceof Error ? activityError.stack : 'No stack trace');
+          // Don't throw - activity logging is non-critical
+        }
       }
     }).catch((error) => {
       console.error('Error fetching trip for push notifications:', error);

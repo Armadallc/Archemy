@@ -145,6 +145,8 @@ export const users = pgTable("users", {
   corporate_client_id: varchar("corporate_client_id", { length: 50 }).references(() => corporateClients.id, { onDelete: 'set null' }),
   avatar_url: text("avatar_url"),
   phone: varchar("phone", { length: 20 }),
+  first_name: varchar("first_name", { length: 255 }),
+  last_name: varchar("last_name", { length: 255 }),
   is_active: boolean("is_active").default(true),
   last_login: timestamp("last_login"),
   created_at: timestamp("created_at").defaultNow(),
@@ -494,6 +496,198 @@ export const rolePermissions = pgTable("role_permissions", {
   updated_at: timestamp("updated_at").defaultNow(),
 });
 
+// User Mentions Table (Universal Tagging System)
+export const userMentions = pgTable("user_mentions", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()::text`),
+  source_type: varchar("source_type", { length: 50 }).notNull(), // trip, task, client, discussion, note, comment
+  source_id: varchar("source_id", { length: 50 }).notNull(),
+  user_id: varchar("user_id", { length: 50 }).notNull().references(() => users.user_id, { onDelete: 'cascade' }),
+  created_by: varchar("created_by", { length: 50 }).notNull().references(() => users.user_id, { onDelete: 'cascade' }),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+// Activity Log Table (Activity Feed Module)
+export const activityLog = pgTable("activity_log", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()::text`),
+  activity_type: varchar("activity_type", { length: 50 }).notNull(), // discussion_created, task_created, kanban_card_moved, etc.
+  source_type: varchar("source_type", { length: 50 }).notNull(), // discussion, task, kanban, comment, note, etc.
+  source_id: varchar("source_id", { length: 50 }).notNull(),
+  user_id: varchar("user_id", { length: 50 }).notNull().references(() => users.user_id, { onDelete: 'cascade' }),
+  action_description: text("action_description"),
+  metadata: jsonb("metadata").default(sql`'{}'::jsonb`), // Flexible storage for activity-specific data
+  corporate_client_id: varchar("corporate_client_id", { length: 50 }).references(() => corporateClients.id, { onDelete: 'set null' }),
+  program_id: varchar("program_id", { length: 50 }).references(() => programs.id, { onDelete: 'set null' }),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+// ============================================================================
+// COLLABORATION MODULE TABLES
+// ============================================================================
+
+// Tasks Table
+export const tasks = pgTable("tasks", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()::text`),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  status: varchar("status", { length: 20 }).notNull().default('pending'), // pending, in_progress, completed, cancelled
+  priority: varchar("priority", { length: 20 }).notNull().default('medium'), // low, medium, high, urgent
+  task_type: varchar("task_type", { length: 50 }), // review, approval, maintenance, billing, training, follow_up, other
+  assigned_to: varchar("assigned_to", { length: 50 }).references(() => users.user_id, { onDelete: 'set null' }),
+  created_by: varchar("created_by", { length: 50 }).notNull().references(() => users.user_id, { onDelete: 'cascade' }),
+  linked_type: varchar("linked_type", { length: 50 }), // trip, client, driver, vehicle, program, corporate_client
+  linked_id: varchar("linked_id", { length: 50 }),
+  due_date: timestamp("due_date"),
+  completed_at: timestamp("completed_at"),
+  corporate_client_id: varchar("corporate_client_id", { length: 50 }).references(() => corporateClients.id, { onDelete: 'cascade' }),
+  program_id: varchar("program_id", { length: 50 }).references(() => programs.id, { onDelete: 'cascade' }),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+// Comments Table
+export const comments = pgTable("comments", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()::text`),
+  content: text("content").notNull(),
+  source_type: varchar("source_type", { length: 50 }).notNull(), // trip, task, client, driver, vehicle, note, discussion
+  source_id: varchar("source_id", { length: 50 }).notNull(),
+  parent_comment_id: varchar("parent_comment_id", { length: 50 }).references(() => comments.id, { onDelete: 'cascade' }),
+  created_by: varchar("created_by", { length: 50 }).notNull().references(() => users.user_id, { onDelete: 'cascade' }),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+  deleted_at: timestamp("deleted_at"),
+});
+
+// Notes Table
+export const notes = pgTable("notes", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()::text`),
+  title: varchar("title", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  note_type: varchar("note_type", { length: 50 }), // general, meeting, client_note, trip_note, internal, reminder
+  linked_type: varchar("linked_type", { length: 50 }), // trip, client, driver, vehicle, program, corporate_client
+  linked_id: varchar("linked_id", { length: 50 }),
+  created_by: varchar("created_by", { length: 50 }).notNull().references(() => users.user_id, { onDelete: 'cascade' }),
+  corporate_client_id: varchar("corporate_client_id", { length: 50 }).references(() => corporateClients.id, { onDelete: 'cascade' }),
+  program_id: varchar("program_id", { length: 50 }).references(() => programs.id, { onDelete: 'cascade' }),
+  is_private: boolean("is_private").default(false),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+  deleted_at: timestamp("deleted_at"),
+});
+
+// ============================================================================
+// DISCUSSIONS MODULE TABLES (Chat)
+// ============================================================================
+
+// Discussions Table (Chat threads/conversations)
+export const discussions = pgTable("discussions", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()::text`),
+  title: varchar("title", { length: 255 }), // Optional title for group chats
+  discussion_type: varchar("discussion_type", { length: 20 }).notNull().default('personal'), // personal, group
+  is_open: boolean("is_open").default(false), // If true, anyone in scope can join
+  tagged_user_ids: jsonb("tagged_user_ids").default(sql`'[]'::jsonb`), // Array of user IDs explicitly tagged
+  tagged_roles: jsonb("tagged_roles").default(sql`'[]'::jsonb`), // Array of role names tagged (e.g., ['program_admin', 'driver'])
+  corporate_client_id: varchar("corporate_client_id", { length: 50 }).references(() => corporateClients.id, { onDelete: 'cascade' }),
+  program_id: varchar("program_id", { length: 50 }).references(() => programs.id, { onDelete: 'cascade' }),
+  created_by: varchar("created_by", { length: 50 }).notNull().references(() => users.user_id, { onDelete: 'cascade' }),
+  last_message_id: varchar("last_message_id", { length: 50 }), // References discussion_messages(id)
+  last_message_at: timestamp("last_message_at"),
+  archived_at: timestamp("archived_at"), // Timestamp when archived (soft delete)
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+// Discussion Messages Table
+export const discussionMessages = pgTable("discussion_messages", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()::text`),
+  discussion_id: varchar("discussion_id", { length: 50 }).notNull().references(() => discussions.id, { onDelete: 'cascade' }),
+  content: text("content").notNull(),
+  parent_message_id: varchar("parent_message_id", { length: 50 }).references(() => discussionMessages.id, { onDelete: 'cascade' }),
+  created_by: varchar("created_by", { length: 50 }).notNull().references(() => users.user_id, { onDelete: 'cascade' }),
+  read_by: jsonb("read_by").default(sql`'[]'::jsonb`), // Array of user_ids who have read this message
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+  deleted_at: timestamp("deleted_at"),
+});
+
+// Discussion Participants Table (Many-to-many: users in discussions)
+export const discussionParticipants = pgTable("discussion_participants", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()::text`),
+  discussion_id: varchar("discussion_id", { length: 50 }).notNull().references(() => discussions.id, { onDelete: 'cascade' }),
+  user_id: varchar("user_id", { length: 50 }).notNull().references(() => users.user_id, { onDelete: 'cascade' }),
+  role: varchar("role", { length: 20 }).default('member'), // admin, member
+  last_read_message_id: varchar("last_read_message_id", { length: 50 }).references(() => discussionMessages.id, { onDelete: 'set null' }),
+  last_read_at: timestamp("last_read_at"),
+  joined_at: timestamp("joined_at").defaultNow(),
+  left_at: timestamp("left_at"),
+});
+
+// Export schemas
+export const insertDiscussionSchema = createInsertSchema(discussions);
+export const insertDiscussionMessageSchema = createInsertSchema(discussionMessages);
+export const insertDiscussionParticipantSchema = createInsertSchema(discussionParticipants);
+
+export const selectDiscussionSchema = createSelectSchema(discussions);
+export const selectDiscussionMessageSchema = createSelectSchema(discussionMessages);
+export const selectDiscussionParticipantSchema = createSelectSchema(discussionParticipants);
+
+export type Discussion = typeof discussions.$inferSelect;
+export type InsertDiscussion = typeof discussions.$inferInsert;
+export type DiscussionMessage = typeof discussionMessages.$inferSelect;
+export type InsertDiscussionMessage = typeof discussionMessages.$inferInsert;
+export type DiscussionParticipant = typeof discussionParticipants.$inferSelect;
+export type InsertDiscussionParticipant = typeof discussionParticipants.$inferInsert;
+
+// ============================================================================
+// KANBAN BOARD MODULE TABLES
+// ============================================================================
+
+// Kanban Boards Table
+export const kanbanBoards = pgTable("kanban_boards", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()::text`),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  corporate_client_id: varchar("corporate_client_id", { length: 50 }).references(() => corporateClients.id, { onDelete: 'cascade' }),
+  program_id: varchar("program_id", { length: 50 }).references(() => programs.id, { onDelete: 'cascade' }),
+  is_default: boolean("is_default").default(false),
+  board_type: varchar("board_type", { length: 50 }).default('task'), // task, trip, custom
+  created_by: varchar("created_by", { length: 50 }).notNull().references(() => users.user_id, { onDelete: 'cascade' }),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+// Kanban Columns Table
+export const kanbanColumns = pgTable("kanban_columns", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()::text`),
+  board_id: varchar("board_id", { length: 50 }).notNull().references(() => kanbanBoards.id, { onDelete: 'cascade' }),
+  name: varchar("name", { length: 100 }).notNull(),
+  position: integer("position").notNull(),
+  color: varchar("color", { length: 7 }), // Hex color (e.g., #3b82f6)
+  wip_limit: integer("wip_limit"), // Work-in-progress limit
+  is_default: boolean("is_default").default(false),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+// Kanban Cards Table
+export const kanbanCards = pgTable("kanban_cards", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()::text`),
+  board_id: varchar("board_id", { length: 50 }).notNull().references(() => kanbanBoards.id, { onDelete: 'cascade' }),
+  column_id: varchar("column_id", { length: 50 }).notNull().references(() => kanbanColumns.id, { onDelete: 'cascade' }),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  task_id: varchar("task_id", { length: 50 }).references(() => tasks.id, { onDelete: 'set null' }),
+  position: integer("position").notNull(),
+  priority: varchar("priority", { length: 20 }).default('medium'), // low, medium, high, urgent
+  due_date: timestamp("due_date"),
+  assigned_to: varchar("assigned_to", { length: 50 }).references(() => users.user_id, { onDelete: 'set null' }),
+  created_by: varchar("created_by", { length: 50 }).notNull().references(() => users.user_id, { onDelete: 'cascade' }),
+  corporate_client_id: varchar("corporate_client_id", { length: 50 }).references(() => corporateClients.id, { onDelete: 'cascade' }),
+  program_id: varchar("program_id", { length: 50 }).references(() => programs.id, { onDelete: 'cascade' }),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
 // ============================================================================
 // INSERT SCHEMAS (Zod validation)
 // ============================================================================
@@ -506,6 +700,9 @@ export const insertUserSchema = createInsertSchema(users);
 export const insertClientSchema = createInsertSchema(clients);
 export const insertClientGroupSchema = createInsertSchema(clientGroups);
 export const insertClientGroupMembershipSchema = createInsertSchema(clientGroupMemberships);
+export const insertKanbanBoardSchema = createInsertSchema(kanbanBoards);
+export const insertKanbanColumnSchema = createInsertSchema(kanbanColumns);
+export const insertKanbanCardSchema = createInsertSchema(kanbanCards);
 export const insertDriverSchema = createInsertSchema(drivers);
 export const insertVehicleSchema = createInsertSchema(vehicles);
 export const insertVehicleAssignmentSchema = createInsertSchema(vehicleAssignments);
@@ -523,6 +720,11 @@ export const insertTripStatusLogSchema = createInsertSchema(tripStatusLogs);
 export const insertOfflineUpdateSchema = createInsertSchema(offlineUpdates);
 export const insertSystemSettingsSchema = createInsertSchema(systemSettings);
 export const insertRolePermissionSchema = createInsertSchema(rolePermissions);
+export const insertUserMentionSchema = createInsertSchema(userMentions);
+export const insertActivityLogSchema = createInsertSchema(activityLog);
+export const insertTaskSchema = createInsertSchema(tasks);
+export const insertCommentSchema = createInsertSchema(comments);
+export const insertNoteSchema = createInsertSchema(notes);
 
 // ============================================================================
 // SELECT SCHEMAS (Zod validation)
@@ -553,6 +755,11 @@ export const selectTripStatusLogSchema = createSelectSchema(tripStatusLogs);
 export const selectOfflineUpdateSchema = createSelectSchema(offlineUpdates);
 export const selectSystemSettingsSchema = createSelectSchema(systemSettings);
 export const selectRolePermissionSchema = createSelectSchema(rolePermissions);
+export const selectUserMentionSchema = createSelectSchema(userMentions);
+export const selectActivityLogSchema = createSelectSchema(activityLog);
+export const selectTaskSchema = createSelectSchema(tasks);
+export const selectCommentSchema = createSelectSchema(comments);
+export const selectNoteSchema = createSelectSchema(notes);
 
 // ============================================================================
 // SELECT TYPES (TypeScript types)
@@ -583,6 +790,22 @@ export type TripStatusLog = typeof tripStatusLogs.$inferSelect;
 export type OfflineUpdate = typeof offlineUpdates.$inferSelect;
 export type SystemSettings = typeof systemSettings.$inferSelect;
 export type RolePermission = typeof rolePermissions.$inferSelect;
+export type UserMention = typeof userMentions.$inferSelect;
+export type InsertUserMention = typeof userMentions.$inferInsert;
+export type ActivityLog = typeof activityLog.$inferSelect;
+export type InsertActivityLog = typeof activityLog.$inferInsert;
+export type Task = typeof tasks.$inferSelect;
+export type InsertTask = typeof tasks.$inferInsert;
+export type Comment = typeof comments.$inferSelect;
+export type InsertComment = typeof comments.$inferInsert;
+export type Note = typeof notes.$inferSelect;
+export type InsertNote = typeof notes.$inferInsert;
+export type KanbanBoard = typeof kanbanBoards.$inferSelect;
+export type InsertKanbanBoard = typeof kanbanBoards.$inferInsert;
+export type KanbanColumn = typeof kanbanColumns.$inferSelect;
+export type InsertKanbanColumn = typeof kanbanColumns.$inferInsert;
+export type KanbanCard = typeof kanbanCards.$inferSelect;
+export type InsertKanbanCard = typeof kanbanCards.$inferInsert;
 
 // ============================================================================
 // INSERT TYPES (TypeScript types for inserts)
@@ -612,3 +835,8 @@ export type InsertNotificationPreference = typeof insertNotificationPreferenceSc
 export type InsertTripStatusLog = typeof insertTripStatusLogSchema._type;
 export type InsertOfflineUpdate = typeof insertOfflineUpdateSchema._type;
 export type InsertRolePermission = typeof insertRolePermissionSchema._type;
+export type InsertUserMention = typeof insertUserMentionSchema._type;
+export type InsertActivityLog = typeof insertActivityLogSchema._type;
+export type InsertTask = typeof insertTaskSchema._type;
+export type InsertComment = typeof insertCommentSchema._type;
+export type InsertNote = typeof insertNoteSchema._type;

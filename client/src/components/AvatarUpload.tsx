@@ -5,6 +5,7 @@ import { Label } from "../components/ui/label";
 import { Upload, X, User } from "lucide-react";
 import { useToast } from "../hooks/use-toast";
 import { apiRequest } from "../lib/queryClient";
+import { supabase } from "../lib/supabase";
 
 interface AvatarUploadProps {
   userId: string;
@@ -22,7 +23,12 @@ export function AvatarUpload({ userId, currentAvatarUrl, onAvatarUpdate, userNam
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      console.log('No file selected');
+      return;
+    }
+
+    console.log('File selected:', file.name, file.type, file.size);
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
@@ -47,25 +53,49 @@ export function AvatarUpload({ userId, currentAvatarUrl, onAvatarUpdate, userNam
     setIsUploading(true);
 
     try {
+      console.log('Getting Supabase session...');
+      // Get auth token from Supabase session (same as apiRequest)
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        throw new Error(`Authentication error: ${sessionError.message}`);
+      }
+      
+      if (!session?.access_token) {
+        console.error('No access token in session');
+        throw new Error('Authentication required. Please log in again.');
+      }
+
+      console.log('Creating FormData and uploading...');
       const formData = new FormData();
       formData.append('avatar', file);
 
       // Use API base URL (not relative URL)
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8081';
+      const uploadUrl = `${apiBaseUrl}/api/users/${userId}/avatar`;
       
-      const response = await fetch(`${apiBaseUrl}/api/users/${userId}/avatar`, {
+      console.log('Uploading to:', uploadUrl);
+      console.log('User ID:', userId);
+      
+      const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`
+          'Authorization': `Bearer ${session.access_token}`
         }
       });
 
+      console.log('Response status:', response.status, response.statusText);
+
       if (!response.ok) {
-        throw new Error('Upload failed');
+        const errorText = await response.text();
+        console.error('Upload failed:', response.status, errorText);
+        throw new Error(`Upload failed: ${response.status} ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('Upload successful:', data);
       onAvatarUpdate(data.avatar_url);
       
       toast({
@@ -73,15 +103,20 @@ export function AvatarUpload({ userId, currentAvatarUrl, onAvatarUpdate, userNam
         description: "Your profile picture has been updated successfully."
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Avatar upload error:', error);
       toast({
         title: "Upload Failed",
-        description: "Failed to upload avatar. Please try again.",
+        description: error.message || "Failed to upload avatar. Please try again.",
         variant: "destructive"
       });
     } finally {
       setIsUploading(false);
+      // Reset file input so same file can be selected again
+      const fileInput = document.getElementById('avatar-upload') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
     }
   };
 
@@ -153,25 +188,6 @@ export function AvatarUpload({ userId, currentAvatarUrl, onAvatarUpdate, userNam
         {/* Upload Controls */}
         <div className="flex-1 space-y-2">
           <div className="flex items-center space-x-2">
-            <Label htmlFor="avatar-upload" className="cursor-pointer">
-              <Button
-                variant="outline"
-                disabled={isUploading}
-                className="cursor-pointer"
-                asChild
-              >
-                <span>
-                  {isUploading ? (
-                    "Uploading..."
-                  ) : (
-                    <>
-                      <Upload className="h-4 w-4 mr-2" />
-                      {currentAvatarUrl ? "Change Picture" : "Upload Picture"}
-                    </>
-                  )}
-                </span>
-              </Button>
-            </Label>
             <Input
               id="avatar-upload"
               type="file"
@@ -180,6 +196,30 @@ export function AvatarUpload({ userId, currentAvatarUrl, onAvatarUpdate, userNam
               disabled={isUploading}
               className="hidden"
             />
+            <Button
+              variant="outline"
+              disabled={isUploading}
+              className="cursor-pointer"
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // Trigger file input click
+                const fileInput = document.getElementById('avatar-upload') as HTMLInputElement;
+                if (fileInput) {
+                  fileInput.click();
+                }
+              }}
+            >
+              {isUploading ? (
+                "Uploading..."
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  {currentAvatarUrl ? "Change Picture" : "Upload Picture"}
+                </>
+              )}
+            </Button>
           </div>
           
           <p className="text-xs text-gray-500">

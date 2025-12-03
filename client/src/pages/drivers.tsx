@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Edit, Trash2, User, Phone, Car, Calendar } from "lucide-react";
+import { PhoneInput } from "../components/ui/phone-input";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
@@ -428,7 +429,11 @@ export default function Drivers() {
                       <FormItem>
                         <FormLabel>Phone</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter phone number" {...field} />
+                          <PhoneInput
+                            value={field.value || ''}
+                            onChange={field.onChange}
+                            placeholder="Enter phone number"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -455,7 +460,11 @@ export default function Drivers() {
                     <FormItem>
                       <FormLabel>Emergency Phone</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter emergency phone number" {...field} />
+                        <PhoneInput
+                          value={field.value || ''}
+                          onChange={field.onChange}
+                          placeholder="Enter emergency phone number"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

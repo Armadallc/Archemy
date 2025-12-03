@@ -21,6 +21,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Plus, Search, Edit, Trash2, Phone, Mail, MapPin, Users, Building2, Calendar, UserPlus, UserMinus, Filter, Download, Upload, AlertTriangle, ArrowLeft, User, Heart, Shield, Star, UserCheck } from "lucide-react";
+import { PhoneInput } from "../components/ui/phone-input";
 import { format, parseISO } from "date-fns";
 import { apiRequest } from "../lib/queryClient";
 import ExportButton from "../components/export/ExportButton";
@@ -1906,10 +1907,10 @@ export default function Clients() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="edit-phone">Phone</Label>
-                <Input
+                <PhoneInput
                   id="edit-phone"
                   value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  onChange={(value) => setFormData({...formData, phone: value})}
                 />
               </div>
               <div>
@@ -1981,10 +1982,10 @@ export default function Clients() {
               </div>
               <div>
                 <Label htmlFor="edit-emergency_contact_phone">Emergency Contact Phone</Label>
-                <Input
+                <PhoneInput
                   id="edit-emergency_contact_phone"
                   value={formData.emergency_contact_phone}
-                  onChange={(e) => setFormData({...formData, emergency_contact_phone: e.target.value})}
+                  onChange={(value) => setFormData({...formData, emergency_contact_phone: value})}
                 />
               </div>
             </div>

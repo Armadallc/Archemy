@@ -303,8 +303,30 @@ app.use((req, res, next) => {
 
       console.log("Creating user with data:", req.body);
       
+      // Handle both camelCase and snake_case field names from frontend
+      const userName = req.body.userName || req.body.user_name || req.body.email;
+      const firstName = req.body.firstName || req.body.first_name;
+      const lastName = req.body.lastName || req.body.last_name;
+      const phone = req.body.phone;
+      const programId = req.body.programId || req.body.program_id || req.body.primaryProgramId || req.body.primary_program_id;
+      
+      // Validate required fields
+      if (!userName) {
+        return res.status(400).json({ 
+          message: "User name or email is required",
+          error: "MISSING_USER_NAME"
+        });
+      }
+      
+      if (!req.body.email) {
+        return res.status(400).json({ 
+          message: "Email is required",
+          error: "MISSING_EMAIL"
+        });
+      }
+      
       // Generate readable user ID
-      const nameSlug = req.body.userName.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_');
+      const nameSlug = userName.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_');
       
       // For executive roles, use company prefix instead of specific program
       let userIdSuffix;
@@ -312,7 +334,7 @@ app.use((req, res, next) => {
         const companyPrefix = req.body.role.replace('_owner', '');
         userIdSuffix = `${companyPrefix}_executive_001`;
       } else {
-        const programSlug = req.body.programId?.replace('_', '_') || 'default';
+        const programSlug = programId?.replace('_', '_') || 'default';
         userIdSuffix = `${programSlug}_001`;
       }
       
@@ -321,19 +343,25 @@ app.use((req, res, next) => {
       // Hash password
       const hashedPassword = await bcrypt.hash(req.body.password, 12);
       
-      const userData = {
+      // Build userData - include all fields that exist in the users table
+      const userData: any = {
         user_id: newUserId,
-        user_name: req.body.userName || req.body.email,
+        user_name: userName,
         email: req.body.email,
         password_hash: hashedPassword,
         role: req.body.role,
-        primary_program_id: req.body.programId || req.body.primaryProgramId,
+        primary_program_id: programId,
         corporate_client_id: req.body.corporate_client_id || req.body.corporateClientId || currentUser.corporateClientId,
-        authorized_programs: req.body.authorizedPrograms || [req.body.programId || req.body.primaryProgramId],
+        authorized_programs: req.body.authorizedPrograms || req.body.authorized_programs || [programId].filter(Boolean),
         is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
+      
+      // Add optional fields if provided
+      if (firstName) userData.first_name = firstName;
+      if (lastName) userData.last_name = lastName;
+      if (phone) userData.phone = phone;
       
       const newUser = await usersStorage.createUser(userData);
 

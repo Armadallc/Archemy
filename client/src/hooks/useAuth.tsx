@@ -31,6 +31,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   superAdminLogin: (password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -124,6 +125,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       // console.log('🔍 Setting isLoading to false'); // Disabled to reduce console spam
       setIsLoading(false);
+    }
+  };
+
+  // Refresh user data (useful after avatar upload, profile update, etc.)
+  const refreshUser = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const userData = await fetchUserData(session.user, session);
+        if (userData) {
+          setUser(userData);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error refreshing user data:', error);
     }
   };
 
@@ -248,7 +264,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: !!user,
     login,
     superAdminLogin,
-    logout
+    logout,
+    refreshUser
   };
 
   return (

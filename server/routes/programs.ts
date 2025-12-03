@@ -6,7 +6,8 @@ import {
 } from "../supabase-auth";
 import { requirePermission } from "../auth";
 import { PERMISSIONS } from "../permissions";
-import { programsStorage } from "../minimal-supabase";
+import { programsStorage, corporateClientsStorage } from "../minimal-supabase";
+import { upload, processProgramLogoToSupabase, deleteFileFromSupabase } from "../upload";
 
 const router = express.Router();
 
@@ -84,6 +85,136 @@ router.delete("/:id", requireSupabaseAuth, requireSupabaseRole(['super_admin', '
   } catch (error) {
     console.error("Error deleting program:", error);
     res.status(500).json({ message: "Failed to delete program" });
+  }
+});
+
+// ============================================================================
+// PROGRAM LOGO ROUTES
+// ============================================================================
+
+/**
+ * POST /api/programs/:id/logo
+ * Upload program logo
+ * Access: super_admin can upload any, corporate_admin can upload logos for programs in their corporate client
+ */
+router.post("/:id/logo", requireSupabaseAuth, upload.single('logo'), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check authentication
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    // Get program to check corporate client
+    const program = await programsStorage.getProgram(id);
+    if (!program) {
+      return res.status(404).json({ message: "Program not found" });
+    }
+
+    // Check authorization: super_admin can upload any, corporate_admin can upload for programs in their corporate client
+    if (req.user.role === 'corporate_admin') {
+      if (req.user.corporateClientId !== program.corporate_client_id) {
+        return res.status(403).json({ message: "You can only upload logos for programs in your corporate client" });
+      }
+    } else if (req.user.role !== 'super_admin') {
+      return res.status(403).json({ message: "You do not have permission to upload program logos" });
+    }
+
+    // Check if file was uploaded
+    if (!req.file) {
+      return res.status(400).json({ message: "No file provided" });
+    }
+
+    // Delete old logo if it exists
+    if (program.logo_url) {
+      try {
+        await deleteFileFromSupabase(program.logo_url);
+      } catch (error) {
+        console.error('Error deleting old logo:', error);
+        // Continue even if deletion fails
+      }
+    }
+
+    // Process and upload new logo to Supabase Storage
+    const logoUrl = await processProgramLogoToSupabase(req.file.buffer, id);
+
+    // Update program record with new logo URL
+    const updatedProgram = await programsStorage.updateProgram(id, {
+      logo_url: logoUrl,
+      updated_at: new Date().toISOString()
+    });
+
+    res.json({
+      success: true,
+      logo_url: logoUrl,
+      program: updatedProgram
+    });
+  } catch (error: any) {
+    console.error("Error uploading program logo:", error);
+    res.status(500).json({ 
+      message: "Failed to upload logo",
+      error: error.message 
+    });
+  }
+});
+
+/**
+ * DELETE /api/programs/:id/logo
+ * Delete program logo
+ * Access: super_admin can delete any, corporate_admin can delete logos for programs in their corporate client
+ */
+router.delete("/:id/logo", requireSupabaseAuth, async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check authentication
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    // Get program to check corporate client
+    const program = await programsStorage.getProgram(id);
+    if (!program) {
+      return res.status(404).json({ message: "Program not found" });
+    }
+
+    // Check authorization: super_admin can delete any, corporate_admin can delete for programs in their corporate client
+    if (req.user.role === 'corporate_admin') {
+      if (req.user.corporateClientId !== program.corporate_client_id) {
+        return res.status(403).json({ message: "You can only delete logos for programs in your corporate client" });
+      }
+    } else if (req.user.role !== 'super_admin') {
+      return res.status(403).json({ message: "You do not have permission to delete program logos" });
+    }
+
+    // Delete logo from Supabase Storage if it exists
+    if (program.logo_url) {
+      try {
+        await deleteFileFromSupabase(program.logo_url);
+      } catch (error) {
+        console.error('Error deleting logo file:', error);
+        // Continue even if file deletion fails
+      }
+    }
+
+    // Update program record to remove logo URL
+    const updatedProgram = await programsStorage.updateProgram(id, {
+      logo_url: null,
+      updated_at: new Date().toISOString()
+    });
+
+    res.json({
+      success: true,
+      logo_url: null,
+      program: updatedProgram
+    });
+  } catch (error: any) {
+    console.error("Error deleting program logo:", error);
+    res.status(500).json({ 
+      message: "Failed to delete logo",
+      error: error.message 
+    });
   }
 });
 

@@ -332,10 +332,36 @@ export const usersStorage = {
             id,
             name
           )
+        ),
+        corporate_clients:corporate_client_id (
+          id,
+          name
         )
       `);
     if (error) throw error;
-    return data || [];
+    
+    // If corporate_clients relationship didn't work, enrich data with corporate client names
+    const enrichedData = await Promise.all((data || []).map(async (user: any) => {
+      // If user has corporate_client_id but no corporate_clients data, fetch it
+      if (user.corporate_client_id && !user.corporate_clients) {
+        try {
+          const { data: corpClient } = await supabase
+            .from('corporate_clients')
+            .select('id, name')
+            .eq('id', user.corporate_client_id)
+            .single();
+          if (corpClient) {
+            user.corporate_clients = corpClient;
+          }
+        } catch (err) {
+          // Silently fail - corporate client might not exist
+          console.warn(`Could not fetch corporate client for user ${user.user_id}:`, err);
+        }
+      }
+      return user;
+    }));
+    
+    return enrichedData;
   },
 
   async getUser(userId: string) {
@@ -350,11 +376,33 @@ export const usersStorage = {
             id,
             name
           )
+        ),
+        corporate_clients:corporate_client_id (
+          id,
+          name
         )
       `)
       .eq('user_id', userId)
       .single();
     if (error && error.code !== 'PGRST116') throw error;
+    
+    // If corporate_clients relationship didn't work, enrich data with corporate client name
+    if (data && data.corporate_client_id && !data.corporate_clients) {
+      try {
+        const { data: corpClient } = await supabase
+          .from('corporate_clients')
+          .select('id, name')
+          .eq('id', data.corporate_client_id)
+          .single();
+        if (corpClient) {
+          data.corporate_clients = corpClient;
+        }
+      } catch (err) {
+        // Silently fail - corporate client might not exist
+        console.warn(`Could not fetch corporate client for user ${userId}:`, err);
+      }
+    }
+    
     return data;
   },
 
@@ -390,11 +438,35 @@ export const usersStorage = {
             id,
             name
           )
+        ),
+        corporate_clients:corporate_client_id (
+          id,
+          name
         )
       `)
       .eq('role', role);
     if (error) throw error;
-    return data || [];
+    
+    // Enrich data with corporate client names if relationship didn't work
+    const enrichedData = await Promise.all((data || []).map(async (user: any) => {
+      if (user.corporate_client_id && !user.corporate_clients) {
+        try {
+          const { data: corpClient } = await supabase
+            .from('corporate_clients')
+            .select('id, name')
+            .eq('id', user.corporate_client_id)
+            .single();
+          if (corpClient) {
+            user.corporate_clients = corpClient;
+          }
+        } catch (err) {
+          console.warn(`Could not fetch corporate client for user ${user.user_id}:`, err);
+        }
+      }
+      return user;
+    }));
+    
+    return enrichedData;
   },
 
   async getUsersByProgram(programId: string) {
@@ -409,11 +481,35 @@ export const usersStorage = {
             id,
             name
           )
+        ),
+        corporate_clients:corporate_client_id (
+          id,
+          name
         )
       `)
       .eq('primary_program_id', programId);
     if (error) throw error;
-    return data || [];
+    
+    // Enrich data with corporate client names if relationship didn't work
+    const enrichedData = await Promise.all((data || []).map(async (user: any) => {
+      if (user.corporate_client_id && !user.corporate_clients) {
+        try {
+          const { data: corpClient } = await supabase
+            .from('corporate_clients')
+            .select('id, name')
+            .eq('id', user.corporate_client_id)
+            .single();
+          if (corpClient) {
+            user.corporate_clients = corpClient;
+          }
+        } catch (err) {
+          console.warn(`Could not fetch corporate client for user ${user.user_id}:`, err);
+        }
+      }
+      return user;
+    }));
+    
+    return enrichedData;
   },
 
   async createUser(user: any) {

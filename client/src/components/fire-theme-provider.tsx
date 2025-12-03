@@ -444,7 +444,12 @@ export function FireThemeProvider({ children }: { children: React.ReactNode }) {
       const saved = localStorage.getItem("fire-theme");
       if (saved) {
         try {
-          return JSON.parse(saved);
+          const parsed = JSON.parse(saved);
+          // Merge with defaults to ensure all new properties exist
+          return {
+            light: { ...DEFAULT_THEME.light, ...parsed.light },
+            dark: { ...DEFAULT_THEME.dark, ...parsed.dark },
+          };
         } catch {
           return DEFAULT_THEME;
         }

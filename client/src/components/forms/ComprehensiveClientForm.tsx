@@ -3,6 +3,7 @@ import { useWatch, useFieldArray } from 'react-hook-form';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "../../components/ui/form";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
+import { PhoneInput } from "../../components/ui/phone-input";
 import { Button } from "../../components/ui/button";
 import { Checkbox } from "../../components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
@@ -433,7 +434,11 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
                 <FormItem>
                   <FormLabel className="text-sm font-medium" style={{ fontFamily: 'Nohemi', fontWeight: 500 }}>Phone</FormLabel>
                   <FormControl>
-                    <Input placeholder="(555) 123-4567" className="mt-1" {...field} />
+                    <PhoneInput
+                      value={field.value || ''}
+                      onChange={field.onChange}
+                      className="mt-1"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -7,6 +7,7 @@ import {
 import { requirePermission } from "../auth";
 import { PERMISSIONS } from "../permissions";
 import { corporateClientsStorage, programsStorage } from "../minimal-supabase";
+import { upload, processCorporateLogoToSupabase, deleteFileFromSupabase } from "../upload";
 
 const router = express.Router();
 
@@ -102,6 +103,136 @@ router.delete("/clients/:id", requireSupabaseAuth, requireSupabaseRole(['super_a
   } catch (error) {
     console.error("Error deleting corporate client:", error);
     res.status(500).json({ message: "Failed to delete corporate client" });
+  }
+});
+
+// ============================================================================
+// CORPORATE CLIENT LOGO ROUTES
+// ============================================================================
+
+/**
+ * POST /api/corporate/clients/:id/logo
+ * Upload corporate client logo
+ * Access: super_admin can upload any, corporate_admin can upload their own corporate client's logo
+ */
+router.post("/clients/:id/logo", requireSupabaseAuth, upload.single('logo'), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check authentication
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    // Check authorization: super_admin can upload any, corporate_admin can upload their own
+    if (req.user.role === 'corporate_admin' && req.user.corporateClientId !== id) {
+      return res.status(403).json({ message: "You can only upload logos for your own corporate client" });
+    }
+
+    if (req.user.role !== 'super_admin' && req.user.role !== 'corporate_admin') {
+      return res.status(403).json({ message: "You do not have permission to upload corporate client logos" });
+    }
+
+    // Check if file was uploaded
+    if (!req.file) {
+      return res.status(400).json({ message: "No file provided" });
+    }
+
+    // Get current corporate client to check for existing logo
+    const corporateClient = await corporateClientsStorage.getCorporateClient(id);
+    if (!corporateClient) {
+      return res.status(404).json({ message: "Corporate client not found" });
+    }
+
+    // Delete old logo if it exists
+    if (corporateClient.logo_url) {
+      try {
+        await deleteFileFromSupabase(corporateClient.logo_url);
+      } catch (error) {
+        console.error('Error deleting old logo:', error);
+        // Continue even if deletion fails
+      }
+    }
+
+    // Process and upload new logo to Supabase Storage
+    const logoUrl = await processCorporateLogoToSupabase(req.file.buffer, id);
+
+    // Update corporate client record with new logo URL
+    const updatedClient = await corporateClientsStorage.updateCorporateClient(id, {
+      logo_url: logoUrl,
+      updated_at: new Date().toISOString()
+    });
+
+    res.json({
+      success: true,
+      logo_url: logoUrl,
+      corporateClient: updatedClient
+    });
+  } catch (error: any) {
+    console.error("Error uploading corporate client logo:", error);
+    res.status(500).json({ 
+      message: "Failed to upload logo",
+      error: error.message 
+    });
+  }
+});
+
+/**
+ * DELETE /api/corporate/clients/:id/logo
+ * Delete corporate client logo
+ * Access: super_admin can delete any, corporate_admin can delete their own corporate client's logo
+ */
+router.delete("/clients/:id/logo", requireSupabaseAuth, async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check authentication
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    // Check authorization: super_admin can delete any, corporate_admin can delete their own
+    if (req.user.role === 'corporate_admin' && req.user.corporateClientId !== id) {
+      return res.status(403).json({ message: "You can only delete logos for your own corporate client" });
+    }
+
+    if (req.user.role !== 'super_admin' && req.user.role !== 'corporate_admin') {
+      return res.status(403).json({ message: "You do not have permission to delete corporate client logos" });
+    }
+
+    // Get current corporate client
+    const corporateClient = await corporateClientsStorage.getCorporateClient(id);
+    if (!corporateClient) {
+      return res.status(404).json({ message: "Corporate client not found" });
+    }
+
+    // Delete logo from Supabase Storage if it exists
+    if (corporateClient.logo_url) {
+      try {
+        await deleteFileFromSupabase(corporateClient.logo_url);
+      } catch (error) {
+        console.error('Error deleting logo file:', error);
+        // Continue even if file deletion fails
+      }
+    }
+
+    // Update corporate client record to remove logo URL
+    const updatedClient = await corporateClientsStorage.updateCorporateClient(id, {
+      logo_url: null,
+      updated_at: new Date().toISOString()
+    });
+
+    res.json({
+      success: true,
+      logo_url: null,
+      corporateClient: updatedClient
+    });
+  } catch (error: any) {
+    console.error("Error deleting corporate client logo:", error);
+    res.status(500).json({ 
+      message: "Failed to delete logo",
+      error: error.message 
+    });
   }
 });
 
