@@ -98,7 +98,6 @@ const navigationItemPermissions: Record<string, string | string[]> = {
   "/role-templates": "manage_users", // Super admin only
   "/prophet": "manage_users", // Super admin only - PROPHET Calculator
   "/design-system": "manage_users", // Super admin only
-  "/design-system-demo": "manage_users", // Super admin only
   "/calendar-experiment": "view_calendar",
   "/chat": "view_calendar", // All users can access chat
 };
@@ -162,7 +161,6 @@ const navigationCategories = [
     roles: ["super_admin"],
     items: [
       { path: "/design-system", label: "Design System", icon: Palette, roles: ["super_admin"], status: "completed" as PageStatus },
-      { path: "/design-system-demo", label: "Design Demo", icon: Star, roles: ["super_admin"], status: "completed" as PageStatus },
       { path: "/calendar-experiment", label: "Experiment", icon: Calendar, roles: ["super_admin", "corporate_admin", "program_admin"], status: "completed" as PageStatus },
     ]
   }
@@ -467,7 +465,7 @@ export default function Sidebar({
         user?.role === 'corporate_admin' || 
         user?.role === 'program_admin' || 
         user?.role === 'program_user') && (
-        <div className="p-4 border-b flex-shrink-0" style={{ borderColor: 'var(--gray-7)', backgroundColor: 'var(--gray-1)' }}>
+        <div className="p-4 border-b flex-shrink-0" style={{ borderColor: 'var(--border)', borderWidth: 'var(--border-weight, 1px)', backgroundColor: 'var(--gray-1)' }}>
           <DrillDownDropdown />
         </div>
       )}

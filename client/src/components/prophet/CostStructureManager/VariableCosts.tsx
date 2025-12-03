@@ -3,16 +3,39 @@
  * Per-mile costs with EIA fuel price integration
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { useProphetStore } from '../hooks/useProphetStore';
 import { EditableField } from '../shared/EditableField';
 import { Fuel, Wrench, Shield, ToggleLeft, ToggleRight, RefreshCw, ArrowLeftRight } from 'lucide-react';
 import { Button } from '../../ui/button';
 
+// EIA API Configuration
+const EIA_API_KEY = "wKLIXuy9MEDpCEFNk7041YHKm2GZWWfgjHn3VqMf";
+const EIA_BASE_URL = "https://api.eia.gov/v2/petroleum/pri/gnd/data/";
+
+interface GasolinePrice {
+  period: string;
+  product: string;
+  productName: string;
+  area: string;
+  areaName: string;
+  value: string;
+  units: string;
+}
+
+interface EIAResponse {
+  response: {
+    total: string;
+    data: GasolinePrice[];
+  };
+}
+
 export function VariableCosts() {
   const { costStructure, updateVariableCosts, setFuelApiPrice } = useProphetStore();
   const variable = costStructure.variable;
+  const [isLoadingEIA, setIsLoadingEIA] = useState(false);
+  const [eiaError, setEiaError] = useState<string | null>(null);
 
   // Calculate fuel cost per mile based on mode
   const calculateFuelPerMile = (price: number, mpg: number) => price / mpg;
@@ -27,6 +50,48 @@ export function VariableCosts() {
     : manualCostPerMile;
 
   const totalPerMile = activeFuelCost + variable.maintenancePerMile + variable.insuranceVariablePerMile;
+
+  // Fetch EIA gasoline prices
+  const fetchEIAFuelPrice = async () => {
+    setIsLoadingEIA(true);
+    setEiaError(null);
+
+    try {
+      // Fetch Denver, Colorado gasoline prices (Regular - EPMR)
+      const url = `${EIA_BASE_URL}?api_key=${EIA_API_KEY}&frequency=weekly&data[0]=value&facets[duoarea][]=YDEN&sort[0][column]=period&sort[0][direction]=desc&length=10`;
+      
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data: EIAResponse = await response.json();
+      
+      // Get Regular prices (product code EPMR)
+      const regularPrices = data.response?.data?.filter(p => p.product === "EPMR") || [];
+      
+      if (regularPrices.length > 0) {
+        const currentPrice = parseFloat(regularPrices[0].value);
+        setFuelApiPrice(currentPrice);
+      } else {
+        throw new Error('No regular gasoline price data found');
+      }
+    } catch (err) {
+      console.error("Error fetching EIA data:", err);
+      setEiaError(err instanceof Error ? err.message : "Failed to fetch gasoline prices");
+    } finally {
+      setIsLoadingEIA(false);
+    }
+  };
+
+  // Auto-fetch on mount if using API mode
+  useEffect(() => {
+    if (variable.fuelMode === 'api' && !variable.fuelApiPrice) {
+      fetchEIAFuelPrice();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [variable.fuelMode, variable.fuelApiPrice]);
 
   // Mode buttons
   const ModeButton = ({ mode, label }: { mode: 'api' | 'manual' | 'compare'; label: string }) => (
@@ -85,20 +150,30 @@ export function VariableCosts() {
                   variant="ghost"
                   size="sm"
                   className="h-6 px-2"
-                  onClick={() => {
-                    // This would normally fetch from EIA - here we use whatever's in the analytics module
-                    console.log('Refreshing EIA price...');
-                  }}
+                  onClick={fetchEIAFuelPrice}
+                  disabled={isLoadingEIA}
+                  title="Refresh EIA price"
                 >
-                  <RefreshCw className="h-3 w-3" />
+                  <RefreshCw className={`h-3 w-3 ${isLoadingEIA ? 'animate-spin' : ''}`} />
                 </Button>
               </div>
               <div className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>
-                {variable.fuelApiPrice ? `$${variable.fuelApiPrice.toFixed(2)}` : '—'}/gal
+                {isLoadingEIA ? (
+                  <span className="text-sm">Loading...</span>
+                ) : variable.fuelApiPrice ? (
+                  `$${variable.fuelApiPrice.toFixed(2)}`
+                ) : (
+                  '—'
+                )}/gal
               </div>
               <div className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>
-                {apiCostPerMile ? `$${apiCostPerMile.toFixed(3)}/mile` : 'No data'}
+                {apiCostPerMile ? `$${apiCostPerMile.toFixed(3)}/mile` : eiaError ? 'Error loading' : 'No data'}
               </div>
+              {eiaError && (
+                <div className="text-xs mt-1" style={{ color: 'var(--status-error)' }}>
+                  {eiaError}
+                </div>
+              )}
               {variable.fuelMode === 'api' && (
                 <div className="mt-2 text-xs font-medium" style={{ color: 'var(--color-lime)' }}>
                   ✓ ACTIVE

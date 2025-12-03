@@ -82,6 +82,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
         // console.log('✅ User data received:', data); // Disabled to reduce console spam
         return data.user;
+      } else if (response.status === 401) {
+        // Token expired or invalid - try refreshing once more
+        const errorText = await response.text();
+        if (import.meta.env.DEV) {
+          console.warn('⚠️ 401 Unauthorized - attempting token refresh...');
+        }
+        
+        // Try refreshing the session one more time (with timeout)
+        try {
+          const refreshPromise = supabase.auth.refreshSession(currentSession);
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Token refresh timeout')), 5000)
+          );
+          
+          const { data: { session: refreshedSession }, error: refreshError } = await Promise.race([
+            refreshPromise,
+            timeoutPromise
+          ]) as any;
+          
+          if (!refreshError && refreshedSession?.access_token) {
+            // Retry the request with the refreshed token
+            const retryResponse = await fetch(`${apiBaseUrl}/api/auth/user`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${refreshedSession.access_token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (retryResponse.ok) {
+              const data = await retryResponse.json();
+              return data.user;
+            }
+          }
+        } catch (retryErr) {
+          if (import.meta.env.DEV) {
+            console.error('❌ Retry after refresh failed:', retryErr);
+          }
+        }
+        
+        // If refresh and retry failed, return null
+        if (import.meta.env.DEV) {
+          console.error('❌ API error: 401 Unauthorized - token refresh failed');
+        }
+        return null;
       } else {
         const errorText = await response.text();
         // Only log errors, not successful responses

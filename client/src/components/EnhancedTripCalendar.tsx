@@ -188,7 +188,7 @@ export default function EnhancedTripCalendar() {
     }, [sidebarDate]);
 
     return (
-      <div className="w-64 rounded-lg p-3 bg-card" style={{ border: `1px solid var(--in-progress)` }}>
+      <div className="w-64 rounded-lg p-3 bg-card border" style={{ borderColor: 'var(--border)', borderWidth: 'var(--border-weight, 1px)' }}>
         <div className="text-center">
           {/* Month Navigation */}
           <div className="flex items-center justify-between mb-2">

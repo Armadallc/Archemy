@@ -751,7 +751,7 @@ export default function FrequentLocationsPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="divide-y" style={{ borderColor: 'var(--gray-7)' }}>
+          <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
             {/* Show all location types, even if empty */}
             {Object.keys(locationTags)
               .map(locationType => {
@@ -794,9 +794,9 @@ export default function FrequentLocationsPage() {
                 const isTagFullySelected = tagSelectedIds.length > 0 && tagSelectedIds.every(id => selectedLocations.has(id));
                 
                 return (
-                  <div key={tag} className="border-b last:border-b-0" style={{ borderColor: 'var(--gray-7)', borderWidth: '1px', borderStyle: 'solid' }}>
+                  <div key={tag} className="border-b last:border-b-0" style={{ borderColor: 'var(--border)', borderWidth: 'var(--border-weight, 1px)', borderStyle: 'solid' }}>
                     {/* Tag Header */}
-                    <div className="px-6 py-4 border-b" style={{ backgroundColor: 'var(--gray-1)', borderColor: 'var(--gray-7)', borderWidth: '1px', borderStyle: 'solid' }}>
+                    <div className="px-6 py-4 border-b" style={{ backgroundColor: 'var(--gray-1)', borderColor: 'var(--border)', borderWidth: 'var(--border-weight, 1px)', borderStyle: 'solid' }}>
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
                           <h3 className="" style={{ fontFamily: 'Nohemi', fontWeight: 500, color: 'var(--gray-12)' }}>{tagConfig?.label || tag}</h3>
@@ -823,7 +823,7 @@ export default function FrequentLocationsPage() {
                     </div>
 
                     {/* Locations in this tag */}
-                    <div className="divide-y" style={{ borderColor: 'var(--gray-7)' }}>
+                    <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
                       {filteredTagLocations.length === 0 ? (
                         <div className="px-6 py-8 text-center text-gray-500 text-sm">
                           No locations in this category

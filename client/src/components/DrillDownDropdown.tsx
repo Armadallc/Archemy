@@ -521,7 +521,7 @@ export function DrillDownDropdown({ className = '' }: DrillDownDropdownProps) {
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 w-full rounded-lg shadow-lg z-50" style={{ backgroundColor: 'var(--popover)', borderColor: '#cc33ab', borderWidth: '1px', borderStyle: 'solid', marginTop: '20px' }}>
+        <div className="absolute top-full left-0 w-full rounded-lg shadow-lg z-50" style={{ backgroundColor: 'var(--popover)', borderColor: 'var(--border)', borderWidth: 'var(--border-weight, 1px)', borderStyle: 'solid', marginTop: '20px' }}>
           <div className="rounded-lg py-2">
             {/* SUPER ADMIN: Corporate Client → Program Navigation */}
             {user?.role === 'super_admin' && (

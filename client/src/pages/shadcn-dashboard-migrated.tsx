@@ -355,7 +355,7 @@ export default function ShadcnDashboardMigrated() {
 
               {/* Right Side: Activity Log (50%) - Scrollable, matching left column height */}
               <div className="flex">
-                <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl flex flex-col w-full" style={{ height: '481.033px' }}>
+                <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl flex flex-col w-full" style={{ height: '481.033px', paddingTop: '12px', paddingBottom: '12px' }}>
                   <CardContent className="p-0 flex-1 overflow-hidden flex flex-col min-h-0">
                     <ActivityFeed />
                   </CardContent>

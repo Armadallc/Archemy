@@ -542,7 +542,7 @@ export default function Vehicles() {
                     </TableCell>
                     <TableCell>{vehicle.year}</TableCell>
                     <TableCell>
-                      <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                      <span className="font-mono text-sm px-2 py-1 rounded" style={{ backgroundColor: 'var(--surface)', color: 'var(--foreground)' }}>
                         {vehicle.license_plate}
                       </span>
                     </TableCell>
