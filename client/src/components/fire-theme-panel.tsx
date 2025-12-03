@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useFireTheme, PaletteColor } from "./fire-theme-provider";
+import { useFireTheme, PaletteColor, ButtonStyle, BorderWeight } from "./fire-theme-provider";
 import { useTheme } from "./theme-provider";
 import { Sun, Moon, Copy, RotateCcw, Check } from "lucide-react";
 
@@ -31,7 +31,7 @@ function ColorSwatch({
   );
 }
 
-// Dropdown selector for a slot
+// Dropdown selector for a color slot
 function SlotSelector({
   label,
   value,
@@ -61,38 +61,141 @@ function SlotSelector({
   );
 }
 
+// Button style selector
+function ButtonStyleSelector({
+  value,
+  onChange,
+  options,
+}: {
+  value: ButtonStyle;
+  onChange: (style: ButtonStyle) => void;
+  options: ButtonStyle[];
+}) {
+  return (
+    <div className="flex items-center justify-between py-2">
+      <span className="text-sm font-medium">Button Style</span>
+      <div className="flex gap-1">
+        {options.map((style) => (
+          <button
+            key={style}
+            onClick={() => onChange(style)}
+            className={`
+              px-3 py-1 text-xs rounded-md transition-all capitalize
+              ${value === style 
+                ? "bg-foreground text-background" 
+                : "bg-muted hover:bg-muted/80"}
+            `}
+          >
+            {style}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Border weight selector
+function BorderWeightSelector({
+  value,
+  onChange,
+  options,
+}: {
+  value: BorderWeight;
+  onChange: (weight: BorderWeight) => void;
+  options: BorderWeight[];
+}) {
+  return (
+    <div className="flex items-center justify-between py-2">
+      <span className="text-sm font-medium">Border Weight</span>
+      <div className="flex gap-1">
+        {options.map((weight) => (
+          <button
+            key={weight}
+            onClick={() => onChange(weight)}
+            className={`
+              px-3 py-1 text-xs rounded-md transition-all capitalize
+              ${value === weight 
+                ? "bg-foreground text-background" 
+                : "bg-muted hover:bg-muted/80"}
+            `}
+          >
+            {weight}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Preview card
 function PreviewCard({ mode }: { mode: "light" | "dark" }) {
   const { theme, palette } = useFireTheme();
   const slots = theme[mode];
 
+  // Button style based on theme setting
+  const getButtonStyle = () => {
+    const base = "px-3 py-1 rounded text-xs font-medium transition-all";
+    switch (slots.buttonStyle) {
+      case "solid":
+        return {
+          className: base,
+          style: {
+            backgroundColor: palette[slots.buttonBackground],
+            color: palette[slots.buttonText],
+            border: "none",
+          },
+        };
+      case "outline":
+        return {
+          className: base,
+          style: {
+            backgroundColor: "transparent",
+            color: palette[slots.buttonBorder],
+            border: `2px solid ${palette[slots.buttonBorder]}`,
+          },
+        };
+      case "ghost":
+        return {
+          className: base,
+          style: {
+            backgroundColor: "transparent",
+            color: palette[slots.buttonBackground],
+            border: "none",
+          },
+        };
+    }
+  };
+
+  const buttonProps = getButtonStyle();
+
+  // Border weight mapping
+  const borderWeights = { none: "0px", thin: "1px", medium: "2px", thick: "3px" };
+
   return (
     <div
       className="p-4 rounded-lg"
-      style={{ backgroundColor: palette[slots.background] }}
+      style={{ 
+        backgroundColor: palette[slots.background],
+        border: `${borderWeights[slots.borderWeight]} solid ${palette[slots.borderColor]}`,
+      }}
     >
       <div
         className="p-3 rounded-md mb-2"
         style={{
           backgroundColor: palette[slots.card],
           color: palette[slots.cardText],
+          border: `${borderWeights[slots.borderWeight]} solid ${palette[slots.borderColor]}`,
         }}
       >
         <div className="font-semibold text-sm">Card Title</div>
         <div className="text-xs opacity-80">Card content</div>
       </div>
-      <div className="flex gap-2">
-        <button
-          className="px-3 py-1 rounded text-xs font-medium"
-          style={{
-            backgroundColor: palette[slots.accent],
-            color: palette[slots.background],
-          }}
-        >
-          Button
+      <div className="flex gap-2 items-center">
+        <button className={buttonProps.className} style={buttonProps.style}>
+          {slots.buttonStyle === "solid" ? "Solid" : slots.buttonStyle === "outline" ? "Outline" : "Ghost"}
         </button>
         <span
-          className="text-xs self-center"
+          className="text-xs"
           style={{ color: palette[slots.text] }}
         >
           Body text
@@ -104,8 +207,19 @@ function PreviewCard({ mode }: { mode: "light" | "dark" }) {
 
 // Main panel component
 export function FireThemePanel() {
-  const { theme, setSlot, loadPreset, reset, exportCSS, palette, presetNames } =
-    useFireTheme();
+  const { 
+    theme, 
+    setSlot, 
+    setButtonStyle, 
+    setBorderWeight,
+    loadPreset, 
+    reset, 
+    exportCSS, 
+    palette, 
+    presetNames,
+    buttonStyles,
+    borderWeights,
+  } = useFireTheme();
   const { theme: colorMode, toggleTheme } = useTheme();
   const [copied, setCopied] = useState(false);
   const [editingMode, setEditingMode] = useState<"light" | "dark">("light");
@@ -198,8 +312,11 @@ export function FireThemePanel() {
         </button>
       </div>
 
-      {/* Slot Selectors */}
+      {/* Surface & Layout Colors */}
       <div className="space-y-1 border-t border-border pt-4">
+        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+          Surfaces & Layout
+        </div>
         <SlotSelector
           label="Page Background"
           value={theme[editingMode].pageBackground}
@@ -240,6 +357,54 @@ export function FireThemePanel() {
           label="Accent"
           value={theme[editingMode].accent}
           onChange={(c) => setSlot(editingMode, "accent", c)}
+          palette={palette}
+        />
+      </div>
+
+      {/* Button Controls - NEW */}
+      <div className="space-y-1 border-t border-border pt-4">
+        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+          Buttons
+        </div>
+        <ButtonStyleSelector
+          value={theme[editingMode].buttonStyle}
+          onChange={(style) => setButtonStyle(editingMode, style)}
+          options={buttonStyles}
+        />
+        <SlotSelector
+          label="Button Fill"
+          value={theme[editingMode].buttonBackground}
+          onChange={(c) => setSlot(editingMode, "buttonBackground", c)}
+          palette={palette}
+        />
+        <SlotSelector
+          label="Button Text"
+          value={theme[editingMode].buttonText}
+          onChange={(c) => setSlot(editingMode, "buttonText", c)}
+          palette={palette}
+        />
+        <SlotSelector
+          label="Button Border"
+          value={theme[editingMode].buttonBorder}
+          onChange={(c) => setSlot(editingMode, "buttonBorder", c)}
+          palette={palette}
+        />
+      </div>
+
+      {/* Border Controls - NEW */}
+      <div className="space-y-1 border-t border-border pt-4">
+        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+          Borders
+        </div>
+        <BorderWeightSelector
+          value={theme[editingMode].borderWeight}
+          onChange={(weight) => setBorderWeight(editingMode, weight)}
+          options={borderWeights}
+        />
+        <SlotSelector
+          label="Border Color"
+          value={theme[editingMode].borderColor}
+          onChange={(c) => setSlot(editingMode, "borderColor", c)}
           palette={palette}
         />
       </div>
