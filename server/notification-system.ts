@@ -501,18 +501,104 @@ export const notificationSystem = {
   // Update user notification preferences
   async updateUserPreferences(userId: string, preferences: Partial<NotificationPreference>) {
     try {
-      const { data, error } = await supabase
-        .from('notification_preferences')
-        .upsert({
-          ...preferences,
-          user_id: userId,
-          updated_at: new Date().toISOString()
-        })
-        .select()
-        .single();
+      const notificationType = preferences.notification_type;
+      
+      if (!notificationType) {
+        throw new Error('notification_type is required');
+      }
 
-      if (error) throw error;
-      return data;
+      // Check if preference exists
+      const { data: existing, error: fetchError } = await supabase
+        .from('notification_preferences')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('notification_type', notificationType)
+        .maybeSingle();
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('❌ Error fetching existing preference:', fetchError);
+        throw fetchError;
+      }
+
+      console.log('🔍 Existing preference:', existing ? `Found with ID: ${existing.id}` : 'Not found');
+
+      let result;
+      if (existing?.id) {
+        // Update existing
+        const updateData: any = {
+          email_enabled: preferences.email_enabled !== undefined ? preferences.email_enabled : existing.email_enabled,
+          push_enabled: preferences.push_enabled !== undefined ? preferences.push_enabled : existing.push_enabled,
+          sms_enabled: preferences.sms_enabled !== undefined ? preferences.sms_enabled : existing.sms_enabled,
+          advance_time: preferences.advance_time ?? existing.advance_time ?? 30,
+          quiet_hours_start: preferences.quiet_hours_start ?? existing.quiet_hours_start ?? null,
+          quiet_hours_end: preferences.quiet_hours_end ?? existing.quiet_hours_end ?? null,
+          timezone: preferences.timezone ?? existing.timezone ?? 'America/New_York',
+          updated_at: new Date().toISOString()
+        };
+
+        console.log('🔍 Updating existing preference with ID:', existing.id, 'Data:', updateData);
+
+        const { data, error } = await supabase
+          .from('notification_preferences')
+          .update(updateData)
+          .eq('id', existing.id)
+          .select()
+          .single();
+        
+        if (error) {
+          console.error('❌ Update error:', error);
+          throw error;
+        }
+        result = data;
+      } else {
+        // Create new - generate ID using crypto for better uniqueness
+        const crypto = await import('crypto');
+        const idSuffix = crypto.randomBytes(8).toString('hex');
+        const generatedId = `pref_${userId.substring(0, 15)}_${notificationType.substring(0, 8)}_${idSuffix}`.substring(0, 50);
+        
+        const insertData: any = {
+          id: generatedId,
+          user_id: userId,
+          notification_type: notificationType,
+          email_enabled: preferences.email_enabled ?? true,
+          push_enabled: preferences.push_enabled ?? false,
+          sms_enabled: preferences.sms_enabled ?? false,
+          advance_time: preferences.advance_time ?? 30,
+          quiet_hours_start: preferences.quiet_hours_start ?? null,
+          quiet_hours_end: preferences.quiet_hours_end ?? null,
+          timezone: preferences.timezone ?? 'America/New_York',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        // Ensure ID is set and valid
+        if (!insertData.id || insertData.id.length === 0 || insertData.id.length > 50) {
+          throw new Error(`Invalid preference ID: ${insertData.id}`);
+        }
+        
+        console.log('🔍 Creating new notification preference:', {
+          id: insertData.id,
+          idLength: insertData.id.length,
+          user_id: insertData.user_id,
+          notification_type: insertData.notification_type
+        });
+        
+        const { data, error } = await supabase
+          .from('notification_preferences')
+          .insert(insertData)
+          .select()
+          .single();
+        
+        if (error) {
+          console.error('❌ Insert error:', error);
+          console.error('❌ Insert data that failed:', JSON.stringify(insertData, null, 2));
+          throw error;
+        }
+        console.log('✅ Successfully created preference:', data?.id);
+        result = data;
+      }
+
+      return result;
     } catch (error) {
       console.error('Error updating user preferences:', error);
       throw error;
