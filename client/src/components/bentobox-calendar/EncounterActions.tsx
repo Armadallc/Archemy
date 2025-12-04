@@ -30,8 +30,19 @@ export function EncounterActions({ encounter, onEdit }: EncounterActionsProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteAll, setDeleteAll] = useState(false);
 
+  const handleEdit = () => {
+    if (onEdit) {
+      onEdit();
+    }
+  };
+
   const handleDuplicate = () => {
-    duplicateEncounter(encounter.id);
+    const result = duplicateEncounter(encounter.id);
+    if (!result) {
+      console.error('Failed to duplicate encounter:', encounter.id);
+      // Could show a toast notification here
+      alert('Failed to duplicate encounter. Please check the console for details.');
+    }
   };
 
   const handleDelete = () => {
@@ -46,7 +57,7 @@ export function EncounterActions({ encounter, onEdit }: EncounterActionsProps) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={onEdit}
+          onClick={handleEdit}
           className="flex-1"
         >
           <Edit className="w-4 h-4 mr-1" />
