@@ -107,6 +107,8 @@ router.get("/user", requireSupabaseAuth, async (req: SupabaseAuthenticatedReques
         user_id,
         auth_user_id,
         user_name,
+        first_name,
+        last_name,
         email,
         role,
         primary_program_id,

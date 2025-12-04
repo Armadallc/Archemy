@@ -26,7 +26,8 @@ import {
   RefreshCw,
   Info,
   User,
-  Contact
+  Contact,
+  Store
 } from "lucide-react";
 import { apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "../hooks/use-toast";
@@ -34,7 +35,6 @@ import { useHierarchy } from "../hooks/useHierarchy";
 import { useAuth } from "../hooks/useAuth";
 import { LogoUpload } from "../components/LogoUpload";
 import { MainLogoUpload } from "../components/MainLogoUpload";
-import { AvatarUpload } from "../components/AvatarUpload";
 
 interface CorporateClientSettings {
   id: string;
@@ -79,9 +79,9 @@ interface ContactUser {
 // Define which tabs are visible for each role
 function getVisibleTabs(userRole?: string) {
   const allTabs = [
-    { id: 'profile', label: 'Profile', icon: User },
     { id: 'corporate-client', label: 'Corporate Client', icon: Building2 },
     { id: 'program', label: 'Program', icon: Building2 },
+    { id: 'vendors', label: 'Vendors', icon: Store },
     { id: 'users', label: 'Users', icon: Users },
     { id: 'contacts', label: 'Contacts', icon: Contact },
     { id: 'notifications', label: 'Notifications', icon: Bell },
@@ -90,12 +90,12 @@ function getVisibleTabs(userRole?: string) {
 
   switch (userRole) {
     case 'driver':
-      // Drivers only see Profile, Contacts, and Notifications
-      return allTabs.filter(tab => ['profile', 'contacts', 'notifications'].includes(tab.id));
+      // Drivers only see Contacts and Notifications
+      return allTabs.filter(tab => ['contacts', 'notifications'].includes(tab.id));
     
     case 'program_user':
-      // Program users see Profile, Contacts, and Notifications 
-      return allTabs.filter(tab => ['profile', 'contacts', 'notifications'].includes(tab.id));
+      // Program users see Contacts and Notifications 
+      return allTabs.filter(tab => ['contacts', 'notifications'].includes(tab.id));
     
     case 'program_admin':
       // Program admins see everything except System
@@ -111,15 +111,18 @@ function getVisibleTabs(userRole?: string) {
     
     default:
       // Default to basic tabs for unknown roles
-      return allTabs.filter(tab => ['profile', 'contacts', 'notifications'].includes(tab.id));
+      return allTabs.filter(tab => ['contacts', 'notifications'].includes(tab.id));
   }
 }
 
 export default function Settings() {
-  const { user, refreshUser } = useAuth();
+  const { user } = useAuth();
   const { level, selectedCorporateClient, selectedProgram, getFilterParams, getPageTitle } = useHierarchy();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("profile");
+  
+  // Get visible tabs and set default active tab to first available
+  const visibleTabs = getVisibleTabs(user?.role);
+  const [activeTab, setActiveTab] = useState(visibleTabs[0]?.id || "corporate-client");
   const [isLoading, setIsLoading] = useState(false);
 
   // Corporate client settings - sync with current corporate client
@@ -230,8 +233,12 @@ export default function Settings() {
     enabled: true,
   });
 
-  // Get visible tabs based on user role
-  const visibleTabs = getVisibleTabs(user?.role);
+  // Update active tab if current tab is not visible
+  useEffect(() => {
+    if (visibleTabs.length > 0 && !visibleTabs.find(tab => tab.id === activeTab)) {
+      setActiveTab(visibleTabs[0].id);
+    }
+  }, [visibleTabs, activeTab]);
 
   // Update form when data changes
   useEffect(() => {
@@ -383,7 +390,7 @@ export default function Settings() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-7">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-8">
           {visibleTabs.map((tab) => (
             <TabsTrigger key={tab.id} value={tab.id} className="flex items-center space-x-2">
               <tab.icon className="w-4 h-4" />
@@ -391,81 +398,6 @@ export default function Settings() {
             </TabsTrigger>
           ))}
         </TabsList>
-
-        <TabsContent value="profile" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile Settings</CardTitle>
-              <CardDescription>
-                Manage your personal profile information and preferences.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center space-x-6">
-                <AvatarUpload 
-                  userId={user?.user_id || ''} 
-                  currentAvatarUrl={user?.avatar_url}
-                  onAvatarUpdate={async (newAvatarUrl) => {
-                    // Refresh user data to get updated avatar
-                    // This will update the sidebar automatically
-                    if (refreshUser) {
-                      await refreshUser();
-                    }
-                  }}
-                  userName={user?.user_name}
-                />
-                <div>
-                  <h3 className="text-lg font-medium">{user?.user_name || 'User'}</h3>
-                  <p className="text-gray-600">{user?.email}</p>
-                  <Badge variant="outline" className="mt-1">
-                    {user?.role?.replace('_', ' ').toUpperCase()}
-                  </Badge>
-                </div>
-              </div>
-              
-              <Separator />
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="user-name">User Name</Label>
-                  <Input
-                    id="user-name"
-                    value={user?.user_name || ''}
-                    disabled
-                    className="bg-gray-50"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="user-id">User ID</Label>
-                  <Input
-                    id="user-id"
-                    value={user?.user_id || ''}
-                    disabled
-                    className="bg-gray-50"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    value={user?.email || ''}
-                    disabled
-                    className="bg-gray-50"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <Input
-                    id="role"
-                    value={user?.role?.replace('_', ' ').toUpperCase() || ''}
-                    disabled
-                    className="bg-gray-50"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="corporate-client" className="space-y-6">
           <Card>
@@ -651,6 +583,25 @@ export default function Settings() {
                   Save Program Settings
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="vendors" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Vendor Management</CardTitle>
+              <CardDescription>
+                Manage vendors and supplier information for your {level} level.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  Vendor management functionality is coming soon. This section will allow you to manage vendor information, contracts, and relationships.
+                </AlertDescription>
+              </Alert>
             </CardContent>
           </Card>
         </TabsContent>

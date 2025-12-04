@@ -172,7 +172,7 @@ export default function Sidebar({
   isCollapsed = false, 
   setIsCollapsed 
 }: SidebarProps) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { user, logout } = useAuth();
   const { level, selectedProgram, selectedCorporateClient, navigateToProgram } = useHierarchy();
   const { navigateToCorporate } = useHierarchy();
@@ -645,7 +645,7 @@ export default function Sidebar({
               </div>
               <div className="flex-1 min-w-0 text-left">
                 <p className="text-sm font-medium truncate" style={{ color: 'var(--gray-12)' }}>
-                  seffe
+                  {user?.first_name || 'User'}
                 </p>
                 {userRole !== 'super_admin' && (
                   <p className="text-xs capitalize" style={{ color: 'var(--gray-9)' }}>
@@ -689,8 +689,7 @@ export default function Sidebar({
               {/* User Settings */}
               <button
                 onClick={() => {
-                  // TODO: Navigate to user settings
-                  console.log('Navigate to user settings');
+                  setLocation('/profile');
                   setIsUserMenuOpen(false);
                 }}
                 className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors"

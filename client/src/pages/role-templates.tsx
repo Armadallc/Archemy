@@ -448,14 +448,18 @@ export default function RoleTemplatesPage() {
   });
 
   // Fetch corporate clients for feature flag assignment (for super admins)
-  const { data: corporateClients } = useQuery({
+  const { data: corporateClientsData } = useQuery({
     queryKey: ["/api/corporate-clients"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/corporate-clients");
-      return await response.json();
+      const data = await response.json();
+      // Handle both formats: { corporateClients: [...] } or [...]
+      return Array.isArray(data) ? data : (data.corporateClients || []);
     },
     enabled: user?.role === 'super_admin',
   });
+
+  const corporateClients = corporateClientsData || [];
 
   // Fetch feature flags
   const { data: featureFlags = [], isLoading: flagsLoading } = useQuery({
