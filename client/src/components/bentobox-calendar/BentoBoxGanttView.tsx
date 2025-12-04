@@ -19,9 +19,10 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from '../ui/hover-card'
 interface BentoBoxGanttViewProps {
   currentDate: Date;
   onDateChange?: (date: Date) => void;
+  onEdit?: (templateId: string) => void;
 }
 
-export function BentoBoxGanttView({ currentDate, onDateChange }: BentoBoxGanttViewProps) {
+export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBoxGanttViewProps) {
   const { scheduledEncounters, currentView, setCurrentDate, library, scheduleEncounter, updateScheduledEncounter } = useBentoBoxStore();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [scrollPosition, setScrollPosition] = useState(0);
@@ -165,7 +166,7 @@ export function BentoBoxGanttView({ currentDate, onDateChange }: BentoBoxGanttVi
       {/* Days Header */}
       <div className="flex border-b sticky top-0 bg-background z-10">
         {/* Time column header */}
-        <div className="w-16 bg-muted/50 border-r flex-shrink-0"></div>
+        <div className="w-16 md:w-20 bg-muted/50 border-r flex-shrink-0"></div>
         
         {/* Days header - scrollable */}
         <div className="flex-1 overflow-x-auto">
@@ -174,7 +175,7 @@ export function BentoBoxGanttView({ currentDate, onDateChange }: BentoBoxGanttVi
               <div
                 key={day.toISOString()}
                 className={cn(
-                  "min-w-[120px] p-2 text-center border-r border-b",
+                  "min-w-[120px] md:min-w-[150px] lg:min-w-[180px] p-2 md:p-3 text-center border-r border-b",
                   isSameDay(day, new Date()) && "bg-primary/10"
                 )}
               >
@@ -196,11 +197,11 @@ export function BentoBoxGanttView({ currentDate, onDateChange }: BentoBoxGanttVi
       {/* Time Grid - Scrollable */}
       <div className="flex flex-1 overflow-auto" ref={scrollContainerRef}>
         {/* Time column - sticky */}
-        <div className="w-16 bg-muted/50 border-r flex-shrink-0 sticky left-0 z-10">
+        <div className="w-16 md:w-20 bg-muted/50 border-r flex-shrink-0 sticky left-0 z-10">
           {timeSlots.map((hour) => (
             <div
               key={hour}
-              className="h-12 border-b border-border flex items-start justify-end pr-2 pt-1"
+              className="h-12 md:h-14 border-b border-border flex items-start justify-end pr-2 md:pr-3 pt-1"
             >
               <span className="text-xs text-muted-foreground">
                 {hour === 12 ? "12 PM" : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
@@ -218,7 +219,7 @@ export function BentoBoxGanttView({ currentDate, onDateChange }: BentoBoxGanttVi
               return (
                 <div
                   key={day.toISOString()}
-                  className="min-w-[120px] border-r relative bg-background"
+                  className="min-w-[120px] md:min-w-[150px] lg:min-w-[180px] border-r relative bg-background"
                 >
                   {/* Time slots */}
                   {timeSlots.map((hour) => {
@@ -230,7 +231,7 @@ export function BentoBoxGanttView({ currentDate, onDateChange }: BentoBoxGanttVi
                       <div
                         key={hour}
                         className={cn(
-                          "h-12 border-b border-border transition-colors",
+                          "h-12 md:h-14 border-b border-border transition-colors",
                           isDraggedOver
                             ? "bg-primary/20 border-primary border-2"
                             : "hover:bg-muted/30 cursor-pointer"
@@ -328,7 +329,10 @@ export function BentoBoxGanttView({ currentDate, onDateChange }: BentoBoxGanttVi
                                 </div>
                               </>
                             )}
-                            <EncounterActions encounter={encounter} />
+                            <EncounterActions 
+                              encounter={encounter} 
+                              onEdit={() => onEdit && onEdit(encounter.templateId)}
+                            />
                           </div>
                         </HoverCardContent>
                       </HoverCard>
