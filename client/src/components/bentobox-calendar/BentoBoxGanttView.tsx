@@ -19,10 +19,9 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from '../ui/hover-card'
 interface BentoBoxGanttViewProps {
   currentDate: Date;
   onDateChange?: (date: Date) => void;
-  onEdit?: (templateId: string) => void;
 }
 
-export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBoxGanttViewProps) {
+export function BentoBoxGanttView({ currentDate, onDateChange }: BentoBoxGanttViewProps) {
   const { scheduledEncounters, currentView, setCurrentDate, library, scheduleEncounter, updateScheduledEncounter } = useBentoBoxStore();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const timeSlotRef = useRef<HTMLDivElement>(null);
@@ -130,14 +129,14 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
     
     // Calculate position and height in pixels
     const top = startMinutesFrom6AM * pixelsPerMinute;
-    const calculatedHeight = (endMinutesFrom6AM - startMinutesFrom6AM) * pixelsPerMinute;
+    const height = (endMinutesFrom6AM - startMinutesFrom6AM) * pixelsPerMinute;
     
-    // Subtract 1px to account for the border, preventing visual overlap with next time slot
-    const height = Math.max(calculatedHeight - 1, 24);
+    // Ensure minimum height for visibility
+    const minHeight = Math.max(height, 24);
     
     return { 
       top: `${top}px`, 
-      height: `${height}px`,
+      height: `${minHeight}px`,
     };
   };
 
@@ -190,6 +189,17 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
         
         // Add duration to end time
         endTime.setMinutes(endTime.getMinutes() + durationMinutes);
+        
+        // Debug log to verify duration (can be removed after fixing)
+        console.log('Scheduling encounter:', {
+          templateId: payload.templateId,
+          templateName: template.name,
+          duration: template.duration,
+          durationMinutes,
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+          calculatedDuration: (endTime.getTime() - startTime.getTime()) / (1000 * 60),
+        });
 
         // Schedule the encounter
         scheduleEncounter(payload.templateId, startTime, endTime);
@@ -244,13 +254,13 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
           )}>
             {days.map((day) => (
               <div
-                key={day.toISOString()}
-                className={cn(
-                  "p-2 md:p-3 text-center border-r border-b flex-shrink-0",
-                  isWeekView ? "flex-1" : "min-w-[120px] md:min-w-[150px] lg:min-w-[180px]",
-                  isSameDay(day, new Date()) && "bg-primary/10"
-                )}
-              >
+                  key={day.toISOString()}
+                  className={cn(
+                    "p-2 text-center border-r border-b flex-shrink-0",
+                    isWeekView ? "flex-1" : "min-w-[120px] md:min-w-[150px] lg:min-w-[180px]",
+                    isSameDay(day, new Date()) && "bg-primary/10"
+                  )}
+                >
                 <div className="text-xs font-medium text-muted-foreground">
                   {format(day, "EEE")}
                 </div>
@@ -414,10 +424,7 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
                                 </div>
                               </>
                             )}
-                            <EncounterActions 
-                              encounter={encounter} 
-                              onEdit={() => onEdit && onEdit(encounter.templateId)}
-                            />
+                            <EncounterActions encounter={encounter} />
                           </div>
                         </HoverCardContent>
                       </HoverCard>

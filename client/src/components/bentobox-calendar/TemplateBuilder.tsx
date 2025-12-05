@@ -268,9 +268,9 @@ export function TemplateBuilder({ className }: TemplateBuilderProps) {
   };
 
   return (
-    <div className={cn("p-4 md:p-6 space-y-4 md:space-y-6 overflow-y-auto", className)}>
+    <div className={cn("p-4 space-y-4 overflow-y-auto", className)}>
       <div>
-        <h3 className="text-lg md:text-xl font-semibold mb-2">Build Encounter Template</h3>
+        <h3 className="text-lg font-semibold mb-2">Build Encounter Template</h3>
         <p className="text-sm text-muted-foreground">
           Drag atoms from the sidebar into the drop zones below to build your template.
         </p>
