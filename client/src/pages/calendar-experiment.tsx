@@ -101,9 +101,9 @@ export default function CalendarExperiment() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 md:p-6 border-b bg-background gap-4">
+      <div className="flex-shrink-0 flex flex-col md:flex-row items-start md:items-center justify-between p-4 md:p-6 border-b bg-background gap-4">
         <div className="flex-shrink-0">
           <h1 className="text-2xl md:text-3xl font-bold">BentoBox Calendar</h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -189,7 +189,7 @@ export default function CalendarExperiment() {
       </div>
 
       {/* Main Content */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden min-h-0">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "stage" | "builder")} className="flex flex-1 flex-col overflow-hidden">
           {/* Tab Navigation */}
           <div className="border-b px-4 md:px-6">
@@ -214,7 +214,7 @@ export default function CalendarExperiment() {
               </div>
 
               {/* Calendar View */}
-              <div className="flex-1 overflow-hidden min-w-0">
+              <div className="flex-1 overflow-hidden min-w-0 min-h-0">
                 <BentoBoxGanttView currentDate={currentDate} onEdit={handleEditTemplate} />
               </div>
             </div>
