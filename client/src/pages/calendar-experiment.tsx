@@ -75,9 +75,9 @@ export default function CalendarExperiment() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-background">
+      <div className="flex-shrink-0 flex items-center justify-between p-4 border-b bg-background">
         <div>
           <h1 className="text-2xl font-bold">BentoBox Calendar</h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -163,14 +163,14 @@ export default function CalendarExperiment() {
       </div>
 
       {/* Main Content */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden min-h-0">
         {/* Sidebar - Responsive width */}
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 h-full overflow-hidden">
           <BentoBoxSidebar />
         </div>
 
         {/* Calendar View - Takes remaining space */}
-        <div className="flex-1 overflow-hidden min-w-0">
+        <div className="flex-1 overflow-hidden min-w-0 min-h-0">
           <BentoBoxGanttView currentDate={currentDate} />
         </div>
       </div>
