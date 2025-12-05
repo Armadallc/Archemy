@@ -175,6 +175,7 @@ interface BentoBoxActions {
   
   // Pool
   addToPool: (templateId: string) => void;
+  addClientGroupToPool: (clientGroupId: string) => void;
   removeFromPool: (poolId: string) => void;
   clearPool: () => void;
   
@@ -189,17 +190,21 @@ interface BentoBoxActions {
   updateAtom: <T extends Atom>(id: string, updates: Partial<T>, type: T['type']) => void;
   deleteAtom: (id: string, type: Atom['type']) => void;
   
-  // UI State
-  setActiveSidebarSection: (section: SidebarSection) => void;
-  setSelectedTemplate: (template?: EncounterTemplate) => void;
-  setSelectedEncounter: (encounter?: ScheduledEncounter) => void;
-  setBuilderTemplate: (template?: Partial<EncounterTemplate>) => void;
-  setCurrentView: (view: "day" | "week" | "month") => void;
-  setCurrentDate: (date: Date) => void;
-  
-  // Sync (for future Supabase integration)
-  syncToSupabase: () => Promise<void>;
-  syncFromSupabase: () => Promise<void>;
+      // UI State
+      setActiveSidebarSection: (section: SidebarSection) => void;
+      setSelectedTemplate: (template?: EncounterTemplate) => void;
+      setSelectedEncounter: (encounter?: ScheduledEncounter) => void;
+      setBuilderTemplate: (template?: Partial<EncounterTemplate>) => void;
+      setCurrentView: (view: "day" | "week" | "month") => void;
+      setCurrentDate: (date: Date) => void;
+      setActiveTab: (tab: "stage" | "builder") => void;
+      setEditingTemplateId: (id: string | null) => void;
+      getTemplateById: (id: string) => EncounterTemplate | undefined;
+      updatePoolTemplate: (poolTemplateId: string, updates: Partial<PoolTemplate>) => void;
+      
+      // Sync (for future Supabase integration)
+      syncToSupabase: () => Promise<void>;
+      syncFromSupabase: () => Promise<void>;
 }
 
 interface BentoBoxState {
@@ -219,6 +224,8 @@ interface BentoBoxState {
   builderTemplate?: Partial<EncounterTemplate>;
   currentView: "day" | "week" | "month";
   currentDate: Date;
+  activeTab: "stage" | "builder";
+  editingTemplateId: string | null;
 }
 
 // ============================================================
@@ -235,6 +242,8 @@ export const useBentoBoxStore = create<BentoBoxState & BentoBoxActions>()(
       activeSidebarSection: "navigation",
       currentView: "week",
       currentDate: new Date(),
+      activeTab: "stage",
+      editingTemplateId: null,
       
       // ========== TEMPLATE LIBRARY ==========
       
@@ -298,6 +307,30 @@ export const useBentoBoxStore = create<BentoBoxState & BentoBoxActions>()(
           category: template.category,
           color: template.color,
           quickInfo: getQuickInfo(template),
+        };
+        
+        set((state) => ({
+          pool: [...state.pool, poolTemplate],
+        }));
+      },
+      
+      addClientGroupToPool: (clientGroupId) => {
+        const state = get();
+        const clientGroup = state.library.atoms.clientGroups.find((g) => g.id === clientGroupId);
+        if (!clientGroup) return;
+        
+        const poolTemplate: PoolTemplate = {
+          id: generateId(),
+          templateId: clientGroupId, // Use clientGroup ID as templateId for identification
+          name: clientGroup.name,
+          category: 'administrative',
+          color: 'silver',
+          quickInfo: {
+            staffInitials: 'CG',
+            activityCode: 'CG',
+            clientCount: clientGroup.clientIds.length,
+            duration: 'N/A',
+          },
         };
         
         set((state) => ({
@@ -507,6 +540,27 @@ export const useBentoBoxStore = create<BentoBoxState & BentoBoxActions>()(
       
       setCurrentDate: (date) => {
         set({ currentDate: date });
+      },
+      
+      setActiveTab: (tab) => {
+        set({ activeTab: tab });
+      },
+      
+      setEditingTemplateId: (id) => {
+        set({ editingTemplateId: id });
+      },
+      
+      getTemplateById: (id) => {
+        const state = get();
+        return state.library.templates.find((t) => t.id === id);
+      },
+      
+      updatePoolTemplate: (poolTemplateId, updates) => {
+        set((state) => ({
+          pool: state.pool.map((p) =>
+            p.id === poolTemplateId ? { ...p, ...updates } : p
+          ),
+        }));
       },
       
       // ========== SYNC (Placeholder) ==========

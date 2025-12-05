@@ -1,16 +1,15 @@
 /**
- * BentoBox Calendar - Template Builder Component
+ * BentoBox Calendar - Template Editor Component
  * 
- * Allows users to build encounter templates by dragging atoms
- * into drop zones and combining them into complete templates.
+ * Allows users to edit existing encounter templates by swapping atoms
  */
 
-import React, { useState } from 'react';
-import { Plus, X, Save, GripVertical, Users, Clock, MapPin, User, Activity } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Save, GripVertical, Users, Clock, MapPin, User, Activity } from 'lucide-react';
 import { useBentoBoxStore } from './store';
 import { Atom, EncounterTemplate, TemplateCategory } from './types';
 import { Button } from '../ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { cn } from '../../lib/utils';
@@ -22,68 +21,62 @@ import {
   SelectValue,
 } from '../ui/select';
 
-interface TemplateBuilderProps {
+interface TemplateEditorProps {
+  templateId: string;
+  onSave?: () => void;
+  onCancel?: () => void;
   className?: string;
-  onClientGroupAdded?: (clientGroup: any) => void;
 }
 
-export function TemplateBuilder({ className, onClientGroupAdded }: TemplateBuilderProps) {
+export function TemplateEditor({ templateId, onSave, onCancel, className }: TemplateEditorProps) {
   const {
     library,
-    builderTemplate,
-    setBuilderTemplate,
-    addTemplate,
-    addToPool,
+    getTemplateById,
+    updateTemplate,
+    updatePoolTemplate,
+    updateScheduledEncounter,
   } = useBentoBoxStore();
 
-  const [templateName, setTemplateName] = useState('');
-  const [templateDescription, setTemplateDescription] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<TemplateCategory>('life-skills');
+  const template = getTemplateById(templateId);
   
-  // Initialize builder template if empty
-  const currentTemplate = builderTemplate || {
-    staff: [],
-    activity: undefined,
-    clients: [],
-    location: undefined,
-    duration: undefined,
-    category: selectedCategory,
-  };
-  
-  // Expose handler for ClientGroupBuilder to add groups to template
-  const handleClientGroupAdded = React.useCallback((clientGroup: any) => {
-    // Auto-generate name if blank
-    let groupName = clientGroup.name;
-    if (!groupName.trim() && templateName.trim()) {
-      // Generate name from template name
-      groupName = `${templateName.trim()} Client Group`;
-    } else if (!groupName.trim()) {
-      // Will be auto-named when template is saved
-      groupName = ''; // Keep blank for now
+  const [templateName, setTemplateName] = useState(template?.name || '');
+  const [templateDescription, setTemplateDescription] = useState(template?.description || '');
+  const [selectedCategory, setSelectedCategory] = useState<TemplateCategory>(
+    template?.category || 'life-skills'
+  );
+  const [currentTemplate, setCurrentTemplate] = useState<Partial<EncounterTemplate>>({
+    staff: template?.staff || [],
+    activity: template?.activity,
+    clients: template?.clients || [],
+    location: template?.location,
+    duration: template?.duration,
+    category: template?.category,
+  });
+
+  // Update state when template changes
+  useEffect(() => {
+    if (template) {
+      setTemplateName(template.name);
+      setTemplateDescription(template.description || '');
+      setSelectedCategory(template.category);
+      setCurrentTemplate({
+        staff: template.staff || [],
+        activity: template.activity,
+        clients: template.clients || [],
+        location: template.location,
+        duration: template.duration,
+        category: template.category,
+      });
     }
+  }, [template]);
 
-    // Update the client group name if needed
-    const namedGroup = {
-      ...clientGroup,
-      name: groupName || clientGroup.name, // Use provided name or keep original
-    };
-
-    // Get current template from store
-    const state = useBentoBoxStore.getState();
-    const current = state.builderTemplate || {
-      staff: [],
-      activity: undefined,
-      clients: [],
-      location: undefined,
-      duration: undefined,
-      category: selectedCategory,
-    };
-
-    // Add to builder template
-    const updated = { ...current };
-    updated.clients = [...(updated.clients || []), namedGroup];
-    setBuilderTemplate(updated);
-  }, [templateName, selectedCategory, setBuilderTemplate]);
+  if (!template) {
+    return (
+      <div className={cn("p-4", className)}>
+        <p className="text-sm text-muted-foreground">Template not found</p>
+      </div>
+    );
+  }
 
   const handleAtomDrop = (atom: Atom, dropZone: string) => {
     const updated = { ...currentTemplate };
@@ -118,7 +111,7 @@ export function TemplateBuilder({ className, onClientGroupAdded }: TemplateBuild
         break;
     }
 
-    setBuilderTemplate(updated);
+    setCurrentTemplate(updated);
   };
 
   const handleRemoveAtom = (type: string, index?: number, id?: string) => {
@@ -146,7 +139,7 @@ export function TemplateBuilder({ className, onClientGroupAdded }: TemplateBuild
         break;
     }
 
-    setBuilderTemplate(updated);
+    setCurrentTemplate(updated);
   };
 
   const handleSaveTemplate = () => {
@@ -175,70 +168,68 @@ export function TemplateBuilder({ className, onClientGroupAdded }: TemplateBuild
       return;
     }
 
-    // Process client groups - auto-name any that don't have names
-    const processedClients = currentTemplate.clients.map((c) => {
-      if (c.type === 'client-group' && !c.name.trim()) {
-        // Auto-generate name from template name
-        const baseName = templateName.trim();
-        // Extract letter/number suffix if present (e.g., "Life Skills A" -> "A")
-        const match = baseName.match(/\s+([A-Z0-9]+)$/);
-        const suffix = match ? match[1] : '';
-        const groupName = suffix 
-          ? `${baseName.replace(/\s+[A-Z0-9]+$/, '')} Client Group ${suffix}`
-          : `${baseName} Client Group`;
-        
-        // Update the group in library
-        const state = useBentoBoxStore.getState();
-        const existingGroup = state.library.atoms.clientGroups.find(g => g.id === c.id);
-        if (existingGroup) {
-          state.updateAtom(c.id, { name: groupName }, 'client-group');
-        }
-        
-        return {
-          ...c,
-          name: groupName,
-        };
-      }
-      return c;
-    });
-
-    const newTemplate: Omit<EncounterTemplate, 'id' | 'createdAt' | 'updatedAt' | 'version'> = {
+    // Update the template
+    updateTemplate(templateId, {
       name: templateName,
       description: templateDescription || undefined,
       staff: currentTemplate.staff || [],
       activity: currentTemplate.activity,
-      clients: processedClients,
+      clients: currentTemplate.clients || [],
       location: currentTemplate.location,
       duration: currentTemplate.duration,
       category: selectedCategory,
       rules: {
         clientCapacity: {
           min: 1,
-          max: processedClients.reduce((count, c) => {
+          max: currentTemplate.clients?.reduce((count, c) => {
             if (c.type === 'client') return count + 1;
             if (c.type === 'client-group') return count + c.clientIds.length;
             return count;
           }, 0) || 10,
         },
       },
-    };
+    });
 
-    addTemplate(newTemplate);
-    
-    // Add to pool automatically
-    const templates = useBentoBoxStore.getState().library.templates;
-    const savedTemplate = templates[templates.length - 1];
-    if (savedTemplate) {
-      addToPool(savedTemplate.id);
+    // Update pool template if it exists
+    const state = useBentoBoxStore.getState();
+    const poolTemplate = state.pool.find((p) => p.templateId === templateId);
+    if (poolTemplate) {
+      updatePoolTemplate(poolTemplate.id, {
+        name: templateName,
+        category: selectedCategory,
+        quickInfo: {
+          staffInitials: (currentTemplate.staff || [])
+            .map(s => s.name.split(' ').map(n => n[0]).join(''))
+            .join(', ') || 'N/A',
+          activityCode: currentTemplate.activity?.name
+            .split(' ')
+            .map(w => w[0])
+            .join('')
+            .substring(0, 3)
+            .toUpperCase() || 'N/A',
+          clientCount: (currentTemplate.clients || []).reduce((count, c) => {
+            if (c.type === 'client') return count + 1;
+            if (c.type === 'client-group') return count + c.clientIds.length;
+            return count;
+          }, 0),
+          duration: currentTemplate.duration?.label || 'N/A',
+        },
+      });
     }
 
-    // Reset builder
-    setTemplateName('');
-    setTemplateDescription('');
-    setBuilderTemplate(undefined);
-    setSelectedCategory('life-skills');
+    // Update scheduled encounters that use this template
+    state.scheduledEncounters
+      .filter((e) => e.templateId === templateId)
+      .forEach((encounter) => {
+        updateScheduledEncounter(encounter.id, {
+          // Update encounter with new template data
+          // The encounter will reflect the updated template
+        });
+      });
 
-    alert('Template saved and added to pool!');
+    if (onSave) {
+      onSave();
+    }
   };
 
   const DropZone = ({ 
@@ -333,9 +324,9 @@ export function TemplateBuilder({ className, onClientGroupAdded }: TemplateBuild
   return (
     <div className={cn("p-4 space-y-4 overflow-y-auto", className)}>
       <div>
-        <h3 className="text-lg font-semibold mb-2">Build Encounter Template</h3>
+        <h3 className="text-lg font-semibold mb-2">Edit Encounter Template</h3>
         <p className="text-sm text-muted-foreground">
-          Drag atoms from the sidebar into the drop zones below to build your template.
+          Swap items from the library to update this template.
         </p>
       </div>
 
@@ -360,15 +351,9 @@ export function TemplateBuilder({ className, onClientGroupAdded }: TemplateBuild
           />
         </div>
         <div>
-          <Label htmlFor="template-category">Category</Label>
-          <Select
-            value={selectedCategory}
-            onValueChange={(value) => {
-              setSelectedCategory(value as TemplateCategory);
-              setBuilderTemplate({ ...currentTemplate, category: value as TemplateCategory });
-            }}
-          >
-            <SelectTrigger id="template-category">
+          <Label htmlFor="category">Category</Label>
+          <Select value={selectedCategory} onValueChange={(value: TemplateCategory) => setSelectedCategory(value)}>
+            <SelectTrigger id="category">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -383,68 +368,67 @@ export function TemplateBuilder({ className, onClientGroupAdded }: TemplateBuild
       </div>
 
       {/* Drop Zones */}
-      <div className="space-y-3">
-        <DropZone
-          id="staff"
-          label="Staff"
-          icon={User}
-          items={currentTemplate.staff || []}
-          onRemove={(index) => handleRemoveAtom('staff', index)}
-          accepts={['staff']}
-        />
+      <Card>
+        <CardContent className="p-4 space-y-4">
+          <DropZone
+            id="staff"
+            label="Drop Staff Here"
+            icon={User}
+            items={currentTemplate.staff || []}
+            onRemove={(index) => handleRemoveAtom('staff', index)}
+            accepts={['staff']}
+          />
 
-        <DropZone
-          id="activity"
-          label="Activity"
-          icon={Activity}
-          items={currentTemplate.activity ? [currentTemplate.activity] : []}
-          onRemove={() => handleRemoveAtom('activity')}
-          accepts={['activity']}
-        />
+          <DropZone
+            id="activity"
+            label="Drop Activity Here"
+            icon={Activity}
+            items={currentTemplate.activity ? [currentTemplate.activity] : []}
+            onRemove={() => handleRemoveAtom('activity')}
+            accepts={['activity']}
+          />
 
-        <DropZone
-          id="clients"
-          label="Clients / Client Groups"
-          icon={Users}
-          items={currentTemplate.clients || []}
-          onRemove={(_, id) => handleRemoveAtom('clients', undefined, id)}
-          accepts={['client', 'client-group']}
-        />
+          <DropZone
+            id="clients"
+            label="Drop Clients/Client Groups Here"
+            icon={Users}
+            items={currentTemplate.clients || []}
+            onRemove={(_, id) => handleRemoveAtom('clients', undefined, id)}
+            accepts={['client', 'client-group']}
+          />
 
-        <DropZone
-          id="location"
-          label="Location (optional)"
-          icon={MapPin}
-          items={currentTemplate.location ? [currentTemplate.location] : []}
-          onRemove={() => handleRemoveAtom('location')}
-          accepts={['location']}
-        />
+          <DropZone
+            id="location"
+            label="Drop Location Here"
+            icon={MapPin}
+            items={currentTemplate.location ? [currentTemplate.location] : []}
+            onRemove={() => handleRemoveAtom('location')}
+            accepts={['location']}
+          />
 
-        <DropZone
-          id="duration"
-          label="Duration"
-          icon={Clock}
-          items={currentTemplate.duration ? [currentTemplate.duration] : []}
-          onRemove={() => handleRemoveAtom('duration')}
-          accepts={['duration']}
-        />
+          <DropZone
+            id="duration"
+            label="Drop Duration Here"
+            icon={Clock}
+            items={currentTemplate.duration ? [currentTemplate.duration] : []}
+            onRemove={() => handleRemoveAtom('duration')}
+            accepts={['duration']}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Action Buttons */}
+      <div className="flex gap-2">
+        <Button onClick={handleSaveTemplate} className="flex-1">
+          <Save className="w-4 h-4 mr-2" />
+          Save Template
+        </Button>
+        {onCancel && (
+          <Button variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+        )}
       </div>
-
-      {/* Save Button */}
-      <Button
-        onClick={handleSaveTemplate}
-        className="w-full"
-        disabled={
-          !templateName.trim() ||
-          !currentTemplate.activity ||
-          !currentTemplate.duration ||
-          (currentTemplate.staff?.length || 0) === 0 ||
-          (currentTemplate.clients?.length || 0) === 0
-        }
-      >
-        <Save className="w-4 h-4 mr-2" />
-        Save Template & Add to Pool
-      </Button>
     </div>
   );
 }

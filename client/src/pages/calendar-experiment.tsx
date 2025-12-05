@@ -7,13 +7,18 @@
  * - Template library with drag-and-drop
  */
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Calendar, ChevronLeft, ChevronRight, CalendarDays, LayoutGrid } from "lucide-react";
 import { format, addWeeks, subWeeks, addDays, subDays, addMonths, subMonths } from "date-fns";
-import { BentoBoxSidebar } from "../components/bentobox-calendar/BentoBoxSidebar";
 import { BentoBoxGanttView } from "../components/bentobox-calendar/BentoBoxGanttView";
+import { PoolSection } from "../components/bentobox-calendar/PoolSection";
+import { LibrarySection } from "../components/bentobox-calendar/LibrarySection";
+import { TemplateBuilder } from "../components/bentobox-calendar/TemplateBuilder";
+import { TemplateEditor } from "../components/bentobox-calendar/TemplateEditor";
+import { ClientGroupBuilder } from "../components/bentobox-calendar/ClientGroupBuilder";
 import { useBentoBoxStore } from "../components/bentobox-calendar/store";
 import { Button } from "../components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
 import { cn } from "../lib/utils";
 
 export default function CalendarExperiment() {
@@ -23,7 +28,26 @@ export default function CalendarExperiment() {
     setCurrentDate,
     setCurrentView,
     scheduledEncounters,
+    activeTab,
+    setActiveTab,
+    editingTemplateId,
+    setEditingTemplateId,
   } = useBentoBoxStore();
+
+  const handleEditTemplate = (templateId: string) => {
+    setEditingTemplateId(templateId);
+    setActiveTab('builder');
+  };
+
+  const handleSaveTemplate = () => {
+    setEditingTemplateId(null);
+    setActiveTab('stage');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTemplateId(null);
+    setActiveTab('stage');
+  };
 
   const handlePrevious = () => {
     switch (currentView) {
@@ -164,15 +188,86 @@ export default function CalendarExperiment() {
 
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden min-h-0">
-        {/* Sidebar - Responsive width */}
-        <div className="flex-shrink-0 h-full overflow-hidden">
-          <BentoBoxSidebar />
-        </div>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "stage" | "builder")} className="flex flex-1 flex-col overflow-hidden">
+          <div className="px-4 pt-2 border-b">
+            <TabsList className="w-full max-w-md md:max-w-lg">
+              <TabsTrigger value="stage" className="flex-1">
+                Tab 1: Stage & Calendar
+              </TabsTrigger>
+              <TabsTrigger value="builder" className="flex-1">
+                Tab 2: Library & Builder
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-        {/* Calendar View - Takes remaining space */}
-        <div className="flex-1 overflow-hidden min-w-0 min-h-0">
-          <BentoBoxGanttView currentDate={currentDate} />
-        </div>
+          {/* Tab 1: Stage & Calendar */}
+          <TabsContent value="stage" className="flex-1 overflow-hidden m-0 mt-0">
+            <div className="flex h-full overflow-hidden">
+              {/* Pool Section */}
+              <div className="w-full sm:w-80 md:w-96 lg:w-[400px] border-r flex-shrink-0 overflow-hidden">
+                <PoolSection onEdit={handleEditTemplate} />
+              </div>
+
+              {/* Calendar View */}
+              <div className="flex-1 overflow-hidden min-w-0 min-h-0">
+                <BentoBoxGanttView 
+                  currentDate={currentDate} 
+                  onEdit={handleEditTemplate}
+                />
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Tab 2: Library, Template Builder & Template Editor */}
+          <TabsContent value="builder" className="flex-1 overflow-hidden m-0 mt-0">
+            <div className="flex h-full overflow-hidden">
+              {/* Library Section */}
+              <div className="w-full sm:w-64 md:w-80 lg:w-96 border-r flex-shrink-0 overflow-hidden">
+                <LibrarySection />
+              </div>
+
+              {/* Builder or Editor */}
+              <div className="flex-1 overflow-hidden min-w-0">
+                {editingTemplateId ? (
+                  <TemplateEditor
+                    templateId={editingTemplateId}
+                    onSave={handleSaveTemplate}
+                    onCancel={handleCancelEdit}
+                  />
+                ) : (
+                  <>
+                    <div className="flex-1 overflow-y-auto">
+                      <TemplateBuilder />
+                    </div>
+                    <div className="flex-shrink-0 border-t bg-background">
+                      <ClientGroupBuilder 
+                        onAddToTemplate={(group) => {
+                          // Get template builder instance and add group
+                          const state = useBentoBoxStore.getState();
+                          const currentTemplate = state.builderTemplate || {
+                            staff: [],
+                            activity: undefined,
+                            clients: [],
+                            location: undefined,
+                            duration: undefined,
+                            category: 'life-skills',
+                          };
+                          
+                          // Add group to template
+                          const updated = {
+                            ...currentTemplate,
+                            clients: [...(currentTemplate.clients || []), group],
+                          };
+                          state.setBuilderTemplate(updated);
+                        }}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

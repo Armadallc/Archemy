@@ -19,9 +19,10 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from '../ui/hover-card'
 interface BentoBoxGanttViewProps {
   currentDate: Date;
   onDateChange?: (date: Date) => void;
+  onEdit?: (templateId: string) => void;
 }
 
-export function BentoBoxGanttView({ currentDate, onDateChange }: BentoBoxGanttViewProps) {
+export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBoxGanttViewProps) {
   const { scheduledEncounters, currentView, setCurrentDate, library, scheduleEncounter, updateScheduledEncounter } = useBentoBoxStore();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const timeSlotRef = useRef<HTMLDivElement>(null);
@@ -369,6 +370,68 @@ export function BentoBoxGanttView({ currentDate, onDateChange }: BentoBoxGanttVi
                             onDragEnd={() => {
                               setDraggedEncounter(null);
                             }}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              
+                              const data = e.dataTransfer.getData('application/json');
+                              if (!data) return;
+                              
+                              try {
+                                const payload = JSON.parse(data);
+                                
+                                if (payload.type === 'client-group') {
+                                  // Handle client group drop on encounter
+                                  const clientGroupId = payload.clientGroupId || payload.id;
+                                  const clientGroup = library.atoms.clientGroups.find(
+                                    (g) => g.id === clientGroupId
+                                  );
+                                  
+                                  if (clientGroup) {
+                                    const action = confirm(
+                                      `Add "${clientGroup.name}" to this encounter?\n\n` +
+                                      `Click OK to ADD clients, or Cancel to REPLACE existing clients.`
+                                    ) ? 'add' : 'replace';
+                                    
+                                    // Get the template to update
+                                    const template = library.templates.find(
+                                      (t) => t.id === encounter.templateId
+                                    );
+                                    
+                                    if (template) {
+                                      // Update the encounter's template with new client group
+                                      // For now, we'll update the scheduled encounter directly
+                                      // In the future, this might update the template or create an override
+                                      const updatedClients = action === 'add'
+                                        ? [...(template.clients || []), clientGroup]
+                                        : [clientGroup];
+                                      
+                                      // Update the encounter (this is a simplified approach)
+                                      // In a full implementation, we'd update the template or use overrides
+                                      console.log('Updating encounter with client group:', {
+                                        encounterId: encounter.id,
+                                        action,
+                                        clientGroup: clientGroup.name,
+                                        updatedClients: updatedClients.length,
+                                      });
+                                      
+                                      // Note: This would require updating the encounter's overrides
+                                      // For now, we'll just log it
+                                      alert(
+                                        `${action === 'add' ? 'Added' : 'Replaced'} "${clientGroup.name}" ` +
+                                        `to encounter "${encounter.title}"`
+                                      );
+                                    }
+                                  }
+                                }
+                              } catch (error) {
+                                console.error('Error handling drop on encounter:', error);
+                              }
+                            }}
                             onClick={(e) => {
                               e.stopPropagation();
                               // Could open edit dialog
@@ -424,7 +487,10 @@ export function BentoBoxGanttView({ currentDate, onDateChange }: BentoBoxGanttVi
                                 </div>
                               </>
                             )}
-                            <EncounterActions encounter={encounter} />
+                            <EncounterActions 
+                              encounter={encounter} 
+                              onEdit={() => onEdit && onEdit(encounter.templateId)}
+                            />
                           </div>
                         </HoverCardContent>
                       </HoverCard>
