@@ -129,14 +129,14 @@ export function BentoBoxGanttView({ currentDate, onDateChange }: BentoBoxGanttVi
     
     // Calculate position and height in pixels
     const top = startMinutesFrom6AM * pixelsPerMinute;
-    const height = (endMinutesFrom6AM - startMinutesFrom6AM) * pixelsPerMinute;
+    const calculatedHeight = (endMinutesFrom6AM - startMinutesFrom6AM) * pixelsPerMinute;
     
-    // Ensure minimum height for visibility
-    const minHeight = Math.max(height, 24);
+    // Subtract 1px to account for the border, preventing visual overlap with next time slot
+    const height = Math.max(calculatedHeight - 1, 24);
     
     return { 
       top: `${top}px`, 
-      height: `${minHeight}px`,
+      height: `${height}px`,
     };
   };
 
@@ -189,17 +189,6 @@ export function BentoBoxGanttView({ currentDate, onDateChange }: BentoBoxGanttVi
         
         // Add duration to end time
         endTime.setMinutes(endTime.getMinutes() + durationMinutes);
-        
-        // Debug log to verify duration (can be removed after fixing)
-        console.log('Scheduling encounter:', {
-          templateId: payload.templateId,
-          templateName: template.name,
-          duration: template.duration,
-          durationMinutes,
-          startTime: startTime.toISOString(),
-          endTime: endTime.toISOString(),
-          calculatedDuration: (endTime.getTime() - startTime.getTime()) / (1000 * 60),
-        });
 
         // Schedule the encounter
         scheduleEncounter(payload.templateId, startTime, endTime);
