@@ -24,9 +24,10 @@ import {
 
 interface TemplateBuilderProps {
   className?: string;
+  onClientGroupAdded?: (clientGroup: any) => void;
 }
 
-export function TemplateBuilder({ className }: TemplateBuilderProps) {
+export function TemplateBuilder({ className, onClientGroupAdded }: TemplateBuilderProps) {
   const {
     library,
     builderTemplate,
@@ -38,7 +39,7 @@ export function TemplateBuilder({ className }: TemplateBuilderProps) {
   const [templateName, setTemplateName] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<TemplateCategory>('life-skills');
-
+  
   // Initialize builder template if empty
   const currentTemplate = builderTemplate || {
     staff: [],
@@ -48,6 +49,41 @@ export function TemplateBuilder({ className }: TemplateBuilderProps) {
     duration: undefined,
     category: selectedCategory,
   };
+  
+  // Expose handler for ClientGroupBuilder to add groups to template
+  const handleClientGroupAdded = React.useCallback((clientGroup: any) => {
+    // Auto-generate name if blank
+    let groupName = clientGroup.name;
+    if (!groupName.trim() && templateName.trim()) {
+      // Generate name from template name
+      groupName = `${templateName.trim()} Client Group`;
+    } else if (!groupName.trim()) {
+      // Will be auto-named when template is saved
+      groupName = ''; // Keep blank for now
+    }
+
+    // Update the client group name if needed
+    const namedGroup = {
+      ...clientGroup,
+      name: groupName || clientGroup.name, // Use provided name or keep original
+    };
+
+    // Get current template from store
+    const state = useBentoBoxStore.getState();
+    const current = state.builderTemplate || {
+      staff: [],
+      activity: undefined,
+      clients: [],
+      location: undefined,
+      duration: undefined,
+      category: selectedCategory,
+    };
+
+    // Add to builder template
+    const updated = { ...current };
+    updated.clients = [...(updated.clients || []), namedGroup];
+    setBuilderTemplate(updated);
+  }, [templateName, selectedCategory, setBuilderTemplate]);
 
   const handleAtomDrop = (atom: Atom, dropZone: string) => {
     const updated = { ...currentTemplate };
@@ -139,19 +175,46 @@ export function TemplateBuilder({ className }: TemplateBuilderProps) {
       return;
     }
 
+    // Process client groups - auto-name any that don't have names
+    const processedClients = currentTemplate.clients.map((c) => {
+      if (c.type === 'client-group' && !c.name.trim()) {
+        // Auto-generate name from template name
+        const baseName = templateName.trim();
+        // Extract letter/number suffix if present (e.g., "Life Skills A" -> "A")
+        const match = baseName.match(/\s+([A-Z0-9]+)$/);
+        const suffix = match ? match[1] : '';
+        const groupName = suffix 
+          ? `${baseName.replace(/\s+[A-Z0-9]+$/, '')} Client Group ${suffix}`
+          : `${baseName} Client Group`;
+        
+        // Update the group in library
+        const state = useBentoBoxStore.getState();
+        const existingGroup = state.library.atoms.clientGroups.find(g => g.id === c.id);
+        if (existingGroup) {
+          state.updateAtom(c.id, { name: groupName }, 'client-group');
+        }
+        
+        return {
+          ...c,
+          name: groupName,
+        };
+      }
+      return c;
+    });
+
     const newTemplate: Omit<EncounterTemplate, 'id' | 'createdAt' | 'updatedAt' | 'version'> = {
       name: templateName,
       description: templateDescription || undefined,
       staff: currentTemplate.staff || [],
       activity: currentTemplate.activity,
-      clients: currentTemplate.clients || [],
+      clients: processedClients,
       location: currentTemplate.location,
       duration: currentTemplate.duration,
       category: selectedCategory,
       rules: {
         clientCapacity: {
           min: 1,
-          max: currentTemplate.clients?.reduce((count, c) => {
+          max: processedClients.reduce((count, c) => {
             if (c.type === 'client') return count + 1;
             if (c.type === 'client-group') return count + c.clientIds.length;
             return count;
@@ -268,9 +331,9 @@ export function TemplateBuilder({ className }: TemplateBuilderProps) {
   };
 
   return (
-    <div className={cn("p-4 md:p-6 space-y-4 md:space-y-6 overflow-y-auto", className)}>
+    <div className={cn("p-4 space-y-4 overflow-y-auto", className)}>
       <div>
-        <h3 className="text-lg md:text-xl font-semibold mb-2">Build Encounter Template</h3>
+        <h3 className="text-lg font-semibold mb-2">Build Encounter Template</h3>
         <p className="text-sm text-muted-foreground">
           Drag atoms from the sidebar into the drop zones below to build your template.
         </p>

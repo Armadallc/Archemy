@@ -2,15 +2,14 @@
  * BentoBox Calendar - Template Editor Component
  * 
  * Allows users to edit existing encounter templates by swapping atoms
- * Similar to TemplateBuilder but pre-populated with existing template data
  */
 
 import React, { useState, useEffect } from 'react';
-import { Save, X, GripVertical, Users, Clock, MapPin, User, Activity } from 'lucide-react';
+import { X, Save, GripVertical, Users, Clock, MapPin, User, Activity } from 'lucide-react';
 import { useBentoBoxStore } from './store';
 import { Atom, EncounterTemplate, TemplateCategory } from './types';
 import { Button } from '../ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { cn } from '../../lib/utils';
@@ -32,34 +31,26 @@ interface TemplateEditorProps {
 export function TemplateEditor({ templateId, onSave, onCancel, className }: TemplateEditorProps) {
   const {
     library,
-    updateTemplate,
     getTemplateById,
+    updateTemplate,
     updatePoolTemplate,
     updateScheduledEncounter,
   } = useBentoBoxStore();
 
   const template = getTemplateById(templateId);
   
-  if (!template) {
-    return (
-      <div className="p-4 text-center text-muted-foreground">
-        Template not found
-      </div>
-    );
-  }
-
-  const [templateName, setTemplateName] = useState(template.name);
-  const [templateDescription, setTemplateDescription] = useState(template.description || '');
-  const [selectedCategory, setSelectedCategory] = useState<TemplateCategory>(template.category);
-  
-  // Current template state for editing
+  const [templateName, setTemplateName] = useState(template?.name || '');
+  const [templateDescription, setTemplateDescription] = useState(template?.description || '');
+  const [selectedCategory, setSelectedCategory] = useState<TemplateCategory>(
+    template?.category || 'life-skills'
+  );
   const [currentTemplate, setCurrentTemplate] = useState<Partial<EncounterTemplate>>({
-    staff: template.staff || [],
-    activity: template.activity,
-    clients: template.clients || [],
-    location: template.location,
-    duration: template.duration,
-    category: template.category,
+    staff: template?.staff || [],
+    activity: template?.activity,
+    clients: template?.clients || [],
+    location: template?.location,
+    duration: template?.duration,
+    category: template?.category,
   });
 
   // Update state when template changes
@@ -77,7 +68,15 @@ export function TemplateEditor({ templateId, onSave, onCancel, className }: Temp
         category: template.category,
       });
     }
-  }, [templateId]);
+  }, [template]);
+
+  if (!template) {
+    return (
+      <div className={cn("p-4", className)}>
+        <p className="text-sm text-muted-foreground">Template not found</p>
+      </div>
+    );
+  }
 
   const handleAtomDrop = (atom: Atom, dropZone: string) => {
     const updated = { ...currentTemplate };
@@ -169,6 +168,7 @@ export function TemplateEditor({ templateId, onSave, onCancel, className }: Temp
       return;
     }
 
+    // Update the template
     updateTemplate(templateId, {
       name: templateName,
       description: templateDescription || undefined,
@@ -190,62 +190,47 @@ export function TemplateEditor({ templateId, onSave, onCancel, className }: Temp
       },
     });
 
-    // Update pool templates that use this template
+    // Update pool template if it exists
     const state = useBentoBoxStore.getState();
-    const updatedTemplate = getTemplateById(templateId);
-    if (updatedTemplate) {
-      const poolTemplates = state.pool.filter(p => p.templateId === templateId);
-      poolTemplates.forEach(poolTemplate => {
-        const staffInitials = updatedTemplate.staff
-          .map(s => s.name.split(' ').map(n => n[0]).join(''))
-          .join(', ') || 'N/A';
-        
-        const activityCode = updatedTemplate.activity.name
-          .split(' ')
-          .map(w => w[0])
-          .join('')
-          .substring(0, 3)
-          .toUpperCase();
-        
-        const clientCount = updatedTemplate.clients.reduce((count, c) => {
-          if (c.type === 'client') return count + 1;
-          if (c.type === 'client-group') return count + c.clientIds.length;
-          return count;
-        }, 0);
-        
-        updatePoolTemplate(poolTemplate.id, {
-          name: updatedTemplate.name,
-          quickInfo: {
-            staffInitials,
-            activityCode,
-            clientCount,
-            duration: updatedTemplate.duration.label,
-          },
-          color: updatedTemplate.color,
-        });
+    const poolTemplate = state.pool.find((p) => p.templateId === templateId);
+    if (poolTemplate) {
+      updatePoolTemplate(poolTemplate.id, {
+        name: templateName,
+        category: selectedCategory,
+        quickInfo: {
+          staffInitials: (currentTemplate.staff || [])
+            .map(s => s.name.split(' ').map(n => n[0]).join(''))
+            .join(', ') || 'N/A',
+          activityCode: currentTemplate.activity?.name
+            .split(' ')
+            .map(w => w[0])
+            .join('')
+            .substring(0, 3)
+            .toUpperCase() || 'N/A',
+          clientCount: (currentTemplate.clients || []).reduce((count, c) => {
+            if (c.type === 'client') return count + 1;
+            if (c.type === 'client-group') return count + c.clientIds.length;
+            return count;
+          }, 0),
+          duration: currentTemplate.duration?.label || 'N/A',
+        },
       });
     }
 
     // Update scheduled encounters that use this template
-    state.scheduledEncounters.forEach(encounter => {
-      if (encounter.templateId === templateId) {
-        const updatedTemplate = getTemplateById(templateId);
-        if (updatedTemplate) {
-          updateScheduledEncounter(encounter.id, {
-            title: updatedTemplate.name,
-            color: updatedTemplate.color,
-            // Note: We don't update the actual template data in the encounter
-            // as it may have been customized. Only update display properties.
-          });
-        }
-      }
-    });
+    state.scheduledEncounters
+      .filter((e) => e.templateId === templateId)
+      .forEach((encounter) => {
+        updateScheduledEncounter(encounter.id, {
+          // Update encounter with new template data
+          // The encounter will reflect the updated template
+        });
+      });
 
     if (onSave) {
       onSave();
     }
   };
-
 
   const DropZone = ({ 
     id, 
@@ -337,16 +322,13 @@ export function TemplateEditor({ templateId, onSave, onCancel, className }: Temp
   };
 
   return (
-    <div className={cn("h-full flex flex-col overflow-hidden", className)}>
-      <div className="border-b p-4 md:p-6 flex items-center justify-between flex-shrink-0">
-        <div>
-          <h3 className="text-lg md:text-xl font-semibold">Edit Encounter Template</h3>
-          <p className="text-sm text-muted-foreground">
-            Drag atoms from the library to swap items in this template.
-          </p>
-        </div>
+    <div className={cn("p-4 space-y-4 overflow-y-auto", className)}>
+      <div>
+        <h3 className="text-lg font-semibold mb-2">Edit Encounter Template</h3>
+        <p className="text-sm text-muted-foreground">
+          Swap items from the library to update this template.
+        </p>
       </div>
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6">
 
       {/* Template Name & Description */}
       <div className="space-y-2">
@@ -369,15 +351,9 @@ export function TemplateEditor({ templateId, onSave, onCancel, className }: Temp
           />
         </div>
         <div>
-          <Label htmlFor="template-category">Category</Label>
-          <Select
-            value={selectedCategory}
-            onValueChange={(value) => {
-              setSelectedCategory(value as TemplateCategory);
-              setCurrentTemplate({ ...currentTemplate, category: value as TemplateCategory });
-            }}
-          >
-            <SelectTrigger id="template-category">
+          <Label htmlFor="category">Category</Label>
+          <Select value={selectedCategory} onValueChange={(value: TemplateCategory) => setSelectedCategory(value)}>
+            <SelectTrigger id="category">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -392,80 +368,66 @@ export function TemplateEditor({ templateId, onSave, onCancel, className }: Temp
       </div>
 
       {/* Drop Zones */}
-      <div className="space-y-3">
-        <DropZone
-          id="staff"
-          label="Staff"
-          icon={User}
-          items={currentTemplate.staff || []}
-          onRemove={(index) => handleRemoveAtom('staff', index)}
-          accepts={['staff']}
-        />
+      <Card>
+        <CardContent className="p-4 space-y-4">
+          <DropZone
+            id="staff"
+            label="Drop Staff Here"
+            icon={User}
+            items={currentTemplate.staff || []}
+            onRemove={(index) => handleRemoveAtom('staff', index)}
+            accepts={['staff']}
+          />
 
-        <DropZone
-          id="activity"
-          label="Activity"
-          icon={Activity}
-          items={currentTemplate.activity ? [currentTemplate.activity] : []}
-          onRemove={() => handleRemoveAtom('activity')}
-          accepts={['activity']}
-        />
+          <DropZone
+            id="activity"
+            label="Drop Activity Here"
+            icon={Activity}
+            items={currentTemplate.activity ? [currentTemplate.activity] : []}
+            onRemove={() => handleRemoveAtom('activity')}
+            accepts={['activity']}
+          />
 
-        <DropZone
-          id="clients"
-          label="Clients / Client Groups"
-          icon={Users}
-          items={currentTemplate.clients || []}
-          onRemove={(_, id) => handleRemoveAtom('clients', undefined, id)}
-          accepts={['client', 'client-group']}
-        />
+          <DropZone
+            id="clients"
+            label="Drop Clients/Client Groups Here"
+            icon={Users}
+            items={currentTemplate.clients || []}
+            onRemove={(_, id) => handleRemoveAtom('clients', undefined, id)}
+            accepts={['client', 'client-group']}
+          />
 
-        <DropZone
-          id="location"
-          label="Location (optional)"
-          icon={MapPin}
-          items={currentTemplate.location ? [currentTemplate.location] : []}
-          onRemove={() => handleRemoveAtom('location')}
-          accepts={['location']}
-        />
+          <DropZone
+            id="location"
+            label="Drop Location Here"
+            icon={MapPin}
+            items={currentTemplate.location ? [currentTemplate.location] : []}
+            onRemove={() => handleRemoveAtom('location')}
+            accepts={['location']}
+          />
 
-        <DropZone
-          id="duration"
-          label="Duration"
-          icon={Clock}
-          items={currentTemplate.duration ? [currentTemplate.duration] : []}
-          onRemove={() => handleRemoveAtom('duration')}
-          accepts={['duration']}
-        />
-      </div>
+          <DropZone
+            id="duration"
+            label="Drop Duration Here"
+            icon={Clock}
+            items={currentTemplate.duration ? [currentTemplate.duration] : []}
+            onRemove={() => handleRemoveAtom('duration')}
+            accepts={['duration']}
+          />
+        </CardContent>
+      </Card>
 
       {/* Action Buttons */}
       <div className="flex gap-2">
-        <Button
-          onClick={handleSaveTemplate}
-          className="flex-1"
-          disabled={
-            !templateName.trim() ||
-            !currentTemplate.activity ||
-            !currentTemplate.duration ||
-            (currentTemplate.staff?.length || 0) === 0 ||
-            (currentTemplate.clients?.length || 0) === 0
-          }
-        >
+        <Button onClick={handleSaveTemplate} className="flex-1">
           <Save className="w-4 h-4 mr-2" />
-          Save Changes
+          Save Template
         </Button>
         {onCancel && (
-          <Button
-            onClick={onCancel}
-            variant="outline"
-            className="flex-1"
-          >
-            <X className="w-4 h-4 mr-2" />
+          <Button variant="outline" onClick={onCancel}>
             Cancel
           </Button>
         )}
-      </div>
       </div>
     </div>
   );

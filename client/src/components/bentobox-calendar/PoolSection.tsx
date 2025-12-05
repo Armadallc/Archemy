@@ -5,40 +5,35 @@
  */
 
 import React, { useState } from 'react';
-import { Droplets, Edit, Trash2, ChevronDown, ChevronUp, GripVertical } from 'lucide-react';
+import { GripVertical, Edit, Trash2 } from 'lucide-react';
 import { useBentoBoxStore } from './store';
 import { PoolTemplate } from './types';
 import { Button } from '../ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '../ui/hover-card';
 import { cn } from '../../lib/utils';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '../ui/alert-dialog';
 
 interface PoolSectionProps {
-  className?: string;
   onEdit?: (templateId: string) => void;
+  className?: string;
 }
 
-export function PoolSection({ className, onEdit }: PoolSectionProps) {
-  const {
-    pool,
-    removeFromPool,
-    deleteTemplate,
-    getTemplateById,
-  } = useBentoBoxStore();
+export function PoolSection({ onEdit, className }: PoolSectionProps) {
+  const { pool, removeFromPool, library } = useBentoBoxStore();
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [hoverPosition, setHoverPosition] = useState<{ [key: string]: 'above' | 'right' }>({});
+  const [isDragging, setIsDragging] = useState(false);
 
-  const [expanded, setExpanded] = useState(true);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [templateToDelete, setTemplateToDelete] = useState<PoolTemplate | null>(null);
+  const handleDelete = (poolTemplate: PoolTemplate) => {
+    if (confirm(`Delete template "${poolTemplate.name}" from pool?`)) {
+      removeFromPool(poolTemplate.id);
+    }
+  };
+
+  const handleEdit = (templateId: string) => {
+    if (onEdit) {
+      onEdit(templateId);
+    }
+  };
 
   const getColorClasses = (color: string) => {
     const colorMap: Record<string, string> = {
@@ -51,162 +46,272 @@ export function PoolSection({ className, onEdit }: PoolSectionProps) {
     return colorMap[color] || colorMap.silver;
   };
 
-  const handleDelete = () => {
-    if (!templateToDelete) return;
-    
-    // Remove from pool
-    removeFromPool(templateToDelete.id);
-    
-    // Optionally delete the template itself (user might want to keep it in library)
-    // deleteTemplate(templateToDelete.templateId);
-    
-    setDeleteDialogOpen(false);
-    setTemplateToDelete(null);
+  const handleDragStart = (e: React.DragEvent, poolTemplate: PoolTemplate) => {
+    e.stopPropagation(); // Prevent event bubbling
+    setIsDragging(true);
+    setHoveredId(null); // Hide all hover cards when dragging starts
+    e.dataTransfer.setData('application/json', JSON.stringify({
+      type: 'pool-template',
+      templateId: poolTemplate.templateId,
+    }));
+    e.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleEdit = (templateId: string) => {
-    if (onEdit) {
-      onEdit(templateId);
-    }
+  const handleDragEnd = () => {
+    setIsDragging(false);
   };
+
 
   return (
-    <>
-      <div className={cn("border-b flex-shrink-0", className)}>
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <Droplets className="w-4 h-4" />
-            <span className="font-medium">Pool</span>
-            {pool.length > 0 && (
-              <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
-                {pool.length}
-              </span>
-            )}
-          </div>
-          {expanded ? (
-            <ChevronUp className="w-4 h-4" />
-          ) : (
-            <ChevronDown className="w-4 h-4" />
-          )}
-        </button>
-        
-        {expanded && (
-          <div className="px-4 pb-4 space-y-2 flex-1 overflow-y-auto min-h-0">
-            {pool.length === 0 ? (
-              <div className="text-sm text-muted-foreground text-center py-8">
-                <Droplets className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p>No templates in pool</p>
-                <p className="text-xs mt-1">Build templates to add them here</p>
-              </div>
-            ) : (
-              pool.map((poolTemplate) => {
-                const template = getTemplateById(poolTemplate.templateId);
+    <div className={cn("flex flex-col h-full overflow-hidden", className)}>
+      <div className="p-4 border-b">
+        <h3 className="font-semibold text-sm">Stage (Pool)</h3>
+        <p className="text-xs text-muted-foreground mt-1">
+          Drag templates to calendar to schedule
+        </p>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        {/* Encounter Templates */}
+        <div className="mb-4">
+          <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase">
+            Encounter Templates
+          </h4>
+          <div className="space-y-2">
+            {pool
+              .filter((p) => {
+                const template = library.templates.find((t) => t.id === p.templateId);
+                return template; // Only show if template exists (not client groups)
+              })
+              .map((poolTemplate) => {
+                const template = library.templates.find((t) => t.id === poolTemplate.templateId);
+                if (!template) return null;
+
                 return (
-                  <HoverCard key={poolTemplate.id} openDelay={200}>
+                  <HoverCard key={poolTemplate.id} open={hoveredId === poolTemplate.id}>
                     <HoverCardTrigger asChild>
-                      <Card
-                        className={cn(
-                          "cursor-move hover:shadow-md transition-shadow",
-                          getColorClasses(poolTemplate.color)
-                        )}
+                      <div
                         draggable
                         onDragStart={(e) => {
+                          e.stopPropagation();
+                          handleDragStart(e, poolTemplate);
+                        }}
+                        onDragEnd={handleDragEnd}
+                        onMouseEnter={(e) => {
+                          if (!isDragging) {
+                            setHoveredId(poolTemplate.id);
+                            // Check if there's enough space above
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const spaceAbove = rect.top;
+                            const spaceBelow = window.innerHeight - rect.bottom;
+                            // If less than 200px above, show to the right
+                            if (spaceAbove < 200) {
+                              setHoverPosition(prev => ({ ...prev, [poolTemplate.id]: 'right' }));
+                            } else {
+                              setHoverPosition(prev => ({ ...prev, [poolTemplate.id]: 'above' }));
+                            }
+                          }
+                        }}
+                        onMouseLeave={() => {
+                          if (!isDragging) {
+                            setHoveredId(null);
+                          }
+                        }}
+                        className={cn(
+                          "group relative p-3 rounded-md border cursor-move transition-all",
+                          getColorClasses(poolTemplate.color),
+                          "hover:shadow-md"
+                        )}
+                      >
+                        <div className="flex items-start gap-2">
+                          <GripVertical className="w-4 h-4 mt-0.5 opacity-50" />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm">{poolTemplate.name}</div>
+                            <div className="text-xs opacity-70 mt-1">
+                              {poolTemplate.quickInfo.duration} • {poolTemplate.quickInfo.staffInitials}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Hover Card Content */}
+                        {hoveredId === poolTemplate.id && !isDragging && (
+                          <div 
+                            className={cn(
+                              "absolute p-2 border rounded-md shadow-lg z-50 w-64",
+                              "bg-popover text-popover-foreground pointer-events-auto",
+                              "!bg-popover !opacity-100",
+                              hoverPosition[poolTemplate.id] === 'right'
+                                ? "left-full top-0 ml-1"
+                                : "bottom-full left-0 right-0 mb-1"
+                            )}
+                            style={{ backgroundColor: 'var(--popover)', opacity: 1 }}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="space-y-2">
+                              <div className="text-xs space-y-1">
+                                <div><strong>Staff:</strong> {template.staff.map(s => s.name).join(', ')}</div>
+                                <div><strong>Activity:</strong> {template.activity.name}</div>
+                                <div><strong>Clients:</strong> {poolTemplate.quickInfo.clientCount}</div>
+                                <div><strong>Duration:</strong> {poolTemplate.quickInfo.duration}</div>
+                                {template.location && (
+                                  <div><strong>Location:</strong> {template.location.name}</div>
+                                )}
+                              </div>
+                              <div className="flex gap-2 pt-2 border-t">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="flex-1 h-7 text-xs"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEdit(poolTemplate.templateId);
+                                  }}
+                                >
+                                  <Edit className="w-3 h-3 mr-1" />
+                                  Edit
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  className="flex-1 h-7 text-xs"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDelete(poolTemplate);
+                                  }}
+                                >
+                                  <Trash2 className="w-3 h-3 mr-1" />
+                                  Delete
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </HoverCardTrigger>
+                  </HoverCard>
+                );
+              })}
+          </div>
+        </div>
+
+        {/* Client Groups */}
+        <div>
+          <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase">
+            Client Groups
+          </h4>
+          <div className="space-y-2">
+            {pool
+              .filter((p) => {
+                // Check if this is a client group (not a template)
+                const template = library.templates.find((t) => t.id === p.templateId);
+                const clientGroup = library.atoms.clientGroups.find((g) => g.id === p.templateId);
+                return !template && clientGroup; // Show if it's a client group, not a template
+              })
+              .map((poolTemplate) => {
+                const clientGroup = library.atoms.clientGroups.find((g) => g.id === poolTemplate.templateId);
+                if (!clientGroup) return null;
+
+                return (
+                  <HoverCard key={poolTemplate.id} open={hoveredId === poolTemplate.id}>
+                    <HoverCardTrigger asChild>
+                      <div
+                        draggable
+                        onDragStart={(e) => {
+                          e.stopPropagation();
+                          setIsDragging(true);
+                          setHoveredId(null); // Hide all hover cards when dragging starts
                           e.dataTransfer.setData('application/json', JSON.stringify({
-                            type: 'pool-template',
-                            poolId: poolTemplate.id,
-                            templateId: poolTemplate.templateId,
+                            type: 'client-group',
+                            clientGroupId: clientGroup.id,
                           }));
                           e.dataTransfer.effectAllowed = 'move';
                         }}
+                        onDragEnd={handleDragEnd}
+                        onMouseEnter={(e) => {
+                          if (!isDragging) {
+                            setHoveredId(poolTemplate.id);
+                            // Check if there's enough space above
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const spaceAbove = rect.top;
+                            // If less than 200px above, show to the right
+                            if (spaceAbove < 200) {
+                              setHoverPosition(prev => ({ ...prev, [poolTemplate.id]: 'right' }));
+                            } else {
+                              setHoverPosition(prev => ({ ...prev, [poolTemplate.id]: 'above' }));
+                            }
+                          }
+                        }}
+                        onMouseLeave={() => {
+                          if (!isDragging) {
+                            setHoveredId(null);
+                          }
+                        }}
+                        className={cn(
+                          "group relative p-3 rounded-md border cursor-move transition-all",
+                          getColorClasses(poolTemplate.color),
+                          "hover:shadow-md"
+                        )}
                       >
-                        <CardHeader className="pb-2">
-                          <div className="flex items-start justify-between">
-                            <CardTitle className="text-sm font-medium">{poolTemplate.name}</CardTitle>
+                        <div className="flex items-start gap-2">
+                          <GripVertical className="w-4 h-4 mt-0.5 opacity-50" />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm">{poolTemplate.name}</div>
+                            <div className="text-xs opacity-70 mt-1">
+                              {poolTemplate.quickInfo.clientCount} clients
+                            </div>
                           </div>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                          <div className="text-xs space-y-1 text-muted-foreground">
-                            <div>Staff: {poolTemplate.quickInfo.staffInitials}</div>
-                            <div>Activity: {poolTemplate.quickInfo.activityCode}</div>
-                            <div>Clients: {poolTemplate.quickInfo.clientCount}</div>
-                            <div>Duration: {poolTemplate.quickInfo.duration}</div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </HoverCardTrigger>
-                    <HoverCardContent className="w-80">
-                      <div className="space-y-3">
-                        <div>
-                          <h4 className="font-semibold text-sm mb-2">{poolTemplate.name}</h4>
-                          {template?.description && (
-                            <p className="text-xs text-muted-foreground mb-2">{template.description}</p>
-                          )}
-                          <div className="text-xs space-y-1">
-                            <div><strong>Staff:</strong> {template?.staff.map(s => s.name).join(', ') || 'N/A'}</div>
-                            <div><strong>Activity:</strong> {template?.activity.name || 'N/A'}</div>
-                            <div><strong>Clients:</strong> {template?.clients.map(c => c.name).join(', ') || 'N/A'}</div>
-                            {template?.location && (
-                              <div><strong>Location:</strong> {template.location.name}</div>
+                        </div>
+
+                        {/* Hover Card Content */}
+                        {hoveredId === poolTemplate.id && !isDragging && (
+                          <div 
+                            className={cn(
+                              "absolute p-2 border rounded-md shadow-lg z-50 w-64",
+                              "bg-popover text-popover-foreground pointer-events-auto",
+                              "!bg-popover !opacity-100",
+                              hoverPosition[poolTemplate.id] === 'right'
+                                ? "left-full top-0 ml-1"
+                                : "bottom-full left-0 right-0 mb-1"
                             )}
-                            <div><strong>Duration:</strong> {template?.duration.label || 'N/A'}</div>
+                            style={{ backgroundColor: 'var(--popover)', opacity: 1 }}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="space-y-2">
+                              <div className="text-xs space-y-1">
+                                <div><strong>Name:</strong> {clientGroup.name}</div>
+                                <div><strong>Clients:</strong> {poolTemplate.quickInfo.clientCount}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  Drag to calendar encounter to add/replace clients
+                                </div>
+                              </div>
+                              <div className="flex gap-2 pt-2 border-t">
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  className="flex-1 h-7 text-xs"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDelete(poolTemplate);
+                                  }}
+                                >
+                                  <Trash2 className="w-3 h-3 mr-1" />
+                                  Delete
+                                </Button>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex gap-2 pt-2 border-t">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEdit(poolTemplate.templateId)}
-                            className="flex-1"
-                          >
-                            <Edit className="w-3 h-3 mr-1" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setTemplateToDelete(poolTemplate);
-                              setDeleteDialogOpen(true);
-                            }}
-                            className="flex-1 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="w-3 h-3 mr-1" />
-                            Delete
-                          </Button>
-                        </div>
+                        )}
                       </div>
-                    </HoverCardContent>
+                    </HoverCardTrigger>
                   </HoverCard>
                 );
-              })
-            )}
+              })}
           </div>
-        )}
+        </div>
       </div>
-
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove from Pool</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to remove this template from the pool? The template will remain in your library.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Remove
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+    </div>
   );
 }
 

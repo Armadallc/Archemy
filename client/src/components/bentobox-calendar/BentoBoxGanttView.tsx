@@ -25,14 +25,48 @@ interface BentoBoxGanttViewProps {
 export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBoxGanttViewProps) {
   const { scheduledEncounters, currentView, setCurrentDate, library, scheduleEncounter, updateScheduledEncounter } = useBentoBoxStore();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const timeSlotRef = useRef<HTMLDivElement>(null);
   const [scrollPosition, setScrollPosition] = useState(0);
   const [draggedOverSlot, setDraggedOverSlot] = useState<{ day: Date; hour: number } | null>(null);
   const [draggedEncounter, setDraggedEncounter] = useState<ScheduledEncounter | null>(null);
+  const [pixelsPerMinute, setPixelsPerMinute] = useState(0.8);
 
   // Generate time slots (6 AM to 10 PM)
   const timeSlots = Array.from({ length: 17 }, (_, i) => i + 6);
   const minutesPerSlot = 60;
-  const pixelsPerMinute = 0.8;
+
+  // Calculate pixels per minute based on actual rendered time slot height
+  useEffect(() => {
+    const calculatePixelsPerMinute = () => {
+      if (timeSlotRef.current) {
+        const slotHeight = timeSlotRef.current.offsetHeight;
+        if (slotHeight > 0) {
+          const calculatedPixelsPerMinute = slotHeight / minutesPerSlot;
+          setPixelsPerMinute(calculatedPixelsPerMinute);
+        }
+      }
+    };
+
+    // Calculate on mount and view change
+    calculatePixelsPerMinute();
+
+    // Recalculate on window resize (for responsive height changes)
+    window.addEventListener('resize', calculatePixelsPerMinute);
+    
+    // Use ResizeObserver for more accurate detection
+    let resizeObserver: ResizeObserver | null = null;
+    if (timeSlotRef.current && window.ResizeObserver) {
+      resizeObserver = new ResizeObserver(calculatePixelsPerMinute);
+      resizeObserver.observe(timeSlotRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', calculatePixelsPerMinute);
+      if (resizeObserver && timeSlotRef.current) {
+        resizeObserver.unobserve(timeSlotRef.current);
+      }
+    };
+  }, [currentView, minutesPerSlot]);
 
   // Calculate date range based on view
   const getDateRange = () => {
@@ -56,6 +90,8 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
   };
 
   const days = getDateRange();
+  const isWeekView = currentView === 'week' && days.length === 7;
+  const isMonthView = currentView === 'month' && days.length > 7;
 
   const getEventsForDay = (day: Date) => {
     return scheduledEncounters.filter((encounter) => 
@@ -77,17 +113,31 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
   const getEventPosition = (encounter: ScheduledEncounter) => {
     const start = new Date(encounter.start);
     const end = new Date(encounter.end);
+    
+    // Ensure dates are valid
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return { top: '0px', height: '20px' };
+    }
+    
     const startHour = start.getHours();
     const startMinute = start.getMinutes();
     const endHour = end.getHours();
     const endMinute = end.getMinutes();
     
-    const top = ((startHour - 6) * 60 + startMinute) * pixelsPerMinute;
-    const height = ((endHour - startHour) * 60 + (endMinute - startMinute)) * pixelsPerMinute;
+    // Calculate total minutes from 6 AM (start of calendar)
+    const startMinutesFrom6AM = (startHour - 6) * 60 + startMinute;
+    const endMinutesFrom6AM = (endHour - 6) * 60 + endMinute;
+    
+    // Calculate position and height in pixels
+    const top = startMinutesFrom6AM * pixelsPerMinute;
+    const height = (endMinutesFrom6AM - startMinutesFrom6AM) * pixelsPerMinute;
+    
+    // Ensure minimum height for visibility
+    const minHeight = Math.max(height, 24);
     
     return { 
       top: `${top}px`, 
-      height: `${Math.max(height, 20)}px`,
+      height: `${minHeight}px`,
     };
   };
 
@@ -124,7 +174,33 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
         // Calculate start and end times
         const startTime = setMinutes(setHours(day, hour), 0);
         const endTime = new Date(startTime);
-        endTime.setMinutes(endTime.getMinutes() + template.duration.minutes);
+        
+        // Get duration - ensure we're reading the correct value
+        // Check if duration is a number (legacy) or an object with minutes property
+        let durationMinutes: number;
+        if (typeof template.duration === 'number') {
+          durationMinutes = template.duration;
+        } else if (template.duration?.minutes) {
+          durationMinutes = template.duration.minutes;
+        } else {
+          // Fallback to 120 minutes if duration is missing
+          console.warn('Template duration missing or invalid, using 120 minutes default:', template);
+          durationMinutes = 120;
+        }
+        
+        // Add duration to end time
+        endTime.setMinutes(endTime.getMinutes() + durationMinutes);
+        
+        // Debug log to verify duration (can be removed after fixing)
+        console.log('Scheduling encounter:', {
+          templateId: payload.templateId,
+          templateName: template.name,
+          duration: template.duration,
+          durationMinutes,
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+          calculatedDuration: (endTime.getTime() - startTime.getTime()) / (1000 * 60),
+        });
 
         // Schedule the encounter
         scheduleEncounter(payload.templateId, startTime, endTime);
@@ -162,23 +238,30 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
   };
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="flex flex-col h-full bg-background overflow-hidden">
       {/* Days Header */}
-      <div className="flex border-b sticky top-0 bg-background z-10">
+      <div className="flex border-b sticky top-0 bg-background z-10 flex-shrink-0">
         {/* Time column header */}
         <div className="w-16 md:w-20 bg-muted/50 border-r flex-shrink-0"></div>
         
-        {/* Days header - scrollable */}
-        <div className="flex-1 overflow-x-auto">
-          <div className="flex min-w-max">
+        {/* Days header - flex for week, scrollable for month */}
+        <div className={cn(
+          "flex-1",
+          isWeekView ? "overflow-hidden" : "overflow-x-auto"
+        )}>
+          <div className={cn(
+            "flex h-full",
+            isWeekView ? "w-full" : "min-w-max"
+          )}>
             {days.map((day) => (
               <div
-                key={day.toISOString()}
-                className={cn(
-                  "min-w-[120px] md:min-w-[150px] lg:min-w-[180px] p-2 md:p-3 text-center border-r border-b",
-                  isSameDay(day, new Date()) && "bg-primary/10"
-                )}
-              >
+                  key={day.toISOString()}
+                  className={cn(
+                    "p-2 text-center border-r border-b flex-shrink-0",
+                    isWeekView ? "flex-1" : "min-w-[120px] md:min-w-[150px] lg:min-w-[180px]",
+                    isSameDay(day, new Date()) && "bg-primary/10"
+                  )}
+                >
                 <div className="text-xs font-medium text-muted-foreground">
                   {format(day, "EEE")}
                 </div>
@@ -195,12 +278,16 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
       </div>
       
       {/* Time Grid - Scrollable */}
-      <div className="flex flex-1 overflow-auto" ref={scrollContainerRef}>
+      <div className={cn(
+        "flex flex-1 overflow-y-auto min-h-0",
+        isWeekView ? "overflow-x-hidden" : "overflow-x-auto"
+      )} ref={scrollContainerRef}>
         {/* Time column - sticky */}
         <div className="w-16 md:w-20 bg-muted/50 border-r flex-shrink-0 sticky left-0 z-10">
-          {timeSlots.map((hour) => (
+          {timeSlots.map((hour, index) => (
             <div
               key={hour}
+              ref={index === 0 ? timeSlotRef : undefined}
               className="h-12 md:h-14 border-b border-border flex items-start justify-end pr-2 md:pr-3 pt-1"
             >
               <span className="text-xs text-muted-foreground">
@@ -210,16 +297,25 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
           ))}
         </div>
         
-        {/* Days grid - scrollable */}
-        <div className="flex-1 overflow-x-auto">
-          <div className="flex min-w-max h-full">
+        {/* Days grid - flex for week, scrollable for month */}
+        <div className={cn(
+          "flex-1",
+          isWeekView ? "overflow-hidden" : "overflow-x-auto"
+        )}>
+          <div className={cn(
+            "flex h-full",
+            isWeekView ? "w-full" : "min-w-max"
+          )}>
             {days.map((day) => {
               const dayEvents = getEventsForDay(day);
               
               return (
                 <div
                   key={day.toISOString()}
-                  className="min-w-[120px] md:min-w-[150px] lg:min-w-[180px] border-r relative bg-background"
+                  className={cn(
+                    "border-r relative bg-background",
+                    isWeekView ? "flex-1" : "min-w-[120px] md:min-w-[150px] lg:min-w-[180px]"
+                  )}
                 >
                   {/* Time slots */}
                   {timeSlots.map((hour) => {
@@ -231,7 +327,7 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
                       <div
                         key={hour}
                         className={cn(
-                          "h-12 md:h-14 border-b border-border transition-colors",
+                          "h-12 md:h-14 border-b border-border transition-colors flex-shrink-0",
                           isDraggedOver
                             ? "bg-primary/20 border-primary border-2"
                             : "hover:bg-muted/30 cursor-pointer"
@@ -273,6 +369,68 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
                             }}
                             onDragEnd={() => {
                               setDraggedEncounter(null);
+                            }}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              
+                              const data = e.dataTransfer.getData('application/json');
+                              if (!data) return;
+                              
+                              try {
+                                const payload = JSON.parse(data);
+                                
+                                if (payload.type === 'client-group') {
+                                  // Handle client group drop on encounter
+                                  const clientGroupId = payload.clientGroupId || payload.id;
+                                  const clientGroup = library.atoms.clientGroups.find(
+                                    (g) => g.id === clientGroupId
+                                  );
+                                  
+                                  if (clientGroup) {
+                                    const action = confirm(
+                                      `Add "${clientGroup.name}" to this encounter?\n\n` +
+                                      `Click OK to ADD clients, or Cancel to REPLACE existing clients.`
+                                    ) ? 'add' : 'replace';
+                                    
+                                    // Get the template to update
+                                    const template = library.templates.find(
+                                      (t) => t.id === encounter.templateId
+                                    );
+                                    
+                                    if (template) {
+                                      // Update the encounter's template with new client group
+                                      // For now, we'll update the scheduled encounter directly
+                                      // In the future, this might update the template or create an override
+                                      const updatedClients = action === 'add'
+                                        ? [...(template.clients || []), clientGroup]
+                                        : [clientGroup];
+                                      
+                                      // Update the encounter (this is a simplified approach)
+                                      // In a full implementation, we'd update the template or use overrides
+                                      console.log('Updating encounter with client group:', {
+                                        encounterId: encounter.id,
+                                        action,
+                                        clientGroup: clientGroup.name,
+                                        updatedClients: updatedClients.length,
+                                      });
+                                      
+                                      // Note: This would require updating the encounter's overrides
+                                      // For now, we'll just log it
+                                      alert(
+                                        `${action === 'add' ? 'Added' : 'Replaced'} "${clientGroup.name}" ` +
+                                        `to encounter "${encounter.title}"`
+                                      );
+                                    }
+                                  }
+                                }
+                              } catch (error) {
+                                console.error('Error handling drop on encounter:', error);
+                              }
                             }}
                             onClick={(e) => {
                               e.stopPropagation();

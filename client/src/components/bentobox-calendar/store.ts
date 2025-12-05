@@ -172,12 +172,11 @@ interface BentoBoxActions {
   addTemplate: (template: Omit<EncounterTemplate, 'id' | 'createdAt' | 'updatedAt' | 'version'>) => void;
   updateTemplate: (id: string, updates: Partial<EncounterTemplate>) => void;
   deleteTemplate: (id: string) => void;
-  getTemplateById: (id: string) => EncounterTemplate | undefined;
   
   // Pool
   addToPool: (templateId: string) => void;
+  addClientGroupToPool: (clientGroupId: string) => void;
   removeFromPool: (poolId: string) => void;
-  updatePoolTemplate: (poolId: string, updates: Partial<PoolTemplate>) => void;
   clearPool: () => void;
   
   // Scheduled Encounters
@@ -191,19 +190,21 @@ interface BentoBoxActions {
   updateAtom: <T extends Atom>(id: string, updates: Partial<T>, type: T['type']) => void;
   deleteAtom: (id: string, type: Atom['type']) => void;
   
-  // UI State
-  setActiveSidebarSection: (section: SidebarSection) => void;
-  setSelectedTemplate: (template?: EncounterTemplate) => void;
-  setSelectedEncounter: (encounter?: ScheduledEncounter) => void;
-  setBuilderTemplate: (template?: Partial<EncounterTemplate>) => void;
-  setCurrentView: (view: "day" | "week" | "month") => void;
-  setCurrentDate: (date: Date) => void;
-  setActiveTab: (tab: "stage" | "builder") => void;
-  setEditingTemplateId: (templateId?: string) => void;
-  
-  // Sync (for future Supabase integration)
-  syncToSupabase: () => Promise<void>;
-  syncFromSupabase: () => Promise<void>;
+      // UI State
+      setActiveSidebarSection: (section: SidebarSection) => void;
+      setSelectedTemplate: (template?: EncounterTemplate) => void;
+      setSelectedEncounter: (encounter?: ScheduledEncounter) => void;
+      setBuilderTemplate: (template?: Partial<EncounterTemplate>) => void;
+      setCurrentView: (view: "day" | "week" | "month") => void;
+      setCurrentDate: (date: Date) => void;
+      setActiveTab: (tab: "stage" | "builder") => void;
+      setEditingTemplateId: (id: string | null) => void;
+      getTemplateById: (id: string) => EncounterTemplate | undefined;
+      updatePoolTemplate: (poolTemplateId: string, updates: Partial<PoolTemplate>) => void;
+      
+      // Sync (for future Supabase integration)
+      syncToSupabase: () => Promise<void>;
+      syncFromSupabase: () => Promise<void>;
 }
 
 interface BentoBoxState {
@@ -224,7 +225,7 @@ interface BentoBoxState {
   currentView: "day" | "week" | "month";
   currentDate: Date;
   activeTab: "stage" | "builder";
-  editingTemplateId?: string;
+  editingTemplateId: string | null;
 }
 
 // ============================================================
@@ -242,7 +243,7 @@ export const useBentoBoxStore = create<BentoBoxState & BentoBoxActions>()(
       currentView: "week",
       currentDate: new Date(),
       activeTab: "stage",
-      editingTemplateId: undefined,
+      editingTemplateId: null,
       
       // ========== TEMPLATE LIBRARY ==========
       
@@ -292,11 +293,6 @@ export const useBentoBoxStore = create<BentoBoxState & BentoBoxActions>()(
         }));
       },
       
-      getTemplateById: (id) => {
-        const state = get();
-        return state.library.templates.find((t) => t.id === id);
-      },
-      
       // ========== POOL ==========
       
       addToPool: (templateId) => {
@@ -318,17 +314,33 @@ export const useBentoBoxStore = create<BentoBoxState & BentoBoxActions>()(
         }));
       },
       
-      removeFromPool: (poolId) => {
+      addClientGroupToPool: (clientGroupId) => {
+        const state = get();
+        const clientGroup = state.library.atoms.clientGroups.find((g) => g.id === clientGroupId);
+        if (!clientGroup) return;
+        
+        const poolTemplate: PoolTemplate = {
+          id: generateId(),
+          templateId: clientGroupId, // Use clientGroup ID as templateId for identification
+          name: clientGroup.name,
+          category: 'administrative',
+          color: 'silver',
+          quickInfo: {
+            staffInitials: 'CG',
+            activityCode: 'CG',
+            clientCount: clientGroup.clientIds.length,
+            duration: 'N/A',
+          },
+        };
+        
         set((state) => ({
-          pool: state.pool.filter((p) => p.id !== poolId),
+          pool: [...state.pool, poolTemplate],
         }));
       },
       
-      updatePoolTemplate: (poolId, updates) => {
+      removeFromPool: (poolId) => {
         set((state) => ({
-          pool: state.pool.map((p) =>
-            p.id === poolId ? { ...p, ...updates } : p
-          ),
+          pool: state.pool.filter((p) => p.id !== poolId),
         }));
       },
       
@@ -407,95 +419,40 @@ export const useBentoBoxStore = create<BentoBoxState & BentoBoxActions>()(
       duplicateEncounter: (id) => {
         const state = get();
         const encounter = state.scheduledEncounters.find((e) => e.id === id);
-        if (!encounter) {
-          console.error('Encounter not found for duplication:', id);
-          return null;
-        }
+        if (!encounter) return null;
         
-        // Validate encounter has required fields
-        if (!encounter.start || !encounter.end) {
-          console.error('Encounter missing required date fields:', encounter.id, {
-            hasStart: !!encounter.start,
-            hasEnd: !!encounter.end
-          });
-          return null;
-        }
+        // Create duplicate for next day at same time
+        const nextDay = new Date(encounter.start);
+        nextDay.setDate(nextDay.getDate() + 1);
         
-        try {
-          // Handle both Date objects and date strings (from localStorage)
-          const startDate = encounter.start instanceof Date 
-            ? encounter.start 
-            : new Date(encounter.start);
-          const endDate = encounter.end instanceof Date 
-            ? encounter.end 
-            : new Date(encounter.end);
-          
-          // Validate dates
-          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-            console.error('Invalid dates for encounter:', encounter.id, {
-              start: encounter.start,
-              end: encounter.end,
-              startDate,
-              endDate
-            });
-            return null;
-          }
-          
-          // Ensure duration is valid
-          const duration = endDate.getTime() - startDate.getTime();
-          if (duration <= 0) {
-            console.error('Invalid duration for encounter:', encounter.id, {
-              start: startDate,
-              end: endDate,
-              duration
-            });
-            return null;
-          }
-          
-          // Create duplicate for next day at same time
-          const nextDay = new Date(startDate);
-          nextDay.setDate(nextDay.getDate() + 1);
-          
-          // Use the duration already calculated above
-          const newEnd = new Date(nextDay.getTime() + duration);
-          
-          const duplicate: ScheduledEncounter = {
-            ...encounter,
-            id: generateId(),
-            start: nextDay,
-            end: newEnd,
-            isDuplicate: true,
-            parentId: encounter.id,
-            childIds: undefined, // Clear childIds for the duplicate
-          };
-          
-          // Update parent to track children
-          const updatedEncounter = {
-            ...encounter,
-            childIds: [...(encounter.childIds || []), duplicate.id],
-          };
-          
-          set((state) => ({
-            scheduledEncounters: [
-              ...state.scheduledEncounters.map((e) =>
-                e.id === id ? updatedEncounter : e
-              ),
-              duplicate,
-            ],
-          }));
-          
-          console.log('Successfully duplicated encounter:', {
-            originalId: id,
-            duplicateId: duplicate.id,
-            originalStart: startDate,
-            duplicateStart: nextDay
-          });
-          
-          return duplicate;
-        } catch (error) {
-          console.error('Error duplicating encounter:', error, encounter);
-          return null;
-        }
+        const duration = encounter.end.getTime() - encounter.start.getTime();
+        const newEnd = new Date(nextDay.getTime() + duration);
+        
+        const duplicate: ScheduledEncounter = {
+          ...encounter,
+          id: generateId(),
+          start: nextDay,
+          end: newEnd,
+          isDuplicate: true,
+          parentId: encounter.id,
+        };
+        
+        // Update parent to track children
+        const updatedEncounter = {
+          ...encounter,
+          childIds: [...(encounter.childIds || []), duplicate.id],
+        };
+        
+        set((state) => ({
+          scheduledEncounters: [
+            ...state.scheduledEncounters.map((e) =>
+              e.id === id ? updatedEncounter : e
+            ),
+            duplicate,
+          ],
+        }));
+        
+        return duplicate;
       },
       
       // ========== ATOMS ==========
@@ -589,8 +546,21 @@ export const useBentoBoxStore = create<BentoBoxState & BentoBoxActions>()(
         set({ activeTab: tab });
       },
       
-      setEditingTemplateId: (templateId) => {
-        set({ editingTemplateId: templateId });
+      setEditingTemplateId: (id) => {
+        set({ editingTemplateId: id });
+      },
+      
+      getTemplateById: (id) => {
+        const state = get();
+        return state.library.templates.find((t) => t.id === id);
+      },
+      
+      updatePoolTemplate: (poolTemplateId, updates) => {
+        set((state) => ({
+          pool: state.pool.map((p) =>
+            p.id === poolTemplateId ? { ...p, ...updates } : p
+          ),
+        }));
       },
       
       // ========== SYNC (Placeholder) ==========
@@ -614,39 +584,6 @@ export const useBentoBoxStore = create<BentoBoxState & BentoBoxActions>()(
         pool: state.pool,
         scheduledEncounters: state.scheduledEncounters,
       }),
-      // Reviver to convert date strings back to Date objects when loading from localStorage
-      onRehydrateStorage: () => (state, error) => {
-        if (error) {
-          console.error('Error rehydrating BentoBox store:', error);
-          return;
-        }
-        if (state?.scheduledEncounters) {
-          state.scheduledEncounters = state.scheduledEncounters.map((encounter: any) => {
-            // Convert date strings to Date objects
-            const start = encounter.start instanceof Date 
-              ? encounter.start 
-              : new Date(encounter.start);
-            const end = encounter.end instanceof Date 
-              ? encounter.end 
-              : new Date(encounter.end);
-            
-            // Validate dates
-            if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-              console.warn('Invalid dates in stored encounter, skipping:', encounter.id);
-              return encounter; // Return original if dates are invalid
-            }
-            
-            return {
-              ...encounter,
-              start,
-              end,
-            };
-          }).filter((encounter: any) => {
-            // Filter out encounters with invalid dates
-            return encounter.start instanceof Date && encounter.end instanceof Date;
-          });
-        }
-      },
     }
   )
 );
