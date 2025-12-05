@@ -1,0 +1,37 @@
+# Gitleaks Configuration
+# This file configures Gitleaks secret scanning rules for HALCYON
+
+title = "HALCYON Gitleaks Configuration"
+
+# Allowlist - patterns or paths to ignore
+# Add paths, commits, or regex patterns here to exclude from scanning
+[allowlist]
+description = "Allowlist for known false positives"
+
+# Allowlist specific paths if needed (uncomment and add as needed)
+# paths = [
+#   "**/test/**",
+#   "**/*.md",
+# ]
+
+# Allowlist specific commits (if needed)
+commits = []
+
+# Allowlist specific regex patterns (if needed)
+# regexes = [
+#   '''example\.com''',
+# ]
+
+# Allowlist specific stopwords (if needed)
+# stopwords = [
+#   "example",
+# ]
+
+# Note: Gitleaks will use its default rules when no custom rules are specified.
+# To add custom rules, uncomment and modify the example below:
+#
+# [[rules]]
+# id = "custom-api-key"
+# description = "Custom API key pattern"
+# regex = '''api[_-]?key["\s:=]+['"]?([a-zA-Z0-9]{32,})['"]?'''
+
