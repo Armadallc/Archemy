@@ -1,12 +1,12 @@
 /**
- * BentoBox Calendar - Template Builder Component
+ * BentoBox Calendar - Template Editor Component
  * 
- * Allows users to build encounter templates by dragging atoms
- * into drop zones and combining them into complete templates.
+ * Allows users to edit existing encounter templates by swapping atoms
+ * Similar to TemplateBuilder but pre-populated with existing template data
  */
 
-import React, { useState } from 'react';
-import { Plus, X, Save, GripVertical, Users, Clock, MapPin, User, Activity } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Save, X, GripVertical, Users, Clock, MapPin, User, Activity } from 'lucide-react';
 import { useBentoBoxStore } from './store';
 import { Atom, EncounterTemplate, TemplateCategory } from './types';
 import { Button } from '../ui/button';
@@ -22,32 +22,62 @@ import {
   SelectValue,
 } from '../ui/select';
 
-interface TemplateBuilderProps {
+interface TemplateEditorProps {
+  templateId: string;
+  onSave?: () => void;
+  onCancel?: () => void;
   className?: string;
 }
 
-export function TemplateBuilder({ className }: TemplateBuilderProps) {
+export function TemplateEditor({ templateId, onSave, onCancel, className }: TemplateEditorProps) {
   const {
     library,
-    builderTemplate,
-    setBuilderTemplate,
-    addTemplate,
-    addToPool,
+    updateTemplate,
+    getTemplateById,
+    updatePoolTemplate,
+    updateScheduledEncounter,
   } = useBentoBoxStore();
 
-  const [templateName, setTemplateName] = useState('');
-  const [templateDescription, setTemplateDescription] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<TemplateCategory>('life-skills');
+  const template = getTemplateById(templateId);
+  
+  if (!template) {
+    return (
+      <div className="p-4 text-center text-muted-foreground">
+        Template not found
+      </div>
+    );
+  }
 
-  // Initialize builder template if empty
-  const currentTemplate = builderTemplate || {
-    staff: [],
-    activity: undefined,
-    clients: [],
-    location: undefined,
-    duration: undefined,
-    category: selectedCategory,
-  };
+  const [templateName, setTemplateName] = useState(template.name);
+  const [templateDescription, setTemplateDescription] = useState(template.description || '');
+  const [selectedCategory, setSelectedCategory] = useState<TemplateCategory>(template.category);
+  
+  // Current template state for editing
+  const [currentTemplate, setCurrentTemplate] = useState<Partial<EncounterTemplate>>({
+    staff: template.staff || [],
+    activity: template.activity,
+    clients: template.clients || [],
+    location: template.location,
+    duration: template.duration,
+    category: template.category,
+  });
+
+  // Update state when template changes
+  useEffect(() => {
+    if (template) {
+      setTemplateName(template.name);
+      setTemplateDescription(template.description || '');
+      setSelectedCategory(template.category);
+      setCurrentTemplate({
+        staff: template.staff || [],
+        activity: template.activity,
+        clients: template.clients || [],
+        location: template.location,
+        duration: template.duration,
+        category: template.category,
+      });
+    }
+  }, [templateId]);
 
   const handleAtomDrop = (atom: Atom, dropZone: string) => {
     const updated = { ...currentTemplate };
@@ -82,7 +112,7 @@ export function TemplateBuilder({ className }: TemplateBuilderProps) {
         break;
     }
 
-    setBuilderTemplate(updated);
+    setCurrentTemplate(updated);
   };
 
   const handleRemoveAtom = (type: string, index?: number, id?: string) => {
@@ -110,7 +140,7 @@ export function TemplateBuilder({ className }: TemplateBuilderProps) {
         break;
     }
 
-    setBuilderTemplate(updated);
+    setCurrentTemplate(updated);
   };
 
   const handleSaveTemplate = () => {
@@ -139,7 +169,7 @@ export function TemplateBuilder({ className }: TemplateBuilderProps) {
       return;
     }
 
-    const newTemplate: Omit<EncounterTemplate, 'id' | 'createdAt' | 'updatedAt' | 'version'> = {
+    updateTemplate(templateId, {
       name: templateName,
       description: templateDescription || undefined,
       staff: currentTemplate.staff || [],
@@ -158,25 +188,64 @@ export function TemplateBuilder({ className }: TemplateBuilderProps) {
           }, 0) || 10,
         },
       },
-    };
+    });
 
-    addTemplate(newTemplate);
-    
-    // Add to pool automatically
-    const templates = useBentoBoxStore.getState().library.templates;
-    const savedTemplate = templates[templates.length - 1];
-    if (savedTemplate) {
-      addToPool(savedTemplate.id);
+    // Update pool templates that use this template
+    const state = useBentoBoxStore.getState();
+    const updatedTemplate = getTemplateById(templateId);
+    if (updatedTemplate) {
+      const poolTemplates = state.pool.filter(p => p.templateId === templateId);
+      poolTemplates.forEach(poolTemplate => {
+        const staffInitials = updatedTemplate.staff
+          .map(s => s.name.split(' ').map(n => n[0]).join(''))
+          .join(', ') || 'N/A';
+        
+        const activityCode = updatedTemplate.activity.name
+          .split(' ')
+          .map(w => w[0])
+          .join('')
+          .substring(0, 3)
+          .toUpperCase();
+        
+        const clientCount = updatedTemplate.clients.reduce((count, c) => {
+          if (c.type === 'client') return count + 1;
+          if (c.type === 'client-group') return count + c.clientIds.length;
+          return count;
+        }, 0);
+        
+        updatePoolTemplate(poolTemplate.id, {
+          name: updatedTemplate.name,
+          quickInfo: {
+            staffInitials,
+            activityCode,
+            clientCount,
+            duration: updatedTemplate.duration.label,
+          },
+          color: updatedTemplate.color,
+        });
+      });
     }
 
-    // Reset builder
-    setTemplateName('');
-    setTemplateDescription('');
-    setBuilderTemplate(undefined);
-    setSelectedCategory('life-skills');
+    // Update scheduled encounters that use this template
+    state.scheduledEncounters.forEach(encounter => {
+      if (encounter.templateId === templateId) {
+        const updatedTemplate = getTemplateById(templateId);
+        if (updatedTemplate) {
+          updateScheduledEncounter(encounter.id, {
+            title: updatedTemplate.name,
+            color: updatedTemplate.color,
+            // Note: We don't update the actual template data in the encounter
+            // as it may have been customized. Only update display properties.
+          });
+        }
+      }
+    });
 
-    alert('Template saved and added to pool!');
+    if (onSave) {
+      onSave();
+    }
   };
+
 
   const DropZone = ({ 
     id, 
@@ -268,13 +337,16 @@ export function TemplateBuilder({ className }: TemplateBuilderProps) {
   };
 
   return (
-    <div className={cn("p-4 md:p-6 space-y-4 md:space-y-6 overflow-y-auto", className)}>
-      <div>
-        <h3 className="text-lg md:text-xl font-semibold mb-2">Build Encounter Template</h3>
-        <p className="text-sm text-muted-foreground">
-          Drag atoms from the sidebar into the drop zones below to build your template.
-        </p>
+    <div className={cn("h-full flex flex-col overflow-hidden", className)}>
+      <div className="border-b p-4 md:p-6 flex items-center justify-between flex-shrink-0">
+        <div>
+          <h3 className="text-lg md:text-xl font-semibold">Edit Encounter Template</h3>
+          <p className="text-sm text-muted-foreground">
+            Drag atoms from the library to swap items in this template.
+          </p>
+        </div>
       </div>
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6">
 
       {/* Template Name & Description */}
       <div className="space-y-2">
@@ -302,7 +374,7 @@ export function TemplateBuilder({ className }: TemplateBuilderProps) {
             value={selectedCategory}
             onValueChange={(value) => {
               setSelectedCategory(value as TemplateCategory);
-              setBuilderTemplate({ ...currentTemplate, category: value as TemplateCategory });
+              setCurrentTemplate({ ...currentTemplate, category: value as TemplateCategory });
             }}
           >
             <SelectTrigger id="template-category">
@@ -367,21 +439,34 @@ export function TemplateBuilder({ className }: TemplateBuilderProps) {
         />
       </div>
 
-      {/* Save Button */}
-      <Button
-        onClick={handleSaveTemplate}
-        className="w-full"
-        disabled={
-          !templateName.trim() ||
-          !currentTemplate.activity ||
-          !currentTemplate.duration ||
-          (currentTemplate.staff?.length || 0) === 0 ||
-          (currentTemplate.clients?.length || 0) === 0
-        }
-      >
-        <Save className="w-4 h-4 mr-2" />
-        Save Template & Add to Pool
-      </Button>
+      {/* Action Buttons */}
+      <div className="flex gap-2">
+        <Button
+          onClick={handleSaveTemplate}
+          className="flex-1"
+          disabled={
+            !templateName.trim() ||
+            !currentTemplate.activity ||
+            !currentTemplate.duration ||
+            (currentTemplate.staff?.length || 0) === 0 ||
+            (currentTemplate.clients?.length || 0) === 0
+          }
+        >
+          <Save className="w-4 h-4 mr-2" />
+          Save Changes
+        </Button>
+        {onCancel && (
+          <Button
+            onClick={onCancel}
+            variant="outline"
+            className="flex-1"
+          >
+            <X className="w-4 h-4 mr-2" />
+            Cancel
+          </Button>
+        )}
+      </div>
+      </div>
     </div>
   );
 }

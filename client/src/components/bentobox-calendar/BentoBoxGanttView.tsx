@@ -19,9 +19,10 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from '../ui/hover-card'
 interface BentoBoxGanttViewProps {
   currentDate: Date;
   onDateChange?: (date: Date) => void;
+  onEdit?: (templateId: string) => void;
 }
 
-export function BentoBoxGanttView({ currentDate, onDateChange }: BentoBoxGanttViewProps) {
+export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBoxGanttViewProps) {
   const { scheduledEncounters, currentView, setCurrentDate, library, scheduleEncounter, updateScheduledEncounter } = useBentoBoxStore();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const timeSlotRef = useRef<HTMLDivElement>(null);
@@ -243,13 +244,13 @@ export function BentoBoxGanttView({ currentDate, onDateChange }: BentoBoxGanttVi
           )}>
             {days.map((day) => (
               <div
-                  key={day.toISOString()}
-                  className={cn(
-                    "p-2 text-center border-r border-b flex-shrink-0",
-                    isWeekView ? "flex-1" : "min-w-[120px] md:min-w-[150px] lg:min-w-[180px]",
-                    isSameDay(day, new Date()) && "bg-primary/10"
-                  )}
-                >
+                key={day.toISOString()}
+                className={cn(
+                  "p-2 md:p-3 text-center border-r border-b flex-shrink-0",
+                  isWeekView ? "flex-1" : "min-w-[120px] md:min-w-[150px] lg:min-w-[180px]",
+                  isSameDay(day, new Date()) && "bg-primary/10"
+                )}
+              >
                 <div className="text-xs font-medium text-muted-foreground">
                   {format(day, "EEE")}
                 </div>
@@ -413,7 +414,10 @@ export function BentoBoxGanttView({ currentDate, onDateChange }: BentoBoxGanttVi
                                 </div>
                               </>
                             )}
-                            <EncounterActions encounter={encounter} />
+                            <EncounterActions 
+                              encounter={encounter} 
+                              onEdit={() => onEdit && onEdit(encounter.templateId)}
+                            />
                           </div>
                         </HoverCardContent>
                       </HoverCard>
