@@ -5,7 +5,6 @@
  */
 
 import React, { useState } from 'react';
-import { Edit, Copy, Trash2, X } from 'lucide-react';
 import { useBentoBoxStore } from './store';
 import { ScheduledEncounter } from './types';
 import { Button } from '../ui/button';
@@ -42,33 +41,30 @@ export function EncounterActions({ encounter, onEdit }: EncounterActionsProps) {
 
   return (
     <>
-      <div className="flex items-center gap-2 pt-2 border-t">
+      <div className="flex items-center gap-2 pt-2 border-t min-w-0 overflow-hidden">
         <Button
           variant="ghost"
           size="sm"
           onClick={onEdit}
-          className="flex-1"
+          className="flex-1 min-w-0 shrink justify-center"
         >
-          <Edit className="w-4 h-4 mr-1" />
-          Edit
+          <span className="truncate">Edit</span>
         </Button>
         <Button
           variant="ghost"
           size="sm"
           onClick={handleDuplicate}
-          className="flex-1"
+          className="flex-1 min-w-0 shrink justify-center"
         >
-          <Copy className="w-4 h-4 mr-1" />
-          Duplicate
+          <span className="truncate">Duplicate</span>
         </Button>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setShowDeleteDialog(true)}
-          className="flex-1 text-destructive hover:text-destructive"
+          className="flex-1 min-w-0 shrink justify-center text-destructive hover:text-destructive"
         >
-          <Trash2 className="w-4 h-4 mr-1" />
-          Remove
+          <span className="truncate">Remove</span>
         </Button>
       </div>
 

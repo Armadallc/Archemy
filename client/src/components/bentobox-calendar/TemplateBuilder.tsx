@@ -170,13 +170,9 @@ export function TemplateBuilder({ className, onClientGroupAdded }: TemplateBuild
       return;
     }
 
-    if (currentTemplate.clients?.length === 0) {
-      alert('Please add at least one client or client group');
-      return;
-    }
-
     // Process client groups - auto-name any that don't have names
-    const processedClients = currentTemplate.clients.map((c) => {
+    // Note: clients are optional - templates can be saved without clients
+    const processedClients = (currentTemplate.clients || []).map((c) => {
       if (c.type === 'client-group' && !c.name.trim()) {
         // Auto-generate name from template name
         const baseName = templateName.trim();
@@ -213,7 +209,7 @@ export function TemplateBuilder({ className, onClientGroupAdded }: TemplateBuild
       category: selectedCategory,
       rules: {
         clientCapacity: {
-          min: 1,
+          min: processedClients.length > 0 ? 1 : 0,
           max: processedClients.reduce((count, c) => {
             if (c.type === 'client') return count + 1;
             if (c.type === 'client-group') return count + c.clientIds.length;
@@ -404,7 +400,7 @@ export function TemplateBuilder({ className, onClientGroupAdded }: TemplateBuild
 
         <DropZone
           id="clients"
-          label="Clients / Client Groups"
+          label="Clients / Client Groups (optional)"
           icon={Users}
           items={currentTemplate.clients || []}
           onRemove={(_, id) => handleRemoveAtom('clients', undefined, id)}
@@ -438,8 +434,7 @@ export function TemplateBuilder({ className, onClientGroupAdded }: TemplateBuild
           !templateName.trim() ||
           !currentTemplate.activity ||
           !currentTemplate.duration ||
-          (currentTemplate.staff?.length || 0) === 0 ||
-          (currentTemplate.clients?.length || 0) === 0
+          (currentTemplate.staff?.length || 0) === 0
         }
       >
         <Save className="w-4 h-4 mr-2" />

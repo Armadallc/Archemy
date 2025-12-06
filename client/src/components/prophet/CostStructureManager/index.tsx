@@ -38,10 +38,15 @@ export function CostStructureManager() {
     (staffing.admin.enabled ? staffing.admin.totalCost : 0)
   );
 
+  // Calculate total per-mile variable costs (including new direct transport per-mile costs)
   const totalPerMile = (
     variable.fuelPerMile +
     variable.maintenancePerMile +
-    variable.insuranceVariablePerMile
+    variable.insuranceVariablePerMile +
+    (variable.directTransport?.tiresPerMile || 0) +
+    (variable.directTransport?.repairsPerMile || 0) +
+    (variable.directTransport?.oilFilterPerMile || 0) +
+    (variable.vehicleSpecific?.depreciationPerMile || 0)
   );
 
   // Monthly fixed overhead (excluding variable)
@@ -100,7 +105,7 @@ export function CostStructureManager() {
       </Card>
 
       {/* Cost Components */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <FixedCosts />
         <VariableCosts />
         <StaffingCosts />

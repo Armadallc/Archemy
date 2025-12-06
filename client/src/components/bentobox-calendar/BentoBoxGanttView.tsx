@@ -11,8 +11,9 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addDays, addWeeks, setHours, setMinutes } from 'date-fns';
 import { useBentoBoxStore } from './store';
-import { ScheduledEncounter, FireColor } from './types';
+import { ScheduledEncounter, FireColor, ClientGroupAtom } from './types';
 import { EncounterActions } from './EncounterActions';
+import { ClientGroupMergeDialog } from './ClientGroupMergeDialog';
 import { cn } from '../../lib/utils';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '../ui/hover-card';
 
@@ -30,6 +31,8 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
   const [draggedOverSlot, setDraggedOverSlot] = useState<{ day: Date; hour: number } | null>(null);
   const [draggedEncounter, setDraggedEncounter] = useState<ScheduledEncounter | null>(null);
   const [pixelsPerMinute, setPixelsPerMinute] = useState(0.8);
+  const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
+  const [pendingClientGroup, setPendingClientGroup] = useState<{ group: ClientGroupAtom; encounter: ScheduledEncounter } | null>(null);
 
   // Generate time slots (6 AM to 10 PM)
   const timeSlots = Array.from({ length: 17 }, (_, i) => i + 6);
@@ -237,8 +240,52 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
     setDraggedOverSlot(null);
   };
 
+  const handleMergeClientGroup = () => {
+    if (!pendingClientGroup) return;
+    
+    const { group: clientGroup, encounter } = pendingClientGroup;
+    const template = library.templates.find((t) => t.id === encounter.templateId);
+    
+    if (template) {
+      const existingClients = encounter.overrides?.clients || template.clients || [];
+      const updatedClients = [...existingClients, clientGroup];
+      
+      updateScheduledEncounter(encounter.id, {
+        overrides: {
+          ...encounter.overrides,
+          clients: updatedClients,
+        },
+      });
+    }
+    
+    setMergeDialogOpen(false);
+    setPendingClientGroup(null);
+  };
+
+  const handleReplaceClientGroup = () => {
+    if (!pendingClientGroup) return;
+    
+    const { group: clientGroup, encounter } = pendingClientGroup;
+    
+    updateScheduledEncounter(encounter.id, {
+      overrides: {
+        ...encounter.overrides,
+        clients: [clientGroup],
+      },
+    });
+    
+    setMergeDialogOpen(false);
+    setPendingClientGroup(null);
+  };
+
+  const handleCancelMerge = () => {
+    setMergeDialogOpen(false);
+    setPendingClientGroup(null);
+  };
+
   return (
-    <div className="flex flex-col h-full bg-background overflow-hidden">
+    <>
+      <div className="flex flex-col h-full bg-background overflow-hidden">
       {/* Days Header */}
       <div className="flex border-b sticky top-0 bg-background z-10 flex-shrink-0">
         {/* Time column header */}
@@ -392,39 +439,23 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
                                   );
                                   
                                   if (clientGroup) {
-                                    const action = confirm(
-                                      `Add "${clientGroup.name}" to this encounter?\n\n` +
-                                      `Click OK to ADD clients, or Cancel to REPLACE existing clients.`
-                                    ) ? 'add' : 'replace';
-                                    
-                                    // Get the template to update
+                                    // Get the template to calculate existing client count
                                     const template = library.templates.find(
                                       (t) => t.id === encounter.templateId
                                     );
                                     
                                     if (template) {
-                                      // Update the encounter's template with new client group
-                                      // For now, we'll update the scheduled encounter directly
-                                      // In the future, this might update the template or create an override
-                                      const updatedClients = action === 'add'
-                                        ? [...(template.clients || []), clientGroup]
-                                        : [clientGroup];
+                                      // Calculate existing client count (from template + overrides)
+                                      const existingClients = encounter.overrides?.clients || template.clients || [];
+                                      const existingCount = existingClients.reduce((count, c) => {
+                                        if (c.type === 'client') return count + 1;
+                                        if (c.type === 'client-group') return count + (c.clientIds?.length || 0);
+                                        return count;
+                                      }, 0);
                                       
-                                      // Update the encounter (this is a simplified approach)
-                                      // In a full implementation, we'd update the template or use overrides
-                                      console.log('Updating encounter with client group:', {
-                                        encounterId: encounter.id,
-                                        action,
-                                        clientGroup: clientGroup.name,
-                                        updatedClients: updatedClients.length,
-                                      });
-                                      
-                                      // Note: This would require updating the encounter's overrides
-                                      // For now, we'll just log it
-                                      alert(
-                                        `${action === 'add' ? 'Added' : 'Replaced'} "${clientGroup.name}" ` +
-                                        `to encounter "${encounter.title}"`
-                                      );
+                                      // Show merge dialog
+                                      setPendingClientGroup({ group: clientGroup, encounter });
+                                      setMergeDialogOpen(true);
                                     }
                                   }
                                 }
@@ -502,7 +533,31 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
           </div>
         </div>
       </div>
-    </div>
+      
+      {/* Client Group Merge Dialog */}
+      {pendingClientGroup && (
+        <ClientGroupMergeDialog
+          open={mergeDialogOpen}
+          clientGroup={pendingClientGroup.group}
+          encounterTitle={pendingClientGroup.encounter.title}
+          existingClientCount={(() => {
+            const encounter = pendingClientGroup.encounter;
+            const template = library.templates.find((t) => t.id === encounter.templateId);
+            if (!template) return 0;
+            const existingClients = encounter.overrides?.clients || template.clients || [];
+            return existingClients.reduce((count, c) => {
+              if (c.type === 'client') return count + 1;
+              if (c.type === 'client-group') return count + (c.clientIds?.length || 0);
+              return count;
+            }, 0);
+          })()}
+          onMerge={handleMergeClientGroup}
+          onReplace={handleReplaceClientGroup}
+          onCancel={handleCancelMerge}
+        />
+      )}
+      </div>
+    </>
   );
 }
 

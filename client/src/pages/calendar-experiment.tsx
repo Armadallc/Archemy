@@ -8,7 +8,8 @@
  */
 
 import React, { useState, useRef } from "react";
-import { Calendar, ChevronLeft, ChevronRight, CalendarDays, LayoutGrid } from "lucide-react";
+import "./calendar-experiment.css";
+import { Calendar, ChevronLeft, ChevronRight, CalendarDays, LayoutGrid, ChevronRight as ChevronRightIcon, ChevronLeft as ChevronLeftIcon } from "lucide-react";
 import { format, addWeeks, subWeeks, addDays, subDays, addMonths, subMonths } from "date-fns";
 import { BentoBoxGanttView } from "../components/bentobox-calendar/BentoBoxGanttView";
 import { PoolSection } from "../components/bentobox-calendar/PoolSection";
@@ -18,7 +19,7 @@ import { TemplateEditor } from "../components/bentobox-calendar/TemplateEditor";
 import { ClientGroupBuilder } from "../components/bentobox-calendar/ClientGroupBuilder";
 import { useBentoBoxStore } from "../components/bentobox-calendar/store";
 import { Button } from "../components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
+// Removed Radix Tabs - using custom implementation for better layout control
 import { cn } from "../lib/utils";
 
 export default function CalendarExperiment() {
@@ -33,6 +34,8 @@ export default function CalendarExperiment() {
     editingTemplateId,
     setEditingTemplateId,
   } = useBentoBoxStore();
+  
+  const [poolDrawerOpen, setPoolDrawerOpen] = useState(true);
 
   const handleEditTemplate = (templateId: string) => {
     setEditingTemplateId(templateId);
@@ -188,55 +191,119 @@ export default function CalendarExperiment() {
 
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden min-h-0">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "stage" | "builder")} className="flex flex-1 flex-col overflow-hidden">
-          <div className="px-4 pt-2 border-b">
-            <TabsList className="w-full max-w-md md:max-w-lg">
-              <TabsTrigger value="stage" className="flex-1">
+        <div className="flex flex-1 flex-col overflow-hidden min-h-0 w-full h-full">
+          {/* Custom Tab Navigation */}
+          <div className="px-4 pt-2 border-b flex-shrink-0 bg-background">
+            <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground w-full">
+              <button
+                onClick={() => setActiveTab('stage')}
+                className={cn(
+                  "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all flex-1",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                  activeTab === 'stage'
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
                 Tab 1: Stage & Calendar
-              </TabsTrigger>
-              <TabsTrigger value="builder" className="flex-1">
+              </button>
+              <button
+                onClick={() => setActiveTab('builder')}
+                className={cn(
+                  "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all flex-1",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                  activeTab === 'builder'
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
                 Tab 2: Library & Builder
-              </TabsTrigger>
-            </TabsList>
+              </button>
+            </div>
           </div>
 
           {/* Tab 1: Stage & Calendar */}
-          <TabsContent value="stage" className="flex-1 overflow-hidden m-0 mt-0">
-            <div className="flex h-full overflow-hidden">
-              {/* Pool Section */}
-              <div className="w-full sm:w-80 md:w-96 lg:w-[400px] border-r flex-shrink-0 overflow-hidden">
-                <PoolSection onEdit={handleEditTemplate} />
+          {activeTab === 'stage' && (
+            <div className="flex flex-1 overflow-hidden min-h-0 h-full relative">
+              {/* Pool Drawer - Collapsible */}
+              <div 
+                className={cn(
+                  "absolute left-0 top-0 bottom-0 z-20 bg-background border-r transition-all duration-300 ease-in-out overflow-hidden",
+                  poolDrawerOpen 
+                    ? "w-64 sm:w-72 md:w-80 shadow-lg" 
+                    : "w-12"
+                )}
+              >
+                {poolDrawerOpen ? (
+                  <div className="h-full flex flex-col">
+                    <div className="p-2 border-b flex items-center justify-between flex-shrink-0">
+                      <div>
+                        <h3 className="font-semibold text-xs">Pool</h3>
+                        <p className="text-xs text-muted-foreground">Drag to schedule</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => setPoolDrawerOpen(false)}
+                      >
+                        <ChevronLeftIcon className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-2">
+                      <PoolSection onEdit={handleEditTemplate} />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-full flex flex-col items-center p-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 mt-2"
+                      onClick={() => setPoolDrawerOpen(true)}
+                    >
+                      <ChevronRightIcon className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
 
-              {/* Calendar View */}
-              <div className="flex-1 overflow-hidden min-w-0 min-h-0">
+              {/* Calendar View - Adjusts margin when drawer is open */}
+              <div 
+                className={cn(
+                  "flex-1 overflow-hidden min-w-0 min-h-0 h-full transition-all duration-300",
+                  poolDrawerOpen && "ml-64 sm:ml-72 md:ml-80"
+                )}
+              >
                 <BentoBoxGanttView 
                   currentDate={currentDate} 
                   onEdit={handleEditTemplate}
                 />
               </div>
             </div>
-          </TabsContent>
+          )}
 
           {/* Tab 2: Library, Template Builder & Template Editor */}
-          <TabsContent value="builder" className="flex-1 overflow-hidden m-0 mt-0">
-            <div className="flex h-full overflow-hidden">
+          {activeTab === 'builder' && (
+            <div className="flex flex-1 overflow-hidden min-h-0 h-full">
               {/* Library Section */}
-              <div className="w-full sm:w-64 md:w-80 lg:w-96 border-r flex-shrink-0 overflow-hidden">
+              <div className="w-full sm:w-64 md:w-80 lg:w-96 border-r flex-shrink-0 overflow-hidden h-full">
                 <LibrarySection />
               </div>
 
               {/* Builder or Editor */}
-              <div className="flex-1 overflow-hidden min-w-0">
+              <div className="flex-1 overflow-hidden min-w-0 flex flex-col h-full min-h-0">
                 {editingTemplateId ? (
-                  <TemplateEditor
-                    templateId={editingTemplateId}
-                    onSave={handleSaveTemplate}
-                    onCancel={handleCancelEdit}
-                  />
+                  <div className="flex-1 overflow-y-auto min-h-0">
+                    <TemplateEditor
+                      templateId={editingTemplateId}
+                      onSave={handleSaveTemplate}
+                      onCancel={handleCancelEdit}
+                    />
+                  </div>
                 ) : (
                   <>
-                    <div className="flex-1 overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto min-h-0">
                       <TemplateBuilder />
                     </div>
                     <div className="flex-shrink-0 border-t bg-background">
@@ -266,8 +333,8 @@ export default function CalendarExperiment() {
                 )}
               </div>
             </div>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </div>
     </div>
   );
