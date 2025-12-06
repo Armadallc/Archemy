@@ -46,6 +46,21 @@ const defaultActivities: ActivityAtom[] = [
   { id: 'act-5', name: 'Process Group', category: 'clinical', type: 'activity' },
   { id: 'act-6', name: 'Psychosocial', category: 'clinical', type: 'activity' },
   { id: 'act-7', name: 'Medication Management', category: 'medical', type: 'activity' },
+  // New encounter types
+  { id: 'act-8', name: 'Outpatient Restoration Group Note', category: 'clinical', type: 'activity' },
+  { id: 'act-9', name: 'Behavior Health Education Group per encounter', category: 'clinical', type: 'activity' },
+  { id: 'act-10', name: 'Stress Management Classes', category: 'clinical', type: 'activity' },
+  { id: 'act-11', name: 'Activity Group Therapy per 15 min', category: 'clinical', type: 'activity' },
+  { id: 'act-12', name: 'Approved Pass', category: 'administrative', type: 'activity' },
+  { id: 'act-13', name: 'Group Appointment', category: 'administrative', type: 'activity' },
+  { id: 'act-14', name: 'Group BA', category: 'clinical', type: 'activity' },
+  { id: 'act-15', name: 'Group UA', category: 'medical', type: 'activity' },
+  { id: 'act-16', name: 'Lab Group UA', category: 'medical', type: 'activity' },
+  { id: 'act-17', name: 'Clinical Therapy Group', category: 'clinical', type: 'activity' },
+  { id: 'act-18', name: 'Peer Led Meditation and Education Group', category: 'clinical', type: 'activity' },
+  { id: 'act-19', name: 'Pathways to Progress Group', category: 'clinical', type: 'activity' },
+  { id: 'act-20', name: 'Foundations and Support Group', category: 'clinical', type: 'activity' },
+  { id: 'act-21', name: 'Empowerment and Engagement Group', category: 'clinical', type: 'activity' },
 ];
 
 const defaultClients: ClientAtom[] = [
@@ -421,11 +436,25 @@ export const useBentoBoxStore = create<BentoBoxState & BentoBoxActions>()(
         const encounter = state.scheduledEncounters.find((e) => e.id === id);
         if (!encounter) return null;
         
+        // Ensure dates are Date objects (they might be strings from localStorage)
+        const startDate = encounter.start instanceof Date 
+          ? encounter.start 
+          : new Date(encounter.start);
+        const endDate = encounter.end instanceof Date 
+          ? encounter.end 
+          : new Date(encounter.end);
+        
+        // Validate dates
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          console.error('Invalid dates in encounter:', encounter);
+          return null;
+        }
+        
         // Create duplicate for next day at same time
-        const nextDay = new Date(encounter.start);
+        const nextDay = new Date(startDate);
         nextDay.setDate(nextDay.getDate() + 1);
         
-        const duration = encounter.end.getTime() - encounter.start.getTime();
+        const duration = endDate.getTime() - startDate.getTime();
         const newEnd = new Date(nextDay.getTime() + duration);
         
         const duplicate: ScheduledEncounter = {
@@ -584,6 +613,18 @@ export const useBentoBoxStore = create<BentoBoxState & BentoBoxActions>()(
         pool: state.pool,
         scheduledEncounters: state.scheduledEncounters,
       }),
+      // Reviver to convert date strings back to Date objects
+      deserialize: (str) => {
+        const parsed = JSON.parse(str);
+        if (parsed.state?.scheduledEncounters) {
+          parsed.state.scheduledEncounters = parsed.state.scheduledEncounters.map((encounter: any) => ({
+            ...encounter,
+            start: encounter.start ? new Date(encounter.start) : encounter.start,
+            end: encounter.end ? new Date(encounter.end) : encounter.end,
+          }));
+        }
+        return parsed;
+      },
     }
   )
 );

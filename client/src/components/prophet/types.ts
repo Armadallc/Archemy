@@ -192,16 +192,140 @@ export interface FixedCosts {
   miscAdmin: number;
 }
 
+// ============================================================================
+// VARIABLE COSTS - Grouped Structures
+// ============================================================================
+
+export interface DirectTransportVariableCosts {
+  // Per-mile costs
+  tiresPerMile: number;           // $0.02-$0.04/mile
+  repairsPerMile: number;         // $0.05-$0.10/mile
+  oilFilterPerMile: number;       // $0.01-$0.02/mile
+  
+  // Per-trip costs
+  vehicleCleaningPerTrip: number; // $5-15/trip
+  disposableSuppliesPerTrip: number; // $2-5/trip
+}
+
+export interface DriverStaffVariableCosts {
+  perTripDriverPay: number;       // $/trip or $/mile
+  perTripDriverPayMode: 'per_trip' | 'per_mile';
+  overtimeHoursPerMonth: number;
+  overtimeRateMultiplier: number; // e.g., 1.5x base rate
+  driverBonusesPerMonth: number;
+  additionalShiftsPerMonth: number;
+  temporaryDriverFeePerHour: number; // $25-50/hour premium
+  trainingHoursPerMonth: number;
+  trainingRatePerHour: number;
+}
+
+export interface PatientClientVariableCosts {
+  tripSpecificSuppliesPerTrip: number; // Equipment rental
+  patientMealsPerTrip: number;
+  accommodationCostsPerTrip: number;
+  tollsParkingPerMonth: number; // Estimated monthly
+  waitTimeCompensationPerHour: number;
+  avgWaitTimeHoursPerMonth: number;
+}
+
+export interface OperationalVariableCosts {
+  dispatchOvertimeHoursPerMonth: number;
+  dispatchOvertimeRate: number;
+  phoneCommunicationOveragePerMonth: number;
+  creditCardProcessingPercentage: number; // 2.5-3.5%
+  fuelSurchargeThreshold: number; // Price per gallon
+  fuelSurchargePercentage: number; // % above threshold
+  subcontractorPaymentsPerMonth: number;
+  emergencyRoadsidePerMonth: number;
+}
+
+export interface AdministrativeVariableCosts {
+  billingClaimsProcessingPerClaim: number;
+  billingClaimsProcessingPercentage: number; // Alternative to per-claim
+  billingClaimsProcessingMode: 'per_claim' | 'percentage';
+  collectionsAgencyPercentage: number; // 20-35%
+  collectionsAgencyRecoveredAmount: number; // Monthly estimate
+  licensingPermitRenewalsPerMonth: number; // Spread annual costs
+  insuranceAuditFeesPerMonth: number; // Estimated
+}
+
+export interface MarketingVariableCosts {
+  referralCommissionsPerClient: number; // $25-100/referred client
+  referralCommissionsCount: number; // Monthly referrals
+  facilityPartnershipFeePerMonth: number;
+  digitalAdvertisingPerMonth: number;
+  crmListsPerMonth: number;
+}
+
+export interface ComplianceVariableCosts {
+  randomDrugTestsPerMonth: number; // Count
+  randomDrugTestCost: number; // $50-100
+  backgroundCheckRenewalsPerDriver: number; // Annual cost / 12
+  cprFirstAidRecertPerDriver: number; // Annual cost / 12 ($6-13/month)
+  vehicleInspectionFeesPerMonth: number; // Monthly/quarterly spread
+}
+
+export interface TechnologyVariableCosts {
+  gpsTelematicsPerVehicle: number; // $15-40/vehicle/month
+  rideManagementSoftwarePerTrip: number; // Alternative: per month
+  rideManagementSoftwareMode: 'per_trip' | 'per_month';
+  rideManagementSoftwareMonthly: number;
+  dataOveragePerMonth: number;
+  softwareAddonsPerMonth: number;
+}
+
+export interface VehicleSpecificVariableCosts {
+  depreciationPerMile: number; // Miles-based depreciation
+  registrationFeesPerVehicle: number; // Annual / 12
+  personalPropertyTaxPerVehicle: number; // Monthly
+  parkingStoragePerVehicle: number; // Monthly
+}
+
+export interface HybridSpecificVariableCosts {
+  medicaidBillingSupportPerClaim: number;
+  medicaidBillingSupportPercentage: number;
+  medicaidBillingSupportMode: 'per_claim' | 'percentage';
+  priorAuthorizationPerRequest: number;
+  priorAuthorizationCountPerMonth: number;
+  hcbsWaiverCoordinationHoursPerMonth: number;
+  hcbsWaiverCoordinationRate: number;
+  privatePayCollectionHoursPerMonth: number;
+  privatePayCollectionRate: number;
+  dualBillingSystemMaintenancePerMonth: number;
+}
+
+export interface SeasonalVariableCosts {
+  winterOperationsPerMonth: number; // Nov-Mar estimate
+  winterOperationsMonths: number[]; // [11, 12, 1, 2, 3] (0-indexed: Nov=10, Dec=11, Jan=0, Feb=1, Mar=2)
+  extremeWeatherCostsPerMonth: number; // Estimated
+  eventBasedDemandPerMonth: number; // Estimated
+  vehicleDowntimeReplacementPerMonth: number; // Rental costs
+}
+
 export interface VariableCosts {
+  // Existing per-mile costs (preserved for backward compatibility)
   fuelPerMile: number;
   maintenancePerMile: number;
   insuranceVariablePerMile: number;
   
-  // Fuel configuration
+  // Fuel configuration (existing)
   fuelMode: 'api' | 'manual' | 'compare';
   fuelApiPrice: number | null;
   fuelManualPrice: number;
   vehicleMpg: number;
+  
+  // New grouped cost categories
+  directTransport: DirectTransportVariableCosts;
+  driverStaff: DriverStaffVariableCosts;
+  patientClient: PatientClientVariableCosts;
+  operational: OperationalVariableCosts;
+  administrative: AdministrativeVariableCosts;
+  marketing: MarketingVariableCosts;
+  compliance: ComplianceVariableCosts;
+  technology: TechnologyVariableCosts;
+  vehicleSpecific: VehicleSpecificVariableCosts;
+  hybridSpecific: HybridSpecificVariableCosts;
+  seasonal: SeasonalVariableCosts;
 }
 
 export interface StaffMember {

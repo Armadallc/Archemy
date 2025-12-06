@@ -15,6 +15,17 @@ import {
   FixedCosts,
   VariableCosts,
   StaffingCosts,
+  DirectTransportVariableCosts,
+  DriverStaffVariableCosts,
+  PatientClientVariableCosts,
+  OperationalVariableCosts,
+  AdministrativeVariableCosts,
+  MarketingVariableCosts,
+  ComplianceVariableCosts,
+  TechnologyVariableCosts,
+  VehicleSpecificVariableCosts,
+  HybridSpecificVariableCosts,
+  SeasonalVariableCosts,
 } from '../types';
 import { allServiceCodes } from '../data/coloradoMedicaidCodes';
 
@@ -36,14 +47,134 @@ const defaultFixedCosts: FixedCosts = {
   miscAdmin: 100,
 };
 
+// Default values for grouped variable costs
+const defaultDirectTransport: DirectTransportVariableCosts = {
+  tiresPerMile: 0.03,              // $0.02-$0.04/mile
+  repairsPerMile: 0.075,            // $0.05-$0.10/mile
+  oilFilterPerMile: 0.015,         // $0.01-$0.02/mile
+  vehicleCleaningPerTrip: 10,       // $5-15/trip
+  disposableSuppliesPerTrip: 3.50,  // $2-5/trip
+};
+
+const defaultDriverStaff: DriverStaffVariableCosts = {
+  perTripDriverPay: 0,
+  perTripDriverPayMode: 'per_trip',
+  overtimeHoursPerMonth: 0,
+  overtimeRateMultiplier: 1.5,
+  driverBonusesPerMonth: 0,
+  additionalShiftsPerMonth: 0,
+  temporaryDriverFeePerHour: 37.50, // $25-50/hour premium
+  trainingHoursPerMonth: 0,
+  trainingRatePerHour: 25,
+};
+
+const defaultPatientClient: PatientClientVariableCosts = {
+  tripSpecificSuppliesPerTrip: 0,
+  patientMealsPerTrip: 0,
+  accommodationCostsPerTrip: 0,
+  tollsParkingPerMonth: 0,
+  waitTimeCompensationPerHour: 20,
+  avgWaitTimeHoursPerMonth: 0,
+};
+
+const defaultOperational: OperationalVariableCosts = {
+  dispatchOvertimeHoursPerMonth: 0,
+  dispatchOvertimeRate: 30,
+  phoneCommunicationOveragePerMonth: 0,
+  creditCardProcessingPercentage: 2.75, // 2.5-3.5%
+  fuelSurchargeThreshold: 4.00, // Price per gallon
+  fuelSurchargePercentage: 5, // % above threshold
+  subcontractorPaymentsPerMonth: 0,
+  emergencyRoadsidePerMonth: 0,
+};
+
+const defaultAdministrative: AdministrativeVariableCosts = {
+  billingClaimsProcessingPerClaim: 0,
+  billingClaimsProcessingPercentage: 0,
+  billingClaimsProcessingMode: 'per_claim',
+  collectionsAgencyPercentage: 25, // 20-35%
+  collectionsAgencyRecoveredAmount: 0,
+  licensingPermitRenewalsPerMonth: 0,
+  insuranceAuditFeesPerMonth: 0,
+};
+
+const defaultMarketing: MarketingVariableCosts = {
+  referralCommissionsPerClient: 50, // $25-100/referred client
+  referralCommissionsCount: 0,
+  facilityPartnershipFeePerMonth: 0,
+  digitalAdvertisingPerMonth: 0,
+  crmListsPerMonth: 0,
+};
+
+const defaultCompliance: ComplianceVariableCosts = {
+  randomDrugTestsPerMonth: 0,
+  randomDrugTestCost: 75, // $50-100
+  backgroundCheckRenewalsPerDriver: 0, // Annual cost / 12
+  cprFirstAidRecertPerDriver: 9.50, // $75-150/year ≈ $6-13/month
+  vehicleInspectionFeesPerMonth: 0,
+};
+
+const defaultTechnology: TechnologyVariableCosts = {
+  gpsTelematicsPerVehicle: 25, // $15-40/vehicle/month
+  rideManagementSoftwarePerTrip: 0,
+  rideManagementSoftwareMode: 'per_month',
+  rideManagementSoftwareMonthly: 0,
+  dataOveragePerMonth: 0,
+  softwareAddonsPerMonth: 0,
+};
+
+const defaultVehicleSpecific: VehicleSpecificVariableCosts = {
+  depreciationPerMile: 0.10, // Miles-based
+  registrationFeesPerVehicle: 0, // Annual / 12
+  personalPropertyTaxPerVehicle: 0,
+  parkingStoragePerVehicle: 0,
+};
+
+const defaultHybridSpecific: HybridSpecificVariableCosts = {
+  medicaidBillingSupportPerClaim: 0,
+  medicaidBillingSupportPercentage: 0,
+  medicaidBillingSupportMode: 'per_claim',
+  priorAuthorizationPerRequest: 0,
+  priorAuthorizationCountPerMonth: 0,
+  hcbsWaiverCoordinationHoursPerMonth: 0,
+  hcbsWaiverCoordinationRate: 30,
+  privatePayCollectionHoursPerMonth: 0,
+  privatePayCollectionRate: 30,
+  dualBillingSystemMaintenancePerMonth: 0,
+};
+
+const defaultSeasonal: SeasonalVariableCosts = {
+  winterOperationsPerMonth: 0,
+  winterOperationsMonths: [10, 11, 0, 1, 2], // Nov, Dec, Jan, Feb, Mar (0-indexed)
+  extremeWeatherCostsPerMonth: 0,
+  eventBasedDemandPerMonth: 0,
+  vehicleDowntimeReplacementPerMonth: 0,
+};
+
 const defaultVariableCosts: VariableCosts = {
+  // Existing per-mile costs (preserved for backward compatibility)
   fuelPerMile: 0.20,
   maintenancePerMile: 0.15,
   insuranceVariablePerMile: 0.05,
+  
+  // Fuel configuration (existing)
   fuelMode: 'api',
   fuelApiPrice: null,
   fuelManualPrice: 3.50,
   vehicleMpg: 17.5,
+  
+  // New grouped cost categories
+  directTransport: defaultDirectTransport,
+  driverStaff: defaultDriverStaff,
+  patientClient: defaultPatientClient,
+  operational: defaultOperational,
+  administrative: defaultAdministrative,
+  marketing: defaultMarketing,
+  compliance: defaultCompliance,
+  technology: defaultTechnology,
+  vehicleSpecific: defaultVehicleSpecific,
+  hybridSpecific: defaultHybridSpecific,
+  seasonal: defaultSeasonal,
 };
 
 const defaultStaffingCosts: StaffingCosts = {
@@ -94,6 +225,56 @@ const initialState: ProphetState = {
   lastSyncedAt: null,
   pendingSync: false,
 };
+
+// ============================================================================
+// MIGRATION FUNCTION
+// ============================================================================
+
+/**
+ * Migrates old VariableCosts structure to new grouped structure
+ * Ensures backward compatibility with existing localStorage data
+ */
+function migrateVariableCosts(oldVariable: any): VariableCosts {
+  // If already has new structure, return as-is
+  if (oldVariable.directTransport && oldVariable.driverStaff) {
+    return oldVariable as VariableCosts;
+  }
+  
+  // Otherwise, merge old structure with new defaults
+  return {
+    // Preserve existing values
+    fuelPerMile: oldVariable.fuelPerMile ?? defaultVariableCosts.fuelPerMile,
+    maintenancePerMile: oldVariable.maintenancePerMile ?? defaultVariableCosts.maintenancePerMile,
+    insuranceVariablePerMile: oldVariable.insuranceVariablePerMile ?? defaultVariableCosts.insuranceVariablePerMile,
+    fuelMode: oldVariable.fuelMode ?? defaultVariableCosts.fuelMode,
+    fuelApiPrice: oldVariable.fuelApiPrice ?? defaultVariableCosts.fuelApiPrice,
+    fuelManualPrice: oldVariable.fuelManualPrice ?? defaultVariableCosts.fuelManualPrice,
+    vehicleMpg: oldVariable.vehicleMpg ?? defaultVariableCosts.vehicleMpg,
+    
+    // Add new grouped structures with defaults
+    directTransport: defaultDirectTransport,
+    driverStaff: defaultDriverStaff,
+    patientClient: defaultPatientClient,
+    operational: defaultOperational,
+    administrative: defaultAdministrative,
+    marketing: defaultMarketing,
+    compliance: defaultCompliance,
+    technology: defaultTechnology,
+    vehicleSpecific: defaultVehicleSpecific,
+    hybridSpecific: defaultHybridSpecific,
+    seasonal: defaultSeasonal,
+  };
+}
+
+/**
+ * Migrates old CostStructure to ensure new variable costs structure exists
+ */
+function migrateCostStructure(oldCostStructure: any): CostStructure {
+  return {
+    ...oldCostStructure,
+    variable: migrateVariableCosts(oldCostStructure?.variable || {}),
+  };
+}
 
 // ============================================================================
 // STORE INTERFACE
@@ -167,9 +348,142 @@ function calculateTotalFixed(fixed: FixedCosts): number {
   );
 }
 
-function calculateTotalVariable(variable: VariableCosts, miles: number): number {
-  const totalPerMile = variable.fuelPerMile + variable.maintenancePerMile + variable.insuranceVariablePerMile;
-  return totalPerMile * miles;
+function calculateTotalVariable(variable: VariableCosts, miles: number, trips: number = 0, revenue: number = 0, baseDriverRate: number = 25): number {
+  // Per-mile costs (existing + new direct transport per-mile)
+  const perMileCosts = miles * (
+    variable.fuelPerMile +
+    variable.maintenancePerMile +
+    variable.insuranceVariablePerMile +
+    variable.directTransport.tiresPerMile +
+    variable.directTransport.repairsPerMile +
+    variable.directTransport.oilFilterPerMile +
+    variable.vehicleSpecific.depreciationPerMile
+  );
+  
+  // Per-trip costs
+  const perTripCosts = trips * (
+    variable.directTransport.vehicleCleaningPerTrip +
+    variable.directTransport.disposableSuppliesPerTrip +
+    variable.patientClient.tripSpecificSuppliesPerTrip +
+    variable.patientClient.patientMealsPerTrip +
+    variable.patientClient.accommodationCostsPerTrip
+  );
+  
+  // Driver/Staff variable costs
+  const driverStaffCosts = (
+    // Per-trip driver pay
+    (variable.driverStaff.perTripDriverPayMode === 'per_trip' 
+      ? variable.driverStaff.perTripDriverPay * trips
+      : variable.driverStaff.perTripDriverPay * miles) +
+    // Overtime
+    variable.driverStaff.overtimeHoursPerMonth * baseDriverRate * variable.driverStaff.overtimeRateMultiplier +
+    // Bonuses
+    variable.driverStaff.driverBonusesPerMonth +
+    // Additional shifts (estimate based on base rate)
+    variable.driverStaff.additionalShiftsPerMonth * baseDriverRate * 8 + // 8 hours per shift
+    // Temporary drivers (estimate hours)
+    (variable.driverStaff.temporaryDriverFeePerHour * 0) + // User sets hours separately
+    // Training
+    variable.driverStaff.trainingHoursPerMonth * variable.driverStaff.trainingRatePerHour
+  );
+  
+  // Patient/Client related monthly costs
+  const patientClientCosts = (
+    variable.patientClient.tollsParkingPerMonth +
+    variable.patientClient.waitTimeCompensationPerHour * variable.patientClient.avgWaitTimeHoursPerMonth
+  );
+  
+  // Operational variable costs
+  const operationalCosts = (
+    variable.operational.dispatchOvertimeHoursPerMonth * variable.operational.dispatchOvertimeRate +
+    variable.operational.phoneCommunicationOveragePerMonth +
+    (revenue > 0 ? (revenue * variable.operational.creditCardProcessingPercentage / 100) : 0) +
+    // Fuel surcharge (if applicable)
+    (variable.fuelApiPrice && variable.fuelApiPrice > variable.operational.fuelSurchargeThreshold
+      ? miles * (variable.fuelApiPrice - variable.operational.fuelSurchargeThreshold) * (variable.operational.fuelSurchargePercentage / 100) / variable.vehicleMpg
+      : 0) +
+    variable.operational.subcontractorPaymentsPerMonth +
+    variable.operational.emergencyRoadsidePerMonth
+  );
+  
+  // Administrative variable costs
+  const administrativeCosts = (
+    (variable.administrative.billingClaimsProcessingMode === 'per_claim'
+      ? variable.administrative.billingClaimsProcessingPerClaim * trips // Estimate: 1 claim per trip
+      : revenue * variable.administrative.billingClaimsProcessingPercentage / 100) +
+    (variable.administrative.collectionsAgencyRecoveredAmount * variable.administrative.collectionsAgencyPercentage / 100) +
+    variable.administrative.licensingPermitRenewalsPerMonth +
+    variable.administrative.insuranceAuditFeesPerMonth
+  );
+  
+  // Marketing costs
+  const marketingCosts = (
+    variable.marketing.referralCommissionsPerClient * variable.marketing.referralCommissionsCount +
+    variable.marketing.facilityPartnershipFeePerMonth +
+    variable.marketing.digitalAdvertisingPerMonth +
+    variable.marketing.crmListsPerMonth
+  );
+  
+  // Compliance costs
+  const complianceCosts = (
+    variable.compliance.randomDrugTestsPerMonth * variable.compliance.randomDrugTestCost +
+    variable.compliance.backgroundCheckRenewalsPerDriver * 0 + // User sets driver count separately
+    variable.compliance.cprFirstAidRecertPerDriver * 0 + // User sets driver count separately
+    variable.compliance.vehicleInspectionFeesPerMonth
+  );
+  
+  // Technology costs
+  const technologyCosts = (
+    variable.technology.gpsTelematicsPerVehicle * 0 + // User sets vehicle count separately
+    (variable.technology.rideManagementSoftwareMode === 'per_trip'
+      ? variable.technology.rideManagementSoftwarePerTrip * trips
+      : variable.technology.rideManagementSoftwareMonthly) +
+    variable.technology.dataOveragePerMonth +
+    variable.technology.softwareAddonsPerMonth
+  );
+  
+  // Vehicle specific costs
+  const vehicleSpecificCosts = (
+    variable.vehicleSpecific.registrationFeesPerVehicle * 0 + // User sets vehicle count separately
+    variable.vehicleSpecific.personalPropertyTaxPerVehicle * 0 + // User sets vehicle count separately
+    variable.vehicleSpecific.parkingStoragePerVehicle * 0 // User sets vehicle count separately
+  );
+  
+  // Hybrid-specific costs
+  const hybridSpecificCosts = (
+    (variable.hybridSpecific.medicaidBillingSupportMode === 'per_claim'
+      ? variable.hybridSpecific.medicaidBillingSupportPerClaim * trips // Estimate: 1 claim per trip
+      : revenue * variable.hybridSpecific.medicaidBillingSupportPercentage / 100) +
+    variable.hybridSpecific.priorAuthorizationPerRequest * variable.hybridSpecific.priorAuthorizationCountPerMonth +
+    variable.hybridSpecific.hcbsWaiverCoordinationHoursPerMonth * variable.hybridSpecific.hcbsWaiverCoordinationRate +
+    variable.hybridSpecific.privatePayCollectionHoursPerMonth * variable.hybridSpecific.privatePayCollectionRate +
+    variable.hybridSpecific.dualBillingSystemMaintenancePerMonth
+  );
+  
+  // Seasonal costs (apply only during winter months)
+  const currentMonth = new Date().getMonth(); // 0-11
+  const isWinterMonth = variable.seasonal.winterOperationsMonths.includes(currentMonth);
+  const seasonalCosts = (
+    (isWinterMonth ? variable.seasonal.winterOperationsPerMonth : 0) +
+    variable.seasonal.extremeWeatherCostsPerMonth +
+    variable.seasonal.eventBasedDemandPerMonth +
+    variable.seasonal.vehicleDowntimeReplacementPerMonth
+  );
+  
+  return (
+    perMileCosts +
+    perTripCosts +
+    driverStaffCosts +
+    patientClientCosts +
+    operationalCosts +
+    administrativeCosts +
+    marketingCosts +
+    complianceCosts +
+    technologyCosts +
+    vehicleSpecificCosts +
+    hybridSpecificCosts +
+    seasonalCosts
+  );
 }
 
 function calculateTotalStaffing(staffing: StaffingCosts): number {
@@ -581,9 +895,21 @@ export const useProphetStore = create<ProphetState & ProphetActions>()(
         const scenario = state.scenarios.find((s) => s.id === scenarioId);
         if (!scenario) return 0;
         
+        // Calculate total trips for per-trip variable costs
+        const totalTrips = scenario.trips.reduce((sum, trip) => {
+          const multiplier = trip.roundTrip ? 2 : 1;
+          return sum + (trip.tripsPerMonth * multiplier);
+        }, 0);
+        
+        // Calculate revenue for percentage-based variable costs
+        const revenue = get().calculateScenarioRevenue(scenarioId);
+        
+        // Get base driver rate for overtime calculations
+        const baseDriverRate = scenario.costs.staffing.driver.hourlyRate || 25;
+        
         const costs = scenario.costs;
         const fixed = calculateTotalFixed(costs.fixed);
-        const variable = calculateTotalVariable(costs.variable, totalMiles);
+        const variable = calculateTotalVariable(costs.variable, totalMiles, totalTrips, revenue, baseDriverRate);
         const staffing = calculateTotalStaffing(costs.staffing);
         
         return fixed + variable + staffing;
@@ -602,10 +928,69 @@ export const useProphetStore = create<ProphetState & ProphetActions>()(
         const revenue = get().calculateScenarioRevenue(scenarioId);
         const avgRevenuePerTrip = totalTrips > 0 ? revenue / totalTrips : 0;
         
-        // Calculate variable cost per trip
+        // Calculate average miles per trip for per-mile variable costs
         const avgMiles = scenario.trips.reduce((sum, trip) => sum + trip.avgMiles, 0) / (scenario.trips.length || 1);
         const variable = scenario.costs.variable;
-        const variableCostPerTrip = avgMiles * (variable.fuelPerMile + variable.maintenancePerMile + variable.insuranceVariablePerMile);
+        const baseDriverRate = scenario.costs.staffing.driver.hourlyRate || 25;
+        
+        // Calculate variable cost per trip (per-mile + per-trip + monthly variable costs per trip)
+        // Per-mile variable costs per trip
+        const perMileCostsPerTrip = avgMiles * (
+          variable.fuelPerMile +
+          variable.maintenancePerMile +
+          variable.insuranceVariablePerMile +
+          variable.directTransport.tiresPerMile +
+          variable.directTransport.repairsPerMile +
+          variable.directTransport.oilFilterPerMile +
+          variable.vehicleSpecific.depreciationPerMile
+        );
+        
+        // Per-trip variable costs
+        const perTripCosts = (
+          variable.directTransport.vehicleCleaningPerTrip +
+          variable.directTransport.disposableSuppliesPerTrip +
+          variable.patientClient.tripSpecificSuppliesPerTrip +
+          variable.patientClient.patientMealsPerTrip +
+          variable.patientClient.accommodationCostsPerTrip
+        );
+        
+        // Driver/Staff variable costs per trip (estimated)
+        const driverStaffCostsPerTrip = totalTrips > 0 ? (
+          (variable.driverStaff.perTripDriverPayMode === 'per_trip' 
+            ? variable.driverStaff.perTripDriverPay
+            : variable.driverStaff.perTripDriverPay * avgMiles) +
+          (variable.driverStaff.overtimeHoursPerMonth * baseDriverRate * variable.driverStaff.overtimeRateMultiplier / totalTrips) +
+          (variable.driverStaff.driverBonusesPerMonth / totalTrips) +
+          (variable.driverStaff.trainingHoursPerMonth * variable.driverStaff.trainingRatePerHour / totalTrips)
+        ) : 0;
+        
+        // Monthly variable costs per trip (estimated)
+        const monthlyVariableCostsPerTrip = totalTrips > 0 ? (
+          (variable.patientClient.tollsParkingPerMonth / totalTrips) +
+          (variable.operational.dispatchOvertimeHoursPerMonth * variable.operational.dispatchOvertimeRate / totalTrips) +
+          (variable.operational.phoneCommunicationOveragePerMonth / totalTrips) +
+          (variable.administrative.licensingPermitRenewalsPerMonth / totalTrips) +
+          (variable.marketing.facilityPartnershipFeePerMonth / totalTrips) +
+          (variable.marketing.digitalAdvertisingPerMonth / totalTrips) +
+          (variable.compliance.vehicleInspectionFeesPerMonth / totalTrips) +
+          (variable.technology.dataOveragePerMonth / totalTrips) +
+          (variable.hybridSpecific.dualBillingSystemMaintenancePerMonth / totalTrips)
+        ) : 0;
+        
+        // Percentage-based costs per trip (estimated from revenue)
+        const percentageCostsPerTrip = totalTrips > 0 && revenue > 0 ? (
+          (revenue * variable.operational.creditCardProcessingPercentage / 100 / totalTrips) +
+          (revenue * variable.administrative.billingClaimsProcessingPercentage / 100 / totalTrips) +
+          (revenue * variable.hybridSpecific.medicaidBillingSupportPercentage / 100 / totalTrips)
+        ) : 0;
+        
+        const variableCostPerTrip = (
+          perMileCostsPerTrip +
+          perTripCosts +
+          driverStaffCostsPerTrip +
+          monthlyVariableCostsPerTrip +
+          percentageCostsPerTrip
+        );
         
         const contributionMargin = avgRevenuePerTrip - variableCostPerTrip;
         
@@ -623,7 +1008,25 @@ export const useProphetStore = create<ProphetState & ProphetActions>()(
     {
       name: 'prophet-calculator',
       storage: createJSONStorage(() => localStorage),
-      version: 1,
+      version: 2, // Increment version for new variable costs structure
+      migrate: (persistedState: any, version: number) => {
+        // Migrate from version 1 to version 2
+        if (version < 2) {
+          // Migrate cost structure to include new variable costs
+          if (persistedState?.costStructure) {
+            persistedState.costStructure = migrateCostStructure(persistedState.costStructure);
+          }
+          
+          // Migrate scenarios to include new variable costs in their cost structures
+          if (persistedState?.scenarios) {
+            persistedState.scenarios = persistedState.scenarios.map((scenario: any) => ({
+              ...scenario,
+              costs: migrateCostStructure(scenario.costs || {}),
+            }));
+          }
+        }
+        return persistedState;
+      },
       partialize: (state) => ({
         serviceCodes: state.serviceCodes,
         facilities: state.facilities,
