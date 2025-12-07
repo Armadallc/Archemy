@@ -311,24 +311,20 @@ export default function HierarchicalTripsPage() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 
-            className="uppercase"
-            style={{
-              fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
-              fontWeight: 600,
-              fontSize: '68px',
-              lineHeight: 1.15,
-              letterSpacing: '-0.015em',
-              textTransform: 'uppercase',
-              color: 'var(--foreground)',
-            }}
-          >
-            CORPORATE TRIPS
-          </h1>
-        </div>
-        <div className="flex items-center gap-3">
+      <div>
+        <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '130px' }}>
+          <div>
+            <h1 
+              className="font-bold text-foreground" 
+              style={{ 
+                fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+                fontSize: '110px'
+              }}
+            >
+              trips.
+            </h1>
+          </div>
+          <div className="flex items-center gap-3">
           {/* View Toggle (only shown if compact view feature flag is enabled) */}
           {compactViewEnabled && (
             <div className="flex items-center gap-1 border rounded-md p-1">
@@ -396,6 +392,7 @@ export default function HierarchicalTripsPage() {
               </Button>
             </PermissionGuard>
           )}
+          </div>
         </div>
       </div>
 

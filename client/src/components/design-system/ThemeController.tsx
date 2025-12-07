@@ -43,7 +43,7 @@ const getCoreColors = () => {
       var: '--color-lime'
     },
     coral: { 
-      hex: getVar('--color-coral', '#ff555d'), 
+      hex: getVar('--color-coral', '#ff8475'), 
       name: 'Coral',
       var: '--color-coral'
     },
@@ -57,11 +57,21 @@ const getCoreColors = () => {
       name: 'Cloud',
       var: '--color-cloud'
     },
+    shadow: { 
+      hex: getVar('--color-shadow', '#343434'), 
+      name: 'Shadow',
+      var: '--color-shadow'
+    },
+    aqua: { 
+      hex: getVar('--color-aqua', '#a5c8ca'), 
+      name: 'Aqua',
+      var: '--color-aqua'
+    },
   } as const;
 };
 
 // Type for color keys
-type ColorKey = 'charcoal' | 'ice' | 'lime' | 'coral' | 'silver' | 'cloud';
+type ColorKey = 'charcoal' | 'ice' | 'lime' | 'coral' | 'silver' | 'cloud' | 'shadow' | 'aqua';
 
 
 // Theme slots - what you're actually designing

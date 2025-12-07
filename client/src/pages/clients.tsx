@@ -960,27 +960,22 @@ export default function Clients() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 
-            className="uppercase"
-            style={{
-              fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
-              fontWeight: 600,
-              fontSize: '68px',
-              lineHeight: 1.15,
-              letterSpacing: '-0.015em',
-              textTransform: 'uppercase',
-              color: 'var(--foreground)',
-            }}
-          >
-            CLIENT MANAGEMENT
-          </h1>
-        </div>
-        
-        <div className="flex space-x-2">
+      <div>
+        <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '130px' }}>
+          <div>
+            <h1 
+              className="font-bold text-foreground" 
+              style={{ 
+                fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+                fontSize: '110px'
+              }}
+            >
+              clients.
+            </h1>
+          </div>
+          <div className="flex space-x-2">
           <ExportButton
             data={filteredClients}
             columns={[
@@ -1037,6 +1032,7 @@ export default function Clients() {
             <Upload className="w-4 h-4 mr-2" />
             Import
           </Button>
+          </div>
         </div>
       </div>
 

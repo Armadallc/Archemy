@@ -90,14 +90,14 @@ const ShadcnHeader = ({ title, subtitle }: { title: string; subtitle?: string })
   };
 
   return (
-    <div className="px-6 py-6 flex items-center justify-between border-b rounded-lg backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
+    <div className="px-6 py-6 flex items-center justify-between rounded-lg border backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '130px' }}>
       <div className="flex items-center gap-3">
         <div 
           className="flex items-center text-foreground"
           style={{
             fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
             fontWeight: 700,
-            fontSize: '68px',
+            fontSize: '110px',
             lineHeight: 1.15,
             letterSpacing: '-0.015em',
             textTransform: 'none', // Don't uppercase the time
@@ -273,16 +273,16 @@ export default function ShadcnDashboardMigrated() {
     
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'var(--page-background)' }}>
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden" style={{ padding: '24px' }}>
           {/* Header */}
-          <div className="px-6 pt-6">
+          <div>
             <ShadcnHeader title={getRoleBasedTitle()} subtitle="System-wide operations and performance overview" />
           </div>
           {/* Dashboard Content */}
-          <div className="flex-1 overflow-auto p-6">
+          <div className="flex-1 overflow-auto">
           <div className="space-y-6">
             {/* Stats Cards - Shadcn Style */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" style={{ marginTop: '24px' }}>
               <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Total Trips</CardTitle>
@@ -355,7 +355,7 @@ export default function ShadcnDashboardMigrated() {
 
               {/* Right Side: Activity Log (50%) - Scrollable, matching left column height */}
               <div className="flex">
-                <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl flex flex-col w-full" style={{ height: '481.033px', paddingTop: '12px', paddingBottom: '12px' }}>
+                <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl flex flex-col w-full" style={{ height: '686px', paddingTop: '12px', paddingBottom: '12px' }}>
                   <CardContent className="p-0 flex-1 overflow-hidden flex flex-col min-h-0">
                     <ActivityFeed />
                   </CardContent>
@@ -403,16 +403,6 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
             </div>
-
-            {/* Recent Activity - Preserved */}
-            <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
-              <CardHeader>
-                <CardTitle className="text-foreground">Recent Activity</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ActivityFeed />
-              </CardContent>
-            </Card>
           </div>
         </div>
         </div>
@@ -428,7 +418,7 @@ export default function ShadcnDashboardMigrated() {
           {/* Header */}
           <ShadcnHeader title={getRoleBasedTitle()} subtitle={`Managing ${selectedCorporateClient || "corporate"} operations`} />
           {/* Dashboard Content */}
-          <div className="flex-1 overflow-auto p-6">
+          <div className="flex-1 overflow-auto">
           <div className="space-y-6">
             {/* Stats Cards - Shadcn Style */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -567,7 +557,7 @@ export default function ShadcnDashboardMigrated() {
           
           
           {/* Dashboard Content */}
-          <div className="flex-1 overflow-auto p-6">
+          <div className="flex-1 overflow-auto">
           <div className="space-y-6">
             {/* Stats Cards - Shadcn Style */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -705,7 +695,7 @@ export default function ShadcnDashboardMigrated() {
           
           
           {/* Dashboard Content */}
-          <div className="flex-1 overflow-auto p-6">
+          <div className="flex-1 overflow-auto">
           <div className="space-y-6">
             {/* Stats Cards - Shadcn Style */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -833,7 +823,7 @@ export default function ShadcnDashboardMigrated() {
           
           
           {/* Dashboard Content */}
-          <div className="flex-1 overflow-auto p-6">
+          <div className="flex-1 overflow-auto">
           <div className="space-y-6">
             {/* Stats Cards - Shadcn Style */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -102,14 +102,19 @@ export default function CalendarExperiment() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-background overflow-hidden">
+    <div className="h-screen flex flex-col bg-background overflow-hidden p-6">
       {/* Header */}
-      <div className="flex-shrink-0 flex items-center justify-between p-4 border-b bg-background">
+      <div className="flex-shrink-0 px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between mb-6" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '130px' }}>
         <div>
-          <h1 className="text-2xl font-bold">BentoBox Calendar</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Atomic Design Scheduling System - Experimental
-          </p>
+          <h1 
+            className="font-bold text-foreground" 
+            style={{ 
+              fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+              fontSize: '110px'
+            }}
+          >
+            bentobox.
+          </h1>
         </div>
 
         {/* View Controls */}
@@ -193,7 +198,7 @@ export default function CalendarExperiment() {
       <div className="flex flex-1 overflow-hidden min-h-0">
         <div className="flex flex-1 flex-col overflow-hidden min-h-0 w-full h-full">
           {/* Custom Tab Navigation */}
-          <div className="px-4 pt-2 border-b flex-shrink-0 bg-background">
+          <div className="px-4 pt-2 pb-2 border-b flex-shrink-0 bg-background">
             <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground w-full">
               <button
                 onClick={() => setActiveTab('stage')}
@@ -205,7 +210,7 @@ export default function CalendarExperiment() {
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                Tab 1: Stage & Calendar
+                STAGE & CALENDAR
               </button>
               <button
                 onClick={() => setActiveTab('builder')}
@@ -217,7 +222,7 @@ export default function CalendarExperiment() {
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                Tab 2: Library & Builder
+                LIBRARY & BUILDER
               </button>
             </div>
           </div>

@@ -790,23 +790,56 @@ export const useProphetStore = create<ProphetState & ProphetActions>()(
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) return;
           
-          // Fetch scenarios
-          const { data: scenarios } = await supabase
+          // Helper to check if error is a "table doesn't exist" error
+          const isTableNotFoundError = (error: any) => {
+            if (!error) return false;
+            // Check for various Supabase error codes/messages that indicate missing tables
+            const errorCode = error.code;
+            const errorMessage = error.message?.toLowerCase() || '';
+            const errorDetails = error.details?.toLowerCase() || '';
+            
+            return (
+              errorCode === 'PGRST116' || // Relation does not exist
+              errorCode === '42P01' || // PostgreSQL: relation does not exist
+              errorMessage.includes('relation') && errorMessage.includes('does not exist') ||
+              errorMessage.includes('table') && errorMessage.includes('does not exist') ||
+              errorMessage.includes('404') ||
+              errorDetails.includes('relation') && errorDetails.includes('does not exist')
+            );
+          };
+          
+          // Fetch scenarios (gracefully handle missing tables - 404 is expected if tables don't exist)
+          const { data: scenarios, error: scenariosError } = await supabase
             .from('prophet_scenarios')
             .select('*')
             .eq('user_id', user.id);
           
-          // Fetch facilities
-          const { data: facilities } = await supabase
+          // Silently ignore "table doesn't exist" errors - we'll use localStorage
+          if (scenariosError && !isTableNotFoundError(scenariosError)) {
+            console.warn('Error fetching scenarios:', scenariosError);
+          }
+          
+          // Fetch facilities (gracefully handle missing tables)
+          const { data: facilities, error: facilitiesError } = await supabase
             .from('prophet_facilities')
             .select('*')
             .eq('user_id', user.id);
           
-          // Fetch custom codes
-          const { data: customCodes } = await supabase
+          // Silently ignore "table doesn't exist" errors - we'll use localStorage
+          if (facilitiesError && !isTableNotFoundError(facilitiesError)) {
+            console.warn('Error fetching facilities:', facilitiesError);
+          }
+          
+          // Fetch custom codes (gracefully handle missing tables)
+          const { data: customCodes, error: codesError } = await supabase
             .from('prophet_service_codes')
             .select('*')
             .eq('user_id', user.id);
+          
+          // Silently ignore "table doesn't exist" errors - we'll use localStorage
+          if (codesError && !isTableNotFoundError(codesError)) {
+            console.warn('Error fetching service codes:', codesError);
+          }
           
           if (scenarios || facilities || customCodes) {
             set((state) => ({

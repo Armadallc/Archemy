@@ -29,7 +29,7 @@ export default function ProphetPage() {
   }
 
   return (
-    <div className="flex-1 overflow-auto mobile-optimized pb-20 md:pb-0 md:pt-6">
+    <div className="flex-1 overflow-auto mobile-optimized pb-20 md:pb-0">
       <div className="flex-1 overflow-auto p-6" style={{ backgroundColor: 'var(--background)' }}>
         <ProphetCalculator />
       </div>

@@ -486,7 +486,7 @@ export function DrillDownDropdown({ className = '' }: DrillDownDropdownProps) {
     if (user?.role === 'program_admin' || user?.role === 'program_user') {
       return getProgramAdminBreadcrumb();
     }
-    return getBreadcrumbPath().replace(/Corporate/g, 'CORPORATE');
+    return getBreadcrumbPath().replace(/Corporate/g, 'PARTNERS');
   };
 
   // Show for all roles except driver
@@ -513,7 +513,7 @@ export function DrillDownDropdown({ className = '' }: DrillDownDropdownProps) {
         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
       >
         <div className="flex-1 min-w-0 text-left">
-          <p className="truncate uppercase" style={{ color: 'var(--gray-12)', fontSize: '20px', fontWeight: 500 }}>
+          <p className="truncate uppercase" style={{ color: 'var(--gray-12)', fontSize: '16px', fontWeight: 500, fontFamily: "'Nohemi', sans-serif" }}>
             {getBreadcrumbText()}
           </p>
         </div>

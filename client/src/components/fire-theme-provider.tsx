@@ -2,14 +2,16 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-// Your 6 Fire palette colors
+// Your 8 Fire palette colors
 const PALETTE = {
   charcoal: "#26282b",
   ice: "#e8fffe",
   lime: "#f1fec9",
-  coral: "#ff555d",
+  coral: "#ff8475",
   silver: "#eaeaea",
   cloud: "#f4f4f4",
+  shadow: "#343434",
+  aqua: "#a5c8ca",
 } as const;
 
 export type PaletteColor = keyof typeof PALETTE;

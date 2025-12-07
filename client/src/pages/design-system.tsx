@@ -309,9 +309,11 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
             { name: 'Charcoal', value: '#26282b', cssVar: '--color-charcoal', usage: 'Dark backgrounds, light mode text' },
             { name: 'Ice', value: '#e8fffe', cssVar: '--color-ice', usage: 'Light accent backgrounds' },
             { name: 'Lime', value: '#f1fec9', cssVar: '--color-lime', usage: 'Elevated surfaces, accent' },
-            { name: 'Coral', value: '#ff555d', cssVar: '--color-coral', usage: 'Primary actions, highlights' },
+            { name: 'Coral', value: '#ff8475', cssVar: '--color-coral', usage: 'Primary actions, highlights' },
             { name: 'Silver', value: '#eaeaea', cssVar: '--color-silver', usage: 'Borders, muted backgrounds' },
             { name: 'Cloud', value: '#f4f4f4', cssVar: '--color-cloud', usage: 'Light mode background' },
+            { name: 'Shadow', value: '#343434', cssVar: '--color-shadow', usage: 'Dark gray accents' },
+            { name: 'Aqua', value: '#a5c8ca', cssVar: '--color-aqua', usage: 'Light teal accents' },
           ].map(({ name, value, cssVar, usage }) => (
             <div key={name} className="space-y-2 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
               <div 
@@ -390,7 +392,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
           <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
             <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-3">Actions & Text</h4>
             {[
-              { key: 'primary', value: 'var(--primary)', label: 'Primary', color: '#ff555d' },
+              { key: 'primary', value: 'var(--primary)', label: 'Primary', color: '#ff8475' },
               { key: 'accent', value: 'var(--accent)', label: 'Accent', color: '#f1fec9' },
               { key: 'foreground', value: 'var(--foreground)', label: 'Foreground', color: '#26282b' },
               { key: 'foreground-secondary', value: 'var(--foreground-secondary)', label: 'Foreground Secondary', color: '#5c6166' },
@@ -490,7 +492,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
           <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
             <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-3">Actions</h4>
             {[
-              { cssVar: '--primary', value: '#ff555d', label: 'Primary' },
+              { cssVar: '--primary', value: '#ff8475', label: 'Primary' },
               { cssVar: '--primary-hover', value: '#e04850', label: 'Primary Hover' },
               { cssVar: '--primary-foreground', value: '#ffffff', label: 'Primary Foreground' },
               { cssVar: '--accent', value: '#f1fec9', label: 'Accent' },
@@ -527,8 +529,8 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
               { cssVar: '--border-strong', value: '#b8bcc0', label: 'Border Strong' },
               { cssVar: '--input', value: '#ffffff', label: 'Input' },
               { cssVar: '--input-border', value: '#d4d7da', label: 'Input Border' },
-              { cssVar: '--input-focus', value: '#ff555d', label: 'Input Focus' },
-              { cssVar: '--ring', value: '#ff555d', label: 'Ring' },
+              { cssVar: '--input-focus', value: '#ff8475', label: 'Input Focus' },
+              { cssVar: '--ring', value: '#ff8475', label: 'Ring' },
               { cssVar: '--ring-offset', value: '#f4f4f4', label: 'Ring Offset' },
               { cssVar: '--muted', value: '#eaeaea', label: 'Muted' },
             ].map(({ cssVar, value, label }) => (
@@ -561,7 +563,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
               { cssVar: '--status-success-bg', value: 'rgba(59, 254, 201, 0.15)', label: 'Success BG', derived: '15% opacity' },
               { cssVar: '--status-warning', value: '#f1fe60', label: 'Warning', derived: 'From Lime (#f1fec9) - Blue: 60' },
               { cssVar: '--status-warning-bg', value: 'rgba(241, 254, 96, 0.15)', label: 'Warning BG', derived: '15% opacity' },
-              { cssVar: '--status-error', value: '#e04850', label: 'Error', derived: 'From Coral (#ff555d) - darker' },
+              { cssVar: '--status-error', value: '#e04850', label: 'Error', derived: 'From Coral (#ff8475) - darker' },
               { cssVar: '--status-error-bg', value: 'rgba(224, 72, 80, 0.15)', label: 'Error BG', derived: '15% opacity' },
               { cssVar: '--status-info', value: '#7afffe', label: 'Info', derived: 'From Ice (#e8fffe) - Red: 7A' },
               { cssVar: '--status-info-bg', value: 'rgba(122, 255, 254, 0.15)', label: 'Info BG', derived: '15% opacity' },
@@ -598,7 +600,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
               { cssVar: '--in-progress-bg', value: 'rgba(241, 254, 96, 0.15)', label: 'In Progress BG', derived: '15% opacity' },
               { cssVar: '--completed', value: '#3bfec9', label: 'Completed', derived: 'From Lime (#f1fec9) - Red: 3B' },
               { cssVar: '--completed-bg', value: 'rgba(59, 254, 201, 0.15)', label: 'Completed BG', derived: '15% opacity' },
-              { cssVar: '--cancelled', value: '#e04850', label: 'Cancelled', derived: 'From Coral (#ff555d) - darker' },
+              { cssVar: '--cancelled', value: '#e04850', label: 'Cancelled', derived: 'From Coral (#ff8475) - darker' },
               { cssVar: '--cancelled-bg', value: 'rgba(224, 72, 80, 0.15)', label: 'Cancelled BG', derived: '15% opacity' },
               { cssVar: '--confirmed', value: '#c2b4fe', label: 'Confirmed', derived: 'From Ice (#e8fffe) - Red: C2, Green: B4' },
               { cssVar: '--confirmed-bg', value: 'rgba(194, 180, 254, 0.15)', label: 'Confirmed BG', derived: '15% opacity' },
@@ -631,12 +633,12 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
               { cssVar: '--sidebar', value: '#26282b', label: 'Sidebar' },
               { cssVar: '--sidebar-foreground', value: '#f4f4f4', label: 'Sidebar Foreground' },
               { cssVar: '--sidebar-foreground-muted', value: '#9ca3af', label: 'Sidebar Foreground Muted' },
-              { cssVar: '--sidebar-primary', value: '#ff555d', label: 'Sidebar Primary' },
+              { cssVar: '--sidebar-primary', value: '#ff8475', label: 'Sidebar Primary' },
               { cssVar: '--sidebar-primary-foreground', value: '#ffffff', label: 'Sidebar Primary FG' },
               { cssVar: '--sidebar-accent', value: '#f1fec9', label: 'Sidebar Accent' },
               { cssVar: '--sidebar-accent-foreground', value: '#26282b', label: 'Sidebar Accent FG' },
               { cssVar: '--sidebar-border', value: '#363a3e', label: 'Sidebar Border' },
-              { cssVar: '--sidebar-ring', value: '#ff555d', label: 'Sidebar Ring' },
+              { cssVar: '--sidebar-ring', value: '#ff8475', label: 'Sidebar Ring' },
             ].map(({ cssVar, value, label }) => (
               <div key={cssVar} className="space-y-2">
                 <Label className="text-sm text-[#26282b]/80 dark:text-[#eaeaea]/80">{label}</Label>
@@ -900,7 +902,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
               </div>
               <div className="flex items-center space-x-3">
                 <div 
-                  className="h-16 w-16 bg-gradient-to-br from-[#ff555d] to-[#e04850] border-2 border-white/30 dark:border-white/20 shadow-lg flex-shrink-0 flex items-center justify-center"
+                  className="h-16 w-16 bg-gradient-to-br from-[#ff8475] to-[#e04850] border-2 border-white/30 dark:border-white/20 shadow-lg flex-shrink-0 flex items-center justify-center"
                   style={{ 
                     borderRadius: value === '0.5rem' ? '0.5rem' : 
                                  value.includes('calc') && value.includes('- 2px') ? '0.375rem' :
@@ -954,7 +956,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
               <div className="space-y-2">
                 <div className="flex items-center space-x-3">
                   <div 
-                    className="h-8 bg-gradient-to-r from-[#ff555d] to-[#e04850] rounded border border-white/30 dark:border-white/20 shadow-md flex-shrink-0 flex items-center justify-center"
+                    className="h-8 bg-gradient-to-r from-[#ff8475] to-[#e04850] rounded border border-white/30 dark:border-white/20 shadow-md flex-shrink-0 flex items-center justify-center"
                     style={{ width: `min(${value}, 120px)` }}
                   >
                     <span className="text-xs font-bold text-white px-1">{pixels}</span>
@@ -1003,7 +1005,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
             size="sm"
             onClick={handleSave}
             disabled={!hasChanges}
-            className="bg-[#ff555d]/20 hover:bg-[#ff555d]/30 border-[#ff555d]/30 text-[#ff555d] backdrop-blur-sm"
+            className="bg-[#ff8475]/20 hover:bg-[#ff8475]/30 border-[#ff8475]/30 text-[#ff8475] backdrop-blur-sm"
           >
             <Save className="w-4 h-4 mr-2" />
             Stage Changes
@@ -1012,7 +1014,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
       </div>
 
       {hasChanges && (
-        <div className="bg-[#ff555d]/10 border border-[#ff555d]/30 rounded-lg p-3 backdrop-blur-sm">
+        <div className="bg-[#ff8475]/10 border border-[#ff8475]/30 rounded-lg p-3 backdrop-blur-sm">
           <p className="text-sm text-[#26282b] dark:text-[#eaeaea]">
             <span className="font-semibold">⚠️ Unsaved changes:</span> You have unsaved changes. Click "Stage Changes" to save them, or "Reset" to discard.
           </p>
@@ -1360,7 +1362,7 @@ const ComponentBuilder = () => {
             size="sm"
             onClick={handleSave}
             disabled={!hasChanges}
-            className="bg-[#ff555d]/20 hover:bg-[#ff555d]/30 border-[#ff555d]/30 text-[#ff555d] backdrop-blur-sm"
+            className="bg-[#ff8475]/20 hover:bg-[#ff8475]/30 border-[#ff8475]/30 text-[#ff8475] backdrop-blur-sm"
           >
             <Save className="w-4 h-4 mr-2" />
             Stage
@@ -1369,7 +1371,7 @@ const ComponentBuilder = () => {
       </div>
 
       {hasChanges && (
-        <div className="bg-[#ff555d]/10 border border-[#ff555d]/30 rounded-lg p-3 backdrop-blur-sm">
+        <div className="bg-[#ff8475]/10 border border-[#ff8475]/30 rounded-lg p-3 backdrop-blur-sm">
           <p className="text-sm text-[#26282b] dark:text-[#eaeaea]">
             <span className="font-semibold">⚠️ Unsaved changes:</span> Click "Stage" to save your component configuration.
           </p>
@@ -1422,7 +1424,7 @@ const ComponentBuilder = () => {
                       key={component.id}
                       className={`p-4 rounded-lg border-2 transition-all cursor-pointer backdrop-blur-sm ${
                         selectedComponent === component.id
-                          ? 'bg-[#ff555d]/20 border-[#ff555d]/50 shadow-lg'
+                          ? 'bg-[#ff8475]/20 border-[#ff8475]/50 shadow-lg'
                           : 'bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 hover:bg-white/40 dark:hover:bg-white/20 hover:shadow-md'
                       }`}
                       onClick={() => setSelectedComponent(component.id)}
@@ -1444,7 +1446,7 @@ const ComponentBuilder = () => {
                             e.stopPropagation();
                             deleteComponent(component.id);
                           }}
-                          className="text-[#ff555d] hover:text-[#ff444c] hover:bg-[#ff555d]/10"
+                          className="text-[#ff8475] hover:text-[#ff444c] hover:bg-[#ff8475]/10"
                         >
                           <Minus className="w-4 h-4" />
                         </Button>
@@ -2004,7 +2006,7 @@ const ThemeManager = ({ currentTokens }: { currentTokens?: any }) => {
             variant="outline" 
             size="sm"
             onClick={resetTheme}
-            className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 hover:bg-white/40 dark:hover:bg-white/20 backdrop-blur-sm text-[#ff555d] hover:text-[#ff444c]"
+            className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 hover:bg-white/40 dark:hover:bg-white/20 backdrop-blur-sm text-[#ff8475] hover:text-[#ff444c]"
           >
             <RotateCcw className="w-4 h-4 mr-2" />
             Reset Theme
@@ -2037,7 +2039,7 @@ const ThemeManager = ({ currentTokens }: { currentTokens?: any }) => {
             key={theme.id} 
             className={`cursor-pointer transition-all backdrop-blur-sm ${
               theme.isActive 
-                ? 'ring-2 ring-[#ff555d] bg-[#ff555d]/20 border-[#ff555d]/50 shadow-xl' 
+                ? 'ring-2 ring-[#ff8475] bg-[#ff8475]/20 border-[#ff8475]/50 shadow-xl' 
                 : 'bg-white/25 dark:bg-[#2f3235]/25 border-white/20 dark:border-white/10 hover:bg-white/30 dark:hover:bg-white/20 hover:shadow-lg'
             }`}
             onClick={() => activateTheme(theme.id)}
@@ -2047,7 +2049,7 @@ const ThemeManager = ({ currentTokens }: { currentTokens?: any }) => {
                 <h3 className="font-semibold text-[#26282b] dark:text-[#eaeaea]">{theme.name}</h3>
                 <div className="flex items-center space-x-2">
                   {theme.isActive && (
-                    <Badge className="text-xs bg-[#ff555d] text-white">
+                    <Badge className="text-xs bg-[#ff8475] text-white">
                       Active
                     </Badge>
                   )}
@@ -2055,7 +2057,7 @@ const ThemeManager = ({ currentTokens }: { currentTokens?: any }) => {
                     variant="ghost"
                     size="sm"
                     onClick={(e) => deleteTheme(theme.id, e)}
-                    className="h-6 w-6 p-0 text-[#ff555d] hover:text-[#ff444c] hover:bg-[#ff555d]/10"
+                    className="h-6 w-6 p-0 text-[#ff8475] hover:text-[#ff444c] hover:bg-[#ff8475]/10"
                   >
                     <Minus className="w-3 h-3" />
                   </Button>
@@ -2108,7 +2110,7 @@ const ThemeManager = ({ currentTokens }: { currentTokens?: any }) => {
           <Button 
             onClick={createTheme} 
             disabled={!newThemeName.trim()}
-            className="bg-[#ff555d] hover:bg-[#ff444c] text-white shadow-lg hover:shadow-xl transition-all hover:scale-105"
+            className="bg-[#ff8475] hover:bg-[#ff444c] text-white shadow-lg hover:shadow-xl transition-all hover:scale-105"
           >
             <Plus className="w-4 h-4 mr-2" />
             Create Theme
@@ -2133,35 +2135,34 @@ export default function DesignSystem() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--page-background)' }}>
-      {/* Header */}
-      <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border-b border-white/20 dark:border-white/10 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-[#26282b] to-[#26282b]/80 dark:from-[#eaeaea] dark:to-[#eaeaea]/80 bg-clip-text text-transparent">
-                  Design System Control Panel
-                </h1>
-                <p className="text-lg text-[#26282b]/70 dark:text-[#eaeaea]/70 mt-2">
-                  Comprehensive tool for managing design tokens, building components, and creating themes
-                </p>
-              </div>
-              <div className="flex space-x-2">
-                <Button 
-                  variant="outline"
-                  className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 hover:bg-white/40 dark:hover:bg-white/20 backdrop-blur-sm"
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Settings
-                </Button>
-                <Button 
-                  className="bg-[#ff555d] hover:bg-[#ff444c] text-white shadow-lg hover:shadow-xl transition-all hover:scale-105"
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  Save All
-                </Button>
-              </div>
-            </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Header */}
+        <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between mb-6" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '130px' }}>
+          <div>
+            <h1 
+              className="font-bold text-foreground" 
+              style={{ 
+                fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+                fontSize: '110px'
+              }}
+            >
+              design.
+            </h1>
+          </div>
+          <div className="flex space-x-2">
+            <Button 
+              variant="outline"
+              className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 hover:bg-white/40 dark:hover:bg-white/20 backdrop-blur-sm"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
+            </Button>
+            <Button 
+              className="bg-[#ff8475] hover:bg-[#ff444c] text-white shadow-lg hover:shadow-xl transition-all hover:scale-105"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Save All
+            </Button>
           </div>
         </div>
       </div>

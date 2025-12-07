@@ -545,26 +545,22 @@ export default function FrequentLocationsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 
-            className="uppercase"
-            style={{
-              fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
-              fontWeight: 600,
-              fontSize: '68px',
-              lineHeight: 1.15,
-              letterSpacing: '-0.015em',
-              textTransform: 'uppercase',
-              color: 'var(--foreground)',
-            }}
-          >
-            FREQUENT LOCATIONS
-          </h1>
-        </div>
-        <div className="flex gap-2">
+      <div>
+        <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '130px' }}>
+          <div>
+            <h1 
+              className="font-bold text-foreground" 
+              style={{ 
+                fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+                fontSize: '110px'
+              }}
+            >
+              quick locations.
+            </h1>
+          </div>
+          <div className="flex gap-2">
           <Button 
             variant="outline" 
             onClick={handleSyncServiceLocations}
@@ -581,6 +577,7 @@ export default function FrequentLocationsPage() {
             <Plus className="h-4 w-4 mr-2" />
             Add Location
           </Button>
+          </div>
         </div>
       </div>
 

@@ -9,7 +9,7 @@
  * visual hierarchy do the work. Reserve coral accent (primary) for
  * truly urgent/attention-required states only.
  * 
- * Fire Palette (6 core colors):
+ * Fire Palette (8 core colors):
  * - charcoal (#26282b) - dark backgrounds, light mode text
  * - ice (#e8fffe) - light accent backgrounds  
  * - lime (#f1fec9) - elevated surfaces, accent

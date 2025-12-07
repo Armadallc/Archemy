@@ -98,7 +98,7 @@ const navigationItemPermissions: Record<string, string | string[]> = {
   "/role-templates": "manage_users", // Super admin only
   "/prophet": "manage_users", // Super admin only - PROPHET Calculator
   "/design-system": "manage_users", // Super admin only
-  "/calendar-experiment": "view_calendar",
+  "/bentobox": "view_calendar",
   "/chat": "view_calendar", // All users can access chat
 };
 
@@ -161,7 +161,7 @@ const navigationCategories = [
     roles: ["super_admin"],
     items: [
       { path: "/design-system", label: "Design System", icon: Palette, roles: ["super_admin"], status: "completed" as PageStatus },
-      { path: "/calendar-experiment", label: "Experiment", icon: Calendar, roles: ["super_admin", "corporate_admin", "program_admin"], status: "completed" as PageStatus },
+      { path: "/bentobox", label: "BENTOBOX", icon: Calendar, roles: ["super_admin", "corporate_admin", "program_admin"], status: "completed" as PageStatus },
     ]
   }
 ];
@@ -413,7 +413,7 @@ export default function Sidebar({
   };
 
   return (
-    <div className={`transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} h-screen flex flex-col overflow-hidden pt-6`} style={{ color: 'var(--gray-12)', backgroundColor: 'var(--gray-1)' }}>
+    <div className={`transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} flex flex-col overflow-hidden pt-6 rounded-lg`} style={{ color: 'var(--gray-12)', backgroundColor: 'var(--gray-1)', paddingBottom: '24px', borderTop: '1px solid #a5c8ca', borderRight: '1px solid #a5c8ca', borderBottom: '1px solid #a5c8ca', height: 'calc(100vh - 48px)' }}>
       {/* Header */}
       <div className="p-4 border-b flex-shrink-0" style={{ borderColor: 'var(--gray-7)', backgroundColor: 'var(--gray-1)' }}>
         <div className="flex items-center justify-between">
@@ -430,7 +430,7 @@ export default function Sidebar({
                 />
               )}
               <div>
-                <h2 style={{ fontSize: '42px' }}>{getCorporateClientName()}</h2>
+                <h2 style={{ fontSize: '42px', fontFamily: "'Nohemi', sans-serif" }}>{getCorporateClientName()}</h2>
               </div>
             </div>
           )}
@@ -460,18 +460,18 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* Hierarchical Navigation Menu - Single unified menu for all roles except driver */}
-      {!isCollapsed && (user?.role === 'super_admin' || 
-        user?.role === 'corporate_admin' || 
-        user?.role === 'program_admin' || 
-        user?.role === 'program_user') && (
-        <div className="p-4 border-b flex-shrink-0" style={{ borderColor: 'var(--border)', borderWidth: 'var(--border-weight, 1px)', backgroundColor: 'var(--gray-1)' }}>
-          <DrillDownDropdown />
-        </div>
-      )}
-
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-4 overflow-y-auto" style={{ backgroundColor: 'var(--gray-1)' }}>
+        {/* Hierarchical Navigation Menu - Single unified menu for all roles except driver */}
+        {!isCollapsed && (user?.role === 'super_admin' || 
+          user?.role === 'corporate_admin' || 
+          user?.role === 'program_admin' || 
+          user?.role === 'program_user') && (
+          <div className="mb-4" style={{ backgroundColor: 'var(--gray-1)' }}>
+            <DrillDownDropdown />
+          </div>
+        )}
+        
         {visibleCategories.map((category, index) => {
           const CategoryIcon = category.icon;
           
@@ -516,7 +516,7 @@ export default function Sidebar({
                 >
                   <div className="flex items-center space-x-2">
                     {!isCollapsed && (
-                      <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--gray-9)' }}>
+                      <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--gray-9)', fontFamily: "'Nohemi', sans-serif" }}>
                         {category.label}
                       </span>
                     )}
@@ -577,7 +577,7 @@ export default function Sidebar({
                         {/* Icon removed per user request */}
                         {!isCollapsed && (
                           <div className="flex items-center space-x-2 flex-1">
-                            <span className="text-sm font-medium">{item.label}</span>
+                            <span className="text-sm font-medium" style={{ fontFamily: "'Nohemi', sans-serif" }}>{item.label}</span>
                             {/* Status indicator removed per user request */}
                           </div>
                         )}
@@ -604,7 +604,7 @@ export default function Sidebar({
                       {/* Icon removed per user request */}
                       {!isCollapsed && (
                         <div className="flex items-center space-x-2 flex-1">
-                          <span className="text-sm font-medium">{item.label}</span>
+                          <span className="text-sm font-medium" style={{ fontFamily: "'Nohemi', sans-serif" }}>{item.label}</span>
                           {/* Status indicator removed per user request */}
                         </div>
                       )}
@@ -618,7 +618,7 @@ export default function Sidebar({
       </nav>
 
       {/* User Menu */}
-      <div className="p-4 border-t relative user-menu-container flex-shrink-0" style={{ borderColor: 'var(--gray-7)', backgroundColor: 'var(--gray-1)' }}>
+      <div className="p-4 border-t relative user-menu-container flex-shrink-0" style={{ borderColor: 'var(--gray-7)', backgroundColor: 'var(--gray-1)', height: '69px' }}>
         {!isCollapsed && user && (
           <div className="flex items-center space-x-3">
             <button
@@ -644,11 +644,11 @@ export default function Sidebar({
                 </span>
               </div>
               <div className="flex-1 min-w-0 text-left">
-                <p className="text-sm font-medium truncate" style={{ color: 'var(--gray-12)' }}>
+                <p className="text-sm font-medium truncate" style={{ color: 'var(--gray-12)', fontFamily: "'Nohemi', sans-serif" }}>
                   {user?.first_name || 'User'}
                 </p>
                 {userRole !== 'super_admin' && (
-                  <p className="text-xs capitalize" style={{ color: 'var(--gray-9)' }}>
+                  <p className="text-xs capitalize" style={{ color: 'var(--gray-9)', fontFamily: "'Nohemi', sans-serif" }}>
                     {userRole.replace('_', ' ')}
                   </p>
                 )}
@@ -684,7 +684,7 @@ export default function Sidebar({
         
         {/* Slide-up User Menu */}
         {isUserMenuOpen && (
-          <div className="absolute bottom-full left-0 right-0 mb-2 rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: 'var(--gray-2)', borderColor: 'var(--gray-7)', borderWidth: '1px', borderStyle: 'solid' }}>
+          <div className="absolute bottom-full left-0 right-0 mb-2 rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: 'var(--gray-1)', borderColor: 'var(--gray-7)', borderWidth: '1px', borderStyle: 'solid' }}>
             <div className="py-2">
               {/* User Settings */}
               <button
@@ -693,7 +693,7 @@ export default function Sidebar({
                   setIsUserMenuOpen(false);
                 }}
                 className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors"
-                style={{ color: 'var(--gray-11)' }}
+                style={{ color: 'var(--gray-11)', fontFamily: "'Nohemi', sans-serif" }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gray-3)'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
@@ -706,7 +706,7 @@ export default function Sidebar({
                 <button
                   onClick={toggleTheme}
                   className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors"
-                  style={{ color: 'var(--gray-11)' }}
+                  style={{ color: 'var(--gray-11)', fontFamily: "'Nohemi', sans-serif" }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gray-3)'}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 >
@@ -722,7 +722,7 @@ export default function Sidebar({
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors"
-                style={{ color: 'rgb(248, 113, 113)' }}
+                style={{ color: 'rgb(248, 113, 113)', fontFamily: "'Nohemi', sans-serif" }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gray-3)'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >

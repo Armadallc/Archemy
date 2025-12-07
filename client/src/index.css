@@ -6,9 +6,11 @@
    - Dark:       #26282b (Charcoal)
    - Light Mint: #e8fffe (Ice)
    - Light Lime: #f1fec9 (Lime)
-   - Accent:     #ff555d (Coral)
+   - Accent:     #ff8475 (Coral)
    - Neutral:    #eaeaea (Silver)
    - Light:      #f4f4f4 (Cloud)
+   - Shadow:     #343434 (Shadow)
+   - Aqua:       #a5c8ca (Aqua)
    
    FONTS:
    - Headings: Nohemi
@@ -129,9 +131,11 @@
   --color-charcoal: #26282b;
   --color-ice: #e8fffe;
   --color-lime: #f1fec9;
-  --color-coral: #ff555d;
+  --color-coral: #ff8475;
   --color-silver: #eaeaea;
   --color-cloud: #f4f4f4;
+  --color-shadow: #343434;
+  --color-aqua: #a5c8ca;
   
   /* Extended palette */
   --color-charcoal-light: #363a3e;

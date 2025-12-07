@@ -58,6 +58,15 @@ function LoginRedirect() {
   return null;
 }
 
+// Redirect component for old calendar-experiment path
+function CalendarExperimentRedirect() {
+  const [, setLocation] = useLocation();
+  useEffect(() => {
+    setLocation('/bentobox');
+  }, [setLocation]);
+  return null;
+}
+
 export default function MainLayout({ 
   children, 
   currentProgram: propCurrentProgram, 
@@ -87,7 +96,7 @@ export default function MainLayout({
   return (
     <div className="flex h-screen bg-background">
         {/* Desktop Sidebar - hidden on mobile */}
-        <div className="hidden md:block">
+        <div className="hidden md:block" style={{ marginTop: '24px', marginBottom: '24px' }}>
           <Sidebar 
             currentProgram={currentProgramId}
             setCurrentProgram={setCurrentProgram}
@@ -235,7 +244,11 @@ export default function MainLayout({
               <Route path="/calendar">
                 <CalendarPage />
               </Route>
+              {/* Redirect old calendar-experiment path to bentobox */}
               <Route path="/calendar-experiment">
+                <CalendarExperimentRedirect />
+              </Route>
+              <Route path="/bentobox">
                 <CalendarExperiment />
               </Route>
         <Route path="/scratch">
