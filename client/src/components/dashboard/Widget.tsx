@@ -33,9 +33,13 @@ export default function Widget({
   shadow = 'sm'
 }: WidgetProps) {
   // Override Card's default shadow-sm when shadow-xl is requested
-  const shadowClass = shadow === 'xl' ? 'shadow-xl' : 'shadow-sm';
+  // The cn utility should handle class merging, but we'll explicitly set shadow-xl
+  const shadowClass = shadow === 'xl' ? 'shadow-xl' : undefined;
   return (
-    <Card className={cn("h-full", sizeClasses[size], shadowClass, className)}>
+    <Card 
+      className={cn("h-full", sizeClasses[size], shadowClass, className)}
+      style={shadow === 'xl' ? { boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' } : undefined}
+    >
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between text-lg">
           <div className="flex items-center space-x-2">

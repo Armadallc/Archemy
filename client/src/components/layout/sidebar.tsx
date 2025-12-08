@@ -131,11 +131,11 @@ const navigationCategories = [
   },
   {
     id: "corporate",
-    label: "CORPORATE",
+    label: "PARTNER MGMT",
     icon: Building2,
     roles: ["super_admin", "corporate_admin"],
     items: [
-      { path: "/corporate-clients", label: "Corporate Clients", icon: Building2, roles: ["super_admin"], status: "completed" as PageStatus },
+      { path: "/corporate-clients", label: "Corporate", icon: Building2, roles: ["super_admin"], status: "completed" as PageStatus },
       { path: "/programs", label: "Programs", icon: Building, roles: ["super_admin", "corporate_admin"], status: "completed" as PageStatus },
       { path: "/locations", label: "Locations", icon: MapPin, roles: ["super_admin", "corporate_admin", "program_admin"], status: "completed" as PageStatus }, // Moved from OPERATIONS to CORPORATE
       { path: "/clients", label: "Clients", icon: Users, roles: ["super_admin", "corporate_admin", "program_admin", "program_user"], status: "completed" as PageStatus }
@@ -692,7 +692,7 @@ export default function Sidebar({
         
         {/* Slide-up User Menu */}
         {isUserMenuOpen && (
-          <div className="absolute bottom-full mb-2 rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: 'var(--gray-1)', borderColor: 'var(--gray-7)', borderWidth: '1px', borderStyle: 'solid', width: '223.45px' }}>
+          <div className="absolute bottom-full mb-2 rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--gray-7)', borderWidth: '1px', borderStyle: 'solid', width: '223.45px' }}>
             <div className="py-2">
               {/* User Settings */}
               <button

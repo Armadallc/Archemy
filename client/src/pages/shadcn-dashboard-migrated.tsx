@@ -375,7 +375,7 @@ export default function ShadcnDashboardMigrated() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <EnhancedAnalyticsWidget shadow="xl" />
               <TaskManagementWidget shadow="xl" />
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
                 <CardHeader>
                   <CardTitle className="text-foreground">System Health</CardTitle>
                 </CardHeader>
@@ -502,7 +502,7 @@ export default function ShadcnDashboardMigrated() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <EnhancedAnalyticsWidget shadow="xl" />
               <TaskManagementWidget shadow="xl" />
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
                 <CardHeader>
                   <CardTitle className="text-foreground">System Health</CardTitle>
                 </CardHeader>
@@ -640,7 +640,7 @@ export default function ShadcnDashboardMigrated() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <EnhancedAnalyticsWidget shadow="xl" />
               <TaskManagementWidget shadow="xl" />
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
                 <CardHeader>
                   <CardTitle className="text-foreground">System Health</CardTitle>
                 </CardHeader>
@@ -778,7 +778,7 @@ export default function ShadcnDashboardMigrated() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <EnhancedAnalyticsWidget shadow="xl" />
               <TaskManagementWidget shadow="xl" />
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
                 <CardHeader>
                   <CardTitle className="text-foreground">System Health</CardTitle>
                 </CardHeader>
@@ -908,7 +908,7 @@ export default function ShadcnDashboardMigrated() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <EnhancedAnalyticsWidget shadow="xl" />
               <TaskManagementWidget shadow="xl" />
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
                 <CardHeader>
                   <CardTitle className="text-foreground">System Health</CardTitle>
                 </CardHeader>

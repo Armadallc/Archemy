@@ -67,6 +67,25 @@ function CalendarExperimentRedirect() {
   return null;
 }
 
+// Redirect component for super admins from /users to /settings?tab=users
+function UsersRedirect() {
+  const [, setLocation] = useLocation();
+  const { user } = useAuth();
+  
+  useEffect(() => {
+    if (user?.role === 'super_admin') {
+      setLocation('/settings?tab=users');
+    }
+  }, [setLocation, user]);
+  
+  // If not super admin, show the regular users page
+  if (user?.role !== 'super_admin') {
+    return <Users />;
+  }
+  
+  return null;
+}
+
 export default function MainLayout({ 
   children, 
   currentProgram: propCurrentProgram, 
@@ -224,7 +243,7 @@ export default function MainLayout({
                 <Schedule />
               </Route>
               <Route path="/users">
-                <Users />
+                <UsersRedirect />
               </Route>
               <Route path="/profile">
                 <ProfilePage />

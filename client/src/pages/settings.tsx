@@ -35,6 +35,8 @@ import { useHierarchy } from "../hooks/useHierarchy";
 import { useAuth } from "../hooks/useAuth";
 import { LogoUpload } from "../components/LogoUpload";
 import { MainLogoUpload } from "../components/MainLogoUpload";
+import CorporateClientCards from "../components/settings/CorporateClientCards";
+import UsersManagement from "../components/settings/UsersManagement";
 
 interface CorporateClientSettings {
   id: string;
@@ -122,7 +124,18 @@ export default function Settings() {
   
   // Get visible tabs and set default active tab to first available
   const visibleTabs = getVisibleTabs(user?.role);
-  const [activeTab, setActiveTab] = useState(visibleTabs[0]?.id || "corporate-client");
+  
+  // Check for tab query parameter in URL
+  const getInitialTab = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam && visibleTabs.find(tab => tab.id === tabParam)) {
+      return tabParam;
+    }
+    return visibleTabs[0]?.id || "corporate-client";
+  };
+  
+  const [activeTab, setActiveTab] = useState(getInitialTab);
   const [isLoading, setIsLoading] = useState(false);
 
   // Corporate client settings - sync with current corporate client
@@ -239,6 +252,30 @@ export default function Settings() {
       setActiveTab(visibleTabs[0].id);
     }
   }, [visibleTabs, activeTab]);
+
+  // Sync URL query parameter with active tab
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentTab = urlParams.get('tab');
+    if (currentTab !== activeTab) {
+      urlParams.set('tab', activeTab);
+      const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [activeTab]);
+
+  // Listen for URL changes (e.g., browser back/forward)
+  useEffect(() => {
+    const handlePopState = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get('tab');
+      if (tabParam && visibleTabs.find(tab => tab.id === tabParam)) {
+        setActiveTab(tabParam);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [visibleTabs]);
 
   // Update form when data changes
   useEffect(() => {
@@ -395,14 +432,17 @@ export default function Settings() {
         </TabsList>
 
         <TabsContent value="corporate-client" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Corporate Client Information</CardTitle>
-              <CardDescription>
-                Manage your corporate client's basic information and settings.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+          {user?.role === 'super_admin' ? (
+            <CorporateClientCards />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Corporate Client Information</CardTitle>
+                <CardDescription>
+                  Manage your corporate client's basic information and settings.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
               <div className="flex items-center space-x-6">
                 <LogoUpload 
                   organizationId={corporateClientSettings.id} 
@@ -486,6 +526,7 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="program" className="space-y-6">
@@ -602,22 +643,26 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="users" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>User Management</CardTitle>
-              <CardDescription>
-                Manage user roles and permissions for your {level} level.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  User management is handled through the Users page. Use the navigation menu to access user management features.
-                </AlertDescription>
-              </Alert>
-            </CardContent>
-          </Card>
+          {(user?.role === 'super_admin' || user?.role === 'corporate_admin' || user?.role === 'program_admin') ? (
+            <UsersManagement />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>User Management</CardTitle>
+                <CardDescription>
+                  Manage user roles and permissions for your {level} level.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    User management is handled through the Users page. Use the navigation menu to access user management features.
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="contacts" className="space-y-6">
