@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
@@ -181,7 +181,52 @@ export default function UsersManagement() {
       
       const response = await apiRequest("GET", endpoint);
       const data = await response.json();
-      return Array.isArray(data) ? data : [];
+      const allUsers = Array.isArray(data) ? data : [];
+      // Filter out inactive (deleted) users - they should not appear in the UI
+      const activeUsers = allUsers.filter((user: User) => user.is_active !== false);
+      
+      // Fetch all programs once for enrichment
+      let programsMap: Record<string, any> = {};
+      try {
+        const programsResponse = await apiRequest("GET", "/api/programs");
+        const programsData = await programsResponse.json();
+        if (Array.isArray(programsData)) {
+          programsMap = programsData.reduce((acc: Record<string, any>, program: any) => {
+            acc[program.id] = program;
+            return acc;
+          }, {});
+        }
+      } catch (err) {
+        console.warn("Could not fetch programs for enrichment:", err);
+      }
+      
+      // Enrich users with program data if missing
+      const enrichedUsers = activeUsers.map((user: any) => {
+        // Handle Supabase's plural form (programs array) - convert to singular
+        if (user.programs && Array.isArray(user.programs) && user.programs.length > 0 && !user.program) {
+          user.program = user.programs[0];
+        }
+        
+        // If user has primary_program_id but no program data, fetch from programs map
+        if (user.primary_program_id && !user.program && programsMap[user.primary_program_id]) {
+          const programData = programsMap[user.primary_program_id];
+          user.program = {
+            id: programData.id,
+            name: programData.name,
+            corporate_client_id: programData.corporate_client_id,
+            corporateClient: programData.corporateClient || programData.corporate_clients
+          };
+        }
+        
+        // Ensure corporateClient is set correctly on program
+        if (user.program && !user.program.corporateClient && user.corporate_clients) {
+          user.program.corporateClient = user.corporate_clients;
+        }
+        
+        return user;
+      });
+      
+      return enrichedUsers;
     },
     enabled: !!user && (user.role === 'super_admin' || user.role === 'corporate_admin' || user.role === 'program_admin'),
   });
@@ -191,7 +236,8 @@ export default function UsersManagement() {
     queryKey: ["/api/programs"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/programs");
-      return await response.json();
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
     },
     enabled: user?.role === 'super_admin' || user?.role === 'corporate_admin',
   });
@@ -272,6 +318,16 @@ export default function UsersManagement() {
     return filtered;
   }, [usersByCorporateClient, searchTerm]);
 
+  // Auto-expand corporate client cards when searching
+  useEffect(() => {
+    if (searchTerm && Object.keys(filteredUsersByClient).length > 0) {
+      // Expand all cards that contain search results
+      const cardsToExpand = new Set(Object.keys(filteredUsersByClient));
+      setExpandedClients(cardsToExpand);
+    }
+    // Note: We don't auto-collapse when search is cleared to preserve user's manual expand/collapse state
+  }, [searchTerm, filteredUsersByClient]);
+
   // Get group name (corporate client or program)
   const getGroupName = (groupId: string): string => {
     if (groupId === 'unassigned') return 'Unassigned';
@@ -294,7 +350,13 @@ export default function UsersManagement() {
   // Create user mutation
   const createUserMutation = useMutation({
     mutationFn: async (userData: CreateUserData) => {
-      const response = await apiRequest("POST", "/api/users", userData);
+      // Map program_id to primary_program_id for API compatibility
+      const apiData: any = { ...userData };
+      if (apiData.program_id) {
+        apiData.primary_program_id = apiData.program_id;
+        delete apiData.program_id;
+      }
+      const response = await apiRequest("POST", "/api/users", apiData);
       return response.json();
     },
     onSuccess: () => {
@@ -375,7 +437,19 @@ export default function UsersManagement() {
 
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
-    createUserMutation.mutate(createUserData);
+    
+    // For program admins, auto-assign their program
+    const userDataToSubmit = { ...createUserData };
+    if (user?.role === 'program_admin' && (selectedProgram || user.primary_program_id)) {
+      userDataToSubmit.program_id = selectedProgram || user.primary_program_id;
+    }
+    
+    // For corporate admins, ensure corporate_client_id is set
+    if (user?.role === 'corporate_admin' && user.corporate_client_id && !userDataToSubmit.corporate_client_id) {
+      userDataToSubmit.corporate_client_id = user.corporate_client_id;
+    }
+    
+    createUserMutation.mutate(userDataToSubmit);
   };
 
   const handleUpdateUser = (e: React.FormEvent) => {
@@ -464,13 +538,190 @@ export default function UsersManagement() {
           </span>
         </div>
 
+        <Button 
+          className="bg-primary hover:bg-primary-hover"
+          onClick={() => setIsCreateDialogOpen(true)}
+        >
+          <UserPlus className="w-4 h-4 mr-2" />
+          Add User
+        </Button>
+        
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary-hover">
-              <UserPlus className="w-4 h-4 mr-2" />
-              Add User
-            </Button>
-          </DialogTrigger>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Add New User</DialogTitle>
+              <DialogDescription>
+                Create a new user account with appropriate permissions.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleCreateUser} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="user_name">Username *</Label>
+                  <Input
+                    id="user_name"
+                    value={createUserData.user_name}
+                    onChange={(e) => setCreateUserData({...createUserData, user_name: e.target.value})}
+                    placeholder="johndoe"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={createUserData.email}
+                    onChange={(e) => setCreateUserData({...createUserData, email: e.target.value})}
+                    placeholder="john@example.com"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="first_name">First Name</Label>
+                  <Input
+                    id="first_name"
+                    value={createUserData.first_name}
+                    onChange={(e) => setCreateUserData({...createUserData, first_name: e.target.value})}
+                    placeholder="John"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="last_name">Last Name</Label>
+                  <Input
+                    id="last_name"
+                    value={createUserData.last_name}
+                    onChange={(e) => setCreateUserData({...createUserData, last_name: e.target.value})}
+                    placeholder="Doe"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    value={createUserData.phone}
+                    onChange={(e) => setCreateUserData({...createUserData, phone: e.target.value})}
+                    placeholder="(555) 123-4567"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="role">Role *</Label>
+                  <Select 
+                    value={createUserData.role} 
+                    onValueChange={(value) => setCreateUserData({...createUserData, role: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="corporate_admin">Corporate Admin</SelectItem>
+                      <SelectItem value="program_admin">Program Admin</SelectItem>
+                      <SelectItem value="program_user">Program User</SelectItem>
+                      <SelectItem value="driver">Driver</SelectItem>
+                      {user?.role === 'super_admin' && (
+                        <SelectItem value="super_admin">Super Admin</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Corporate Client and Program Assignment - only show for super admin and corporate admin */}
+              {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
+                <div className="grid grid-cols-2 gap-4">
+                  {user?.role === 'super_admin' && (
+                    <div>
+                      <Label htmlFor="corporate_client_id">Corporate Client</Label>
+                      <Select 
+                        value={createUserData.corporate_client_id || undefined} 
+                        onValueChange={(value) => setCreateUserData({...createUserData, corporate_client_id: value || undefined})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select corporate client (optional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {corporateClients.map((client) => (
+                            <SelectItem key={client.id} value={client.id}>
+                              {client.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  <div>
+                    <Label htmlFor="program_id">Program Assignment</Label>
+                    <Select 
+                      value={createUserData.program_id || undefined} 
+                      onValueChange={(value) => setCreateUserData({...createUserData, program_id: value || undefined})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select program (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.isArray(programs) && programs.map((program: any) => (
+                          <SelectItem key={program.id} value={program.id}>
+                            {program.name} {program.corporateClient?.name ? `(${program.corporateClient.name})` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+              
+              {/* For program admins, auto-assign their program */}
+              {user?.role === 'program_admin' && (
+                <div>
+                  <Label htmlFor="program_id">Program Assignment</Label>
+                  <Input
+                    id="program_id"
+                    value={selectedProgram || user.primary_program_id || ''}
+                    disabled
+                    className="bg-muted"
+                  />
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Users will be assigned to your program automatically
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <Label htmlFor="password">Password *</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={createUserData.password}
+                  onChange={(e) => setCreateUserData({...createUserData, password: e.target.value})}
+                  placeholder="Enter password"
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsCreateDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={createUserMutation.isPending}
+                  className="bg-primary hover:bg-primary-hover"
+                >
+                  {createUserMutation.isPending ? "Creating..." : "Create User"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
         </Dialog>
       </div>
 
@@ -685,166 +936,6 @@ export default function UsersManagement() {
         )}
       </div>
 
-      {/* Create User Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add New User</DialogTitle>
-            <DialogDescription>
-              Create a new user account with appropriate permissions.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleCreateUser} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="user_name">Username *</Label>
-                <Input
-                  id="user_name"
-                  value={createUserData.user_name}
-                  onChange={(e) => setCreateUserData({...createUserData, user_name: e.target.value})}
-                  placeholder="johndoe"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={createUserData.email}
-                  onChange={(e) => setCreateUserData({...createUserData, email: e.target.value})}
-                  placeholder="john@example.com"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="first_name">First Name</Label>
-                <Input
-                  id="first_name"
-                  value={createUserData.first_name}
-                  onChange={(e) => setCreateUserData({...createUserData, first_name: e.target.value})}
-                  placeholder="John"
-                />
-              </div>
-              <div>
-                <Label htmlFor="last_name">Last Name</Label>
-                <Input
-                  id="last_name"
-                  value={createUserData.last_name}
-                  onChange={(e) => setCreateUserData({...createUserData, last_name: e.target.value})}
-                  placeholder="Doe"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  value={createUserData.phone}
-                  onChange={(e) => setCreateUserData({...createUserData, phone: e.target.value})}
-                  placeholder="(555) 123-4567"
-                />
-              </div>
-              <div>
-                <Label htmlFor="role">Role *</Label>
-                <Select 
-                  value={createUserData.role} 
-                  onValueChange={(value) => setCreateUserData({...createUserData, role: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="corporate_admin">Corporate Admin</SelectItem>
-                    <SelectItem value="program_admin">Program Admin</SelectItem>
-                    <SelectItem value="program_user">Program User</SelectItem>
-                    <SelectItem value="driver">Driver</SelectItem>
-                    {user?.role === 'super_admin' && (
-                      <SelectItem value="super_admin">Super Admin</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="corporate_client_id">Corporate Client</Label>
-                <Select 
-                  value={createUserData.corporate_client_id || ''} 
-                  onValueChange={(value) => setCreateUserData({...createUserData, corporate_client_id: value || undefined})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select corporate client (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">None</SelectItem>
-                    {corporateClients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="program_id">Program Assignment</Label>
-                <Select 
-                  value={createUserData.program_id || ''} 
-                  onValueChange={(value) => setCreateUserData({...createUserData, program_id: value || undefined})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select program (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">None</SelectItem>
-                    {programs?.map((program: any) => (
-                      <SelectItem key={program.id} value={program.id}>
-                        {program.name} {program.corporateClient?.name ? `(${program.corporateClient.name})` : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="password">Password *</Label>
-              <Input
-                id="password"
-                type="password"
-                value={createUserData.password}
-                onChange={(e) => setCreateUserData({...createUserData, password: e.target.value})}
-                placeholder="Enter password"
-                required
-              />
-            </div>
-
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => setIsCreateDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={createUserMutation.isPending}
-                className="bg-primary hover:bg-primary-hover"
-              >
-                {createUserMutation.isPending ? "Creating..." : "Create User"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
       {/* Edit User Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -1026,8 +1117,12 @@ function UserRow({
         <div className="flex items-center">
           <Building2 className="w-4 h-4 mr-1 text-muted-foreground" />
           <div>
-            <div className="text-sm font-medium">{user.program?.name || 'No Program'}</div>
-            <div className="text-xs text-muted-foreground">{user.program?.corporateClient?.name || user.corporate_clients?.name || ''}</div>
+            <div className="text-sm font-medium">
+              {user.corporate_clients?.name || user.program?.corporateClient?.name || 'No Corporate Client'}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {user.program?.name || user.primary_program_id || 'No Program'}
+            </div>
           </div>
         </div>
       </TableCell>
