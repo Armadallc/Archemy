@@ -6,7 +6,7 @@ export default function ChatPage() {
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-background-secondary to-background dark:from-background dark:to-background-secondary overflow-hidden">
       <div className="flex-shrink-0 pt-4 md:pt-6 px-4 md:px-6">
-        <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '130px' }}>
+        <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
           <div className="container mx-auto">
             <h1 
               className="font-bold text-foreground" 

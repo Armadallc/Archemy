@@ -9,13 +9,22 @@ import { HierarchyProvider } from "./hooks/useHierarchy";
 import MainLayout from "./components/layout/main-layout";
 import Login from "./pages/login";
 import { useAuth } from "./hooks/useAuth";
+import { useThemePreferences } from "./hooks/useThemePreferences";
 import { Toaster } from "./components/ui/toaster";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { WelcomeScreen } from "./components/welcome-screen";
 
 function AppContent() {
   const { user, isLoading } = useAuth();
+  const { loadPreferences } = useThemePreferences(); // Load theme preferences on app start
   const [showWelcome, setShowWelcome] = useState<boolean | null>(null); // null = checking
+  
+  // Load theme preferences when user is authenticated
+  useEffect(() => {
+    if (user && !isLoading) {
+      loadPreferences();
+    }
+  }, [user, isLoading, loadPreferences]);
   
   // Check if we've already shown welcome this session
   useEffect(() => {

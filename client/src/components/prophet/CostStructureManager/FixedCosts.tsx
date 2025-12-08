@@ -238,3 +238,5 @@ export function FixedCosts() {
 
 export default FixedCosts;
 
+
+

@@ -8,9 +8,10 @@ interface FleetStatusWidgetProps {
   className?: string;
   drivers?: any[];
   trips?: any[];
+  shadow?: 'sm' | 'xl';
 }
 
-export default function FleetStatusWidget({ className, drivers, trips }: FleetStatusWidgetProps) {
+export default function FleetStatusWidget({ className, drivers, trips, shadow }: FleetStatusWidgetProps) {
   // Get in-progress trips
   const inProgressTrips = trips?.filter((trip: any) => trip.status === 'in_progress') || [];
   
@@ -81,6 +82,7 @@ export default function FleetStatusWidget({ className, drivers, trips }: FleetSt
       icon={<MapPin className="h-5 w-5" />}
       size="large"
       className={className}
+      shadow={shadow}
       actions={
         <Button variant="outline" size="sm">
           <Navigation className="h-4 w-4 mr-1" />

@@ -22,6 +22,8 @@ import { Separator } from '../components/ui/separator';
 import { useTheme } from '../components/theme-provider';
 import { ThemeController } from '../components/design-system/ThemeController';
 import { FireThemePanel } from '../components/fire-theme-panel';
+import { useThemePreferences } from '../hooks/useThemePreferences';
+import { useAuth } from '../hooks/useAuth';
 import { 
   StatusBadge, 
   StatusIcon,
@@ -2128,16 +2130,44 @@ const ThemeManager = ({ currentTokens }: { currentTokens?: any }) => {
 export default function DesignSystem() {
   const [tokens, setTokens] = useState(designTokens);
   const [activePanel, setActivePanel] = useState('tokens');
+  const { theme } = useTheme();
+  const { user, isAuthenticated } = useAuth();
+  const { savePreferences, isLoading: preferencesLoading } = useThemePreferences();
 
   const updateTokens = useCallback((newTokens: any) => {
     setTokens(newTokens);
   }, []);
 
+  // Handle saving all changes to database
+  const handleSaveAll = async () => {
+    if (!isAuthenticated || !user) {
+      alert('You must be logged in to save theme preferences');
+      return;
+    }
+
+    try {
+      // Save current tokens for the current mode, preserving the other mode
+      // The savePreferences function will automatically merge with existing preferences
+      await savePreferences(
+        theme === 'light' ? tokens : null, // Save current tokens if in light mode
+        theme === 'dark' ? tokens : null   // Save current tokens if in dark mode
+      );
+
+      // Also save to localStorage for backward compatibility
+      localStorage.setItem('design-system-staged-tokens', JSON.stringify(tokens));
+      
+      alert('Theme preferences saved successfully! They will persist across sessions and browsers.');
+    } catch (error: any) {
+      console.error('Error saving theme preferences:', error);
+      alert(`Failed to save theme preferences: ${error.message}`);
+    }
+  };
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--page-background)' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
-        <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between mb-6" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '130px' }}>
+        <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between mb-6" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
           <div>
             <h1 
               className="font-bold text-foreground" 
@@ -2158,10 +2188,12 @@ export default function DesignSystem() {
               Settings
             </Button>
             <Button 
-              className="bg-[#ff8475] hover:bg-[#ff444c] text-white shadow-lg hover:shadow-xl transition-all hover:scale-105"
+              onClick={handleSaveAll}
+              disabled={preferencesLoading || !isAuthenticated}
+              className="bg-[#ff8475] hover:bg-[#ff444c] text-white shadow-lg hover:shadow-xl transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="w-4 h-4 mr-2" />
-              Save All
+              {preferencesLoading ? 'Saving...' : 'Save All'}
             </Button>
           </div>
         </div>

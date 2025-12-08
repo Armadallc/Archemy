@@ -90,7 +90,7 @@ const ShadcnHeader = ({ title, subtitle }: { title: string; subtitle?: string })
   };
 
   return (
-    <div className="px-6 py-6 flex items-center justify-between rounded-lg border backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '130px' }}>
+    <div className="px-6 py-6 flex items-center justify-between rounded-lg border backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
       <div className="flex items-center gap-3">
         <div 
           className="flex items-center text-foreground"
@@ -347,15 +347,18 @@ export default function ShadcnDashboardMigrated() {
                 </div>
 
                 {/* Quick Stats Widget */}
-                <QuickStatsWidget trips={realTimeTrips} />
+                <QuickStatsWidget trips={realTimeTrips} shadow="xl" />
 
                 {/* Fleet Status Widget */}
-                <FleetStatusWidget drivers={realTimeDrivers} trips={realTimeTrips} />
+                <div style={{ width: '1422.68px' }}>
+                  <FleetStatusWidget drivers={realTimeDrivers} trips={realTimeTrips} shadow="xl" />
+                </div>
               </div>
 
               {/* Right Side: Activity Log (50%) - Scrollable, matching left column height */}
-              <div className="flex">
-                <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl flex flex-col w-full" style={{ height: '686px', paddingTop: '12px', paddingBottom: '12px' }}>
+              <div className="flex flex-col">
+                <div className="border-b" style={{ borderColor: 'var(--border)' }}></div>
+                <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl flex flex-col w-full" style={{ height: '634.058px', paddingTop: '12px', paddingBottom: '24px' }}>
                   <CardContent className="p-0 flex-1 overflow-hidden flex flex-col min-h-0">
                     <ActivityFeed />
                   </CardContent>
@@ -365,13 +368,13 @@ export default function ShadcnDashboardMigrated() {
 
             {/* Interactive Map - Preserved */}
             <div className="mt-6">
-              <InteractiveMapWidget />
+              <InteractiveMapWidget shadow="xl" />
             </div>
 
             {/* Analytics & Management - Preserved */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <EnhancedAnalyticsWidget />
-              <TaskManagementWidget />
+              <EnhancedAnalyticsWidget shadow="xl" />
+              <TaskManagementWidget shadow="xl" />
               <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader>
                   <CardTitle className="text-foreground">System Health</CardTitle>
@@ -492,13 +495,13 @@ export default function ShadcnDashboardMigrated() {
 
             {/* Interactive Map - Preserved */}
             <div className="mt-6">
-              <InteractiveMapWidget />
+              <InteractiveMapWidget shadow="xl" />
             </div>
 
             {/* Analytics & Management - Preserved */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <EnhancedAnalyticsWidget />
-              <TaskManagementWidget />
+              <EnhancedAnalyticsWidget shadow="xl" />
+              <TaskManagementWidget shadow="xl" />
               <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader>
                   <CardTitle className="text-foreground">System Health</CardTitle>
@@ -630,13 +633,13 @@ export default function ShadcnDashboardMigrated() {
 
             {/* Interactive Map - Preserved */}
             <div className="mt-6">
-              <InteractiveMapWidget />
+              <InteractiveMapWidget shadow="xl" />
             </div>
 
             {/* Analytics & Management - Preserved */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <EnhancedAnalyticsWidget />
-              <TaskManagementWidget />
+              <EnhancedAnalyticsWidget shadow="xl" />
+              <TaskManagementWidget shadow="xl" />
               <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader>
                   <CardTitle className="text-foreground">System Health</CardTitle>
@@ -768,13 +771,13 @@ export default function ShadcnDashboardMigrated() {
 
             {/* Interactive Map - Preserved */}
             <div className="mt-6">
-              <InteractiveMapWidget />
+              <InteractiveMapWidget shadow="xl" />
             </div>
 
             {/* Analytics & Management - Preserved */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <EnhancedAnalyticsWidget />
-              <TaskManagementWidget />
+              <EnhancedAnalyticsWidget shadow="xl" />
+              <TaskManagementWidget shadow="xl" />
               <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader>
                   <CardTitle className="text-foreground">System Health</CardTitle>
@@ -898,13 +901,13 @@ export default function ShadcnDashboardMigrated() {
 
             {/* Interactive Map - Preserved */}
             <div className="mt-6">
-              <InteractiveMapWidget />
+              <InteractiveMapWidget shadow="xl" />
             </div>
 
             {/* Analytics & Management - Preserved */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <EnhancedAnalyticsWidget />
-              <TaskManagementWidget />
+              <EnhancedAnalyticsWidget shadow="xl" />
+              <TaskManagementWidget shadow="xl" />
               <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader>
                   <CardTitle className="text-foreground">System Health</CardTitle>

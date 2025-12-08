@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -88,6 +88,26 @@ export default function CalendarPage() {
 
   // Calendar date state
   const [calendarDate, setCalendarDate] = useState(new Date());
+  
+  // Listen for mini calendar date changes from sidebar
+  useEffect(() => {
+    const handleMiniCalendarDateChange = (event: CustomEvent) => {
+      if (event.detail?.date) {
+        setCalendarDate(event.detail.date);
+      }
+    };
+    
+    // Also notify mini calendar of current date when calendar page loads
+    window.dispatchEvent(new CustomEvent('calendar-page-date-change', { 
+      detail: { date: calendarDate } 
+    }));
+    
+    window.addEventListener('mini-calendar-date-change', handleMiniCalendarDateChange as EventListener);
+    
+    return () => {
+      window.removeEventListener('mini-calendar-date-change', handleMiniCalendarDateChange as EventListener);
+    };
+  }, [calendarDate]);
 
   const getPageTitle = () => {
     if (level === 'corporate') {
@@ -240,13 +260,13 @@ export default function CalendarPage() {
 
   return (
     <CalendarProvider date={calendarDate} onDateChange={setCalendarDate}>
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden h-full">
         {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="space-y-6 p-6">
+        <div className="flex-1 flex flex-col overflow-hidden h-full">
+          <div className="flex flex-col flex-1 p-6 space-y-6 min-h-0" style={{ paddingBottom: '24px', height: 'calc(100vh - 48px)' }}>
             {/* Header */}
             <div>
-              <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '130px' }}>
+              <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
                 <div>
                   <h1 
                     className="font-bold text-foreground" 
@@ -255,7 +275,7 @@ export default function CalendarPage() {
                       fontSize: '110px'
                     }}
                   >
-                    trips.
+                    calendar.
                   </h1>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -413,10 +433,10 @@ export default function CalendarPage() {
       )}
 
       {/* Calendar Content */}
-      <Card className="flex-1 flex flex-col overflow-hidden">
-        <CardContent className="px-0 pb-0 flex-1 overflow-hidden">
+      <Card className="flex-1 flex flex-col overflow-hidden min-h-0" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        <CardContent className="px-0 pb-0 flex-1 overflow-hidden min-h-0" style={{ display: 'flex', flexDirection: 'column', flex: '1 1 0%', minHeight: 0 }}>
           {viewMode === 'calendar' && (
-            <div className="h-full min-h-[600px]">
+            <div className="flex-1 min-h-0" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
               <EnhancedTripCalendar />
             </div>
           )}
@@ -761,62 +781,6 @@ export default function CalendarPage() {
         </CardContent>
       </Card>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Today's Trips</p>
-                <p className="text-2xl font-bold">{stats.todayTrips}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Completed</p>
-                <p className="text-2xl font-bold">{stats.completed}</p>
-              </div>
-              <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--completed)' }}>
-                <span className="text-white text-sm font-bold">✓</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">In Progress</p>
-                <p className="text-2xl font-bold">{stats.inProgress}</p>
-              </div>
-              <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--in-progress)' }}>
-                <span className="text-white text-sm font-bold">→</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Scheduled</p>
-                <p className="text-2xl font-bold">{stats.scheduled}</p>
-              </div>
-              <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--scheduled)' }}>
-                <span className="text-white text-sm font-bold">⏰</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Settings Dialog */}
       {showSettings && (
         <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: 'rgba(32, 32, 35, 0.5)' }}>
@@ -1012,6 +976,62 @@ export default function CalendarPage() {
           </Card>
         </div>
       )}
+
+      {/* Quick Stats - Fixed at bottom, aligned with sidebar */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-shrink-0" style={{ marginTop: 'auto', height: '93px', paddingTop: '24px' }}>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Today's Trips</p>
+                <p className="text-2xl font-bold">{stats.todayTrips}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Completed</p>
+                <p className="text-2xl font-bold">{stats.completed}</p>
+              </div>
+              <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--completed)' }}>
+                <span className="text-white text-sm font-bold">✓</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">In Progress</p>
+                <p className="text-2xl font-bold">{stats.inProgress}</p>
+              </div>
+              <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--in-progress)' }}>
+                <span className="text-white text-sm font-bold">→</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Scheduled</p>
+                <p className="text-2xl font-bold">{stats.scheduled}</p>
+              </div>
+              <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--scheduled)' }}>
+                <span className="text-white text-sm font-bold">⏰</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
           </div>
         </div>
       </div>

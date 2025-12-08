@@ -305,7 +305,7 @@ export default function ActivityFeed() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-4xl p-4 md:p-6">
+      <div className="pt-4 px-4 md:pt-6 md:px-6">
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           <span className="ml-2 text-muted-foreground">Loading activities...</span>
@@ -317,7 +317,7 @@ export default function ActivityFeed() {
   if (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     return (
-      <div className="mx-auto max-w-4xl p-4 md:p-6">
+      <div className="pt-4 px-4 md:pt-6 md:px-6">
         <div className="rounded-lg border border-destructive bg-destructive/10 p-4 text-destructive">
           <p className="font-semibold">Failed to load activities</p>
           <p className="mt-2 text-sm">{errorMessage}</p>
@@ -330,7 +330,7 @@ export default function ActivityFeed() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl p-4 md:p-6">
+    <div className="pt-4 px-4 md:pt-6 md:px-6">
       {/* Header */}
       <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center md:mb-8">
         <h1 className="text-foreground text-xl font-semibold md:text-2xl">Activity log</h1>
@@ -353,24 +353,25 @@ export default function ActivityFeed() {
       </div>
 
       {/* Activity Timeline */}
-      <div className="space-y-4 md:space-y-6 max-h-[calc(100vh-250px)] overflow-y-auto pr-2">
-        {Object.keys(groupedActivities).length === 0 ? (
-          <div className="py-12 text-center text-muted-foreground">
-            <p>No activities found.</p>
-            {mentionsOnly && (
-              <p className="mt-2 text-sm">You haven't been mentioned in any activities yet.</p>
-            )}
-          </div>
-        ) : (
-          Object.entries(groupedActivities).map(([dateKey, dateActivities]) => (
-            <div key={dateKey}>
-              {/* Date Header */}
-              <div className="text-muted-foreground mb-3 text-xs font-medium tracking-wide uppercase md:mb-4 md:text-sm">
-                {dateKey}
-              </div>
+      <div className="border rounded-lg -mt-3.5" style={{ borderColor: 'var(--border)' }}>
+        <div className="space-y-4 md:space-y-6 max-h-[calc(100vh-264px)] overflow-y-auto px-4 pt-4 pb-6">
+          {Object.keys(groupedActivities).length === 0 ? (
+            <div className="py-12 text-center text-muted-foreground">
+              <p>No activities found.</p>
+              {mentionsOnly && (
+                <p className="mt-2 text-sm">You haven't been mentioned in any activities yet.</p>
+              )}
+            </div>
+          ) : (
+            Object.entries(groupedActivities).map(([dateKey, dateActivities]) => (
+              <div key={dateKey}>
+                {/* Date Header */}
+                <div className="text-muted-foreground mb-3 text-xs font-medium tracking-wide uppercase md:mb-4 md:text-sm">
+                  {dateKey}
+                </div>
 
-              {/* Activities for this date */}
-              {dateActivities.map((activity) => {
+                {/* Activities for this date */}
+                {dateActivities.map((activity) => {
                 const activityUser = activity.users || {
                   user_id: activity.user_id,
                   user_name: 'Unknown User',
@@ -541,6 +542,7 @@ export default function ActivityFeed() {
             </div>
           ))
         )}
+        </div>
       </div>
     </div>
   );

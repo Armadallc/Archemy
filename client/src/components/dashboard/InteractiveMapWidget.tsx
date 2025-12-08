@@ -48,7 +48,7 @@ interface TripLocation {
   eta?: string;
 }
 
-export default function InteractiveMapWidget({ className }: InteractiveMapWidgetProps) {
+export default function InteractiveMapWidget({ className, shadow }: InteractiveMapWidgetProps) {
   const [map, setMap] = useState<any>(null);
   const [selectedView, setSelectedView] = useState<'drivers' | 'trips'>('drivers');
   const [isMapLoaded, setIsMapLoaded] = useState(false);
@@ -312,6 +312,7 @@ export default function InteractiveMapWidget({ className }: InteractiveMapWidget
       icon={<MapPin className="h-5 w-5" />}
       size="large"
       className={className}
+      shadow={shadow}
       loading={isLoading}
       actions={
         <div className="flex items-center space-x-1">

@@ -862,7 +862,7 @@ export default function RoleTemplatesPage() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '130px' }}>
+      <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
         <div>
           <h1 
             className="font-bold text-foreground" 

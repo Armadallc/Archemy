@@ -41,6 +41,7 @@ import { useHierarchy } from "../../hooks/useHierarchy";
 import { useEffectivePermissions, useFeatureFlag } from "../../hooks/use-permissions";
 import { supabase } from "../../lib/supabase";
 import { DrillDownDropdown } from "../DrillDownDropdown";
+import { MiniCalendar } from "../MiniCalendar";
 
 interface SidebarProps {
   currentProgram?: string;
@@ -462,6 +463,13 @@ export default function Sidebar({
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-4 overflow-y-auto" style={{ backgroundColor: 'var(--gray-1)' }}>
+        {/* Mini Calendar - Above PARTNERS drilldown menu */}
+        {!isCollapsed && (
+          <div className="mb-4" style={{ backgroundColor: 'var(--gray-1)' }}>
+            <MiniCalendar />
+          </div>
+        )}
+        
         {/* Hierarchical Navigation Menu - Single unified menu for all roles except driver */}
         {!isCollapsed && (user?.role === 'super_admin' || 
           user?.role === 'corporate_admin' || 
@@ -684,7 +692,7 @@ export default function Sidebar({
         
         {/* Slide-up User Menu */}
         {isUserMenuOpen && (
-          <div className="absolute bottom-full left-0 right-0 mb-2 rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: 'var(--gray-1)', borderColor: 'var(--gray-7)', borderWidth: '1px', borderStyle: 'solid' }}>
+          <div className="absolute bottom-full mb-2 rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: 'var(--gray-1)', borderColor: 'var(--gray-7)', borderWidth: '1px', borderStyle: 'solid', width: '223.45px' }}>
             <div className="py-2">
               {/* User Settings */}
               <button

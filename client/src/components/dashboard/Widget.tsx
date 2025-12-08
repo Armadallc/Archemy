@@ -11,6 +11,7 @@ interface WidgetProps {
   actions?: React.ReactNode;
   loading?: boolean;
   error?: string;
+  shadow?: 'sm' | 'xl';
 }
 
 const sizeClasses = {
@@ -28,10 +29,13 @@ export default function Widget({
   icon,
   actions,
   loading = false,
-  error
+  error,
+  shadow = 'sm'
 }: WidgetProps) {
+  // Override Card's default shadow-sm when shadow-xl is requested
+  const shadowClass = shadow === 'xl' ? 'shadow-xl' : 'shadow-sm';
   return (
-    <Card className={cn("h-full", sizeClasses[size], className)}>
+    <Card className={cn("h-full", sizeClasses[size], shadowClass, className)}>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between text-lg">
           <div className="flex items-center space-x-2">

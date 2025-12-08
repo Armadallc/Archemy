@@ -38,6 +38,7 @@ ChartJS.register(
 
 interface AnalyticsWidgetProps {
   className?: string;
+  shadow?: 'sm' | 'xl';
 }
 
 interface AnalyticsData {
@@ -56,7 +57,7 @@ interface AnalyticsData {
   driverPerformance: Array<{ name: string; trips: number; rating: number }>;
 }
 
-export default function EnhancedAnalyticsWidget({ className }: AnalyticsWidgetProps) {
+export default function EnhancedAnalyticsWidget({ className, shadow }: AnalyticsWidgetProps) {
   const [timeRange, setTimeRange] = useState('30d');
   const [chartType, setChartType] = useState('revenue');
   const { level, selectedProgram, selectedCorporateClient } = useHierarchy();
@@ -250,6 +251,7 @@ export default function EnhancedAnalyticsWidget({ className }: AnalyticsWidgetPr
       icon={<BarChart className="h-5 w-5" />}
       size="large"
       className={className}
+      shadow={shadow}
       actions={
         <div className="flex items-center space-x-2">
           <Select value={timeRange} onValueChange={setTimeRange}>

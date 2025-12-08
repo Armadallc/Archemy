@@ -7,9 +7,10 @@ import { useTaskData } from "../../hooks/useRealtimeData";
 
 interface TaskManagementWidgetProps {
   className?: string;
+  shadow?: 'sm' | 'xl';
 }
 
-export default function TaskManagementWidget({ className }: TaskManagementWidgetProps) {
+export default function TaskManagementWidget({ className, shadow }: TaskManagementWidgetProps) {
   const { data: tasks, isLoading, error } = useTaskData();
 
   const getPriorityColor = (priority: string) => {
@@ -80,6 +81,7 @@ export default function TaskManagementWidget({ className }: TaskManagementWidget
       icon={<CheckSquare className="h-5 w-5" />}
       size="medium"
       className={className}
+      shadow={shadow}
       loading={isLoading}
       error={error ? 'Failed to load task data' : undefined}
       actions={

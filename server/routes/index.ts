@@ -18,6 +18,7 @@ import programsRoutes from "./programs";
 import clientNotificationsRoutes from "./client-notifications";
 import activityLogRoutes from "./activity-log";
 import discussionsRoutes from "./discussions";
+import themePreferencesRoutes from "./theme-preferences";
 import { 
   requireSupabaseAuth, 
   SupabaseAuthenticatedRequest
@@ -63,5 +64,6 @@ router.use("/programs", programsRoutes);
 router.use("/client-notifications", clientNotificationsRoutes);
 router.use("/activity-log", activityLogRoutes);
 router.use("/discussions", discussionsRoutes);
+router.use("/theme-preferences", themePreferencesRoutes);
 
 export default router;

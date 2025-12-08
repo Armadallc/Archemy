@@ -449,6 +449,16 @@ export const notificationPreferences = pgTable("notification_preferences", {
   updated_at: timestamp("updated_at").defaultNow(),
 });
 
+// User Theme Preferences Table
+export const userThemePreferences = pgTable("user_theme_preferences", {
+  id: varchar("id", { length: 50 }).primaryKey(),
+  user_id: varchar("user_id", { length: 50 }).notNull().references(() => users.user_id, { onDelete: 'cascade' }),
+  light_mode_tokens: jsonb("light_mode_tokens"),
+  dark_mode_tokens: jsonb("dark_mode_tokens"),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
 // Trip Status Logs Table
 export const tripStatusLogs = pgTable("trip_status_logs", {
   id: uuid("id").primaryKey().defaultRandom(),

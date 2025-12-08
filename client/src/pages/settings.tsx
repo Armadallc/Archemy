@@ -354,7 +354,7 @@ export default function Settings() {
     <div className="container mx-auto space-y-6 p-6">
       {/* Header */}
       <div>
-        <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '130px' }}>
+        <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
           <div>
             <h1 
               className="font-bold text-foreground" 
