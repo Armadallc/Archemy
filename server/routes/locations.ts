@@ -138,11 +138,36 @@ router.get("/frequent", requireSupabaseAuth, async (req: SupabaseAuthenticatedRe
 // Get frequent locations organized by tag (MUST BE BEFORE /:id)
 router.get("/frequent/by-tag", requireSupabaseAuth, async (req: SupabaseAuthenticatedRequest, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
     console.log('🔍 getFrequentLocationsByTag route handler called');
-    const filters = {
-      corporate_client_id: req.query.corporate_client_id as string,
-      program_id: req.query.program_id as string,
-      location_id: req.query.location_id as string,
+    console.log('🔍 [Backend] Query params:', req.query);
+    const userRole = req.user.role;
+    const userCorporateClientId = (req.user as any).corporate_client_id;
+    const userPrimaryProgramId = (req.user as any).primary_program_id;
+    const userAuthorizedPrograms = (req.user as any).authorized_programs || [];
+    const userLocationId = (req.user as any).location_id;
+    console.log('🔍 [Backend] User context:', {
+      role: userRole,
+      corporateClientId: userCorporateClientId,
+      primaryProgramId: userPrimaryProgramId,
+      authorizedPrograms: userAuthorizedPrograms,
+      locationId: userLocationId
+    });
+
+    // Build filters with role-based scoping
+    let filters: {
+      corporate_client_id?: string;
+      program_id?: string;
+      location_id?: string;
+      location_type?: string;
+      tag?: string;
+      is_service_location?: boolean;
+      is_active?: boolean;
+      search?: string;
+    } = {
       location_type: req.query.location_type as string,
       tag: req.query.tag as string,
       is_service_location: req.query.is_service_location === 'true' ? true : req.query.is_service_location === 'false' ? false : undefined,
@@ -150,7 +175,68 @@ router.get("/frequent/by-tag", requireSupabaseAuth, async (req: SupabaseAuthenti
       search: req.query.search as string
     };
 
-    console.log('🔍 Filters:', filters);
+    // Apply role-based scoping
+    if (userRole === 'super_admin') {
+      // Super admin: can filter by any corporate client, program, or location
+      if (req.query.corporate_client_id) {
+        filters.corporate_client_id = req.query.corporate_client_id as string;
+      }
+      if (req.query.program_id) {
+        filters.program_id = req.query.program_id as string;
+      }
+      if (req.query.location_id) {
+        filters.location_id = req.query.location_id as string;
+      }
+    } else if (userRole === 'corporate_admin') {
+      // Corporate admin: can only see their corporate client's data
+      if (userCorporateClientId) {
+        filters.corporate_client_id = userCorporateClientId;
+      } else {
+        return res.status(403).json({ message: 'Corporate admin missing corporate_client_id' });
+      }
+      // Can filter by program within their corporate client
+      if (req.query.program_id) {
+        filters.program_id = req.query.program_id as string;
+      }
+      // Can filter by location within their corporate client
+      if (req.query.location_id) {
+        filters.location_id = req.query.location_id as string;
+      }
+    } else if (userRole === 'program_admin') {
+      // Program admin: can only see their authorized programs' data
+      const allProgramIds = [userPrimaryProgramId, ...userAuthorizedPrograms].filter(Boolean);
+      if (allProgramIds.length === 0) {
+        return res.status(403).json({ message: 'Program admin has no authorized programs' });
+      }
+      
+      // If filtering by specific program, validate it's authorized
+      if (req.query.program_id) {
+        const requestedProgramId = req.query.program_id as string;
+        if (!allProgramIds.includes(requestedProgramId)) {
+          return res.status(403).json({ message: 'Access denied: Program not authorized' });
+        }
+        filters.program_id = requestedProgramId;
+      } else {
+        // If no specific program filter, show locations from all authorized programs
+        filters.program_id = allProgramIds;
+      }
+      
+      // Can filter by location within their programs
+      if (req.query.location_id) {
+        filters.location_id = req.query.location_id as string;
+      }
+    } else if (userRole === 'program_user') {
+      // Program user: can only see their assigned location's data
+      if (userLocationId) {
+        filters.location_id = userLocationId;
+      } else {
+        return res.status(403).json({ message: 'Program user missing location_id' });
+      }
+    } else {
+      return res.status(403).json({ message: 'Access denied: Invalid role' });
+    }
+
+    console.log('🔍 Filters (with role-based scoping):', filters);
     const locationsByTag = await getFrequentLocationsByTag(filters);
     console.log('🔍 Locations by tag result:', Object.keys(locationsByTag));
     res.json(locationsByTag);

@@ -14,13 +14,10 @@ const Vehicles = lazy(() => import("../../pages/vehicles"));
 const BillingPage = lazy(() => import("../../pages/billing"));
 const HierarchicalTripsPage = lazy(() => import("../HierarchicalTripsPage"));
 const Schedule = lazy(() => import("../../pages/schedule"));
-const Locations = lazy(() => import("../../pages/locations"));
 const FrequentLocations = lazy(() => import("../../pages/frequent-locations"));
 const Users = lazy(() => import("../../pages/users"));
 const Settings = lazy(() => import("../../pages/settings"));
 const RoleTemplatesPage = lazy(() => import("../../pages/role-templates"));
-const Programs = lazy(() => import("../../pages/programs"));
-const CorporateClients = lazy(() => import("../../pages/corporate-clients"));
 const CalendarPage = lazy(() => import("../../pages/calendar"));
 const CalendarExperiment = lazy(() => import("../../pages/calendar-experiment"));
 const ShadcnDashboard = lazy(() => import("../../pages/shadcn-dashboard"));
@@ -153,9 +150,6 @@ export default function MainLayout({
                 <LoginRedirect />
               </Route>
               {/* Hierarchical Routes - Corporate Client + Program (must come before corporate-client-only routes) */}
-              <Route path="/corporate-client/:corporateClientId/program/:programId/locations">
-                <Locations />
-              </Route>
               <Route path="/corporate-client/:corporateClientId/program/:programId/trips">
                 <HierarchicalTripsPage />
               </Route>
@@ -174,17 +168,11 @@ export default function MainLayout({
               <Route path="/corporate-client/:corporateClientId/program/:programId/calendar">
                 <CalendarPage />
               </Route>
-              <Route path="/corporate-client/:corporateClientId/program/:programId/programs">
-                <Programs />
-              </Route>
               <Route path="/corporate-client/:corporateClientId/program/:programId">
                 <ShadcnDashboardMigrated />
               </Route>
 
               {/* Hierarchical Routes - Corporate Client Only */}
-              <Route path="/corporate-client/:corporateClientId/locations">
-                <Locations />
-              </Route>
               <Route path="/corporate-client/:corporateClientId/trips">
                 <HierarchicalTripsPage />
               </Route>
@@ -202,9 +190,6 @@ export default function MainLayout({
               </Route>
               <Route path="/corporate-client/:corporateClientId/calendar">
                 <CalendarPage />
-              </Route>
-              <Route path="/corporate-client/:corporateClientId/programs">
-                <Programs />
               </Route>
               <Route path="/corporate-client/:corporateClientId">
                 <ShadcnDashboardMigrated />
@@ -232,9 +217,6 @@ export default function MainLayout({
               </Route>
               <Route path="/vehicles">
                 <Vehicles />
-              </Route>
-              <Route path="/locations">
-                <Locations />
               </Route>
               <Route path="/frequent-locations">
                 <FrequentLocations />
@@ -292,12 +274,6 @@ export default function MainLayout({
                     <EditTrip />
                   </div>
                 </div>
-              </Route>
-              <Route path="/programs">
-                <Programs />
-              </Route>
-              <Route path="/corporate-clients">
-                <CorporateClients />
               </Route>
               <Route path="/integrations">
                 <NotFound />

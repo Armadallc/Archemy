@@ -88,9 +88,6 @@ const navigationItemPermissions: Record<string, string | string[]> = {
   "/drivers": "view_drivers",
   "/vehicles": "view_vehicles",
   "/frequent-locations": "view_locations",
-  "/corporate-clients": "view_corporate_clients",
-  "/programs": "view_programs",
-  "/locations": "view_locations",
   "/clients": "view_clients",
   "/settings": ["view_users", "manage_users"], // Any permission
   "/users": "view_users",
@@ -135,9 +132,6 @@ const navigationCategories = [
     icon: Building2,
     roles: ["super_admin", "corporate_admin"],
     items: [
-      { path: "/corporate-clients", label: "Corporate", icon: Building2, roles: ["super_admin"], status: "completed" as PageStatus },
-      { path: "/programs", label: "Programs", icon: Building, roles: ["super_admin", "corporate_admin"], status: "completed" as PageStatus },
-      { path: "/locations", label: "Locations", icon: MapPin, roles: ["super_admin", "corporate_admin", "program_admin"], status: "completed" as PageStatus }, // Moved from OPERATIONS to CORPORATE
       { path: "/clients", label: "Clients", icon: Users, roles: ["super_admin", "corporate_admin", "program_admin", "program_user"], status: "completed" as PageStatus }
     ]
   },
@@ -148,7 +142,6 @@ const navigationCategories = [
     roles: ["super_admin", "corporate_admin", "program_admin"],
     items: [
       { path: "/settings", label: "System Settings", icon: Settings, roles: ["super_admin", "corporate_admin", "program_admin"], status: "completed" as PageStatus },
-      { path: "/users", label: "User Management", icon: UserCheck, roles: ["super_admin", "corporate_admin", "program_admin"], status: "completed" as PageStatus },
       { path: "/analytics", label: "Analytics", icon: BarChart3, roles: ["super_admin"], status: "in-progress" as PageStatus },
       { path: "/prophet", label: "PROPHET", icon: Calculator, roles: ["super_admin"], status: "completed" as PageStatus },
       { path: "/billing", label: "Billing", icon: DollarSign, roles: ["super_admin", "corporate_admin", "program_admin"], status: "not-started" as PageStatus },

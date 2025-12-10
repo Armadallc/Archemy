@@ -81,7 +81,7 @@ const getCssVariableName = (path: string): string | null => {
     
     // Border/Input colors
     'colors.semantic.border.primary': '--border',
-    'colors.primary.500': '--ring',
+    // Note: --ring uses same color as --primary (defined below)
     
     // Typography - Font Families (need to convert array to string)
     'typography.fontFamily.sans': '--font-sans',
@@ -122,30 +122,29 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
     return typeof current === 'string' ? current : null;
   };
 
-  // Apply CSS variables from token object
-  const applyStagedCssVariables = useCallback((tokenObj: any) => {
-    const mapping: Record<string, string> = {
-      'colors.semantic.background.primary': '--background',
-      'colors.semantic.text.primary': '--foreground',
-      'colors.semantic.background.secondary': '--card',
-      'colors.semantic.text.secondary': '--card-foreground',
-      'colors.semantic.background.tertiary': '--popover',
-      'colors.semantic.text.tertiary': '--popover-foreground',
-      'colors.primary.500': '--primary',
-      'colors.semantic.text.inverse': '--primary-foreground',
-      'colors.secondary.100': '--secondary',
-      'colors.info.500': '--accent',
-      'colors.error.500': '--destructive',
-      'colors.semantic.border.primary': '--border',
-      'colors.primary.500': '--ring',
-      'spacing.borderRadius.base': '--radius',
-      
-      // Status Colors
-      'colors.semantic.status.active': '--completed',
-      'colors.semantic.status.inactive': '--cancelled',
-      'colors.semantic.status.pending': '--scheduled',
-      'colors.semantic.status.warning': '--in-progress',
-    };
+    // Apply CSS variables from token object
+    const applyStagedCssVariables = useCallback((tokenObj: any) => {
+      const mapping: Record<string, string> = {
+        'colors.semantic.background.primary': '--background',
+        'colors.semantic.text.primary': '--foreground',
+        'colors.semantic.background.secondary': '--card',
+        'colors.semantic.text.secondary': '--card-foreground',
+        'colors.semantic.background.tertiary': '--popover',
+        'colors.semantic.text.tertiary': '--popover-foreground',
+        'colors.primary.500': '--primary',
+        'colors.semantic.text.inverse': '--primary-foreground',
+        'colors.secondary.100': '--secondary',
+        'colors.info.500': '--accent',
+        'colors.error.500': '--destructive',
+        'colors.semantic.border.primary': '--border',
+        'spacing.borderRadius.base': '--radius',
+        
+        // Status Colors
+        'colors.semantic.status.active': '--completed',
+        'colors.semantic.status.inactive': '--cancelled',
+        'colors.semantic.status.pending': '--scheduled',
+        'colors.semantic.status.warning': '--in-progress',
+      };
     
     Object.entries(mapping).forEach(([path, cssVar]) => {
       const value = getTokenValueByPath(tokenObj, path);
@@ -153,6 +152,12 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
         updateCssVariable(cssVar, value, theme === 'dark');
       }
     });
+    
+    // Set --ring to same value as --primary (focus ring color)
+    const primaryValue = getTokenValueByPath(tokenObj, 'colors.primary.500');
+    if (primaryValue) {
+      updateCssVariable('--ring', primaryValue, theme === 'dark');
+    }
   }, [theme]);
 
   // Load staged changes from localStorage on mount
@@ -1225,307 +1230,6 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
   );
 };
 
-// Component builder component
-const ComponentBuilder = () => {
-  const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
-  const [components, setComponents] = useState<any[]>([]);
-  const [hasChanges, setHasChanges] = useState(false);
-
-  const availableComponents = [
-    { id: 'button', name: 'Button', icon: Component, category: 'atoms' },
-    { id: 'input', name: 'Input', icon: Component, category: 'atoms' },
-    { id: 'card', name: 'Card', icon: Component, category: 'atoms' },
-    { id: 'badge', name: 'Badge', icon: Component, category: 'atoms' },
-    { id: 'form-field', name: 'Form Field', icon: Component, category: 'molecules' },
-    { id: 'search-input', name: 'Search Input', icon: Component, category: 'molecules' },
-    { id: 'data-table', name: 'Data Table', icon: Component, category: 'organisms' },
-    { id: 'navigation', name: 'Navigation', icon: Component, category: 'organisms' },
-  ];
-
-  // Load staged components from localStorage on mount
-  useEffect(() => {
-    const staged = localStorage.getItem('design-system-staged-components');
-    if (staged) {
-      try {
-        const parsed = JSON.parse(staged);
-        setComponents(parsed);
-        setHasChanges(true);
-      } catch (e) {
-        console.error('Failed to load staged components:', e);
-      }
-    }
-  }, []);
-
-  const addComponent = (component: any) => {
-    const newComponent = {
-      id: `${component.id}-${Date.now()}`,
-      type: component.id,
-      name: component.name,
-      category: component.category,
-      props: {},
-      position: { x: 100, y: 100 + components.length * 60 }
-    };
-    setComponents([...components, newComponent]);
-    setHasChanges(true);
-  };
-
-  const deleteComponent = (componentId: string) => {
-    setComponents(components.filter(c => c.id !== componentId));
-    if (selectedComponent === componentId) {
-      setSelectedComponent(null);
-    }
-    setHasChanges(true);
-  };
-
-  const updateComponentProps = (componentId: string, props: any) => {
-    setComponents(components.map(c => 
-      c.id === componentId ? { ...c, props: { ...c.props, ...props } } : c
-    ));
-    setHasChanges(true);
-  };
-
-  const handleCopy = () => {
-    const json = JSON.stringify(components, null, 2);
-    navigator.clipboard.writeText(json);
-    // You can add toast notification here
-    console.log('Components copied to clipboard');
-  };
-
-  const handleExport = () => {
-    const json = JSON.stringify(components, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `components-${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleSave = () => {
-    localStorage.setItem('design-system-staged-components', JSON.stringify(components));
-    setHasChanges(false);
-    console.log('Components staged successfully');
-  };
-
-  const handleReset = () => {
-    setComponents([]);
-    setSelectedComponent(null);
-    setHasChanges(false);
-    localStorage.removeItem('design-system-staged-components');
-  };
-
-  const selectedComponentData = components.find(c => c.id === selectedComponent);
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-[#26282b] to-[#26282b]/80 dark:from-[#eaeaea] dark:to-[#eaeaea]/80 bg-clip-text text-transparent">
-            Component Builder
-          </h2>
-          <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mt-1">
-            Build and test component configurations
-          </p>
-        </div>
-        <div className="flex space-x-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleReset}
-            disabled={!hasChanges && components.length === 0}
-            className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 hover:bg-white/40 dark:hover:bg-white/20 backdrop-blur-sm"
-          >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Reset
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleCopy}
-            disabled={components.length === 0}
-            className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 hover:bg-white/40 dark:hover:bg-white/20 backdrop-blur-sm"
-          >
-            <Copy className="w-4 h-4 mr-2" />
-            Copy JSON
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleExport}
-            disabled={components.length === 0}
-            className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 hover:bg-white/40 dark:hover:bg-white/20 backdrop-blur-sm"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Export
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleSave}
-            disabled={!hasChanges}
-            className="bg-[#ff8475]/20 hover:bg-[#ff8475]/30 border-[#ff8475]/30 text-[#ff8475] backdrop-blur-sm"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            Stage
-          </Button>
-        </div>
-      </div>
-
-      {hasChanges && (
-        <div className="bg-[#ff8475]/10 border border-[#ff8475]/30 rounded-lg p-3 backdrop-blur-sm">
-          <p className="text-sm text-[#26282b] dark:text-[#eaeaea]">
-            <span className="font-semibold">⚠️ Unsaved changes:</span> Click "Stage" to save your component configuration.
-          </p>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[600px]">
-        {/* Component Palette */}
-        <div className="lg:col-span-3">
-          <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl h-full">
-            <CardHeader>
-              <CardTitle className="text-sm text-[#26282b] dark:text-[#eaeaea]">Components</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 max-h-[600px] overflow-y-auto">
-              {availableComponents.map((component) => (
-                <div
-                  key={component.id}
-                  className="flex items-center space-x-2 p-3 rounded-lg border border-white/20 dark:border-white/10 bg-white/20 dark:bg-white/10 cursor-pointer hover:bg-white/30 dark:hover:bg-white/20 transition-all backdrop-blur-sm"
-                  onClick={() => addComponent(component)}
-                >
-                  <component.icon className="w-4 h-4 text-[#26282b] dark:text-[#eaeaea]" />
-                  <span className="text-sm text-[#26282b] dark:text-[#eaeaea] flex-1">{component.name}</span>
-                  <Badge variant="outline" className="text-xs bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20">
-                    {component.category}
-                  </Badge>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Canvas */}
-        <div className="lg:col-span-6">
-          <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl h-full">
-            <CardHeader>
-              <CardTitle className="text-sm text-[#26282b] dark:text-[#eaeaea]">Canvas</CardTitle>
-            </CardHeader>
-            <CardContent className="relative h-full min-h-[500px] bg-gradient-to-br from-white/10 to-white/5 dark:from-white/5 dark:to-white/0 rounded-lg border-2 border-dashed border-white/20 dark:border-white/10">
-              {components.length === 0 ? (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <Layers className="w-16 h-16 mx-auto mb-4 opacity-30 text-[#26282b] dark:text-[#eaeaea]" />
-                    <p className="text-[#26282b]/70 dark:text-[#eaeaea]/70">Click components to add them to the canvas</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3 p-4">
-                  {components.map((component) => (
-                    <div
-                      key={component.id}
-                      className={`p-4 rounded-lg border-2 transition-all cursor-pointer backdrop-blur-sm ${
-                        selectedComponent === component.id
-                          ? 'bg-[#ff8475]/20 border-[#ff8475]/50 shadow-lg'
-                          : 'bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 hover:bg-white/40 dark:hover:bg-white/20 hover:shadow-md'
-                      }`}
-                      onClick={() => setSelectedComponent(component.id)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <Component className="w-5 h-5 text-[#26282b] dark:text-[#eaeaea]" />
-                          <div>
-                            <span className="text-sm font-medium text-[#26282b] dark:text-[#eaeaea]">{component.name}</span>
-                            <Badge variant="outline" className="text-xs ml-2 bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20">
-                              {component.category}
-                            </Badge>
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteComponent(component.id);
-                          }}
-                          className="text-[#ff8475] hover:text-[#ff444c] hover:bg-[#ff8475]/10"
-                        >
-                          <Minus className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Properties Panel */}
-        <div className="lg:col-span-3">
-          <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl h-full">
-            <CardHeader>
-              <CardTitle className="text-sm text-[#26282b] dark:text-[#eaeaea]">Properties</CardTitle>
-            </CardHeader>
-            <CardContent className="max-h-[600px] overflow-y-auto">
-              {selectedComponentData ? (
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-[#26282b] dark:text-[#eaeaea]">Component Type</Label>
-                    <Input 
-                      value={selectedComponentData.name} 
-                      disabled 
-                      className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea] backdrop-blur-sm"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-[#26282b] dark:text-[#eaeaea]">Category</Label>
-                    <Input 
-                      value={selectedComponentData.category} 
-                      disabled 
-                      className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea] backdrop-blur-sm"
-                    />
-                  </div>
-                  <Separator className="bg-white/20 dark:bg-white/10" />
-                  <div>
-                    <Label className="text-[#26282b] dark:text-[#eaeaea]">Component ID</Label>
-                    <Input 
-                      value={selectedComponentData.id} 
-                      disabled 
-                      className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea] backdrop-blur-sm text-xs"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-[#26282b] dark:text-[#eaeaea]">Properties (JSON)</Label>
-                    <Textarea
-                      value={JSON.stringify(selectedComponentData.props, null, 2)}
-                      onChange={(e) => {
-                        try {
-                          const parsed = JSON.parse(e.target.value);
-                          updateComponentProps(selectedComponentData.id, parsed);
-                        } catch {
-                          // Invalid JSON, ignore
-                        }
-                      }}
-                      className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea] font-mono text-xs backdrop-blur-sm min-h-[200px]"
-                      placeholder='{"prop": "value"}'
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <Settings className="w-12 h-12 mx-auto mb-4 opacity-30 text-[#26282b] dark:text-[#eaeaea]" />
-                  <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70">Select a component to edit properties</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // Live preview component
 // Purpose: Shows real-time preview of how design token changes affect actual UI components
 // Functionality: 
@@ -1784,348 +1488,6 @@ const LivePreview = ({ tokens }: { tokens: any }) => {
   );
 };
 
-// Theme manager component
-// Purpose: Manage and stage multiple theme configurations before committing
-// Functionality:
-// - Create new themes from current design tokens
-// - Save/load themes from localStorage
-// - Import/export themes as JSON files
-// - Activate themes to preview them (applies CSS variables)
-// - Delete themes
-// - Theme preview with color swatches
-const ThemeManager = ({ currentTokens }: { currentTokens?: any }) => {
-  const [themes, setThemes] = useState<Array<{
-    id: string;
-    name: string;
-    isActive: boolean;
-    tokens?: any;
-    createdAt?: string;
-  }>>([]);
-  const [newThemeName, setNewThemeName] = useState('');
-  
-  // Get current tokens from prop, localStorage, or defaults
-  const getCurrentTokens = () => {
-    if (currentTokens) return currentTokens;
-    const staged = localStorage.getItem('design-system-staged-tokens');
-    return staged ? JSON.parse(staged) : designTokens;
-  };
-
-  // Load themes from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem('design-system-themes');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setThemes(parsed);
-      } catch (e) {
-        console.error('Failed to load themes:', e);
-      }
-    } else {
-      // Initialize with default themes
-      const defaultThemes = [
-        { id: 'default', name: 'Default Theme', isActive: true, tokens: designTokens, createdAt: new Date().toISOString() },
-        { id: 'dark', name: 'Dark Theme', isActive: false, tokens: designTokens, createdAt: new Date().toISOString() },
-      ];
-      setThemes(defaultThemes);
-      localStorage.setItem('design-system-themes', JSON.stringify(defaultThemes));
-    }
-  }, []);
-
-  const saveThemes = (updatedThemes: typeof themes) => {
-    localStorage.setItem('design-system-themes', JSON.stringify(updatedThemes));
-    setThemes(updatedThemes);
-  };
-
-  const createTheme = () => {
-    if (newThemeName.trim()) {
-      const currentTokens = getCurrentTokens();
-      const newTheme = {
-        id: newThemeName.toLowerCase().replace(/\s+/g, '-'),
-        name: newThemeName,
-        isActive: false,
-        tokens: JSON.parse(JSON.stringify(currentTokens)), // Deep clone current tokens
-        createdAt: new Date().toISOString()
-      };
-      const updated = [...themes, newTheme];
-      saveThemes(updated);
-      setNewThemeName('');
-    }
-  };
-
-  const activateTheme = (themeId: string) => {
-    const updated = themes.map(theme => ({
-      ...theme,
-      isActive: theme.id === themeId
-    }));
-    saveThemes(updated);
-    
-    // Apply theme's CSS variables
-    const theme = themes.find(t => t.id === themeId);
-    if (theme && theme.tokens) {
-      applyThemeTokens(theme.tokens);
-    }
-  };
-
-  const applyThemeTokens = (themeTokens: any) => {
-    // Apply all CSS variables from theme tokens
-    const mapping: Record<string, string> = {
-      'colors.semantic.background.primary': '--background',
-      'colors.semantic.text.primary': '--foreground',
-      'colors.semantic.background.secondary': '--card',
-      'colors.semantic.text.secondary': '--card-foreground',
-      'colors.primary.500': '--primary',
-      'colors.error.500': '--destructive',
-      'colors.info.500': '--accent',
-      'colors.semantic.border.primary': '--border',
-      'spacing.borderRadius.base': '--radius',
-    };
-
-    Object.entries(mapping).forEach(([path, cssVar]) => {
-      const keys = path.split('.');
-      let value: any = themeTokens;
-      for (const key of keys) {
-        if (value && typeof value === 'object' && key in value) {
-          value = value[key];
-        } else {
-          return;
-        }
-      }
-      if (typeof value === 'string') {
-        document.documentElement.style.setProperty(cssVar, value);
-      }
-    });
-  };
-
-  const resetTheme = () => {
-    // Remove all inline CSS variable overrides to restore original values from index.css
-    const cssVarsToReset = [
-      '--background',
-      '--foreground',
-      '--card',
-      '--card-foreground',
-      '--primary',
-      '--destructive',
-      '--accent',
-      '--border',
-      '--radius',
-    ];
-    
-    cssVarsToReset.forEach(cssVar => {
-      document.documentElement.style.removeProperty(cssVar);
-    });
-    
-    // Also remove dark mode custom styles if they exist
-    const darkModeStyleElement = document.getElementById('dark-mode-custom-styles');
-    if (darkModeStyleElement) {
-      darkModeStyleElement.remove();
-    }
-    
-    // Deactivate all themes
-    const updated = themes.map(theme => ({
-      ...theme,
-      isActive: false
-    }));
-    saveThemes(updated);
-    
-    console.log('Theme reset - original CSS variables restored');
-  };
-
-  const deleteTheme = (themeId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (confirm(`Are you sure you want to delete "${themes.find(t => t.id === themeId)?.name}"?`)) {
-      const updated = themes.filter(t => t.id !== themeId);
-      saveThemes(updated);
-    }
-  };
-
-  const handleExport = (themeId?: string) => {
-    const themesToExport = themeId 
-      ? themes.filter(t => t.id === themeId)
-      : themes;
-    
-    const json = JSON.stringify(themesToExport, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = themeId 
-      ? `theme-${themeId}-${Date.now()}.json`
-      : `themes-${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleImport = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          try {
-            const imported = JSON.parse(event.target?.result as string);
-            const importedArray = Array.isArray(imported) ? imported : [imported];
-            const updated = [...themes, ...importedArray];
-            saveThemes(updated);
-            console.log('Themes imported successfully');
-          } catch (error) {
-            alert('Failed to import themes. Invalid JSON file.');
-            console.error('Import error:', error);
-          }
-        };
-        reader.readAsText(file);
-      }
-    };
-    input.click();
-  };
-
-  const getThemeColors = (theme: typeof themes[0]) => {
-    if (!theme.tokens) return ['#cc33ab', '#33ccad', '#cc5833', '#8933cc'];
-    const tokens = theme.tokens;
-    return [
-      tokens.colors?.primary?.[500] || tokens.colors?.semantic?.status?.active || '#cc33ab',
-      tokens.colors?.info?.[500] || tokens.colors?.semantic?.status?.info || '#33ccad',
-      tokens.colors?.error?.[500] || tokens.colors?.semantic?.status?.error || '#cc5833',
-      tokens.colors?.primary?.[700] || '#8933cc',
-    ];
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-[#26282b] to-[#26282b]/80 dark:from-[#eaeaea] dark:to-[#eaeaea]/80 bg-clip-text text-transparent">
-            Theme Manager
-          </h2>
-          <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mt-1">
-            Create, manage, and stage theme configurations before committing
-          </p>
-        </div>
-        <div className="flex space-x-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={resetTheme}
-            className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 hover:bg-white/40 dark:hover:bg-white/20 backdrop-blur-sm text-[#ff8475] hover:text-[#ff444c]"
-          >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Reset Theme
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleImport}
-            className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 hover:bg-white/40 dark:hover:bg-white/20 backdrop-blur-sm"
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            Import
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => handleExport()}
-            disabled={themes.length === 0}
-            className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 hover:bg-white/40 dark:hover:bg-white/20 backdrop-blur-sm"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Export All
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {themes.map((theme) => (
-          <Card 
-            key={theme.id} 
-            className={`cursor-pointer transition-all backdrop-blur-sm ${
-              theme.isActive 
-                ? 'ring-2 ring-[#ff8475] bg-[#ff8475]/20 border-[#ff8475]/50 shadow-xl' 
-                : 'bg-white/25 dark:bg-[#2f3235]/25 border-white/20 dark:border-white/10 hover:bg-white/30 dark:hover:bg-white/20 hover:shadow-lg'
-            }`}
-            onClick={() => activateTheme(theme.id)}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-[#26282b] dark:text-[#eaeaea]">{theme.name}</h3>
-                <div className="flex items-center space-x-2">
-                  {theme.isActive && (
-                    <Badge className="text-xs bg-[#ff8475] text-white">
-                      Active
-                    </Badge>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => deleteTheme(theme.id, e)}
-                    className="h-6 w-6 p-0 text-[#ff8475] hover:text-[#ff444c] hover:bg-[#ff8475]/10"
-                  >
-                    <Minus className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleExport(theme.id);
-                    }}
-                    className="h-6 w-6 p-0 text-[#26282b] dark:text-[#eaeaea] hover:bg-white/20"
-                  >
-                    <Download className="w-3 h-3" />
-                  </Button>
-                </div>
-              </div>
-              <div className="flex space-x-2 mb-3">
-                {getThemeColors(theme).map((color, idx) => (
-                  <div 
-                    key={idx}
-                    className="w-8 h-8 rounded-lg border-2 border-white/30 dark:border-white/20 shadow-md"
-                    style={{ backgroundColor: color }}
-                    title={color}
-                  />
-                ))}
-              </div>
-              {theme.createdAt && (
-                <p className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60">
-                  Created: {new Date(theme.createdAt).toLocaleDateString()}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-4 border border-white/20 dark:border-white/10">
-        <div className="flex space-x-2">
-          <Input
-            placeholder="New theme name..."
-            value={newThemeName}
-            onChange={(e) => setNewThemeName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && newThemeName.trim()) {
-                createTheme();
-              }
-            }}
-            className="flex-1 bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea] placeholder:text-[#26282b]/50 dark:placeholder:text-[#eaeaea]/50 backdrop-blur-sm"
-          />
-          <Button 
-            onClick={createTheme} 
-            disabled={!newThemeName.trim()}
-            className="bg-[#ff8475] hover:bg-[#ff444c] text-white shadow-lg hover:shadow-xl transition-all hover:scale-105"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Create Theme
-          </Button>
-        </div>
-        <p className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mt-2">
-          Creates a new theme from your current design token configuration
-        </p>
-      </div>
-    </div>
-  );
-};
-
 // Main design system page
 export default function DesignSystem() {
   const [tokens, setTokens] = useState(designTokens);
@@ -2212,24 +1574,10 @@ export default function DesignSystem() {
             </CardContent>
           </Card>
 
-          {/* Component Builder */}
-          <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
-            <CardContent className="p-6">
-              <ComponentBuilder />
-            </CardContent>
-          </Card>
-
           {/* Live Preview */}
           <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
             <CardContent className="p-6">
               <LivePreview tokens={tokens} />
-            </CardContent>
-          </Card>
-
-          {/* Theme Manager */}
-          <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
-            <CardContent className="p-6">
-              <ThemeManager currentTokens={tokens} />
             </CardContent>
           </Card>
 

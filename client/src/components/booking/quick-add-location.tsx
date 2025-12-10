@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '../../lib/queryClient';
 import { useHierarchy } from '../../hooks/useHierarchy';
+import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/use-toast';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -66,6 +67,46 @@ const locationTypeStyles: Record<LocationType, React.CSSProperties> = {
   other: {},
 };
 
+// Location type configuration (matching frequent-locations page)
+const locationTags = {
+  'service_location': { 
+    label: 'Service Location', 
+    icon: Building, 
+    color: 'bg-indigo-100 text-indigo-800',
+    priority: 1
+  },
+  'legal': { 
+    label: 'Legal', 
+    icon: Gavel, 
+    color: 'bg-red-100 text-red-800',
+    priority: 2
+  },
+  'healthcare': { 
+    label: 'Healthcare', 
+    icon: Stethoscope, 
+    color: 'bg-pink-100 text-pink-800',
+    priority: 3
+  },
+  'dmv': { 
+    label: 'DMV', 
+    icon: Building, 
+    color: '',
+    priority: 4
+  },
+  'grocery': { 
+    label: 'Grocery', 
+    icon: Store, 
+    color: 'bg-yellow-100 text-yellow-800',
+    priority: 5
+  },
+  'other': { 
+    label: 'Other', 
+    icon: MapPin, 
+    color: 'bg-gray-100 text-gray-800',
+    priority: 6
+  }
+};
+
 export default function QuickAddLocation({
   value,
   onChange,
@@ -74,6 +115,7 @@ export default function QuickAddLocation({
   label = "Address",
   required = false
 }: QuickAddLocationProps) {
+  const { user } = useAuth();
   const { selectedProgram, selectedCorporateClient } = useHierarchy();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -82,43 +124,71 @@ export default function QuickAddLocation({
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
-  // Fetch frequent locations
-  const { data: frequentLocations = [], isLoading, error: queryError } = useQuery({
-    queryKey: ['/api/frequent-locations', selectedProgram, selectedCorporateClient, locationType],
+  // Determine effective filter values based on user role (similar to frequent-locations page)
+  const effectiveCorporateClient = useMemo(() => {
+    if (user?.role === 'super_admin') {
+      return selectedCorporateClient;
+    } else if (user?.role === 'corporate_admin') {
+      return (user as any).corporate_client_id || selectedCorporateClient;
+    }
+    return undefined;
+  }, [user?.role, selectedCorporateClient]);
+
+  const effectiveProgram = useMemo(() => {
+    if (user?.role === 'super_admin' || user?.role === 'corporate_admin') {
+      return selectedProgram;
+    } else if (user?.role === 'program_admin') {
+      return selectedProgram || (user as any).primary_program_id;
+    }
+    return undefined;
+  }, [user?.role, selectedProgram]);
+
+  const effectiveLocation = useMemo(() => {
+    if (user?.role === 'program_user') {
+      return (user as any).location_id;
+    }
+    return undefined;
+  }, [user?.role]);
+
+  // Fetch frequent locations using the new by-tag endpoint
+  const { data: frequentLocationsByTag = {}, isLoading, error: queryError } = useQuery({
+    queryKey: ['/api/locations/frequent/by-tag', effectiveCorporateClient, effectiveProgram, effectiveLocation],
     queryFn: async () => {
-      let endpoint = '/api/frequent-locations';
       const params = new URLSearchParams();
       
-      // Use program-specific endpoint if we have a program
-      if (selectedProgram) {
-        endpoint = `/api/frequent-locations/program/${selectedProgram}`;
-      } else {
-        // Fall back to general endpoint with filters
-        if (selectedCorporateClient) params.append('corporate_client_id', selectedCorporateClient);
-        // Don't filter by location_type in Quick Add - show all types
-        params.append('is_active', 'true');
-        if (params.toString()) {
-          endpoint = `${endpoint}?${params.toString()}`;
-        }
+      // Apply hierarchy filters based on user role
+      if (effectiveCorporateClient) {
+        params.append('corporate_client_id', effectiveCorporateClient);
       }
+      if (effectiveProgram) {
+        params.append('program_id', effectiveProgram);
+      }
+      if (effectiveLocation) {
+        params.append('location_id', effectiveLocation);
+      }
+      
+      params.append('is_active', 'true');
 
-      console.log('🔍 QuickAddLocation fetching from endpoint:', endpoint);
+      const url = `/api/locations/frequent/by-tag?${params.toString()}`;
+      console.log('🔍 QuickAddLocation fetching from:', url);
+      
       try {
-        const response = await apiRequest('GET', endpoint);
+        const response = await apiRequest('GET', url);
         if (!response.ok) {
           console.error('🔍 QuickAddLocation API error:', response.status, response.statusText);
           throw new Error(`Failed to fetch frequent locations: ${response.statusText}`);
         }
         const data = await response.json();
         console.log('🔍 QuickAddLocation API response:', data);
-        return Array.isArray(data) ? data : [];
+        // Data is already organized by location type: { 'service_location': [...], 'legal': [...], ... }
+        return data || {};
       } catch (error) {
         console.error('🔍 QuickAddLocation fetch error:', error);
         throw error;
       }
     },
-    enabled: !!(selectedProgram || selectedCorporateClient), // Only enable when we have hierarchy context
-    retry: 1, // Retry once on failure
+    enabled: !!(effectiveCorporateClient || effectiveProgram || effectiveLocation || user?.role === 'super_admin'),
+    retry: 1,
   });
 
   // Create frequent location mutation
@@ -128,6 +198,7 @@ export default function QuickAddLocation({
       return await response.json();
     },
     onSuccess: (newLocation) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/locations/frequent/by-tag'] });
       queryClient.invalidateQueries({ queryKey: ['/api/frequent-locations'] });
       setIsCreateDialogOpen(false);
       onChange(newLocation.full_address);
@@ -152,6 +223,7 @@ export default function QuickAddLocation({
       return await response.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/locations/frequent/by-tag'] });
       queryClient.invalidateQueries({ queryKey: ['/api/frequent-locations'] });
     },
   });
@@ -166,33 +238,51 @@ export default function QuickAddLocation({
   const handleCreateLocation = (data: Partial<FrequentLocation>) => {
     createMutation.mutate({
       ...data,
-      corporate_client_id: selectedCorporateClient,
-      program_id: selectedProgram,
-    } as Partial<FrequentLocation> & { corporate_client_id?: string; program_id?: string });
+      corporate_client_id: effectiveCorporateClient,
+      program_id: effectiveProgram,
+      location_id: effectiveLocation,
+    } as Partial<FrequentLocation> & { corporate_client_id?: string; program_id?: string; location_id?: string });
   };
 
-  const filteredLocations = frequentLocations.filter((location: FrequentLocation) => {
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      return (
-        location.name.toLowerCase().includes(searchLower) ||
-        location.full_address.toLowerCase().includes(searchLower) ||
-        (location.description && location.description.toLowerCase().includes(searchLower))
-      );
-    }
-    return true;
-  });
+  // Flatten and filter locations by search term
+  const allLocations = useMemo(() => {
+    return Object.values(frequentLocationsByTag).flat() as FrequentLocation[];
+  }, [frequentLocationsByTag]);
+
+  const filteredLocationsByTag = useMemo(() => {
+    const filtered: Record<string, FrequentLocation[]> = {};
+    
+    Object.entries(frequentLocationsByTag).forEach(([locationType, locations]) => {
+      const typedLocations = locations as FrequentLocation[];
+      const filteredForType = typedLocations.filter((location: FrequentLocation) => {
+        if (searchTerm) {
+          const searchLower = searchTerm.toLowerCase();
+          return (
+            location.name.toLowerCase().includes(searchLower) ||
+            location.full_address.toLowerCase().includes(searchLower) ||
+            (location.description && location.description.toLowerCase().includes(searchLower))
+          );
+        }
+        return true;
+      });
+      
+      if (filteredForType.length > 0) {
+        filtered[locationType] = filteredForType;
+      }
+    });
+    
+    return filtered;
+  }, [frequentLocationsByTag, searchTerm]);
 
   console.log('🔍 QuickAddLocation render state:', {
-    selectedProgram,
-    selectedCorporateClient,
+    effectiveProgram,
+    effectiveCorporateClient,
+    effectiveLocation,
     locationType,
-    frequentLocationsCount: frequentLocations.length,
-    filteredLocationsCount: filteredLocations.length,
+    allLocationsCount: allLocations.length,
+    filteredLocationsByTagKeys: Object.keys(filteredLocationsByTag),
     isLoading,
     searchTerm,
-    frequentLocations: frequentLocations.slice(0, 2), // Show first 2 locations for debugging
-    endpoint: selectedProgram ? `/api/frequent-locations/program/${selectedProgram}` : `/api/frequent-locations?is_active=true`
   });
 
   // Generate unique ID based on location type and label
@@ -220,14 +310,15 @@ export default function QuickAddLocation({
               Quick Add
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80 p-0" align="start">
-            <Command>
+          <PopoverContent className="w-96 p-0 max-h-[500px] overflow-hidden flex flex-col" align="start">
+            <Command className="flex flex-col h-full">
               <CommandInput
                 placeholder="Search frequent locations..."
                 value={searchTerm}
                 onValueChange={setSearchTerm}
+                className="border-b"
               />
-              <CommandList>
+              <CommandList className="flex-1 overflow-y-auto">
                 {isLoading ? (
                   <div className="p-4 text-center text-sm text-gray-500">
                     Loading frequent locations...
@@ -236,7 +327,7 @@ export default function QuickAddLocation({
                   <div className="p-4 text-center text-sm text-red-500">
                     Error loading frequent locations. Please try again.
                   </div>
-                ) : filteredLocations.length === 0 ? (
+                ) : Object.keys(filteredLocationsByTag).length === 0 ? (
                   <CommandEmpty>
                     <div className="p-4 text-center text-sm text-gray-500">
                       No frequent locations found.
@@ -255,38 +346,47 @@ export default function QuickAddLocation({
                       </Button>
                     </div>
                   </CommandEmpty>
-                ) : null}
-                {!isLoading && !queryError && filteredLocations.length > 0 && (
-                  <CommandGroup>
-                    {filteredLocations.map((location) => {
-                    const IconComponent = locationTypeIcons[location.location_type as LocationType];
-                    return (
-                      <CommandItem
-                        key={location.id}
-                        onSelect={() => handleLocationSelect(location)}
-                        className="flex items-center gap-3 p-3"
-                      >
-                        <IconComponent className="h-4 w-4 text-gray-400" />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate">{location.name}</div>
-                          <div className="text-sm text-gray-500 truncate">{location.full_address}</div>
-                          {location.description && (
-                            <div className="text-xs text-gray-400 truncate">{location.description}</div>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge 
-                            className={locationTypeColors[location.location_type as LocationType]}
-                            style={locationTypeStyles[location.location_type as LocationType] || {}}
-                          >
-                            {location.location_type}
-                          </Badge>
-                          <span className="text-xs text-gray-400">{location.usage_count}</span>
-                        </div>
-                      </CommandItem>
-                    );
-                  })}
-                  </CommandGroup>
+                ) : (
+                  // Display locations organized by location type
+                  Object.entries(filteredLocationsByTag)
+                    .sort(([typeA], [typeB]) => {
+                      const priorityA = locationTags[typeA as keyof typeof locationTags]?.priority || 999;
+                      const priorityB = locationTags[typeB as keyof typeof locationTags]?.priority || 999;
+                      return priorityA - priorityB;
+                    })
+                    .map(([locationType, locations]) => {
+                      const tagConfig = locationTags[locationType as keyof typeof locationTags];
+                      const IconComponent = tagConfig?.icon || MapPin;
+                      
+                      return (
+                        <CommandGroup key={locationType} heading={
+                          <div className="flex items-center gap-2 px-2 py-1.5">
+                            <IconComponent className="h-3.5 w-3.5 text-gray-500" />
+                            <span className="text-xs font-medium text-gray-700">{tagConfig?.label || locationType}</span>
+                            <Badge variant="outline" className="text-xs ml-auto">
+                              {locations.length}
+                            </Badge>
+                          </div>
+                        }>
+                          {locations.map((location) => {
+                            const LocationIcon = locationTypeIcons[location.location_type as LocationType];
+                            return (
+                              <CommandItem
+                                key={location.id}
+                                onSelect={() => handleLocationSelect(location)}
+                                className="flex items-center gap-2 p-2 cursor-pointer"
+                              >
+                                <LocationIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-sm truncate">{location.name}</div>
+                                  <div className="text-xs text-gray-500 truncate">{location.full_address}</div>
+                                </div>
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandGroup>
+                      );
+                    })
                 )}
               </CommandList>
             </Command>
@@ -294,14 +394,17 @@ export default function QuickAddLocation({
         </Popover>
 
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" type="button">
-              <Plus className="h-4 w-4" />
-            </Button>
-          </DialogTrigger>
+          <Button variant="outline" type="button" onClick={() => setIsCreateDialogOpen(true)}>
+            <Plus className="h-4 w-4" />
+          </Button>
           <CreateLocationDialog
             onSave={handleCreateLocation}
             defaultLocationType={locationType}
+            defaultAddress={value}
+            corporateClientId={effectiveCorporateClient}
+            programId={effectiveProgram}
+            locationId={effectiveLocation}
+            onClose={() => setIsCreateDialogOpen(false)}
           />
         </Dialog>
       </div>
@@ -312,11 +415,46 @@ export default function QuickAddLocation({
 // Create Location Dialog Component
 function CreateLocationDialog({ 
   onSave, 
-  defaultLocationType 
+  defaultLocationType,
+  defaultAddress = '',
+  corporateClientId,
+  programId,
+  locationId,
+  onClose
 }: { 
   onSave: (data: Partial<FrequentLocation>) => void; 
   defaultLocationType?: string;
+  defaultAddress?: string;
+  corporateClientId?: string;
+  programId?: string;
+  locationId?: string;
+  onClose: () => void;
 }) {
+  // Parse address if provided
+  const parseAddress = (address: string) => {
+    if (!address) return { street_address: '', city: '', state: '', zip_code: '' };
+    
+    // Try to parse common address formats
+    // Format: "123 Main St, City, State ZIP" or "123 Main St, City, State"
+    const parts = address.split(',').map(p => p.trim());
+    
+    if (parts.length >= 3) {
+      const street_address = parts[0];
+      const city = parts[1];
+      const stateZip = parts[2].split(/\s+/);
+      const state = stateZip[0] || '';
+      const zip_code = stateZip[1] || '';
+      
+      return { street_address, city, state, zip_code };
+    } else if (parts.length === 2) {
+      return { street_address: parts[0], city: parts[1], state: '', zip_code: '' };
+    } else {
+      return { street_address: address, city: '', state: '', zip_code: '' };
+    }
+  };
+
+  const parsedAddress = parseAddress(defaultAddress);
+
   const [formData, setFormData] = useState<{
     name: string;
     description: string;
@@ -328,11 +466,13 @@ function CreateLocationDialog({
   }>({
     name: '',
     description: '',
-    street_address: '',
-    city: '',
-    state: '',
-    zip_code: '',
-    location_type: (defaultLocationType || 'service_location') as LocationType,
+    street_address: parsedAddress.street_address,
+    city: parsedAddress.city,
+    state: parsedAddress.state,
+    zip_code: parsedAddress.zip_code,
+    location_type: (defaultLocationType && defaultLocationType !== 'pickup' && defaultLocationType !== 'dropoff' 
+      ? defaultLocationType 
+      : 'service_location') as LocationType,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -344,6 +484,9 @@ function CreateLocationDialog({
       usage_count: 0,
       is_active: true,
       location_type: formData.location_type,
+      corporate_client_id: corporateClientId,
+      program_id: programId,
+      location_id: locationId,
     } as Partial<FrequentLocation>);
   };
 
@@ -437,6 +580,7 @@ function CreateLocationDialog({
         </div>
 
         <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
           <Button type="submit">Add Location</Button>
         </DialogFooter>
       </form>

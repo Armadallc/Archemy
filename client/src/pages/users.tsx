@@ -70,7 +70,9 @@ const roleLabels = {
   super_admin: "Super Admin",
   program_admin: "Program Manager",
   program_user: "Staff Member", 
-  driver: "Driver"
+  driver: "Driver",
+  client_user: "Client User",
+  "client-user": "Client User"
 };
 
 // Role colors using Fire palette - using inline styles with CSS variables for proper color application
@@ -177,6 +179,7 @@ export default function Users() {
       toast({
         title: "User created successfully",
         description: "The new user has been added to the system.",
+        variant: "success",
       });
     },
     onError: (error: any) => {

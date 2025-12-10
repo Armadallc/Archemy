@@ -123,9 +123,13 @@ export default function FrequentLocationsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Local hierarchy filter state (separate from global hierarchy context)
+  const [filterCorporateClient, setFilterCorporateClient] = useState<string>('all');
+  const [filterProgram, setFilterProgram] = useState<string>('all');
+  const [filterLocation, setFilterLocation] = useState<string>('all');
+
   const [searchTerm, setSearchTerm] = useState('');
   const [locationTypeFilter, setLocationTypeFilter] = useState<string>('all');
-  const [tagFilter, setTagFilter] = useState<string>('all');
   const [selectedLocations, setSelectedLocations] = useState<Set<string>>(new Set());
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -158,32 +162,167 @@ export default function FrequentLocationsPage() {
     }
   });
 
+  // Initialize filter state based on user role and current hierarchy
+  useEffect(() => {
+    if (!user?.role) return;
+    
+    if (user.role === 'super_admin') {
+      // Super admin: can filter by corporate client → program → location
+      // Initialize from hierarchy context if available and filter is 'all'
+      if (selectedCorporateClient && filterCorporateClient === 'all') {
+        setFilterCorporateClient(selectedCorporateClient);
+      }
+      if (selectedProgram && filterProgram === 'all') {
+        setFilterProgram(selectedProgram);
+      }
+    } else if (user.role === 'corporate_admin') {
+      // Corporate admin: can filter by program → location (scoped to their corporate client)
+      const corporateClientId = (user as any).corporate_client_id;
+      if (corporateClientId && filterCorporateClient === 'all') {
+        setFilterCorporateClient(corporateClientId);
+      }
+      if (selectedProgram && filterProgram === 'all') {
+        setFilterProgram(selectedProgram);
+      }
+    } else if (user.role === 'program_admin') {
+      // Program admin: can filter by program(s) → location
+      if (selectedProgram && filterProgram === 'all') {
+        setFilterProgram(selectedProgram);
+      }
+    } else if (user.role === 'program_user') {
+      // Program user: can filter by location only
+      // Location filter will be set based on their assigned location
+      const locationId = (user as any).location_id;
+      if (locationId && filterLocation === 'all') {
+        setFilterLocation(locationId);
+      }
+    }
+  }, [user?.role, selectedCorporateClient, selectedProgram, filterCorporateClient, filterProgram, filterLocation]);
+
+  // Fetch corporate clients for filter dropdown (Super Admin only)
+  const { data: corporateClients = [] } = useQuery({
+    queryKey: ['/api/corporate-clients'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/corporate-clients');
+      return await response.json();
+    },
+    enabled: user?.role === 'super_admin',
+  });
+
+  // Fetch programs for filter dropdown
+  const { data: programs = [] } = useQuery({
+    queryKey: ['/api/programs', filterCorporateClient, user?.role, (user as any)?.corporate_client_id],
+    queryFn: async () => {
+      let endpoint = '/api/programs';
+      const corporateClientId = filterCorporateClient || (user as any)?.corporate_client_id;
+      
+      if (user?.role === 'corporate_admin' && corporateClientId) {
+        endpoint = `/api/programs/corporate-client/${corporateClientId}`;
+      } else if (user?.role === 'super_admin' && filterCorporateClient) {
+        endpoint = `/api/programs/corporate-client/${filterCorporateClient}`;
+      } else if (user?.role === 'program_admin') {
+        // Program admin: fetch their authorized programs
+        const primaryProgramId = (user as any).primary_program_id;
+        const authorizedPrograms = (user as any).authorized_programs || [];
+        const allProgramIds = [primaryProgramId, ...authorizedPrograms].filter(Boolean);
+        
+        if (allProgramIds.length > 0) {
+          // Fetch programs by IDs
+          const response = await apiRequest('GET', '/api/programs');
+          const allPrograms = await response.json();
+          return allPrograms.filter((p: any) => allProgramIds.includes(p.id));
+        }
+      }
+      
+      const response = await apiRequest('GET', endpoint);
+      return await response.json();
+    },
+    enabled: user?.role === 'super_admin' || user?.role === 'corporate_admin' || user?.role === 'program_admin',
+  });
+
+  // Fetch locations for filter dropdown
+  const { data: locations = [] } = useQuery({
+    queryKey: ['/api/locations', filterProgram, filterCorporateClient, user?.role, (user as any)?.corporate_client_id],
+    queryFn: async () => {
+      let endpoint = '/api/locations';
+      
+      if (filterProgram) {
+        endpoint = `/api/locations/program/${filterProgram}`;
+      } else if (user?.role === 'corporate_admin') {
+        const corporateClientId = (user as any).corporate_client_id || filterCorporateClient;
+        if (corporateClientId) {
+          endpoint = `/api/locations/corporate-client/${corporateClientId}`;
+        }
+      } else if (user?.role === 'program_user') {
+        // Program user: fetch their assigned location
+        const locationId = (user as any).location_id;
+        if (locationId) {
+          endpoint = `/api/locations/${locationId}`;
+        } else {
+          return [];
+        }
+      }
+      
+      const response = await apiRequest('GET', endpoint);
+      const data = await response.json();
+      return Array.isArray(data) ? data : (data ? [data] : []);
+    },
+    enabled: user?.role === 'super_admin' || user?.role === 'corporate_admin' || user?.role === 'program_admin' || user?.role === 'program_user',
+  });
+
+  // Determine effective filter values based on user role
+  const effectiveCorporateClient = useMemo(() => {
+    const filterValue = filterCorporateClient === 'all' ? undefined : filterCorporateClient;
+    if (user?.role === 'super_admin') {
+      return filterValue || selectedCorporateClient;
+    } else if (user?.role === 'corporate_admin') {
+      return (user as any).corporate_client_id || filterValue;
+    }
+    return undefined;
+  }, [user?.role, filterCorporateClient, selectedCorporateClient]);
+
+  const effectiveProgram = useMemo(() => {
+    const filterValue = filterProgram === 'all' ? undefined : filterProgram;
+    if (user?.role === 'super_admin' || user?.role === 'corporate_admin') {
+      return filterValue || selectedProgram;
+    } else if (user?.role === 'program_admin') {
+      // Program admin can filter by their authorized programs
+      return filterValue || selectedProgram || (user as any).primary_program_id;
+    }
+    return undefined;
+  }, [user?.role, filterProgram, selectedProgram]);
+
+  const effectiveLocation = useMemo(() => {
+    const filterValue = filterLocation === 'all' ? undefined : filterLocation;
+    if (user?.role === 'program_user') {
+      return (user as any).location_id || filterValue;
+    }
+    return filterValue;
+  }, [user?.role, filterLocation]);
+
   // Fetch frequent locations organized by tag
   const { data: frequentLocationsByTag = {}, isLoading, error } = useQuery({
-    queryKey: ['/api/locations/frequent/by-tag', level, selectedProgram, selectedCorporateClient, debouncedSearchTerm, locationTypeFilter],
+    queryKey: ['/api/locations/frequent/by-tag', effectiveCorporateClient, effectiveProgram, effectiveLocation, debouncedSearchTerm, locationTypeFilter],
     queryFn: async () => {
       console.log('🔍 Fetching frequent locations by tag with params:', {
-        level,
-        selectedProgram,
-        selectedCorporateClient,
+        effectiveCorporateClient,
+        effectiveProgram,
+        effectiveLocation,
         debouncedSearchTerm,
         locationTypeFilter
       });
       
       const params = new URLSearchParams();
       
-      // For corporate_admin, always filter by their corporate_client_id for tenant isolation
-      if (user?.role === 'corporate_admin') {
-        const corporateClientId = (user as any).corporate_client_id || selectedCorporateClient;
-        if (corporateClientId) {
-          params.append('corporate_client_id', corporateClientId);
-        } else {
-          console.warn('⚠️ Corporate admin missing corporate_client_id for frequent locations');
-        }
-      } else {
-        // For other roles, use hierarchy-based filtering
-        if (selectedProgram) params.append('program_id', selectedProgram);
-        if (selectedCorporateClient) params.append('corporate_client_id', selectedCorporateClient);
+      // Apply hierarchy filters based on user role
+      if (effectiveCorporateClient) {
+        params.append('corporate_client_id', effectiveCorporateClient);
+      }
+      if (effectiveProgram) {
+        params.append('program_id', effectiveProgram);
+      }
+      if (effectiveLocation) {
+        params.append('location_id', effectiveLocation);
       }
       
       if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
@@ -191,11 +330,19 @@ export default function FrequentLocationsPage() {
       params.append('is_active', 'true');
 
       const url = `/api/locations/frequent/by-tag?${params.toString()}`;
-      console.log('🔍 API URL:', url);
+      console.log('🔍 [Frontend] API URL:', url);
+      console.log('🔍 [Frontend] Effective filters:', {
+        effectiveCorporateClient,
+        effectiveProgram,
+        effectiveLocation,
+        hasCorporateClient: !!effectiveCorporateClient,
+        hasProgram: !!effectiveProgram,
+        hasLocation: !!effectiveLocation
+      });
 
       const response = await apiRequest('GET', url);
       const data = await response.json();
-      console.log('🔍 API Response:', data);
+      console.log('🔍 [Frontend] API Response:', data);
       return data;
     },
     enabled: !isTyping, // Disable query while user is typing
@@ -507,10 +654,6 @@ export default function FrequentLocationsPage() {
     if (locationTypeFilter !== 'all' && location.location_type !== locationTypeFilter) {
       return false;
     }
-    // tagFilter is now based on location_type since we removed the tag field
-    if (tagFilter !== 'all' && location.location_type !== tagFilter) {
-      return false;
-    }
     return true;
   });
 
@@ -584,83 +727,146 @@ export default function FrequentLocationsPage() {
       {/* Filters */}
       <Card>
         <CardContent className="p-6">
-          <div className="flex items-end gap-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
-              <div>
-                <Label htmlFor="search" className="text-sm font-medium">Search</Label>
-                <div className="relative mt-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    ref={searchInputRef}
-                    id="search"
-                    placeholder="Search locations..."
-                    value={searchTerm}
-                    onChange={handleSearchChange}
-                    className="pl-10 h-10"
-                  />
-                  {isTyping && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2" style={{ borderColor: 'var(--blue-9)' }}></div>
-                    </div>
-                  )}
+          <div className="space-y-4">
+            {/* Hierarchy Filters - Role-based */}
+            {(user?.role === 'super_admin' || user?.role === 'corporate_admin' || user?.role === 'program_admin' || user?.role === 'program_user') && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 border-b" style={{ borderColor: 'var(--border)' }}>
+                {/* Corporate Client Filter - Super Admin only */}
+                {user?.role === 'super_admin' && (
+                  <div>
+                    <Label htmlFor="corporate-client-filter" className="text-sm font-medium">Corporate Client</Label>
+                    <Select 
+                      value={filterCorporateClient} 
+                      onValueChange={(value) => {
+                        setFilterCorporateClient(value);
+                        setFilterProgram('all'); // Reset program when corporate client changes
+                        setFilterLocation('all'); // Reset location when corporate client changes
+                      }}
+                    >
+                      <SelectTrigger className="mt-1 h-10">
+                        <SelectValue placeholder="All Corporate Clients" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Corporate Clients</SelectItem>
+                        {Array.isArray(corporateClients) && corporateClients.map((cc: any) => (
+                          <SelectItem key={cc.id} value={cc.id}>{cc.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Program Filter - Super Admin, Corporate Admin, Program Admin */}
+                {(user?.role === 'super_admin' || user?.role === 'corporate_admin' || user?.role === 'program_admin') && (
+                  <div>
+                    <Label htmlFor="program-filter" className="text-sm font-medium">Program</Label>
+                    <Select 
+                      value={filterProgram} 
+                      onValueChange={(value) => {
+                        setFilterProgram(value);
+                        setFilterLocation('all'); // Reset location when program changes
+                      }}
+                    >
+                      <SelectTrigger className="mt-1 h-10">
+                        <SelectValue placeholder="All Programs" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Programs</SelectItem>
+                        {Array.isArray(programs) && programs.map((program: any) => (
+                          <SelectItem key={program.id} value={program.id}>{program.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Location Filter - All roles */}
+                {(user?.role === 'super_admin' || user?.role === 'corporate_admin' || user?.role === 'program_admin' || user?.role === 'program_user') && (
+                  <div>
+                    <Label htmlFor="location-filter" className="text-sm font-medium">Location</Label>
+                    <Select 
+                      value={filterLocation} 
+                      onValueChange={setFilterLocation}
+                    >
+                      <SelectTrigger className="mt-1 h-10">
+                        <SelectValue placeholder={user?.role === 'program_user' ? "Your Location" : "All Locations"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{user?.role === 'program_user' ? "Your Location" : "All Locations"}</SelectItem>
+                        {Array.isArray(locations) && locations.map((location: any) => (
+                          <SelectItem key={location.id} value={location.id}>{location.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Search and Type Filters */}
+            <div className="flex items-end gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
+                <div>
+                  <Label htmlFor="search" className="text-sm font-medium">Search</Label>
+                  <div className="relative mt-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      ref={searchInputRef}
+                      id="search"
+                      placeholder="Search locations..."
+                      value={searchTerm}
+                      onChange={handleSearchChange}
+                      className="pl-10 h-10"
+                    />
+                    {isTyping && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2" style={{ borderColor: 'var(--blue-9)' }}></div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="location-type" className="text-sm font-medium">Location Type</Label>
+                  <Select value={locationTypeFilter} onValueChange={setLocationTypeFilter}>
+                    <SelectTrigger className="mt-1 h-10">
+                      <SelectValue placeholder="All location types" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Location Types</SelectItem>
+                      <SelectItem value="service_location">Service Location</SelectItem>
+                      <SelectItem value="legal">Legal</SelectItem>
+                      <SelectItem value="healthcare">Healthcare</SelectItem>
+                      <SelectItem value="dmv">DMV</SelectItem>
+                      <SelectItem value="grocery">Grocery</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="status-filter" className="text-sm font-medium">Status</Label>
+                  <Select value="all" onValueChange={() => {}}>
+                    <SelectTrigger className="mt-1 h-10">
+                      <SelectValue placeholder="All statuses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-              <div>
-                <Label htmlFor="category" className="text-sm font-medium">Category</Label>
-                <Select value={tagFilter} onValueChange={setTagFilter}>
-                  <SelectTrigger className="mt-1 h-10">
-                    <SelectValue placeholder="All categories" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    <SelectItem value="service_location">Service Location</SelectItem>
-                    <SelectItem value="legal">Legal</SelectItem>
-                    <SelectItem value="healthcare">Healthcare</SelectItem>
-                    <SelectItem value="dmv">DMV</SelectItem>
-                    <SelectItem value="grocery">Grocery</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="flex-shrink-0">
+                <Button variant="outline" size="sm" className="h-10" onClick={() => {
+                  setSearchTerm('');
+                  setLocationTypeFilter('all');
+                  setFilterCorporateClient('all');
+                  setFilterProgram('all');
+                  setFilterLocation('all');
+                }}>
+                  Clear
+                </Button>
               </div>
-              <div>
-                <Label htmlFor="location-type" className="text-sm font-medium">Type</Label>
-                <Select value={locationTypeFilter} onValueChange={setLocationTypeFilter}>
-                  <SelectTrigger className="mt-1 h-10">
-                    <SelectValue placeholder="All types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="service_location">Service Location</SelectItem>
-                    <SelectItem value="legal">Legal</SelectItem>
-                    <SelectItem value="healthcare">Healthcare</SelectItem>
-                    <SelectItem value="dmv">DMV</SelectItem>
-                    <SelectItem value="grocery">Grocery</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="status-filter" className="text-sm font-medium">Status</Label>
-                <Select value="all" onValueChange={() => {}}>
-                  <SelectTrigger className="mt-1 h-10">
-                    <SelectValue placeholder="All statuses" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex-shrink-0">
-              <Button variant="outline" size="sm" className="h-10" onClick={() => {
-                setSearchTerm('');
-                setLocationTypeFilter('all');
-                setTagFilter('all');
-              }}>
-                Clear
-              </Button>
             </div>
           </div>
         </CardContent>
@@ -971,6 +1177,7 @@ function CreateLocationDialog({
   onOpenChange: (open: boolean) => void; 
   onSave: (data: Partial<FrequentLocation>) => void; 
 }) {
+  const { user } = useAuth();
   const { selectedProgram, selectedCorporateClient } = useHierarchy();
   const [formData, setFormData] = useState({
     name: '',
@@ -980,16 +1187,66 @@ function CreateLocationDialog({
     state: '',
     zip_code: '',
     location_type: 'service_location' as const,
+    corporate_client_id: '',
+    program_id: '',
+    location_id: '',
+  });
+
+  // Fetch corporate clients for super admin
+  const { data: corporateClients = [] } = useQuery({
+    queryKey: ['/api/corporate-clients'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/corporate-clients');
+      const data = await response.json();
+      return Array.isArray(data) ? data : (data?.corporateClients || []);
+    },
+    enabled: user?.role === 'super_admin' && isOpen,
+  });
+
+  // Fetch programs based on selected corporate client
+  const { data: programs = [] } = useQuery({
+    queryKey: ['/api/programs', formData.corporate_client_id],
+    queryFn: async () => {
+      if (!formData.corporate_client_id) return [];
+      const response = await apiRequest('GET', `/api/programs/corporate-client/${formData.corporate_client_id}`);
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: user?.role === 'super_admin' && isOpen && !!formData.corporate_client_id,
+  });
+
+  // Fetch locations based on selected program
+  const { data: locations = [] } = useQuery({
+    queryKey: ['/api/locations', formData.program_id],
+    queryFn: async () => {
+      if (!formData.program_id) return [];
+      const response = await apiRequest('GET', `/api/locations?program_id=${formData.program_id}`);
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: user?.role === 'super_admin' && isOpen && !!formData.program_id,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const full_address = `${formData.street_address}, ${formData.city}, ${formData.state} ${formData.zip_code}`.trim();
     
-          // For super admin users, we need to provide default values since the database constraint
-          // requires either corporate_client_id or program_id to be set
-          const corporateClientId = selectedCorporateClient || 'monarch'; // Default to Monarch corporate client
-          const programId = selectedProgram || 'monarch_competency'; // Default to Monarch Competency program
+    // For super admin, use selected hierarchy or form selections
+    let corporateClientId = selectedCorporateClient;
+    let programId = selectedProgram;
+    let locationId = formData.location_id || undefined;
+    
+    if (user?.role === 'super_admin') {
+      // Use form selections if provided, otherwise fall back to hierarchy
+      corporateClientId = formData.corporate_client_id || selectedCorporateClient;
+      programId = formData.program_id || selectedProgram;
+    }
+    
+    // For non-super admin, use hierarchy context
+    if (!corporateClientId || !programId) {
+      corporateClientId = corporateClientId || 'monarch';
+      programId = programId || 'monarch_competency';
+    }
     
     onSave({
       ...formData,
@@ -1001,8 +1258,23 @@ function CreateLocationDialog({
       auto_synced: false,
       corporate_client_id: corporateClientId,
       program_id: programId,
+      location_id: locationId,
     });
   };
+
+  // Reset hierarchy selections when corporate client changes
+  useEffect(() => {
+    if (formData.corporate_client_id) {
+      setFormData(prev => ({ ...prev, program_id: '', location_id: '' }));
+    }
+  }, [formData.corporate_client_id]);
+
+  // Reset location selection when program changes
+  useEffect(() => {
+    if (formData.program_id) {
+      setFormData(prev => ({ ...prev, location_id: '' }));
+    }
+  }, [formData.program_id]);
 
   const resetForm = () => {
     setFormData({
@@ -1013,6 +1285,9 @@ function CreateLocationDialog({
       state: '',
       zip_code: '',
       location_type: 'service_location' as const,
+      corporate_client_id: '',
+      program_id: '',
+      location_id: '',
     });
   };
 
@@ -1033,6 +1308,73 @@ function CreateLocationDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Hierarchy Selection for Super Admin */}
+          {user?.role === 'super_admin' && (
+            <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+              <h4 className="font-medium text-sm">Assign to Hierarchy</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="corp-client-select">Corporate Client *</Label>
+                  <Select
+                    value={formData.corporate_client_id}
+                    onValueChange={(value) => setFormData({ ...formData, corporate_client_id: value })}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select corporate client" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {corporateClients.map((client: any) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="program-select">Program *</Label>
+                  <Select
+                    value={formData.program_id}
+                    onValueChange={(value) => setFormData({ ...formData, program_id: value })}
+                    disabled={!formData.corporate_client_id}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={formData.corporate_client_id ? "Select program" : "Select corporate client first"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {programs.map((program: any) => (
+                        <SelectItem key={program.id} value={program.id}>
+                          {program.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="location-select">Location</Label>
+                  <Select
+                    value={formData.location_id}
+                    onValueChange={(value) => setFormData({ ...formData, location_id: value })}
+                    disabled={!formData.program_id}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={formData.program_id ? "Select location (optional)" : "Select program first"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locations.map((location: any) => (
+                        <SelectItem key={location.id} value={location.id}>
+                          {location.name || location.address}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="name">Name *</Label>
@@ -1113,7 +1455,15 @@ function CreateLocationDialog({
           </div>
 
           <DialogFooter>
-            <Button type="submit">Add Location</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button 
+              type="submit"
+              disabled={user?.role === 'super_admin' && (!formData.corporate_client_id || !formData.program_id)}
+            >
+              Add Location
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

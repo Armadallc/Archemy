@@ -84,7 +84,9 @@ const roleLabels: Record<string, string> = {
   corporate_admin: "Corporate Admin",
   program_admin: "Program Admin",
   program_user: "Program User",
-  driver: "Driver"
+  driver: "Driver",
+  client_user: "Client User",
+  "client-user": "Client User"
 };
 
 const roleColors: Record<string, string> = {
@@ -231,15 +233,26 @@ export default function UsersManagement() {
     enabled: !!user && (user.role === 'super_admin' || user.role === 'corporate_admin' || user.role === 'program_admin'),
   });
 
-  // Fetch programs for assignment dropdown
+  // Fetch programs for assignment dropdown - filtered by corporate client if selected
   const { data: programs = [] } = useQuery({
-    queryKey: ["/api/programs"],
+    queryKey: ["/api/programs", createUserData.corporate_client_id, user?.role],
     queryFn: async () => {
-      const response = await apiRequest("GET", "/api/programs");
+      let endpoint = "/api/programs";
+      
+      // If corporate client is selected (and not "all"), fetch only programs for that corporate client
+      if (createUserData.corporate_client_id && createUserData.corporate_client_id !== 'all') {
+        endpoint = `/api/programs/corporate-client/${createUserData.corporate_client_id}`;
+      }
+      
+      const response = await apiRequest("GET", endpoint);
       const data = await response.json();
       return Array.isArray(data) ? data : [];
     },
-    enabled: user?.role === 'super_admin' || user?.role === 'corporate_admin',
+    enabled: (user?.role === 'super_admin' || user?.role === 'corporate_admin') && 
+             // For roles other than super_admin and driver, require corporate_client_id first
+             (createUserData.role === 'super_admin' || 
+              createUserData.role === 'driver' || 
+              (!!createUserData.corporate_client_id && createUserData.corporate_client_id !== 'all')),
   });
 
   // Organize users based on role
@@ -374,6 +387,7 @@ export default function UsersManagement() {
       toast({
         title: "User created successfully",
         description: "The new user has been added to the system.",
+        variant: "success",
       });
     },
     onError: (error: any) => {
@@ -438,6 +452,16 @@ export default function UsersManagement() {
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate: For roles other than super_admin and driver, corporate_client_id is required
+    if (createUserData.role !== 'super_admin' && createUserData.role !== 'driver' && !createUserData.corporate_client_id) {
+      toast({
+        title: "Validation Error",
+        description: "Please select a corporate client before creating this user.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // For program admins, auto-assign their program
     const userDataToSubmit = { ...createUserData };
     if (user?.role === 'program_admin' && (selectedProgram || user.primary_program_id)) {
@@ -447,6 +471,11 @@ export default function UsersManagement() {
     // For corporate admins, ensure corporate_client_id is set
     if (user?.role === 'corporate_admin' && user.corporate_client_id && !userDataToSubmit.corporate_client_id) {
       userDataToSubmit.corporate_client_id = user.corporate_client_id;
+    }
+    
+    // If "all" is selected for corporate client, clear it (super admin can create users without corporate client)
+    if (userDataToSubmit.corporate_client_id === 'all') {
+      userDataToSubmit.corporate_client_id = undefined;
     }
     
     createUserMutation.mutate(userDataToSubmit);
@@ -637,21 +666,38 @@ export default function UsersManagement() {
                 <div className="grid grid-cols-2 gap-4">
                   {user?.role === 'super_admin' && (
                     <div>
-                      <Label htmlFor="corporate_client_id">Corporate Client</Label>
+                      <Label htmlFor="corporate_client_id">
+                        Corporate Client
+                        {createUserData.role !== 'super_admin' && createUserData.role !== 'driver' && ' *'}
+                      </Label>
                       <Select 
                         value={createUserData.corporate_client_id || undefined} 
-                        onValueChange={(value) => setCreateUserData({...createUserData, corporate_client_id: value || undefined})}
+                        onValueChange={(value) => {
+                          // Reset program_id when corporate_client_id changes
+                          setCreateUserData({
+                            ...createUserData, 
+                            corporate_client_id: value || undefined,
+                            program_id: undefined // Reset program when corporate client changes
+                          });
+                        }}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select corporate client (optional)" />
+                          <SelectValue placeholder={
+                            createUserData.role !== 'super_admin' && createUserData.role !== 'driver'
+                              ? "Select corporate client (required)"
+                              : "Select corporate client (optional)"
+                          } />
                         </SelectTrigger>
-                        <SelectContent>
-                          {corporateClients.map((client) => (
-                            <SelectItem key={client.id} value={client.id}>
-                              {client.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
+                      <SelectContent>
+                        {(createUserData.role === 'super_admin' || createUserData.role === 'driver') && (
+                          <SelectItem value="all">All Corporate Clients</SelectItem>
+                        )}
+                        {corporateClients.map((client) => (
+                          <SelectItem key={client.id} value={client.id}>
+                            {client.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
                       </Select>
                     </div>
                   )}
@@ -660,18 +706,41 @@ export default function UsersManagement() {
                     <Select 
                       value={createUserData.program_id || undefined} 
                       onValueChange={(value) => setCreateUserData({...createUserData, program_id: value || undefined})}
+                      disabled={
+                        // Disable if corporate client is required but not selected (for roles other than super_admin and driver)
+                        (createUserData.role !== 'super_admin' && createUserData.role !== 'driver' && !createUserData.corporate_client_id) ||
+                        // Also disable if "all" is selected for corporate client
+                        createUserData.corporate_client_id === 'all'
+                      }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select program (optional)" />
+                        <SelectValue placeholder={
+                          (createUserData.role !== 'super_admin' && createUserData.role !== 'driver' && !createUserData.corporate_client_id)
+                            ? "Select corporate client first"
+                            : createUserData.corporate_client_id === 'all'
+                            ? "Select a specific corporate client"
+                            : "Select program (optional)"
+                        } />
                       </SelectTrigger>
                       <SelectContent>
-                        {Array.isArray(programs) && programs.map((program: any) => (
-                          <SelectItem key={program.id} value={program.id}>
-                            {program.name} {program.corporateClient?.name ? `(${program.corporateClient.name})` : ''}
+                        {Array.isArray(programs) && programs.length > 0 ? (
+                          programs.map((program: any) => (
+                            <SelectItem key={program.id} value={program.id}>
+                              {program.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-programs" disabled>
+                            No programs available
                           </SelectItem>
-                        ))}
+                        )}
                       </SelectContent>
                     </Select>
+                    {createUserData.role !== 'super_admin' && createUserData.role !== 'driver' && !createUserData.corporate_client_id && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Please select a corporate client first
+                      </p>
+                    )}
                   </div>
                 </div>
               )}

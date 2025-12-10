@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion";
@@ -11,6 +11,8 @@ import { Textarea } from "../ui/textarea";
 import { Switch } from "../ui/switch";
 import { Separator } from "../ui/separator";
 import { Badge } from "../ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Alert, AlertDescription } from "../ui/alert";
 import { 
   Building2, 
   ChevronDown, 
@@ -21,11 +23,15 @@ import {
   Phone,
   Save,
   RefreshCw,
-  Loader2
+  Loader2,
+  QrCode,
+  Download,
+  Plus
 } from "lucide-react";
 import { apiRequest } from "../../lib/queryClient";
 import { LogoUpload } from "../LogoUpload";
 import { useToast } from "../../hooks/use-toast";
+import { useAuth } from "../../hooks/useAuth";
 
 interface CorporateClient {
   id: string;
@@ -78,11 +84,77 @@ interface ProgramAdmin {
   role: string;
 }
 
+interface QRCodeData {
+  qrImageUrl: string;
+  signupUrl: string;
+}
+
 export default function CorporateClientCards() {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [expandedPrograms, setExpandedPrograms] = useState<Set<string>>(new Set());
   const [editingClients, setEditingClients] = useState<Record<string, CorporateClient>>({});
+  const [qrCodeDialogOpen, setQrCodeDialogOpen] = useState(false);
+  const [selectedProgramForQR, setSelectedProgramForQR] = useState<Program | null>(null);
+  const [qrCodeData, setQrCodeData] = useState<QRCodeData | null>(null);
+  const [loadingQR, setLoadingQR] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
+  // Create corporate client mutation - MUST be called before any conditional returns
+  const createCorporateClientMutation = useMutation({
+    mutationFn: async ({ clientData, logoFile }: { clientData: Partial<CorporateClient>; logoFile?: File | null }) => {
+      // First create the corporate client
+      const response = await apiRequest('POST', '/api/corporate/clients', clientData);
+      const createdClient = await response.json();
+      
+      // If logo is provided, upload it using FormData
+      if (logoFile && createdClient.id) {
+        const formData = new FormData();
+        formData.append('logo', logoFile);
+        
+        // Get auth token for the upload request
+        const { supabase } = await import('../../lib/supabase');
+        const { data: { session } } = await supabase.auth.getSession();
+        const authToken = session?.access_token || localStorage.getItem('auth_token') || localStorage.getItem('authToken');
+        
+        const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+        const logoResponse = await fetch(`${apiBaseUrl}/api/corporate/clients/${createdClient.id}/logo`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            // Don't set Content-Type - let browser set it with boundary for FormData
+          },
+          body: formData,
+          credentials: 'include',
+        });
+        
+        if (!logoResponse.ok) {
+          console.warn('Failed to upload logo, but corporate client was created');
+        }
+      }
+      
+      return createdClient;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/corporate-clients'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/corporate-clients/census'] });
+      setIsCreateDialogOpen(false);
+      toast({
+        title: "Success",
+        description: "Corporate client created successfully",
+        variant: "success"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create corporate client",
+        variant: "destructive"
+      });
+    },
+  });
 
   // Fetch all corporate clients
   const { data: corporateClientsData, isLoading: clientsLoading, error: clientsError } = useQuery({
@@ -389,6 +461,87 @@ export default function CorporateClientCards() {
     }
   };
 
+  // Handle show QR code
+  const handleShowQRCode = async (program: Program) => {
+    setSelectedProgramForQR(program);
+    setQrCodeDialogOpen(true);
+    setLoadingQR(true);
+    setQrCodeData(null);
+
+    try {
+      // Fetch or generate QR code for this program
+      const response = await apiRequest("GET", `/api/client-notifications/programs/${program.id}/qr-code`);
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        setQrCodeData({
+          qrImageUrl: data.data.qrImageUrl,
+          signupUrl: data.data.signupUrl
+        });
+      } else {
+        throw new Error(data.message || "Failed to load QR code");
+      }
+    } catch (error: any) {
+      console.error("Error loading QR code:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load QR code",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingQR(false);
+    }
+  };
+
+  // Regenerate QR code
+  const regenerateQRCode = async (programId: string) => {
+    setLoadingQR(true);
+    try {
+      const response = await apiRequest("POST", `/api/client-notifications/programs/${programId}/qr-code/regenerate`);
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        setQrCodeData({
+          qrImageUrl: data.data.qrImageUrl,
+          signupUrl: data.data.signupUrl
+        });
+        toast({
+          title: "Success",
+          description: "QR code regenerated successfully"
+        });
+      } else {
+        throw new Error(data.message || "Failed to regenerate QR code");
+      }
+    } catch (error: any) {
+      console.error("Error regenerating QR code:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to regenerate QR code",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingQR(false);
+    }
+  };
+
+  // Download QR code
+  const handleDownloadQRCode = () => {
+    if (!qrCodeData) return;
+    
+    // Create a temporary anchor element to trigger download
+    const link = document.createElement("a");
+    link.href = qrCodeData.qrImageUrl;
+    link.download = `qr-code-${selectedProgramForQR?.name || 'program'}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Downloaded",
+      description: "QR code image downloaded"
+    });
+  };
+
   if (clientsLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -420,6 +573,26 @@ export default function CorporateClientCards() {
 
   return (
     <div className="space-y-4">
+      {/* Add Partner Button - Only for Super Admin */}
+      {user?.role === 'super_admin' && (
+        <div className="flex justify-end mb-4">
+          <Button onClick={() => setIsCreateDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Partner
+          </Button>
+        </div>
+      )}
+
+      {/* Create Corporate Client Dialog */}
+      {user?.role === 'super_admin' && (
+        <CreateCorporateClientDialog
+          isOpen={isCreateDialogOpen}
+          onOpenChange={setIsCreateDialogOpen}
+          onCreate={(clientData, logoFile) => createCorporateClientMutation.mutate({ clientData, logoFile })}
+          isPending={createCorporateClientMutation.isPending}
+        />
+      )}
+
       {corporateClients.map((client) => {
         const isExpanded = expandedCards.has(client.id);
         const census = censusData[client.id] || {
@@ -677,6 +850,19 @@ export default function CorporateClientCards() {
                                     </div>
                                   )}
 
+                                  {/* QR Code Button */}
+                                  <div className="flex justify-end pb-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleShowQRCode(program)}
+                                      className="flex items-center gap-2"
+                                    >
+                                      <QrCode className="h-4 w-4" />
+                                      Generate QR Code
+                                    </Button>
+                                  </div>
+
                                   {/* Locations List */}
                                   <div className="space-y-2">
                                     <h5 className="font-medium text-sm">Locations</h5>
@@ -720,7 +906,327 @@ export default function CorporateClientCards() {
           </Collapsible>
         );
       })}
+
+      {/* QR Code Dialog */}
+      <Dialog open={qrCodeDialogOpen} onOpenChange={setQrCodeDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>QR Code for {selectedProgramForQR?.name}</DialogTitle>
+            <DialogDescription>
+              Post this QR code in common areas. Clients can scan it to sign up for trip notifications.
+            </DialogDescription>
+          </DialogHeader>
+          {loadingQR ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          ) : qrCodeData ? (
+            <div className="space-y-4">
+              <div className="flex justify-center">
+                <img
+                  src={qrCodeData.qrImageUrl}
+                  alt="QR Code"
+                  className="w-64 h-64 border-2 border-gray-200 rounded-lg"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Signup URL</Label>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    value={qrCodeData.signupUrl}
+                    readOnly
+                    className="font-mono text-xs"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(qrCodeData.signupUrl);
+                      toast({
+                        title: "Copied",
+                        description: "URL copied to clipboard"
+                      });
+                    }}
+                  >
+                    Copy
+                  </Button>
+                </div>
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={handleDownloadQRCode}
+                  className="flex-1"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => selectedProgramForQR && regenerateQRCode(selectedProgramForQR.id)}
+                  className="flex-1"
+                  disabled={loadingQR}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Regenerate
+                </Button>
+              </div>
+              <Alert>
+                <AlertDescription className="text-sm">
+                  <strong>Instructions:</strong>
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>Print or display this QR code in common areas</li>
+                    <li>Clients scan the code with their phone camera</li>
+                    <li>They enter their information and PIN to opt-in</li>
+                    <li>They'll receive push notifications for their trips</li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-gray-600">Failed to load QR code</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setQrCodeDialogOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+// Create Corporate Client Dialog Component
+function CreateCorporateClientDialog({
+  isOpen,
+  onOpenChange,
+  onCreate,
+  isPending
+}: {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCreate: (data: Partial<CorporateClient>, logoFile?: File | null) => void;
+  isPending: boolean;
+}) {
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    address: '',
+    email: '',
+    phone: '',
+    website: '',
+    is_active: true,
+  });
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Generate ID from name (lowercase, replace spaces/special chars with underscores)
+    const generateId = (name: string): string => {
+      return name
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .substring(0, 50); // Ensure it fits VARCHAR(50)
+    };
+    
+    const clientId = generateId(formData.name);
+    
+    // Normalize website URL - add https:// if missing and user entered something
+    let website = formData.website.trim();
+    if (website && !website.match(/^https?:\/\//i)) {
+      website = `https://${website}`;
+    }
+    
+    const clientData = {
+      id: clientId,
+      name: formData.name,
+      description: formData.description || undefined,
+      address: formData.address || undefined,
+      email: formData.email || undefined,
+      phone: formData.phone || undefined,
+      website: website || undefined,
+      is_active: formData.is_active,
+    };
+    
+    onCreate(clientData, logoFile);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      description: '',
+      address: '',
+      email: '',
+      phone: '',
+      website: '',
+      is_active: true,
+    });
+    setLogoFile(null);
+    setLogoPreview(null);
+  };
+
+  useEffect(() => {
+    if (!isOpen) {
+      resetForm();
+    }
+  }, [isOpen]);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Add New Partner</DialogTitle>
+          <DialogDescription>
+            Create a new corporate client (partner) with all necessary information.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Basic Information */}
+          <div className="space-y-4">
+            <h3 className="font-medium text-sm">Basic Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="create-name">Corporate Client Name *</Label>
+                <Input
+                  id="create-name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Enter corporate client name"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="create-website">Website</Label>
+                <Input
+                  id="create-website"
+                  type="text"
+                  value={formData.website}
+                  onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                  placeholder="www.example.com or https://example.com"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter with or without protocol (https:// will be added automatically if missing)
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-description">Description</Label>
+              <Textarea
+                id="create-description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Enter description"
+                rows={3}
+              />
+            </div>
+          </div>
+
+          {/* Contact Information */}
+          <div className="space-y-4">
+            <h3 className="font-medium text-sm">Contact Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="create-email">Email *</Label>
+                <Input
+                  id="create-email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="contact@corporateclient.com"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="create-phone">Phone</Label>
+                <PhoneInput
+                  id="create-phone"
+                  value={formData.phone}
+                  onChange={(value) => setFormData({ ...formData, phone: value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-address">Address</Label>
+              <Textarea
+                id="create-address"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                placeholder="Enter address"
+                rows={2}
+              />
+            </div>
+          </div>
+
+          {/* Logo Upload */}
+          <div className="space-y-4">
+            <h3 className="font-medium text-sm">Logo</h3>
+            <div className="space-y-2">
+              <Label htmlFor="create-logo">Upload Logo</Label>
+              <Input
+                id="create-logo"
+                type="file"
+                accept="image/*"
+                onChange={handleLogoChange}
+              />
+              {logoPreview && (
+                <div className="mt-2">
+                  <img
+                    src={logoPreview}
+                    alt="Logo preview"
+                    className="w-24 h-24 object-cover rounded-lg border"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Active Status */}
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="create-active"
+              checked={formData.is_active}
+              onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+            />
+            <Label htmlFor="create-active">Active</Label>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isPending}>
+              {isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Partner'
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

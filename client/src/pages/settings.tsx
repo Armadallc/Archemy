@@ -37,6 +37,7 @@ import { LogoUpload } from "../components/LogoUpload";
 import { MainLogoUpload } from "../components/MainLogoUpload";
 import CorporateClientCards from "../components/settings/CorporateClientCards";
 import UsersManagement from "../components/settings/UsersManagement";
+import ProgramCreationForm from "../components/settings/ProgramCreationForm";
 
 interface CorporateClientSettings {
   id: string;
@@ -530,97 +531,7 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="program" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Program Information</CardTitle>
-              <CardDescription>
-                Manage your program's basic information and settings.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center space-x-6">
-                <LogoUpload 
-                  organizationId={programSettings.id} 
-                  onLogoUpdate={() => {}} 
-                  type="program"
-                />
-                <div>
-                  <h3 className="text-lg font-medium">Program</h3>
-                  <p className="text-gray-600">
-                    {selectedProgram || 'No program selected'}
-                  </p>
-                </div>
-              </div>
-              
-              <Separator />
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="prog-name">Program Name</Label>
-                  <Input
-                    id="prog-name"
-                    value={programSettings.name}
-                    onChange={(e) => setProgramSettings({...programSettings, name: e.target.value})}
-                    placeholder="Enter program name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="prog-description">Description</Label>
-                  <Input
-                    id="prog-description"
-                    value={programSettings.description || ''}
-                    onChange={(e) => setProgramSettings({...programSettings, description: e.target.value})}
-                    placeholder="Enter program description"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="prog-address">Address</Label>
-                  <Textarea
-                    id="prog-address"
-                    value={programSettings.address || ''}
-                    onChange={(e) => setProgramSettings({...programSettings, address: e.target.value})}
-                    placeholder="Enter program address"
-                    rows={3}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="prog-corporate-client">Corporate Client</Label>
-                  <Input
-                    id="prog-corporate-client"
-                    value={programSettings.corporate_client_id}
-                    disabled
-                    className="bg-gray-50"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="prog-active"
-                  checked={programSettings.isActive}
-                  onCheckedChange={(checked) => setProgramSettings({...programSettings, isActive: checked})}
-                />
-                <Label htmlFor="prog-active">Active</Label>
-              </div>
-              
-              <div className="flex justify-end space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() => window.location.reload()}
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Reset
-                </Button>
-                <Button
-                  onClick={handleSaveProgram}
-                  disabled={saveProgramMutation.isPending}
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Program Settings
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <ProgramCreationForm />
         </TabsContent>
 
         <TabsContent value="vendors" className="space-y-6">
@@ -657,7 +568,7 @@ export default function Settings() {
                 <Alert>
                   <Info className="h-4 w-4" />
                   <AlertDescription>
-                    User management is handled through the Users page. Use the navigation menu to access user management features.
+                    User management is only available to Super Admins, Corporate Admins, and Program Admins. If you need user management access, please contact your administrator.
                   </AlertDescription>
                 </Alert>
               </CardContent>
