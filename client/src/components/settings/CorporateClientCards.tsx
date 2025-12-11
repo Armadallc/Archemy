@@ -667,7 +667,18 @@ export default function CorporateClientCards() {
                     <div className="flex items-center space-x-4">
                       <LogoUpload
                         organizationId={client.id}
-                        onLogoUpdate={() => {}}
+                        currentLogoUrl={client.logo_url}
+                        onLogoUpdate={(logoUrl) => {
+                          // Update the client's logo URL in the local state
+                          setEditingClients({
+                            ...editingClients,
+                            [client.id]: { ...editingClients[client.id] || client, logo_url: logoUrl },
+                          });
+                          // Invalidate queries to refresh the data
+                          queryClient.invalidateQueries({ queryKey: ['/api/corporate-clients'] });
+                          // Also invalidate the specific corporate client query used by sidebar
+                          queryClient.invalidateQueries({ queryKey: ['/api/corporate-clients', client.id] });
+                        }}
                         type="corporate-client"
                       />
                       <div>

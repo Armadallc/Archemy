@@ -708,24 +708,28 @@ export default function EnhancedTripCalendar() {
                 <div 
                   key={day.toISOString()} 
                   className="p-2 relative flex-1"
-                  style={{
+                  style={isDayToday && isCurrentMonth ? {
+                    border: '1px solid #7afffe',
+                    backgroundColor: 'var(--card)',
+                    color: '#7afffe',
+                    minHeight: '100px',
+                    boxShadow: "0 0 10px rgba(122, 255, 254, 0.5), 0 0 20px rgba(122, 255, 254, 0.3), 0 0 30px rgba(122, 255, 254, 0.2), inset 0 0 10px rgba(122, 255, 254, 0.1)",
+                  } : {
                     border: '1px solid var(--border)',
-                    backgroundColor: isCurrentMonth 
-                      ? (isDayToday ? 'rgba(204, 51, 171, 0.1)' : 'var(--card)')
-                      : 'var(--secondary)',
-                    color: isCurrentMonth 
-                      ? (isDayToday ? 'var(--primary-foreground)' : 'var(--foreground)')
-                      : 'var(--muted-foreground)',
+                    backgroundColor: isCurrentMonth ? 'var(--card)' : 'var(--secondary)',
+                    color: isCurrentMonth ? 'var(--foreground)' : 'var(--muted-foreground)',
                     minHeight: '100px',
                   }}
                 >
                   <div 
                     className="text-sm font-medium mb-1"
-                    style={{
-                      color: isCurrentMonth 
-                        ? (isDayToday ? 'var(--primary)' : 'var(--foreground)')
-                        : 'var(--muted-foreground)',
-                      fontWeight: isDayToday ? 'bold' : 'normal',
+                    style={isDayToday && isCurrentMonth ? {
+                      color: '#7afffe',
+                      fontWeight: 'bold',
+                      textShadow: "0 0 8px rgba(122, 255, 254, 0.6), 0 0 12px rgba(122, 255, 254, 0.4)",
+                    } : {
+                      color: isCurrentMonth ? 'var(--foreground)' : 'var(--muted-foreground)',
+                      fontWeight: 'normal',
                     }}
                   >
                     {format(day, 'd')}

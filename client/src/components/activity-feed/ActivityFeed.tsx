@@ -141,14 +141,14 @@ const getActivityIcon = (type: string) => {
 };
 
 export default function ActivityFeed() {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [mentionsOnly, setMentionsOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
   const { data: activities, isLoading, error } = useActivityLog({
     limit: 50,
     mentionsOnly,
-    enabled: !!user?.user_id,
+    enabled: isAuthenticated && !!user?.user_id,
   });
 
   // Debug logging

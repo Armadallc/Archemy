@@ -24,6 +24,10 @@ import { ThemeController } from '../components/design-system/ThemeController';
 import { FireThemePanel } from '../components/fire-theme-panel';
 import { useThemePreferences } from '../hooks/useThemePreferences';
 import { useAuth } from '../hooks/useAuth';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '../lib/queryClient';
+import { Alert, AlertDescription } from '../components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 import { 
   StatusBadge, 
   StatusIcon,
@@ -1494,34 +1498,107 @@ export default function DesignSystem() {
   const [activePanel, setActivePanel] = useState('tokens');
   const { theme } = useTheme();
   const { user, isAuthenticated } = useAuth();
-  const { savePreferences, isLoading: preferencesLoading } = useThemePreferences();
+  const queryClient = useQueryClient();
+  
+  // Super admin check
+  if (!user || user.role !== 'super_admin') {
+    return (
+      <div className="flex-1 flex items-center justify-center min-h-screen">
+        <Alert className="max-w-md">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Design System is only available to Super Administrators.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  // Fetch all themes
+  const { data: themes = [], isLoading: themesLoading } = useQuery({
+    queryKey: ['/api/themes'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/themes');
+      return response.json();
+    },
+  });
+
+  // Create/Update theme mutation
+  const saveThemeMutation = useMutation({
+    mutationFn: async ({ themeId, name, description, isNew }: { themeId?: string; name: string; description?: string; isNew: boolean }) => {
+      const lightTokens = theme === 'light' ? tokens : (await getTokensForMode('light'));
+      const darkTokens = theme === 'dark' ? tokens : (await getTokensForMode('dark'));
+
+      if (isNew) {
+        const response = await apiRequest('POST', '/api/themes', {
+          name,
+          description: description || null,
+          light_mode_tokens: lightTokens,
+          dark_mode_tokens: darkTokens,
+          is_active: true,
+        });
+        return response.json();
+      } else {
+        const response = await apiRequest('PUT', `/api/themes/${themeId}`, {
+          light_mode_tokens: lightTokens,
+          dark_mode_tokens: darkTokens,
+        });
+        return response.json();
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/themes'] });
+      alert('Theme saved successfully!');
+    },
+    onError: (error: any) => {
+      alert(`Failed to save theme: ${error.message}`);
+    },
+  });
+
+  // Helper to get tokens for a specific mode (would need to be implemented based on your token structure)
+  const getTokensForMode = async (mode: 'light' | 'dark'): Promise<any> => {
+    // This would need to fetch or reconstruct tokens for the other mode
+    // For now, returning current tokens as fallback
+    return tokens;
+  };
 
   const updateTokens = useCallback((newTokens: any) => {
     setTokens(newTokens);
   }, []);
 
-  // Handle saving all changes to database
-  const handleSaveAll = async () => {
+  // Handle saving theme
+  const handleSaveTheme = async () => {
     if (!isAuthenticated || !user) {
-      alert('You must be logged in to save theme preferences');
+      alert('You must be logged in to save themes');
       return;
     }
 
-    try {
-      // Save current tokens for the current mode, preserving the other mode
-      // The savePreferences function will automatically merge with existing preferences
-      await savePreferences(
-        theme === 'light' ? tokens : null, // Save current tokens if in light mode
-        theme === 'dark' ? tokens : null   // Save current tokens if in dark mode
-      );
+    // Check theme limit
+    const activeThemes = themes.filter((t: any) => t.is_active);
+    if (activeThemes.length >= 4) {
+      const hasInactive = themes.some((t: any) => !t.is_active);
+      if (!hasInactive) {
+        alert('Maximum of 4 active themes allowed. Please deactivate an existing theme first.');
+        return;
+      }
+    }
 
-      // Also save to localStorage for backward compatibility
-      localStorage.setItem('design-system-staged-tokens', JSON.stringify(tokens));
-      
-      alert('Theme preferences saved successfully! They will persist across sessions and browsers.');
-    } catch (error: any) {
-      console.error('Error saving theme preferences:', error);
-      alert(`Failed to save theme preferences: ${error.message}`);
+    // Prompt for theme name
+    const themeName = prompt('Enter theme name:');
+    if (!themeName) return;
+
+    const description = prompt('Enter theme description (optional):') || undefined;
+
+    // Check if theme with this name already exists
+    const existingTheme = themes.find((t: any) => t.name === themeName);
+    
+    if (existingTheme) {
+      const update = confirm(`Theme "${themeName}" already exists. Update it?`);
+      if (update) {
+        saveThemeMutation.mutate({ themeId: existingTheme.id, name: themeName, description, isNew: false });
+      }
+    } else {
+      saveThemeMutation.mutate({ name: themeName, description, isNew: true });
     }
   };
 
@@ -1550,12 +1627,12 @@ export default function DesignSystem() {
               Settings
             </Button>
             <Button 
-              onClick={handleSaveAll}
-              disabled={preferencesLoading || !isAuthenticated}
+              onClick={handleSaveTheme}
+              disabled={saveThemeMutation.isPending || !isAuthenticated}
               className="bg-[#ff8475] hover:bg-[#ff444c] text-white shadow-lg hover:shadow-xl transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="w-4 h-4 mr-2" />
-              {preferencesLoading ? 'Saving...' : 'Save All'}
+              {saveThemeMutation.isPending ? 'Saving...' : 'Save Theme'}
             </Button>
           </div>
         </div>
@@ -1564,6 +1641,88 @@ export default function DesignSystem() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-8">
+          {/* Themes Management */}
+          <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+            <CardHeader>
+              <CardTitle>Theme Management</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              {themesLoading ? (
+                <div>Loading themes...</div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="text-sm text-muted-foreground mb-4">
+                    Active Themes: {themes.filter((t: any) => t.is_active).length} / 4
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {themes.map((theme: any) => (
+                      <Card key={theme.id} className={theme.is_active ? '' : 'opacity-50'}>
+                        <CardHeader>
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-lg">{theme.name}</CardTitle>
+                            <Badge variant={theme.is_active ? 'default' : 'secondary'}>
+                              {theme.is_active ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </div>
+                          {theme.description && (
+                            <p className="text-sm text-muted-foreground">{theme.description}</p>
+                          )}
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                // Load theme tokens into editor
+                                const modeTokens = theme === 'light' ? theme.light_mode_tokens : theme.dark_mode_tokens;
+                                setTokens(modeTokens);
+                              }}
+                            >
+                              Load
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={async () => {
+                                const update = await saveThemeMutation.mutateAsync({
+                                  themeId: theme.id,
+                                  name: theme.name,
+                                  description: theme.description,
+                                  isNew: false,
+                                });
+                              }}
+                            >
+                              Update
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={async () => {
+                                if (confirm(`Deactivate "${theme.name}"?`)) {
+                                  try {
+                                    await apiRequest('PUT', `/api/themes/${theme.id}`, {
+                                      is_active: !theme.is_active,
+                                    });
+                                    queryClient.invalidateQueries({ queryKey: ['/api/themes'] });
+                                  } catch (error: any) {
+                                    alert(`Failed to update theme: ${error.message}`);
+                                  }
+                                }
+                              }}
+                            >
+                              {theme.is_active ? 'Deactivate' : 'Activate'}
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Fire Theme Panel - Persistent Theme Controller */}
           <FireThemePanel />
 

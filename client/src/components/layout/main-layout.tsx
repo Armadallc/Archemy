@@ -150,6 +150,12 @@ export default function MainLayout({
                 <LoginRedirect />
               </Route>
               {/* Hierarchical Routes - Corporate Client + Program (must come before corporate-client-only routes) */}
+              <Route path="/corporate-client/:corporateClientId/program/:programId/settings">
+                <Settings />
+              </Route>
+              <Route path="/corporate-client/:corporateClientId/program/:programId/chat">
+                <ChatPage />
+              </Route>
               <Route path="/corporate-client/:corporateClientId/program/:programId/trips">
                 <HierarchicalTripsPage />
               </Route>
@@ -173,6 +179,12 @@ export default function MainLayout({
               </Route>
 
               {/* Hierarchical Routes - Corporate Client Only */}
+              <Route path="/corporate-client/:corporateClientId/settings">
+                <Settings />
+              </Route>
+              <Route path="/corporate-client/:corporateClientId/chat">
+                <ChatPage />
+              </Route>
               <Route path="/corporate-client/:corporateClientId/trips">
                 <HierarchicalTripsPage />
               </Route>

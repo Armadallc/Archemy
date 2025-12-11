@@ -38,6 +38,7 @@ import { MainLogoUpload } from "../components/MainLogoUpload";
 import CorporateClientCards from "../components/settings/CorporateClientCards";
 import UsersManagement from "../components/settings/UsersManagement";
 import ProgramCreationForm from "../components/settings/ProgramCreationForm";
+import { ThemeSelector } from "../components/ThemeSelector";
 
 interface CorporateClientSettings {
   id: string;
@@ -623,6 +624,9 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-6">
+          {/* Theme Selection - Available to all users */}
+          <ThemeSelector />
+          
           <Card>
             <CardHeader>
               <CardTitle>Notification Settings</CardTitle>
@@ -682,7 +686,18 @@ export default function Settings() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center space-x-6">
-                <MainLogoUpload onLogoUpdate={() => {}} />
+                <MainLogoUpload 
+                  currentLogoUrl={systemSettings.main_logo_url}
+                  onLogoUpdate={(logoUrl) => {
+                    // Update local state
+                    setSystemSettings({
+                      ...systemSettings,
+                      main_logo_url: logoUrl,
+                    });
+                    // Invalidate query to refresh data
+                    queryClient.invalidateQueries({ queryKey: ['/api/system-settings'] });
+                  }} 
+                />
                 <div>
                   <h3 className="text-lg font-medium">System Logo</h3>
                   <p className="text-gray-600">Upload the main system logo</p>

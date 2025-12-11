@@ -65,7 +65,7 @@ export interface UseActivityLogOptions {
 }
 
 export function useActivityLog(options: UseActivityLogOptions = {}) {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const {
     limit = 50,
     offset = 0,
@@ -90,7 +90,7 @@ export function useActivityLog(options: UseActivityLogOptions = {}) {
       endDate?.toISOString(),
     ],
     queryFn: async () => {
-      if (!user?.user_id) {
+      if (!user?.user_id || !isAuthenticated) {
         return [];
       }
 
@@ -110,7 +110,7 @@ export function useActivityLog(options: UseActivityLogOptions = {}) {
       const response = await apiRequest('GET', endpoint);
       return await response.json();
     },
-    enabled: enabled && !!user?.user_id,
+    enabled: enabled && isAuthenticated && !!user?.user_id,
     staleTime: 30000, // 30 seconds
     gcTime: 300000, // 5 minutes
   });

@@ -10,13 +10,20 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
 }
 
 export function useTheme() {
-  const { theme, setTheme } = useNextTheme();
+  const { theme, setTheme: setNextTheme } = useNextTheme();
+  
+  const setTheme = (newTheme: "light" | "dark" | "system") => {
+    setNextTheme(newTheme);
+  };
+  
+  const toggleTheme = () => {
+    setNextTheme(theme === "light" ? "dark" : "light");
+  };
   
   return {
     theme: theme || "light",
-    toggleTheme: () => {
-      setTheme(theme === "light" ? "dark" : "light");
-    },
+    setTheme,
+    toggleTheme,
   };
 }
 

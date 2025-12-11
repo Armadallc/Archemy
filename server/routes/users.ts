@@ -7,8 +7,144 @@ import {
 import { upload, processAvatarToSupabase, deleteFileFromSupabase } from "../upload";
 import { usersStorage, supabase } from "../minimal-supabase";
 import { findUsers, getUserById } from "../services/userSearchService";
+import { createClient } from '@supabase/supabase-js';
 
 const router = express.Router();
+
+// Create admin client for Supabase Auth operations
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+// ============================================================================
+// USER CREATION ROUTES
+// ============================================================================
+
+/**
+ * POST /api/users
+ * Create a new user (both in Supabase Auth and database)
+ * Access: super_admin, corporate_admin, program_admin
+ */
+router.post("/", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin']), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const {
+      user_name,
+      email,
+      password,
+      role,
+      first_name,
+      last_name,
+      phone,
+      primary_program_id,
+      corporate_client_id,
+      authorized_programs
+    } = req.body;
+
+    // Validate required fields
+    if (!user_name || !email || !password) {
+      return res.status(400).json({ message: "Username, email, and password are required" });
+    }
+
+    // Check if user already exists in database
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('user_id, email')
+      .or(`email.eq.${email},user_name.eq.${user_name}`)
+      .single();
+
+    if (existingUser) {
+      return res.status(400).json({ message: "User with this email or username already exists" });
+    }
+
+    // Create user in Supabase Auth first
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: email,
+      password: password,
+      email_confirm: true,
+      user_metadata: {
+        user_name: user_name,
+        role: role || 'program_user',
+        first_name: first_name || '',
+        last_name: last_name || ''
+      }
+    });
+
+    if (authError || !authUser.user) {
+      console.error("Error creating Supabase Auth user:", authError);
+      return res.status(500).json({ 
+        message: "Failed to create authentication user",
+        error: authError?.message 
+      });
+    }
+
+    // Generate user_id (slug from username or email)
+    const generateUserId = (username: string, email: string): string => {
+      const base = username || email.split('@')[0];
+      return base.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    };
+
+    const user_id = generateUserId(user_name, email);
+
+    // Create user in database
+    const userData: any = {
+      user_id: user_id,
+      auth_user_id: authUser.user.id,
+      user_name: user_name,
+      email: email,
+      role: role || 'program_user',
+      first_name: first_name || null,
+      last_name: last_name || null,
+      phone: phone || null,
+      primary_program_id: primary_program_id || null,
+      corporate_client_id: corporate_client_id || null,
+      authorized_programs: authorized_programs || null,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    console.log('📝 Creating database user with auth_user_id:', authUser.user.id);
+    const newUser = await usersStorage.createUser(userData);
+    
+    // Verify auth_user_id was saved
+    if (!newUser.auth_user_id) {
+      console.error('⚠️  WARNING: auth_user_id was not saved to database user');
+      // Try to update it
+      await usersStorage.updateUser(newUser.user_id, { auth_user_id: authUser.user.id });
+      // Re-fetch the user
+      const updatedUser = await usersStorage.getUser(newUser.user_id);
+      if (updatedUser && updatedUser.auth_user_id) {
+        console.log('✅ Successfully linked auth_user_id after creation');
+        return res.status(201).json({
+          success: true,
+          user: updatedUser
+        });
+      } else {
+        console.error('❌ Failed to link auth_user_id even after update attempt');
+        return res.status(500).json({ 
+          message: "User created but failed to link authentication",
+          error: "auth_user_id not saved"
+        });
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      user: newUser
+    });
+  } catch (error: any) {
+    console.error("Error creating user:", error);
+    res.status(500).json({ 
+      message: "Failed to create user",
+      error: error.message 
+    });
+  }
+});
 
 // ============================================================================
 // USER LISTING ROUTES
@@ -441,10 +577,10 @@ router.patch("/:userId", requireSupabaseAuth, async (req: SupabaseAuthenticatedR
 
 /**
  * DELETE /api/users/:userId
- * Delete (deactivate) user
- * Access: super_admin, corporate_admin (for users in their corporate client)
+ * Delete user (hard delete - removes from database and Supabase Auth)
+ * Access: super_admin only (corporate_admin should use deactivate instead)
  */
-router.delete("/:userId", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin']), async (req: SupabaseAuthenticatedRequest, res) => {
+router.delete("/:userId", requireSupabaseAuth, requireSupabaseRole(['super_admin']), async (req: SupabaseAuthenticatedRequest, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({ message: "Authentication required" });
@@ -458,20 +594,26 @@ router.delete("/:userId", requireSupabaseAuth, requireSupabaseRole(['super_admin
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Corporate admin can only deactivate users in their corporate client
-    if (req.user.role === 'corporate_admin' && req.user.corporateClientId !== targetUser.corporate_client_id) {
-      return res.status(403).json({ message: "You can only deactivate users in your corporate client" });
+    // Delete from Supabase Auth if auth_user_id exists
+    if (targetUser.auth_user_id) {
+      const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(
+        targetUser.auth_user_id
+      );
+
+      if (authDeleteError) {
+        console.error("Error deleting Supabase Auth user:", authDeleteError);
+        // Continue with database deletion even if Auth deletion fails
+      } else {
+        console.log(`✅ Deleted Supabase Auth user: ${targetUser.auth_user_id}`);
+      }
     }
 
-    // Soft delete: set is_active to false
-    const updatedUser = await usersStorage.updateUser(userId, {
-      is_active: false,
-      updated_at: new Date().toISOString()
-    });
+    // Hard delete: remove from database
+    await usersStorage.deleteUser(userId);
 
     res.json({
       success: true,
-      user: updatedUser
+      message: "User deleted successfully"
     });
   } catch (error: any) {
     console.error("Error deleting user:", error);

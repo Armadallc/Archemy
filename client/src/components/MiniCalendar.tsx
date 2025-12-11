@@ -123,7 +123,16 @@ export function MiniCalendar({ className = "" }: MiniCalendarProps) {
                         ? 'text-foreground hover:bg-accent' 
                         : 'text-muted-foreground hover:bg-accent/50'
                 }`}
-                style={{ fontFamily: "'Nohemi', sans-serif" }}
+                style={isTodayDate ? {
+                  fontFamily: "'Nohemi', sans-serif",
+                  backgroundColor: "rgba(122, 255, 254, 0.1)",
+                  borderColor: "#7afffe",
+                  color: "#7afffe",
+                  boxShadow: "0 0 10px rgba(122, 255, 254, 0.5), 0 0 20px rgba(122, 255, 254, 0.3), 0 0 30px rgba(122, 255, 254, 0.2), inset 0 0 10px rgba(122, 255, 254, 0.1)",
+                  textShadow: "0 0 8px rgba(122, 255, 254, 0.6), 0 0 12px rgba(122, 255, 254, 0.4)",
+                  borderWidth: "1px",
+                  borderStyle: "solid"
+                } : { fontFamily: "'Nohemi', sans-serif" }}
               >
                 {format(day, "d")}
               </div>

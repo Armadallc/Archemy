@@ -10,16 +10,18 @@ import MainLayout from "./components/layout/main-layout";
 import Login from "./pages/login";
 import { useAuth } from "./hooks/useAuth";
 import { useThemePreferences } from "./hooks/useThemePreferences";
+import { useSelectedTheme } from "./hooks/useSelectedTheme";
 import { Toaster } from "./components/ui/toaster";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { WelcomeScreen } from "./components/welcome-screen";
 
 function AppContent() {
   const { user, isLoading } = useAuth();
-  const { loadPreferences } = useThemePreferences(); // Load theme preferences on app start
+  const { loadPreferences } = useThemePreferences(); // Load theme preferences on app start (legacy)
+  const { isLoading: themeLoading } = useSelectedTheme(); // Load selected theme from database
   const [showWelcome, setShowWelcome] = useState<boolean | null>(null); // null = checking
   
-  // Load theme preferences when user is authenticated
+  // Load theme preferences when user is authenticated (legacy - for backward compatibility)
   useEffect(() => {
     if (user && !isLoading) {
       loadPreferences();
@@ -48,6 +50,7 @@ function AppContent() {
   };
 
   // Show loading spinner during initial auth check
+  // Don't wait for theme loading - it's non-blocking
   if (isLoading || showWelcome === null) {
     return (
       <div className="flex items-center justify-center h-screen" style={{ backgroundColor: 'var(--page-background)' }}>

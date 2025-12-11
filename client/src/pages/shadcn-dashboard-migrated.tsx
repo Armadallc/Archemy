@@ -417,14 +417,14 @@ export default function ShadcnDashboardMigrated() {
   if (realTimeUserRole === "corporate_admin") {
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'var(--page-background)' }}>
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden" style={{ padding: '24px' }}>
           {/* Header */}
           <ShadcnHeader title={getRoleBasedTitle()} subtitle={`Managing ${selectedCorporateClient || "corporate"} operations`} />
           {/* Dashboard Content */}
           <div className="flex-1 overflow-auto">
           <div className="space-y-6">
             {/* Stats Cards - Shadcn Style */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" style={{ marginTop: '24px' }}>
               <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Today's Trips</CardTitle>

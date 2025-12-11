@@ -42,6 +42,8 @@ import { useEffectivePermissions, useFeatureFlag } from "../../hooks/use-permiss
 import { supabase } from "../../lib/supabase";
 import { DrillDownDropdown } from "../DrillDownDropdown";
 import { MiniCalendar } from "../MiniCalendar";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "../../lib/queryClient";
 
 interface SidebarProps {
   currentProgram?: string;
@@ -109,6 +111,7 @@ const navigationCategories = [
     roles: ["super_admin", "corporate_admin", "program_admin", "program_user", "driver"],
     items: [
       { path: "/", label: "Dashboard", icon: Home, roles: ["super_admin", "corporate_admin", "program_admin", "program_user", "driver"], status: "completed" as PageStatus },
+      { path: "/calendar", label: "Calendar", icon: Calendar, roles: ["super_admin", "corporate_admin", "program_admin", "program_user", "driver"], status: "completed" as PageStatus },
       { path: "/chat", label: "Chat", icon: MessageSquare, roles: ["super_admin", "corporate_admin", "program_admin", "program_user", "driver"], status: "completed" as PageStatus }
     ]
   },
@@ -120,7 +123,6 @@ const navigationCategories = [
     items: [
       { path: "/trips", label: "My Trips", icon: Route, roles: ["driver"], status: "completed" as PageStatus },
       { path: "/trips", label: "Trips", icon: Route, roles: ["super_admin", "corporate_admin", "program_admin", "program_user"], status: "completed" as PageStatus },
-      { path: "/calendar", label: "Calendar", icon: Calendar, roles: ["super_admin", "corporate_admin", "program_admin", "program_user", "driver"], status: "completed" as PageStatus },
       { path: "/drivers", label: "Drivers", icon: Car, roles: ["super_admin", "program_admin"], status: "completed" as PageStatus }, // Removed corporate_admin
       { path: "/vehicles", label: "Vehicles", icon: Car, roles: ["super_admin", "program_admin"], status: "not-started" as PageStatus }, // Removed corporate_admin
       { path: "/frequent-locations", label: "Frequent Locations", icon: MapPin, roles: ["super_admin", "corporate_admin", "program_admin"], status: "has-issues" as PageStatus }
@@ -178,8 +180,39 @@ export default function Sidebar({
   
   // User menu state
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme: originalToggleTheme } = useTheme();
   const isDarkMode = theme === 'dark';
+  const queryClient = useQueryClient();
+
+  // Mutation to save theme mode to database
+  const saveThemeModeMutation = useMutation({
+    mutationFn: async (themeMode: 'light' | 'dark') => {
+      const response = await apiRequest('PUT', '/api/themes/user/mode', {
+        theme_mode: themeMode,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/themes/user/selection'] });
+    },
+    onError: (error: any) => {
+      console.error('Failed to save theme mode:', error);
+      // Don't show error to user - theme toggle still works locally
+    },
+  });
+
+  // Enhanced toggle theme that saves to database
+  const toggleTheme = () => {
+    const newMode = isDarkMode ? 'light' : 'dark';
+    
+    // Toggle theme locally first
+    originalToggleTheme();
+    
+    // Save to database if user is authenticated
+    if (user) {
+      saveThemeModeMutation.mutate(newMode);
+    }
+  };
   
   // Feature flags
   const { isEnabled: darkModeEnabled } = useFeatureFlag("dark_mode_enabled");
@@ -392,66 +425,135 @@ export default function Sidebar({
     navigateToProgram(programId, programId);
   };
 
+  // Fetch system settings for main logo (super admin only, but we'll fetch for all to check)
+  const { data: systemSettings } = useQuery({
+    queryKey: ['/api/system-settings'],
+    queryFn: async () => {
+      try {
+        const response = await apiRequest('GET', '/api/system-settings');
+        if (!response.ok) {
+          return null;
+        }
+        return await response.json();
+      } catch (error) {
+        // If not super admin or settings don't exist, return null
+        return null;
+      }
+    },
+    enabled: true, // Always try to fetch (will fail gracefully for non-super-admins)
+    retry: false,
+  });
+
+  // Get corporate client ID from user or selected corporate client
+  const corporateClientId = (user as any)?.corporate_client_id || selectedCorporateClient;
+
+  // Fetch corporate client data to get logo
+  const { data: corporateClientData } = useQuery({
+    queryKey: ['/api/corporate-clients', corporateClientId],
+    queryFn: async () => {
+      if (!corporateClientId) return null;
+      try {
+        // Try the corporate route first (preferred)
+        const response = await apiRequest('GET', `/api/corporate/clients/${corporateClientId}`);
+        return await response.json();
+      } catch (error: any) {
+        // Try legacy endpoint as fallback
+        try {
+          const response = await apiRequest('GET', `/api/corporate-clients/${corporateClientId}`);
+          return await response.json();
+        } catch (legacyError: any) {
+          console.error('Error fetching corporate client:', legacyError);
+          return null;
+        }
+      }
+    },
+    enabled: !!corporateClientId && (user?.role === 'corporate_admin' || !!selectedCorporateClient),
+    retry: false,
+  });
+
   // Get corporate client logo
   const getCorporateClientLogo = () => {
-    // Logo functionality would need to be implemented with actual data fetching
-    return null; // No fallback logo for now
+    if (corporateClientData?.logo_url) {
+      return corporateClientData.logo_url;
+    }
+    return null;
   };
 
-  // Get corporate client name
+  // Get main logo URL from system settings
+  const getMainLogoUrl = () => {
+    return systemSettings?.main_logo_url || null;
+  };
+
+  // Get corporate client name or app name
   const getCorporateClientName = () => {
     if (selectedCorporateClient) {
       return selectedCorporateClient;
     }
-    return "HALCYON";
+    return systemSettings?.app_name || "HALCYON";
+  };
+
+  // Determine what to display: main logo, corporate client logo, or text
+  const getDisplayLogo = () => {
+    // For corporate admins, prioritize their corporate client logo
+    // For super admins, prioritize main logo
+    if (user?.role === 'corporate_admin') {
+      const corporateLogo = getCorporateClientLogo();
+      if (corporateLogo) {
+        return corporateLogo;
+      }
+      // Fallback to main logo if no corporate logo
+      return getMainLogoUrl();
+    }
+    // For super admins and others: main logo > corporate client logo
+    const mainLogo = getMainLogoUrl();
+    if (mainLogo) {
+      return mainLogo;
+    }
+    return getCorporateClientLogo();
+  };
+
+  const shouldShowLogo = () => {
+    return getDisplayLogo() !== null;
+  };
+
+  const shouldShowText = () => {
+    // Show text if no logo is available, or if corporate client is selected (logo is secondary)
+    return !shouldShowLogo() || (selectedCorporateClient && !getMainLogoUrl());
   };
 
   return (
-    <div className={`transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} flex flex-col overflow-hidden pt-6 rounded-lg`} style={{ color: 'var(--gray-12)', backgroundColor: 'var(--gray-1)', paddingBottom: '24px', borderTop: '1px solid #a5c8ca', borderRight: '1px solid #a5c8ca', borderBottom: '1px solid #a5c8ca', height: 'calc(100vh - 48px)' }}>
+    <div className={`transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} flex flex-col overflow-hidden rounded-lg`} style={{ color: 'var(--gray-12)', backgroundColor: 'var(--gray-1)', paddingBottom: '24px', borderTop: '1px solid #a5c8ca', borderRight: '1px solid #a5c8ca', borderBottom: '1px solid #a5c8ca', height: 'calc(100vh - 48px)' }}>
       {/* Header */}
-      <div className="p-4 border-b flex-shrink-0" style={{ borderColor: 'var(--gray-7)', backgroundColor: 'var(--gray-1)' }}>
-        <div className="flex items-center justify-between">
-          {!isCollapsed && (
-            <div className="flex items-center space-x-3">
-              {getCorporateClientLogo() && (
-                <img 
-                  src={getCorporateClientLogo()!} 
-                  alt="Corporate Client Logo" 
-                  className="w-8 h-8 rounded"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-              )}
-              <div>
-                <h2 style={{ fontSize: '42px', fontFamily: "'Nohemi', sans-serif" }}>{getCorporateClientName()}</h2>
-              </div>
-            </div>
-          )}
-          {isCollapsed && getCorporateClientLogo() && (
-            <img 
-              src={getCorporateClientLogo()!} 
-              alt="Corporate Client Logo" 
-              className="w-8 h-8 rounded mx-auto"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-          )}
-          {setIsCollapsed && (
-            <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-1 rounded transition-colors"
-              style={{ '--hover-bg': 'var(--gray-3)' } as React.CSSProperties & { '--hover-bg': string }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gray-3)'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-              title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              <ChevronLeft className={`w-4 h-4 transition-transform ${isCollapsed ? 'rotate-180' : ''}`} />
-            </button>
-          )}
-        </div>
+      <div className="px-4 pt-6 pb-4 border-b flex-shrink-0 flex items-center justify-center relative" style={{ borderColor: 'var(--gray-7)', backgroundColor: 'var(--gray-1)', height: '150px' }}>
+        {shouldShowLogo() && (
+          <img 
+            src={getDisplayLogo()!} 
+            alt={getMainLogoUrl() ? "Main Application Logo" : "Corporate Client Logo"} 
+            className="object-cover"
+            style={{ width: '109px', height: '109px', minWidth: '109px', minHeight: '109px', maxWidth: '109px', maxHeight: '109px', display: 'block' }}
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        )}
+        {!shouldShowLogo() && !isCollapsed && (
+          <div>
+            <h2 style={{ fontSize: '42px', fontFamily: "'Nohemi', sans-serif" }}>{getCorporateClientName()}</h2>
+          </div>
+        )}
+        {setIsCollapsed && (
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="p-1 rounded transition-colors absolute right-2"
+            style={{ '--hover-bg': 'var(--gray-3)' } as React.CSSProperties & { '--hover-bg': string }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gray-3)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <ChevronLeft className={`w-4 h-4 transition-transform ${isCollapsed ? 'rotate-180' : ''}`} />
+          </button>
+        )}
       </div>
 
       {/* Navigation */}

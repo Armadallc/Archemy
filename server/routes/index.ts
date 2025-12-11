@@ -17,9 +17,11 @@ import corporateRoutes from "./corporate";
 import programsRoutes from "./programs";
 import clientNotificationsRoutes from "./client-notifications";
 import themePreferencesRoutes from "./theme-preferences";
+import themesRoutes from "./themes";
 import activityLogRoutes from "./activity-log";
 import systemSettingsRoutes from "./system-settings";
 import contactsRoutes from "./contacts";
+import discussionsRoutes from "./discussions";
 import { 
   requireSupabaseAuth, 
   SupabaseAuthenticatedRequest
@@ -48,9 +50,13 @@ router.use("/corporate", corporateRoutes);
 router.use("/programs", programsRoutes);
 router.use("/client-notifications", clientNotificationsRoutes);
 router.use("/theme-preferences", themePreferencesRoutes);
+router.use("/themes", themesRoutes);
 router.use("/activity-log", activityLogRoutes);
 router.use("/system-settings", systemSettingsRoutes);
+// Also register system routes for main-logo endpoints (component uses /api/system/main-logo)
+router.use("/system", systemSettingsRoutes);
 router.use("/contacts", contactsRoutes);
+router.use("/discussions", discussionsRoutes);
 
 // Alias route for corporate-clients (frontend compatibility)
 router.get("/corporate-clients", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_CORPORATE_CLIENTS), async (req: SupabaseAuthenticatedRequest, res) => {

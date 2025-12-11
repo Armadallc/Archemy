@@ -1139,6 +1139,9 @@ function UserRow({
   onToggleStatus: (user: User) => void; 
   onDelete: (user: User) => void;
 }) {
+  const { user: currentUser } = useAuth();
+  const isSuperAdmin = currentUser?.role === 'super_admin';
+  
   return (
     <TableRow>
       <TableCell>
@@ -1231,13 +1234,15 @@ function UserRow({
                 </>
               )}
             </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => onDelete(user)}
-              className="text-destructive"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete
-            </DropdownMenuItem>
+            {isSuperAdmin && (
+              <DropdownMenuItem 
+                onClick={() => onDelete(user)}
+                className="text-destructive"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </TableCell>

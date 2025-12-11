@@ -449,7 +449,30 @@ export const notificationPreferences = pgTable("notification_preferences", {
   updated_at: timestamp("updated_at").defaultNow(),
 });
 
-// User Theme Preferences Table
+// Themes Table (Shared themes created by super admins)
+export const themes = pgTable("themes", {
+  id: varchar("id", { length: 50 }).primaryKey(),
+  name: varchar("name", { length: 255 }).notNull().unique(),
+  description: text("description"),
+  light_mode_tokens: jsonb("light_mode_tokens").notNull(),
+  dark_mode_tokens: jsonb("dark_mode_tokens").notNull(),
+  is_active: boolean("is_active").default(true),
+  created_by: varchar("created_by", { length: 50 }).references(() => users.user_id, { onDelete: 'set null' }),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+// User Theme Selections Table (User's selected theme and mode preference)
+export const userThemeSelections = pgTable("user_theme_selections", {
+  id: varchar("id", { length: 50 }).primaryKey(),
+  user_id: varchar("user_id", { length: 50 }).notNull().references(() => users.user_id, { onDelete: 'cascade' }).unique(),
+  theme_id: varchar("theme_id", { length: 50 }).notNull().references(() => themes.id, { onDelete: 'restrict' }),
+  theme_mode: varchar("theme_mode", { length: 10 }).notNull().default('light'), // 'light' or 'dark'
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+// User Theme Preferences Table (Legacy - kept for backward compatibility)
 export const userThemePreferences = pgTable("user_theme_preferences", {
   id: varchar("id", { length: 50 }).primaryKey(),
   user_id: varchar("user_id", { length: 50 }).notNull().references(() => users.user_id, { onDelete: 'cascade' }),
