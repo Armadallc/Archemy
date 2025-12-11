@@ -57,6 +57,10 @@ export const dutyStatusEnum = pgEnum('duty_status', [
   'unavailable'
 ]);
 
+// Role Type for Hybrid RBAC (polymorphic discriminator)
+// Note: This is a CHECK constraint in the database, but we use a type for TypeScript
+export type RoleType = 'system' | 'tenant';
+
 // ============================================================================
 // CORE TABLES
 // ============================================================================
@@ -143,6 +147,8 @@ export const users = pgTable("users", {
   primary_program_id: varchar("primary_program_id", { length: 50 }).references(() => programs.id, { onDelete: 'set null' }),
   authorized_programs: text("authorized_programs").array(),
   corporate_client_id: varchar("corporate_client_id", { length: 50 }).references(() => corporateClients.id, { onDelete: 'set null' }),
+  tenant_role_id: varchar("tenant_role_id", { length: 50 }).references(() => tenantRoles.id, { onDelete: 'set null' }),
+  active_tenant_id: varchar("active_tenant_id", { length: 50 }).references(() => corporateClients.id, { onDelete: 'set null' }),
   avatar_url: text("avatar_url"),
   phone: varchar("phone", { length: 20 }),
   first_name: varchar("first_name", { length: 255 }),
@@ -521,12 +527,29 @@ export const systemSettings = pgTable("system_settings", {
 export const rolePermissions = pgTable("role_permissions", {
   id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()::text`),
   role: varchar("role", { length: 50 }).notNull(), // Uses CHECK constraint instead of enum to match database
+  role_type: varchar("role_type", { length: 20 }).default('system').$type<RoleType>(), // 'system' or 'tenant' discriminator
   permission: varchar("permission", { length: 100 }).notNull(),
   resource: varchar("resource", { length: 50 }).notNull().default('*'),
   program_id: varchar("program_id", { length: 50 }),
   corporate_client_id: varchar("corporate_client_id", { length: 50 }),
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
+});
+
+// Tenant Roles Table (Hybrid RBAC)
+// Note: Circular reference with users table (created_by -> users.user_id, users.tenant_role_id -> tenant_roles.id)
+// Drizzle handles this with lazy function references
+export const tenantRoles = pgTable("tenant_roles", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()::text`),
+  corporate_client_id: varchar("corporate_client_id", { length: 50 })
+    .notNull()
+    .references(() => corporateClients.id, { onDelete: 'cascade' }),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  is_active: boolean("is_active").default(true),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+  created_by: varchar("created_by", { length: 50 }),
 });
 
 // User Mentions Table (Universal Tagging System)
@@ -753,6 +776,7 @@ export const insertTripStatusLogSchema = createInsertSchema(tripStatusLogs);
 export const insertOfflineUpdateSchema = createInsertSchema(offlineUpdates);
 export const insertSystemSettingsSchema = createInsertSchema(systemSettings);
 export const insertRolePermissionSchema = createInsertSchema(rolePermissions);
+export const insertTenantRoleSchema = createInsertSchema(tenantRoles);
 export const insertUserMentionSchema = createInsertSchema(userMentions);
 export const insertActivityLogSchema = createInsertSchema(activityLog);
 export const insertTaskSchema = createInsertSchema(tasks);
@@ -823,6 +847,7 @@ export type TripStatusLog = typeof tripStatusLogs.$inferSelect;
 export type OfflineUpdate = typeof offlineUpdates.$inferSelect;
 export type SystemSettings = typeof systemSettings.$inferSelect;
 export type RolePermission = typeof rolePermissions.$inferSelect;
+export type TenantRole = typeof tenantRoles.$inferSelect;
 export type UserMention = typeof userMentions.$inferSelect;
 export type InsertUserMention = typeof userMentions.$inferInsert;
 export type ActivityLog = typeof activityLog.$inferSelect;
@@ -868,6 +893,7 @@ export type InsertNotificationPreference = typeof insertNotificationPreferenceSc
 export type InsertTripStatusLog = typeof insertTripStatusLogSchema._type;
 export type InsertOfflineUpdate = typeof insertOfflineUpdateSchema._type;
 export type InsertRolePermission = typeof insertRolePermissionSchema._type;
+export type InsertTenantRole = typeof insertTenantRoleSchema._type;
 export type InsertUserMention = typeof insertUserMentionSchema._type;
 export type InsertActivityLog = typeof insertActivityLogSchema._type;
 export type InsertTask = typeof insertTaskSchema._type;

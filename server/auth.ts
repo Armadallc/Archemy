@@ -12,13 +12,14 @@ import {
 } from "./permissions";
 import { SupabaseAuthenticatedRequest } from "./supabase-auth";
 import { permissionsStorage } from "./permissions-storage";
+import { hasPermission as authorizationServiceHasPermission } from "./services/authorizationService";
 
 export interface AuthenticatedRequest extends SupabaseAuthenticatedRequest {
   currentProgramId?: string;
   currentCorporateClientId?: string;
 }
 
-// Permission-based authorization with database fallback
+// Permission-based authorization with hybrid RBAC support (system + tenant roles)
 export function requirePermission(permission: Permission) {
   return async (req: AuthenticatedRequest, res: express.Response, next: express.NextFunction) => {
     if (!req.user) {
@@ -27,32 +28,42 @@ export function requirePermission(permission: Permission) {
 
     let hasAccess = false;
 
-    // Try database permissions first
-    try {
-      // Use '*' as resource (matches hardcoded permissions default)
-      // The resource field in role_permissions is for future granular control
-      const resource = '*';
-      
-      // Get program_id and corporate_client_id from request if available
-      const programId = req.currentProgramId || req.params.programId || req.query.program_id as string | undefined;
-      const corporateClientId = req.currentCorporateClientId || req.params.corporateClientId || req.query.corporate_client_id as string | undefined;
+    // Use '*' as resource (matches hardcoded permissions default)
+    // The resource field in role_permissions is for future granular control
+    const resource = '*';
+    
+    // Get program_id and corporate_client_id from request if available
+    const programId = req.currentProgramId || req.params.programId || req.query.program_id as string | undefined;
+    const corporateClientId = req.currentCorporateClientId || req.params.corporateClientId || req.query.corporate_client_id as string | undefined;
 
-      hasAccess = await permissionsStorage.checkPermission(
+    // Try new AuthorizationService first (supports hybrid RBAC)
+    try {
+      hasAccess = await authorizationServiceHasPermission(
         req.user.userId,
         permission,
-        resource,
-        programId,
-        corporateClientId
+        corporateClientId || undefined,
+        resource
       );
     } catch (error: any) {
-      // If database table doesn't exist or error occurs, fall back to hardcoded permissions
-      if (error.code === 'MIGRATION_REQUIRED' || error.code === '42P01' || error.message?.includes('does not exist')) {
-        console.warn('⚠️ Database permissions not available, falling back to hardcoded permissions');
-        hasAccess = hasPermission(req.user.role, permission);
-      } else {
-        console.error('Error checking database permissions:', error);
-        // On error, fall back to hardcoded permissions for safety
-        hasAccess = hasPermission(req.user.role, permission);
+      // If new service fails, try legacy permissionsStorage
+      try {
+        hasAccess = await permissionsStorage.checkPermission(
+          req.user.userId,
+          permission,
+          resource,
+          programId,
+          corporateClientId
+        );
+      } catch (legacyError: any) {
+        // If database table doesn't exist or error occurs, fall back to hardcoded permissions
+        if (legacyError.code === 'MIGRATION_REQUIRED' || legacyError.code === '42P01' || legacyError.message?.includes('does not exist')) {
+          console.warn('⚠️ Database permissions not available, falling back to hardcoded permissions');
+          hasAccess = hasPermission(req.user.role, permission);
+        } else {
+          console.error('Error checking database permissions:', legacyError);
+          // On error, fall back to hardcoded permissions for safety
+          hasAccess = hasPermission(req.user.role, permission);
+        }
       }
     }
 

@@ -288,3 +288,5 @@ A corporate_admin user should:
 - All data is scoped to their corporate_client_id
 - Settings page should reflect their role and permissions
 
+
+

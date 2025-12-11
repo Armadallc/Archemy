@@ -212,3 +212,5 @@ router.get("/corporate-client/:corporateClientId", requireSupabaseAuth, requireS
 
 export default router;
 
+
+

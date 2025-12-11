@@ -37,6 +37,7 @@ import { LogoUpload } from "../components/LogoUpload";
 import { MainLogoUpload } from "../components/MainLogoUpload";
 import CorporateClientCards from "../components/settings/CorporateClientCards";
 import UsersManagement from "../components/settings/UsersManagement";
+import TenantRolesManagement from "../components/settings/TenantRolesManagement";
 import ProgramCreationForm from "../components/settings/ProgramCreationForm";
 import { ThemeSelector } from "../components/ThemeSelector";
 
@@ -87,6 +88,7 @@ function getVisibleTabs(userRole?: string) {
     { id: 'program', label: 'Program', icon: Building2 },
     { id: 'vendors', label: 'Vendors', icon: Store },
     { id: 'users', label: 'Users', icon: Users },
+    { id: 'tenant-roles', label: 'Tenant Roles', icon: Shield },
     { id: 'contacts', label: 'Contacts', icon: Contact },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'system', label: 'System', icon: Database }
@@ -570,6 +572,29 @@ export default function Settings() {
                   <Info className="h-4 w-4" />
                   <AlertDescription>
                     User management is only available to Super Admins, Corporate Admins, and Program Admins. If you need user management access, please contact your administrator.
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="tenant-roles" className="space-y-6">
+          {(user?.role === 'super_admin' || user?.role === 'corporate_admin') ? (
+            <TenantRolesManagement />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Tenant Roles</CardTitle>
+                <CardDescription>
+                  Create and manage custom roles for your corporate client.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    Tenant role management is only available to Super Admins and Corporate Admins. If you need access, please contact your administrator.
                   </AlertDescription>
                 </Alert>
               </CardContent>

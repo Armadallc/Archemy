@@ -168,3 +168,5 @@ supabase.auth.admin.updateUserById('<auth_user_id>', { password: '<new_password>
 4. **Automated Sync**: Run sync script on a schedule
 5. **User Creation Audit Log**: Track all user creation/deletion events
 
+
+

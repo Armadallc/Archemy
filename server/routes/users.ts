@@ -702,5 +702,167 @@ router.get("/:userId/details", requireSupabaseAuth, async (req: SupabaseAuthenti
   }
 });
 
+/**
+ * POST /api/users/:userId/assign-role
+ * Assign a tenant role to a user
+ * Access: super_admin, corporate_admin (for their corporate client)
+ */
+router.post("/:userId/assign-role", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin']), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const { userId } = req.params;
+    const { tenant_role_id, corporate_client_id } = req.body;
+
+    // Validate required fields
+    if (!tenant_role_id || !corporate_client_id) {
+      return res.status(400).json({ 
+        message: "tenant_role_id and corporate_client_id are required" 
+      });
+    }
+
+    // Fetch user to check access
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('user_id, role, corporate_client_id')
+      .eq('user_id', userId)
+      .single();
+
+    if (userError || !user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check access: super admin or same corporate client
+    if (req.user.role !== 'super_admin') {
+      if (req.user.corporateClientId !== corporate_client_id) {
+        return res.status(403).json({ 
+          message: "Access denied: Cannot assign roles for other corporate clients" 
+        });
+      }
+      if (user.corporate_client_id !== corporate_client_id) {
+        return res.status(403).json({ 
+          message: "Access denied: User does not belong to this corporate client" 
+        });
+      }
+    }
+
+    // Verify tenant role exists and belongs to the corporate client
+    const { data: tenantRole, error: roleError } = await supabase
+      .from('tenant_roles')
+      .select('id, name, corporate_client_id, is_active')
+      .eq('id', tenant_role_id)
+      .eq('corporate_client_id', corporate_client_id)
+      .eq('is_active', true)
+      .single();
+
+    if (roleError || !tenantRole) {
+      return res.status(404).json({ 
+        message: "Tenant role not found or inactive" 
+      });
+    }
+
+    // Update user with tenant role
+    const { data: updatedUser, error: updateError } = await supabase
+      .from('users')
+      .update({
+        tenant_role_id: tenant_role_id,
+        active_tenant_id: corporate_client_id,
+      })
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error assigning tenant role:', updateError);
+      return res.status(500).json({ 
+        message: "Failed to assign tenant role",
+        error: updateError.message 
+      });
+    }
+
+    res.json({
+      message: "Tenant role assigned successfully",
+      user: updatedUser,
+      tenantRole: {
+        id: tenantRole.id,
+        name: tenantRole.name,
+      }
+    });
+  } catch (error: any) {
+    console.error("Error assigning tenant role:", error);
+    res.status(500).json({ 
+      message: "Internal server error",
+      error: error.message 
+    });
+  }
+});
+
+/**
+ * DELETE /api/users/:userId/assign-role
+ * Remove tenant role assignment from a user (revert to system role)
+ * Access: super_admin, corporate_admin (for their corporate client)
+ */
+router.delete("/:userId/assign-role", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin']), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const { userId } = req.params;
+
+    // Fetch user to check access
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('user_id, role, corporate_client_id, tenant_role_id, active_tenant_id')
+      .eq('user_id', userId)
+      .single();
+
+    if (userError || !user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check access: super admin or same corporate client
+    if (req.user.role !== 'super_admin') {
+      if (user.active_tenant_id && req.user.corporateClientId !== user.active_tenant_id) {
+        return res.status(403).json({ 
+          message: "Access denied: Cannot modify roles for users in other corporate clients" 
+        });
+      }
+    }
+
+    // Remove tenant role assignment
+    const { data: updatedUser, error: updateError } = await supabase
+      .from('users')
+      .update({
+        tenant_role_id: null,
+        active_tenant_id: null,
+      })
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error removing tenant role:', updateError);
+      return res.status(500).json({ 
+        message: "Failed to remove tenant role",
+        error: updateError.message 
+      });
+    }
+
+    res.json({
+      message: "Tenant role removed successfully",
+      user: updatedUser,
+    });
+  } catch (error: any) {
+    console.error("Error removing tenant role:", error);
+    res.status(500).json({ 
+      message: "Internal server error",
+      error: error.message 
+    });
+  }
+});
+
 export default router;
 
