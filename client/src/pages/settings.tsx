@@ -40,6 +40,7 @@ import UsersManagement from "../components/settings/UsersManagement";
 import TenantRolesManagement from "../components/settings/TenantRolesManagement";
 import ProgramCreationForm from "../components/settings/ProgramCreationForm";
 import { ThemeSelector } from "../components/ThemeSelector";
+import { ThemePicker } from "../components/design-system/ThemePicker";
 
 interface CorporateClientSettings {
   id: string;
@@ -650,7 +651,7 @@ export default function Settings() {
 
         <TabsContent value="notifications" className="space-y-6">
           {/* Theme Selection - Available to all users */}
-          <ThemeSelector />
+          <ThemePicker maxThemes={4} />
           
           <Card>
             <CardHeader>

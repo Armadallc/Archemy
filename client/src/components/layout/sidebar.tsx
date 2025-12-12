@@ -522,9 +522,9 @@ export default function Sidebar({
   };
 
   return (
-    <div className={`transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} flex flex-col overflow-hidden rounded-lg`} style={{ color: 'var(--gray-12)', backgroundColor: 'var(--gray-1)', paddingBottom: '24px', borderTop: '1px solid #a5c8ca', borderRight: '1px solid #a5c8ca', borderBottom: '1px solid #a5c8ca', height: 'calc(100vh - 48px)' }}>
+    <div className={`transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} flex flex-col overflow-hidden rounded-lg`} style={{ color: 'var(--gray-12)', backgroundColor: 'var(--gray-1)', paddingBottom: '24px', borderTop: '1px solid var(--border)', borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', height: 'calc(100vh - 48px)' }}>
       {/* Header */}
-      <div className="px-4 pt-6 pb-4 border-b flex-shrink-0 flex items-center justify-center relative" style={{ borderColor: 'var(--gray-7)', backgroundColor: 'var(--gray-1)', height: '150px' }}>
+      <div className="px-4 pt-6 pb-4 border-b flex-shrink-0 flex items-center justify-center relative" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--gray-1)', height: '150px' }}>
         {shouldShowLogo() && (
           <img 
             src={getDisplayLogo()!} 
@@ -721,7 +721,7 @@ export default function Sidebar({
       </nav>
 
       {/* User Menu */}
-      <div className="p-4 border-t relative user-menu-container flex-shrink-0" style={{ borderColor: 'var(--gray-7)', backgroundColor: 'var(--gray-1)', height: '69px' }}>
+      <div className="p-4 border-t relative user-menu-container flex-shrink-0" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--gray-1)', height: '69px' }}>
         {!isCollapsed && user && (
           <div className="flex items-center space-x-3">
             <button
@@ -787,7 +787,7 @@ export default function Sidebar({
         
         {/* Slide-up User Menu */}
         {isUserMenuOpen && (
-          <div className="absolute bottom-full mb-2 rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--gray-7)', borderWidth: '1px', borderStyle: 'solid', width: '223.45px' }}>
+          <div className="absolute bottom-full mb-2 rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', borderWidth: '1px', borderStyle: 'solid', width: '223.45px' }}>
             <div className="py-2">
               {/* User Settings */}
               <button
@@ -819,7 +819,7 @@ export default function Sidebar({
               )}
               
               {/* Divider */}
-              <div className="border-t my-1" style={{ borderColor: 'var(--gray-7)' }}></div>
+              <div className="border-t my-1" style={{ borderColor: 'var(--border)' }}></div>
               
               {/* Logout */}
               <button

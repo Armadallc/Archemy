@@ -11,7 +11,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { designTokens } from '../design-system/tokens';
 import { Button } from '../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -22,8 +22,11 @@ import { Separator } from '../components/ui/separator';
 import { useTheme } from '../components/theme-provider';
 import { ThemeController } from '../components/design-system/ThemeController';
 import { FireThemePanel } from '../components/fire-theme-panel';
+import { IntegratedThemeEditor } from '../components/design-system/IntegratedThemeEditor';
+import { ThemePicker } from '../components/design-system/ThemePicker';
 import { useThemePreferences } from '../hooks/useThemePreferences';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '../lib/queryClient';
 import { Alert, AlertDescription } from '../components/ui/alert';
@@ -1498,6 +1501,7 @@ export default function DesignSystem() {
   const [activePanel, setActivePanel] = useState('tokens');
   const { theme } = useTheme();
   const { user, isAuthenticated } = useAuth();
+  const { toast } = useToast();
   const queryClient = useQueryClient();
   
   // Super admin check
@@ -1641,102 +1645,232 @@ export default function DesignSystem() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-8">
-          {/* Themes Management */}
-          <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+          {/* Theme Picker - For selecting themes to apply to live app */}
+          {user?.role === 'super_admin' && (
+            <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <CardHeader>
+                <CardTitle>Apply Theme to Live App</CardTitle>
+                <CardDescription>
+                  Select a theme to apply it to the live application. This will change the theme for all users.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ThemePicker maxThemes={4} />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Integrated Theme Editor - Combines Management, Preview, and Editor */}
+          <IntegratedThemeEditor />
+
+          {/* Legacy Theme Management - Keep for now but will be replaced */}
+          <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl hidden">
             <CardHeader>
-              <CardTitle>Theme Management</CardTitle>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Theme Management</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Each theme includes both light and dark mode configurations
+                  </p>
+                </div>
+                <Badge variant="outline">
+                  {themes.filter((t: any) => t.is_active).length} / 4 Active
+                </Badge>
+              </div>
             </CardHeader>
             <CardContent className="p-6">
               {themesLoading ? (
                 <div>Loading themes...</div>
               ) : (
                 <div className="space-y-4">
-                  <div className="text-sm text-muted-foreground mb-4">
-                    Active Themes: {themes.filter((t: any) => t.is_active).length} / 4
-                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {themes.map((theme: any) => (
-                      <Card key={theme.id} className={theme.is_active ? '' : 'opacity-50'}>
+                    {themes.map((savedTheme: any) => (
+                      <Card key={savedTheme.id} className={savedTheme.is_active ? '' : 'opacity-50'}>
                         <CardHeader>
                           <div className="flex items-center justify-between">
-                            <CardTitle className="text-lg">{theme.name}</CardTitle>
-                            <Badge variant={theme.is_active ? 'default' : 'secondary'}>
-                              {theme.is_active ? 'Active' : 'Inactive'}
+                            <CardTitle className="text-lg">{savedTheme.name}</CardTitle>
+                            <Badge variant={savedTheme.is_active ? 'default' : 'secondary'}>
+                              {savedTheme.is_active ? 'Active' : 'Inactive'}
                             </Badge>
                           </div>
-                          {theme.description && (
-                            <p className="text-sm text-muted-foreground">{theme.description}</p>
+                          {savedTheme.description && (
+                            <p className="text-sm text-muted-foreground">{savedTheme.description}</p>
                           )}
+                          <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <span>☀️</span>
+                              <span>Light Mode</span>
+                              {savedTheme.light_mode_tokens ? (
+                                <Badge variant="outline" className="ml-1 text-green-600 text-xs">
+                                  ✓
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="ml-1 text-muted-foreground text-xs">
+                                  ✗
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span>🌙</span>
+                              <span>Dark Mode</span>
+                              {savedTheme.dark_mode_tokens ? (
+                                <Badge variant="outline" className="ml-1 text-green-600 text-xs">
+                                  ✓
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="ml-1 text-muted-foreground text-xs">
+                                  ✗
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
                         </CardHeader>
                         <CardContent>
-                          <div className="flex space-x-2">
+                          <div className="flex flex-wrap gap-2">
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => {
-                                // Load theme tokens into editor
-                                const modeTokens = theme === 'light' ? theme.light_mode_tokens : theme.dark_mode_tokens;
-                                setTokens(modeTokens);
+                                // Load light mode tokens
+                                if (savedTheme.light_mode_tokens) {
+                                  setTokens(savedTheme.light_mode_tokens);
+                                  toast({
+                                    title: 'Theme Loaded',
+                                    description: 'Light mode tokens loaded. Switch to dark mode tab to load dark tokens.',
+                                  });
+                                } else {
+                                  toast({
+                                    title: 'No Light Mode',
+                                    description: 'This theme does not have light mode tokens configured.',
+                                    variant: 'destructive',
+                                  });
+                                }
                               }}
                             >
-                              Load
+                              Load Light
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                // Load dark mode tokens
+                                if (savedTheme.dark_mode_tokens) {
+                                  setTokens(savedTheme.dark_mode_tokens);
+                                  toast({
+                                    title: 'Theme Loaded',
+                                    description: 'Dark mode tokens loaded. Switch to light mode tab to load light tokens.',
+                                  });
+                                } else {
+                                  toast({
+                                    title: 'No Dark Mode',
+                                    description: 'This theme does not have dark mode tokens configured.',
+                                    variant: 'destructive',
+                                  });
+                                }
+                              }}
+                            >
+                              Load Dark
                             </Button>
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={async () => {
-                                const update = await saveThemeMutation.mutateAsync({
-                                  themeId: theme.id,
-                                  name: theme.name,
-                                  description: theme.description,
-                                  isNew: false,
-                                });
+                                // Update only the current mode, preserving the other mode
+                                const currentMode = theme; // 'light' or 'dark'
+                                const currentTokens = tokens;
+                                
+                                // Preserve the other mode's tokens
+                                const lightTokens = currentMode === 'light' 
+                                  ? currentTokens 
+                                  : savedTheme.light_mode_tokens;
+                                const darkTokens = currentMode === 'dark' 
+                                  ? currentTokens 
+                                  : savedTheme.dark_mode_tokens;
+                                
+                                try {
+                                  const response = await apiRequest('PUT', `/api/themes/${savedTheme.id}`, {
+                                    name: savedTheme.name,
+                                    description: savedTheme.description,
+                                    light_mode_tokens: lightTokens,
+                                    dark_mode_tokens: darkTokens,
+                                  });
+                                  
+                                  queryClient.invalidateQueries({ queryKey: ['/api/themes'] });
+                                  toast({
+                                    title: 'Success',
+                                    description: `${currentMode === 'light' ? 'Light' : 'Dark'} mode updated successfully`,
+                                  });
+                                } catch (error: any) {
+                                  toast({
+                                    title: 'Error',
+                                    description: `Failed to update theme: ${error.message}`,
+                                    variant: 'destructive',
+                                  });
+                                }
                               }}
                             >
-                              Update
+                              Update Current Mode
                             </Button>
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={async () => {
-                                if (confirm(`Deactivate "${theme.name}"?`)) {
+                                if (confirm(`Deactivate "${savedTheme.name}"?`)) {
                                   try {
-                                    await apiRequest('PUT', `/api/themes/${theme.id}`, {
-                                      is_active: !theme.is_active,
+                                    await apiRequest('PUT', `/api/themes/${savedTheme.id}`, {
+                                      is_active: !savedTheme.is_active,
                                     });
                                     queryClient.invalidateQueries({ queryKey: ['/api/themes'] });
+                                    toast({
+                                      title: 'Success',
+                                      description: `Theme ${savedTheme.is_active ? 'deactivated' : 'activated'}`,
+                                    });
                                   } catch (error: any) {
-                                    alert(`Failed to update theme: ${error.message}`);
+                                    toast({
+                                      title: 'Error',
+                                      description: `Failed to update theme: ${error.message}`,
+                                      variant: 'destructive',
+                                    });
                                   }
                                 }
                               }}
                             >
-                              {theme.is_active ? 'Deactivate' : 'Activate'}
+                              {savedTheme.is_active ? 'Deactivate' : 'Activate'}
                             </Button>
                           </div>
                         </CardContent>
                       </Card>
                     ))}
                   </div>
+                  
+                  {themes.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>No themes created yet.</p>
+                      <p className="text-sm mt-2">Use the theme editor below to create your first theme with both light and dark modes.</p>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Fire Theme Panel - Persistent Theme Controller */}
-          <FireThemePanel />
+          {/* Legacy components - Hidden, now integrated in IntegratedThemeEditor */}
+          <div className="hidden">
+            {/* Live Preview - Moved to top for better workflow */}
+            <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <CardContent className="p-6">
+                <LivePreview tokens={tokens} />
+              </CardContent>
+            </Card>
+
+            {/* Fire Theme Panel - Persistent Theme Controller */}
+            <FireThemePanel />
+          </div>
 
           {/* Design Tokens */}
           <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
             <CardContent className="p-6">
               <TokenEditor tokens={tokens} onUpdate={updateTokens} />
-            </CardContent>
-          </Card>
-
-          {/* Live Preview */}
-          <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
-            <CardContent className="p-6">
-              <LivePreview tokens={tokens} />
             </CardContent>
           </Card>
 

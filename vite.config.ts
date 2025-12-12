@@ -38,6 +38,10 @@ export default defineConfig({
     ],
     exclude: [],
     force: true, // Force re-optimization on every start
+    esbuildOptions: {
+      // Ensure React is properly resolved
+      jsx: 'automatic',
+    },
   },
   resolve: {
     alias: {

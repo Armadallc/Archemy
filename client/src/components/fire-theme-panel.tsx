@@ -281,23 +281,7 @@ export function FireThemePanel() {
         </div>
       </div>
 
-      {/* Presets */}
-      <div>
-        <div className="text-sm font-medium text-muted-foreground mb-2">
-          Presets
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {presetNames.map((name) => (
-            <button
-              key={name}
-              onClick={() => loadPreset(name)}
-              className="px-3 py-1.5 text-sm rounded-md bg-muted hover:bg-muted/80 transition-colors"
-            >
-              {name}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Presets removed - now available in Theme Management panel */}
 
       {/* Mode Toggle */}
       <div className="flex gap-2">

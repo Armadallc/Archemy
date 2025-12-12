@@ -21,12 +21,15 @@ const RoleTemplatesPage = lazy(() => import("../../pages/role-templates"));
 const CalendarPage = lazy(() => import("../../pages/calendar"));
 const CalendarExperiment = lazy(() => import("../../pages/calendar-experiment"));
 const ShadcnDashboard = lazy(() => import("../../pages/shadcn-dashboard"));
-const ShadcnDashboardMigrated = lazy(() => import("../../pages/shadcn-dashboard-migrated"));
+// Temporarily remove lazy loading to fix React hook error
+import ShadcnDashboardMigratedComponent from "../../pages/shadcn-dashboard-migrated";
+const ShadcnDashboardMigrated = ShadcnDashboardMigratedComponent;
 const SimpleBookingForm = lazy(() => import("../../components/booking/simple-booking-form").then(m => ({ default: m.SimpleBookingForm })));
 const EditTrip = lazy(() => import("../../pages/edit-trip"));
 const NotFound = lazy(() => import("../../pages/not-found"));
 // Design System Pages (lazy loaded - rarely used)
-const DesignSystem = lazy(() => import("../../pages/design-system"));
+// Temporarily remove lazy loading to fix React hook error
+import DesignSystem from "../../pages/design-system";
 // DesignSystemDemo removed - consolidated into DesignSystem page
 const ScratchPage = lazy(() => import("../../pages/scratch"));
 const TypographyTest = lazy(() => import("../../pages/typography-test"));
