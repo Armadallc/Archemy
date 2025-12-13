@@ -8,6 +8,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { useTheme } from '../components/theme-provider';
+import { queryClient } from '../lib/queryClient';
 
 interface ThemeTokens {
   [key: string]: any;
@@ -170,13 +171,25 @@ export function useThemePreferences() {
   }, [isAuthenticated, user]);
 
   // Apply theme preferences based on current theme mode
+  // NOTE: This is legacy - useSelectedTheme should take precedence
+  // Only apply if useSelectedTheme hasn't already applied a theme
   useEffect(() => {
     if (!preferences || isLoading) return;
+
+    // Check if useSelectedTheme has a selection by checking React Query cache
+    // This prevents conflicts between the two theme systems
+    const selectedThemeData = queryClient.getQueryData(['/api/themes/user/selection']);
+    
+    if (selectedThemeData && selectedThemeData.theme) {
+      console.log('⏭️ Skipping legacy theme preferences - useSelectedTheme is active');
+      return;
+    }
 
     const isDark = theme === 'dark';
     const tokens = isDark ? preferences.dark_mode_tokens : preferences.light_mode_tokens;
 
     if (tokens) {
+      console.log('🎨 Applying legacy theme preferences');
       applyThemeTokens(tokens, isDark);
     }
   }, [preferences, theme, isLoading]);

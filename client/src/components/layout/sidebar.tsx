@@ -203,14 +203,61 @@ export default function Sidebar({
 
   // Enhanced toggle theme that saves to database
   const toggleTheme = () => {
-    const newMode = isDarkMode ? 'light' : 'dark';
-    
-    // Toggle theme locally first
-    originalToggleTheme();
-    
-    // Save to database if user is authenticated
-    if (user) {
-      saveThemeModeMutation.mutate(newMode);
+    try {
+      const newMode = isDarkMode ? 'light' : 'dark';
+      const root = document.documentElement;
+      
+      // Toggle theme locally first
+      originalToggleTheme();
+      
+      // Immediately toggle dark class (works in Cursor browser)
+      if (newMode === 'dark') {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+      
+      // Force FireThemeProvider to re-apply by dispatching a custom event
+      // This ensures the theme is applied even if MutationObserver doesn't fire
+      const event = new CustomEvent('theme-toggle', { 
+        detail: { mode: newMode } 
+      });
+      window.dispatchEvent(event);
+      
+      // Also trigger a manual re-application after a short delay
+      // This is a fallback in case the MutationObserver doesn't catch it
+      setTimeout(() => {
+        // Check if class was actually applied
+        const hasDarkClass = root.classList.contains('dark');
+        const shouldHaveDark = newMode === 'dark';
+        
+        if (hasDarkClass !== shouldHaveDark) {
+          // Class wasn't applied correctly, fix it
+          if (shouldHaveDark) {
+            root.classList.add('dark');
+          } else {
+            root.classList.remove('dark');
+          }
+        }
+        
+        // Force a re-render by triggering a resize event
+        // This sometimes helps with browser rendering issues
+        window.dispatchEvent(new Event('resize'));
+      }, 10);
+      
+      // Save to database if user is authenticated
+      if (user) {
+        saveThemeModeMutation.mutate(newMode);
+      }
+    } catch (error) {
+      console.error('Error toggling theme:', error);
+      // Fallback: manually toggle dark class
+      const root = document.documentElement;
+      if (root.classList.contains('dark')) {
+        root.classList.remove('dark');
+      } else {
+        root.classList.add('dark');
+      }
     }
   };
   
@@ -522,7 +569,7 @@ export default function Sidebar({
   };
 
   return (
-    <div className={`transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} flex flex-col overflow-hidden rounded-lg`} style={{ color: 'var(--gray-12)', backgroundColor: 'var(--gray-1)', paddingBottom: '24px', borderTop: '1px solid var(--border)', borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', height: 'calc(100vh - 48px)' }}>
+    <div className={`transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} flex flex-col overflow-hidden rounded-lg`} style={{ color: 'var(--color-aqua)', backgroundColor: 'var(--gray-1)', paddingBottom: '24px', borderTop: '1px solid var(--border)', borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', height: 'calc(100vh - 48px)' }}>
       {/* Header */}
       <div className="px-4 pt-6 pb-4 border-b flex-shrink-0 flex items-center justify-center relative" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--gray-1)', height: '150px' }}>
         {shouldShowLogo() && (
@@ -530,7 +577,7 @@ export default function Sidebar({
             src={getDisplayLogo()!} 
             alt={getMainLogoUrl() ? "Main Application Logo" : "Corporate Client Logo"} 
             className="object-cover"
-            style={{ width: '109px', height: '109px', minWidth: '109px', minHeight: '109px', maxWidth: '109px', maxHeight: '109px', display: 'block' }}
+            style={{ width: '120px', height: '120px', minWidth: '120px', minHeight: '120px', maxWidth: '120px', maxHeight: '120px', display: 'block' }}
             onError={(e) => {
               e.currentTarget.style.display = 'none';
             }}

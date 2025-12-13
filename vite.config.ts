@@ -70,17 +70,18 @@ export default defineConfig({
         manualChunks: (id) => {
           // Vendor chunks - separate large dependencies
           if (id.includes('node_modules')) {
-            // DO NOT chunk React - let Vite handle it automatically to prevent multiple instances
-            // React and React DOM should stay in main bundle or be handled by Vite's default chunking
+            // CRITICAL: Force React into a single chunk to prevent multiple instances
+            // This is especially important for Cursor's browser which seems to load multiple React versions
             if (id.includes('/react/') || 
                 id.includes('/react-dom/') || 
                 id.includes('/react/jsx-runtime') || 
                 id.includes('/react-is/') || 
                 id.includes('/scheduler/') ||
+                id.includes('next-themes') || // Include next-themes to ensure it uses the same React instance
                 id === 'react' ||
                 id === 'react-dom') {
-              // Return undefined to let Vite handle React chunking automatically
-              return undefined;
+              // Force all React-related code into a single 'react-vendor' chunk
+              return 'react-vendor';
             }
             // React Query
             if (id.includes('@tanstack/react-query')) {
@@ -123,6 +124,12 @@ export default defineConfig({
       deny: ["**/.*"],
     },
     middlewareMode: false,
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost',
+      port: 5173,
+      clientPort: 5173,
+    },
     headers: {
       'Cache-Control': 'public, max-age=31536000',
     },

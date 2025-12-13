@@ -12,13 +12,17 @@ const Clients = lazy(() => import("../../pages/clients"));
 const Drivers = lazy(() => import("../../pages/drivers"));
 const Vehicles = lazy(() => import("../../pages/vehicles"));
 const BillingPage = lazy(() => import("../../pages/billing"));
-const HierarchicalTripsPage = lazy(() => import("../HierarchicalTripsPage"));
+// Temporarily remove lazy loading to fix React hook error with useLocation
+import HierarchicalTripsPageComponent from "../HierarchicalTripsPage";
+const HierarchicalTripsPage = HierarchicalTripsPageComponent;
 const Schedule = lazy(() => import("../../pages/schedule"));
 const FrequentLocations = lazy(() => import("../../pages/frequent-locations"));
 const Users = lazy(() => import("../../pages/users"));
 const Settings = lazy(() => import("../../pages/settings"));
 const RoleTemplatesPage = lazy(() => import("../../pages/role-templates"));
-const CalendarPage = lazy(() => import("../../pages/calendar"));
+// Temporarily remove lazy loading to fix React hook error with usePageAccess
+import CalendarPageComponent from "../../pages/calendar";
+const CalendarPage = CalendarPageComponent;
 const CalendarExperiment = lazy(() => import("../../pages/calendar-experiment"));
 const ShadcnDashboard = lazy(() => import("../../pages/shadcn-dashboard"));
 // Temporarily remove lazy loading to fix React hook error
@@ -113,9 +117,9 @@ export default function MainLayout({
   const kioskMode = propKioskMode ?? internalKioskMode;
   const setKioskMode = propSetKioskMode ?? setInternalKioskMode;
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background" style={{ backgroundColor: 'rgba(255, 255, 255, 0)', background: 'unset' }}>
         {/* Desktop Sidebar - hidden on mobile */}
-        <div className="hidden md:block" style={{ marginTop: '24px', marginBottom: '24px' }}>
+        <div className="hidden md:block" style={{ marginTop: '24px', marginBottom: '24px', backgroundColor: 'var(--card)' }}>
           <Sidebar 
             currentProgram={currentProgramId}
             setCurrentProgram={setCurrentProgram}

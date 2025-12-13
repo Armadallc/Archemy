@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { Palette, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 
 interface Theme {
@@ -128,7 +128,6 @@ export function ThemeSelector() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Palette className="w-5 h-5" />
           Theme Selection
         </CardTitle>
         <CardDescription>
@@ -179,6 +178,10 @@ export function ThemeSelector() {
     </Card>
   );
 }
+
+
+
+
 
 
 

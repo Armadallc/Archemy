@@ -978,7 +978,7 @@ export default function CalendarPage() {
       )}
 
       {/* Quick Stats - Fixed at bottom, aligned with sidebar */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-shrink-0" style={{ marginTop: 'auto', height: '93px', paddingTop: '24px' }}>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-shrink-0" style={{ marginTop: 'auto', height: '93px', paddingTop: '24px', paddingBottom: '24px', marginBottom: '24px' }}>
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">

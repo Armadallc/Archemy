@@ -373,6 +373,7 @@ export default function EnhancedNotificationCenter({ className }: EnhancedNotifi
         size="sm"
         onClick={() => setIsOpen(!isOpen)}
         className="relative"
+        style={{ backgroundColor: 'var(--muted)' }}
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (

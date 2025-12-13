@@ -1630,14 +1630,15 @@ export default function DesignSystem() {
               <Settings className="w-4 h-4 mr-2" />
               Settings
             </Button>
-            <Button 
+            {/* Save Theme button removed - now handled by IntegratedThemeEditor */}
+            {/* <Button 
               onClick={handleSaveTheme}
               disabled={saveThemeMutation.isPending || !isAuthenticated}
               className="bg-[#ff8475] hover:bg-[#ff444c] text-white shadow-lg hover:shadow-xl transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="w-4 h-4 mr-2" />
               {saveThemeMutation.isPending ? 'Saving...' : 'Save Theme'}
-            </Button>
+            </Button> */}
           </div>
         </div>
       </div>
@@ -1663,7 +1664,7 @@ export default function DesignSystem() {
           {/* Integrated Theme Editor - Combines Management, Preview, and Editor */}
           <IntegratedThemeEditor />
 
-          {/* Legacy Theme Management - Keep for now but will be replaced */}
+          {/* Legacy Theme Management - HIDDEN - Replaced by IntegratedThemeEditor */}
           <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl hidden">
             <CardHeader>
               <div className="flex items-center justify-between">

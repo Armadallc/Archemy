@@ -20,23 +20,23 @@ export default function QuickStatsWidget({ className, trips = [], shadow }: Quic
       shadow={shadow}
     >
       <div className="grid grid-cols-3 gap-4">
-        <div className="text-center">
-          <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+        <div className="text-center shadow-xl flex flex-col justify-center items-center" style={{ height: '75px' }}>
+          <div className="text-2xl font-bold text-foreground">
             {completedCount}
           </div>
-          <div className="text-xs text-muted-foreground">Completed</div>
+          <div className="text-xs text-foreground-secondary flex flex-col justify-center items-center">Completed</div>
         </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+        <div className="text-center shadow-xl flex flex-col justify-center items-center" style={{ height: '75px' }}>
+          <div className="text-2xl font-bold text-foreground">
             {inProgressCount}
           </div>
-          <div className="text-xs text-muted-foreground">In Progress</div>
+          <div className="text-xs text-foreground-secondary flex flex-col justify-center items-center">In Progress</div>
         </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold" style={{ color: 'var(--blue-9)' }}>
+        <div className="text-center shadow-xl flex flex-col justify-center items-center" style={{ height: '75px' }}>
+          <div className="text-2xl font-bold text-foreground">
             {scheduledCount}
           </div>
-          <div className="text-xs text-muted-foreground">Scheduled</div>
+          <div className="text-xs text-foreground-secondary flex flex-col justify-center items-center">Scheduled</div>
         </div>
       </div>
     </Widget>

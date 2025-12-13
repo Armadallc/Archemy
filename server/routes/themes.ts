@@ -81,6 +81,16 @@ router.post("/", requireSupabaseAuth, requireSupabaseRole(['super_admin']), asyn
 
     const { name, description, light_mode_tokens, dark_mode_tokens, is_active } = req.body;
 
+    console.log("📝 Creating theme:", {
+      name,
+      hasLightTokens: !!light_mode_tokens,
+      hasDarkTokens: !!dark_mode_tokens,
+      lightTokensType: typeof light_mode_tokens,
+      darkTokensType: typeof dark_mode_tokens,
+      is_active,
+      userId: req.user.userId,
+    });
+
     if (!name || !light_mode_tokens || !dark_mode_tokens) {
       return res.status(400).json({ 
         message: "Missing required fields: name, light_mode_tokens, dark_mode_tokens" 
@@ -98,10 +108,19 @@ router.post("/", requireSupabaseAuth, requireSupabaseRole(['super_admin']), asyn
 
     res.status(201).json(theme);
   } catch (error: any) {
-    console.error("Error creating theme:", error);
+    console.error("❌ Error creating theme:", error);
+    console.error("❌ Error details:", {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      stack: error.stack,
+    });
     res.status(500).json({ 
       message: error.message || "Failed to create theme",
-      error: error.message 
+      error: error.message,
+      code: error.code,
+      details: error.details,
     });
   }
 });
@@ -274,6 +293,10 @@ router.put("/user/mode", requireSupabaseAuth, async (req: SupabaseAuthenticatedR
 });
 
 export default router;
+
+
+
+
 
 
 

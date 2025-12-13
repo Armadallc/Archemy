@@ -9,7 +9,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Badge } from '../ui/badge';
-import { Check, Palette, Loader2 } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
 import { useToast } from '../../hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '../../lib/queryClient';
@@ -179,7 +179,6 @@ export function ThemePicker({ compact = false, maxThemes = 4 }: ThemePickerProps
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Palette className="w-5 h-5" />
           Theme Selection
         </CardTitle>
         <CardDescription>
@@ -233,4 +232,9 @@ export function ThemePicker({ compact = false, maxThemes = 4 }: ThemePickerProps
     </Card>
   );
 }
+
+
+
+
+
 

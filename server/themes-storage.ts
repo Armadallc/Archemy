@@ -85,22 +85,34 @@ export const themesStorage = {
    * Enforces maximum of 4 active themes
    */
   async createTheme(theme: Omit<Theme, 'id' | 'created_at' | 'updated_at'>): Promise<Theme> {
-    // Check current active theme count
-    const { count, error: countError } = await supabase
-      .from('themes')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_active', true);
+    // Check current active theme count (only if creating an active theme)
+    if (theme.is_active !== false) {
+      const { count, error: countError } = await supabase
+        .from('themes')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', true);
 
-    if (countError) {
-      throw countError;
-    }
+      if (countError) {
+        console.error('❌ Error checking active theme count:', countError);
+        throw countError;
+      }
 
-    if (count && count >= 4) {
-      throw new Error('Maximum of 4 active themes allowed. Please deactivate an existing theme first.');
+      if (count && count >= 4) {
+        throw new Error('Maximum of 4 active themes allowed. Please deactivate an existing theme first.');
+      }
     }
 
     // Generate ID
     const id = `theme_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    console.log('💾 Inserting theme into database:', {
+      id,
+      name: theme.name,
+      is_active: theme.is_active,
+      hasLightTokens: !!theme.light_mode_tokens,
+      hasDarkTokens: !!theme.dark_mode_tokens,
+      lightTokensKeys: theme.light_mode_tokens ? Object.keys(theme.light_mode_tokens) : [],
+    });
 
     const { data, error } = await supabase
       .from('themes')
@@ -112,9 +124,16 @@ export const themesStorage = {
       .single();
 
     if (error) {
+      console.error('❌ Supabase insert error:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      });
       throw error;
     }
 
+    console.log('✅ Theme created successfully:', data.id);
     return data;
   },
 
@@ -262,6 +281,10 @@ export const userThemeSelectionsStorage = {
     return data;
   },
 };
+
+
+
+
 
 
 

@@ -82,8 +82,8 @@ export default function PerformanceMetricsWidget({ className, trips, drivers }: 
               </div>
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div 
-                  className={`h-2 rounded-full ${getProgressColor(value, target)}`}
-                  style={{ width: `${getProgressWidth(value, target)}%` }}
+                  className={`h-2 rounded-full transition-all ${getProgressColor(value, target)}`}
+                  style={{ width: `${getProgressWidth(value, target)}%`, backgroundColor: 'rgba(241, 254, 96, 1)' }}
                 />
               </div>
             </div>

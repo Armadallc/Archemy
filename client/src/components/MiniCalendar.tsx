@@ -123,7 +123,15 @@ export function MiniCalendar({ className = "" }: MiniCalendarProps) {
                         ? 'text-foreground hover:bg-accent' 
                         : 'text-muted-foreground hover:bg-accent/50'
                 }`}
-                style={isTodayDate ? {
+                style={isSelected ? {
+                  fontFamily: "'Nohemi', sans-serif",
+                  backgroundColor: "rgba(59, 254, 201, 0.05)",
+                  color: "var(--color-coral)",
+                  boxShadow: "0px 4px 60px 5px rgba(165, 200, 202, 0.5)",
+                  borderWidth: "1px",
+                  borderColor: "rgba(165, 200, 202, 1)",
+                  borderStyle: "solid",
+                } : isTodayDate ? {
                   fontFamily: "'Nohemi', sans-serif",
                   backgroundColor: "rgba(122, 255, 254, 0.1)",
                   borderColor: "#7afffe",

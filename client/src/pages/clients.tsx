@@ -1038,10 +1038,9 @@ export default function Clients() {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card className="border-0 shadow-sm" style={{ background: 'linear-gradient(to bottom right, rgba(204, 51, 171, 0.1), rgba(204, 51, 171, 0.05))' }}>
+        <Card className="border-0 shadow-sm" style={{ backgroundColor: 'var(--card)' }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Active Clients</CardTitle>
-            <Users className="h-5 w-5" style={{ color: 'var(--primary)' }} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>{activeClients}</div>
@@ -1049,10 +1048,9 @@ export default function Clients() {
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-sm" style={{ background: 'linear-gradient(to bottom right, rgba(51, 204, 173, 0.1), rgba(51, 204, 173, 0.05))' }}>
+        <Card className="border-0 shadow-sm" style={{ backgroundColor: 'var(--card)' }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Total Clients</CardTitle>
-            <User className="h-5 w-5" style={{ color: 'var(--accent)' }} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>{totalClients}</div>
@@ -1060,10 +1058,9 @@ export default function Clients() {
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-sm" style={{ background: 'linear-gradient(to bottom right, rgba(204, 51, 171, 0.15), rgba(204, 51, 171, 0.08))' }}>
+        <Card className="border-0 shadow-sm" style={{ backgroundColor: 'var(--card)', color: 'var(--card-foreground)' }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Recent Clients</CardTitle>
-            <Calendar className="h-5 w-5" style={{ color: 'var(--primary)' }} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>{recentClients}</div>
@@ -1089,7 +1086,7 @@ export default function Clients() {
                 <DialogTrigger asChild>
                   <Button 
                     className="text-white"
-                    style={{ backgroundColor: 'var(--primary)' }}
+                    style={{ backgroundColor: 'var(--primary)', color: 'var(--color-aqua)', borderWidth: '1px', borderColor: 'var(--border)' }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.backgroundColor = 'var(--primary)';
                       e.currentTarget.style.opacity = '0.9';

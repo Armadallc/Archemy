@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { queryClient } from "../lib/queryClient";
 
 // Your 8 Fire palette colors
 const PALETTE = {
@@ -37,6 +38,7 @@ interface ThemeSlots {
     buttonText: PaletteColor; // Button text color
     buttonBorder: PaletteColor; // Button border color
     buttonStyle: ButtonStyle; // solid, outline, or ghost
+    buttonHover: PaletteColor; // Button hover color
     // NEW: Border controls
     borderColor: PaletteColor; // Global border color
     borderWeight: BorderWeight; // Border thickness
@@ -100,6 +102,7 @@ const DEFAULT_THEME: ThemeSlots = {
     buttonText: "cloud", // White text on buttons
     buttonBorder: "coral", // Coral border
     buttonStyle: "solid",
+    buttonHover: "coral", // Button hover color (same as background by default)
     // Border defaults
     borderColor: "charcoal",
     borderWeight: "thin",
@@ -261,6 +264,15 @@ const FireThemeContext = createContext<FireThemeContextType | null>(null);
 
 // Apply theme to CSS variables
 function applyTheme(theme: ThemeSlots) {
+  // Check if useSelectedTheme has applied a database theme
+  // If so, skip applying FireThemeProvider's theme to avoid conflicts
+  const selectedThemeData = queryClient.getQueryData(['/api/themes/user/selection']);
+  
+  if (selectedThemeData && selectedThemeData.theme) {
+    // Database theme is active - don't override it
+    return;
+  }
+  
   const root = document.documentElement;
 
   // Light mode variables (applied to :root)
@@ -328,6 +340,7 @@ function applyTheme(theme: ThemeSlots) {
   root.style.setProperty("--button-background", PALETTE[theme.light.buttonBackground]);
   root.style.setProperty("--button-foreground", PALETTE[theme.light.buttonText]);
   root.style.setProperty("--button-border", PALETTE[theme.light.buttonBorder]);
+  root.style.setProperty("--button-hover", PALETTE[theme.light.buttonHover || theme.light.buttonBackground]);
   root.style.setProperty("--button-style", theme.light.buttonStyle);
   
   // Primary button uses button colors (not surface!)
@@ -338,6 +351,22 @@ function applyTheme(theme: ThemeSlots) {
 // Apply dark mode overrides when .dark class is present
 function applyDarkMode(theme: ThemeSlots) {
   const root = document.documentElement;
+  
+  // Check if useSelectedTheme has applied a database theme
+  // If so, skip applying FireThemeProvider's theme to avoid conflicts
+  const selectedThemeData = queryClient.getQueryData(['/api/themes/user/selection']);
+  
+  if (selectedThemeData && selectedThemeData.theme) {
+    // Database theme is active - don't override it
+    return;
+  }
+  
+  // Also check DOM for database theme indicators as fallback
+  const hasDatabaseTheme = document.getElementById('dark-mode-custom-styles');
+  if (hasDatabaseTheme && hasDatabaseTheme.textContent && hasDatabaseTheme.textContent.trim().length > 0) {
+    // Database theme is active - don't override it
+    return;
+  }
   
   if (root.classList.contains("dark")) {
     // Core semantic variables
@@ -385,6 +414,7 @@ function applyDarkMode(theme: ThemeSlots) {
     root.style.setProperty("--button-background", PALETTE[theme.dark.buttonBackground]);
     root.style.setProperty("--button-foreground", PALETTE[theme.dark.buttonText]);
     root.style.setProperty("--button-border", PALETTE[theme.dark.buttonBorder]);
+    root.style.setProperty("--button-hover", PALETTE[theme.dark.buttonHover || theme.dark.buttonBackground]);
     root.style.setProperty("--button-style", theme.dark.buttonStyle);
     
     // Primary button uses button colors (not surface!)
@@ -482,7 +512,20 @@ export function FireThemeProvider({ children }: { children: React.ReactNode }) {
       attributeFilter: ["class"],
     });
 
-    return () => observer.disconnect();
+    // Also listen for custom theme-toggle events (for Cursor browser workaround)
+    const handleThemeToggle = () => {
+      // Small delay to ensure class has been applied
+      setTimeout(() => {
+        applyDarkMode(theme);
+      }, 10);
+    };
+    
+    window.addEventListener('theme-toggle', handleThemeToggle);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('theme-toggle', handleThemeToggle);
+    };
   }, [theme]);
 
   const setSlot = (

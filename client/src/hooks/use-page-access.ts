@@ -52,7 +52,12 @@ export function usePageAccess({
   showToast = true,
   accessDeniedMessage
 }: UsePageAccessOptions) {
-  const [, setLocation] = useLocation();
+  // Always call useLocation - hooks must be called unconditionally
+  // If Router context isn't available, React will throw an error which the ErrorBoundary will catch
+  // We'll handle the error gracefully by using window.location as a fallback in the effect
+  const locationResult = useLocation();
+  const setLocation = locationResult[1];
+  
   const { hasPermission, hasAnyPermission, isLoading } = useEffectivePermissions();
   const { toast } = useToast();
 
@@ -79,7 +84,20 @@ export function usePageAccess({
           variant: "destructive"
         });
       }
-      setLocation(redirectTo);
+      
+      // Try to use wouter's setLocation, with window.location as fallback
+      try {
+        if (setLocation && typeof setLocation === 'function') {
+          setLocation(redirectTo);
+        } else {
+          throw new Error('setLocation not available');
+        }
+      } catch (error) {
+        // Fallback to native browser navigation if Router context isn't available
+        if (typeof window !== 'undefined') {
+          window.location.href = redirectTo;
+        }
+      }
     }
   }, [permission, redirectTo, showToast, accessDeniedMessage, hasPermission, hasAnyPermission, isLoading, setLocation, toast]);
 

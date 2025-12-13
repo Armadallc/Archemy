@@ -386,12 +386,11 @@ export default function InteractiveMapWidget({ className, shadow }: InteractiveM
         </Tabs>
 
         {/* Interactive Map */}
-        <div className="relative">
-          <div 
-            ref={(el) => setMapContainer(el)} 
-            className="w-full h-64 min-h-64 rounded-lg border border-border"
-          />
-          
+        <div 
+          ref={(el) => setMapContainer(el)} 
+          className="w-full h-64 min-h-64 rounded-lg border border-border relative"
+          style={{ fontFamily: '"Space Grotesk"', height: '485px' }}
+        >
           {!isMapLoaded && (
             <div className="absolute inset-0 flex items-center justify-center bg-secondary rounded-lg">
               <div className="text-center">
