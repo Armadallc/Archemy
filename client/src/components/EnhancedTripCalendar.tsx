@@ -590,26 +590,32 @@ export default function EnhancedTripCalendar() {
         ) : viewMode === 'week' ? (
           <div className="flex flex-col h-full">
             {/* Week header */}
-            <div className="grid grid-cols-8 border-b" style={{ backgroundColor: 'var(--secondary)', borderColor: 'var(--border)' }}>
-              <div className="p-2 border-r" style={{ borderColor: 'var(--border)' }}></div>
-              {days.slice(0, 7).map(day => {
-                const isDayToday = isToday(day);
-                return (
-                  <div 
-                    key={day.toISOString()} 
-                    className="p-2 text-center border-r"
-                    style={{ 
-                      borderColor: 'var(--border)',
-                      backgroundColor: isDayToday ? 'var(--primary)' : 'transparent',
-                      color: isDayToday ? 'var(--primary-foreground)' : 'var(--foreground)',
-                      opacity: isDayToday ? 0.15 : 1,
-                    }}
-                  >
-                    <div className="text-sm font-medium">{format(day, 'EEE')}</div>
-                    <div className="text-lg font-semibold">{format(day, 'd')}</div>
-                  </div>
-                );
-              })}
+            <div className="flex border-b" style={{ backgroundColor: '#343434', borderColor: 'var(--border)' }}>
+              {/* Time column header - matches time column width */}
+              <div className="w-12 sm:w-16 border-r" style={{ borderColor: 'var(--border)' }}></div>
+              {/* Days header - matches the 7-column grid below */}
+              <div className="flex-1 grid grid-cols-7 gap-px" style={{ backgroundColor: 'var(--border)' }}>
+                {days.slice(0, 7).map(day => {
+                  const isDayToday = isToday(day);
+                  return (
+                    <div 
+                      key={day.toISOString()} 
+                      className="p-2 text-center"
+                      style={isDayToday ? {
+                        backgroundColor: "#343434",
+                        color: "var(--color-coral)",
+                      } : {
+                        borderColor: 'var(--border)',
+                        backgroundColor: '#343434',
+                        color: 'var(--foreground)',
+                      }}
+                    >
+                      <div className="text-sm font-medium">{format(day, 'EEE')}</div>
+                      <div className="text-lg font-semibold">{format(day, 'd')}</div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             
             {/* Time grid */}
@@ -630,7 +636,7 @@ export default function EnhancedTripCalendar() {
               </div>
               
               {/* Days grid */}
-              <div className="flex-1 grid grid-cols-7 gap-px" style={{ backgroundColor: 'var(--border)' }}>
+              <div className="flex-1 grid grid-cols-7 gap-px" style={{ backgroundColor: 'var(--card)' }}>
                 {days.slice(0, 7).map(day => {
                   const dayTrips = getTripsForDate(day);
                   const isDayToday = isToday(day);
@@ -648,8 +654,7 @@ export default function EnhancedTripCalendar() {
                           className="h-12 border-b"
                           style={{ 
                             borderColor: 'var(--border)',
-                            backgroundColor: isDayToday ? 'var(--primary)' : 'transparent',
-                            opacity: isDayToday ? 0.05 : 1,
+                            backgroundColor: 'transparent',
                           }}
                         />
                       ))}
@@ -709,11 +714,10 @@ export default function EnhancedTripCalendar() {
                   key={day.toISOString()} 
                   className="p-2 relative flex-1"
                   style={isDayToday && isCurrentMonth ? {
-                    border: '1px solid #7afffe',
+                    border: '1px solid var(--border)',
                     backgroundColor: 'var(--card)',
-                    color: '#7afffe',
+                    color: 'var(--color-coral)',
                     minHeight: '100px',
-                    boxShadow: "0 0 10px rgba(122, 255, 254, 0.5), 0 0 20px rgba(122, 255, 254, 0.3), 0 0 30px rgba(122, 255, 254, 0.2), inset 0 0 10px rgba(122, 255, 254, 0.1)",
                   } : {
                     border: '1px solid var(--border)',
                     backgroundColor: isCurrentMonth ? 'var(--card)' : 'var(--secondary)',
@@ -724,9 +728,8 @@ export default function EnhancedTripCalendar() {
                   <div 
                     className="text-sm font-medium mb-1"
                     style={isDayToday && isCurrentMonth ? {
-                      color: '#7afffe',
+                      color: 'var(--color-coral)',
                       fontWeight: 'bold',
-                      textShadow: "0 0 8px rgba(122, 255, 254, 0.6), 0 0 12px rgba(122, 255, 254, 0.4)",
                     } : {
                       color: isCurrentMonth ? 'var(--foreground)' : 'var(--muted-foreground)',
                       fontWeight: 'normal',

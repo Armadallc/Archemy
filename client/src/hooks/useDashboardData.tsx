@@ -13,7 +13,7 @@ interface DashboardDataOptions {
 export function useDashboardData(options: DashboardDataOptions = {}) {
   const { enableRealTime = true, refreshInterval = 30000 } = options;
   const { user } = useAuth();
-  const { level, selectedCorporateClient, selectedProgram } = useHierarchy();
+  const { level, selectedCorporateClient, selectedProgram, activeScope, activeScopeId } = useHierarchy();
 
   // Get current user (using real auth only)
   const currentUser = user;
@@ -51,11 +51,15 @@ export function useDashboardData(options: DashboardDataOptions = {}) {
   });
 
   // Fetch trips data - only enable if user is authenticated
+  // Use scope-based state if available, otherwise fall back to hierarchy state
+  const effectiveScope = activeScope || (level === 'corporate' ? 'global' : level === 'client' ? 'corporate' : level === 'program' ? 'program' : 'global');
+  const effectiveScopeId = activeScopeId || (effectiveScope === 'corporate' ? selectedCorporateClient : effectiveScope === 'program' ? selectedProgram : null);
+  
   const { data: tripsData, isLoading: tripsLoading, error: tripsError } = useQuery({
-    queryKey: ['trips', userRole, currentUser?.user_id, (currentUser as any)?.corporate_client_id, selectedCorporateClient],
+    queryKey: ['trips', userRole, currentUser?.user_id, effectiveScope, effectiveScopeId],
     enabled: !!currentUser?.user_id, // Only fetch if user is authenticated
     queryFn: async () => {
-      // console.log('🔍 useDashboardData: Fetching trips for role:', userRole, 'user:', currentUser?.email); // Reduced logging
+      // console.log('🔍 useDashboardData: Fetching trips for role:', userRole, 'scope:', effectiveScope, 'scopeId:', effectiveScopeId); // Reduced logging
       if (userRole === 'driver' && currentUser?.user_id) {
         // For drivers, first find the driver record, then fetch their trips
         try {
@@ -76,7 +80,9 @@ export function useDashboardData(options: DashboardDataOptions = {}) {
         }
       } else if (userRole === 'corporate_admin') {
         // Corporate admin should filter by their corporate client ID for tenant isolation
-        const corporateClientId = (currentUser as any)?.corporate_client_id || selectedCorporateClient;
+        const corporateClientId = effectiveScope === 'corporate' && effectiveScopeId 
+          ? effectiveScopeId 
+          : (currentUser as any)?.corporate_client_id || selectedCorporateClient;
         if (corporateClientId) {
           try {
             const response = await apiRequest('GET', `/api/trips/corporate-client/${corporateClientId}`);
@@ -92,15 +98,16 @@ export function useDashboardData(options: DashboardDataOptions = {}) {
           return []; // Return empty array instead of fetching all trips
         }
       } else {
-        // For other roles (super_admin, program_admin, etc.), fetch all trips or filtered by hierarchy
-        // console.log('🔍 useDashboardData: Fetching trips for role:', userRole); // Reduced logging
+        // For other roles (super_admin, program_admin, etc.), fetch all trips or filtered by scope
+        // console.log('🔍 useDashboardData: Fetching trips for role:', userRole, 'scope:', effectiveScope); // Reduced logging
         try {
           let endpoint = '/api/trips';
-          if (level === 'program' && selectedProgram) {
-            endpoint = `/api/trips/program/${selectedProgram}`;
-          } else if (level === 'client' && selectedCorporateClient) {
-            endpoint = `/api/trips/corporate-client/${selectedCorporateClient}`;
+          if (effectiveScope === 'program' && effectiveScopeId) {
+            endpoint = `/api/trips/program/${effectiveScopeId}`;
+          } else if (effectiveScope === 'corporate' && effectiveScopeId) {
+            endpoint = `/api/trips/corporate-client/${effectiveScopeId}`;
           }
+          // If scope is 'global', use the base endpoint (all trips)
           
           const response = await apiRequest('GET', endpoint);
           const data = await response.json();
@@ -112,40 +119,45 @@ export function useDashboardData(options: DashboardDataOptions = {}) {
         }
       }
     },
+    staleTime: 120000, // 2 minutes for live data
     ...dynamicQueryConfig,
   });
 
   // Fetch drivers data - only enable if user is authenticated
   const { data: driversData, isLoading: driversLoading, error: driversError } = useQuery({
-    queryKey: ['drivers', userRole, (currentUser as any)?.corporate_client_id, selectedCorporateClient, selectedProgram],
+    queryKey: ['drivers', userRole, effectiveScope, effectiveScopeId],
     enabled: !!currentUser?.user_id, // Only fetch if user is authenticated
     queryFn: async () => {
       let endpoint = '/api/drivers';
       
       // Corporate admin should filter by their corporate client ID for tenant isolation
       if (userRole === 'corporate_admin') {
-        const corporateClientId = (currentUser as any)?.corporate_client_id || selectedCorporateClient;
+        const corporateClientId = effectiveScope === 'corporate' && effectiveScopeId
+          ? effectiveScopeId
+          : (currentUser as any)?.corporate_client_id || selectedCorporateClient;
         if (corporateClientId) {
           endpoint = `/api/drivers/corporate-client/${corporateClientId}`;
         } else {
           console.warn('⚠️ useDashboardData: Corporate admin missing corporate_client_id for drivers');
           return []; // Return empty array instead of fetching all drivers
         }
-      } else if (level === 'program' && selectedProgram) {
-        endpoint = `/api/drivers/program/${selectedProgram}`;
-      } else if (level === 'client' && selectedCorporateClient) {
-        endpoint = `/api/drivers/corporate-client/${selectedCorporateClient}`;
+      } else if (effectiveScope === 'program' && effectiveScopeId) {
+        endpoint = `/api/drivers/program/${effectiveScopeId}`;
+      } else if (effectiveScope === 'corporate' && effectiveScopeId) {
+        endpoint = `/api/drivers/corporate-client/${effectiveScopeId}`;
       }
+      // If scope is 'global', use the base endpoint (all drivers)
       
       const response = await apiRequest('GET', endpoint);
       return await response.json();
     },
+    staleTime: 120000, // 2 minutes for live data
     ...dynamicQueryConfig,
   });
 
   // Fetch clients data - only enable if user is authenticated
   const { data: clientsData, isLoading: clientsLoading, error: clientsError } = useQuery({
-    queryKey: ['clients', userRole, (currentUser as any)?.corporate_client_id, selectedCorporateClient, selectedProgram],
+    queryKey: ['clients', userRole, effectiveScope, effectiveScopeId],
     enabled: !!currentUser?.user_id, // Only fetch if user is authenticated
     queryFn: async () => {
       let endpoint = '/api/clients';
@@ -153,19 +165,24 @@ export function useDashboardData(options: DashboardDataOptions = {}) {
       // Corporate admin should filter by their corporate client ID for tenant isolation
       // Note: Clients are typically filtered by program, but we can filter by corporate client if needed
       if (userRole === 'corporate_admin') {
-        const corporateClientId = (currentUser as any)?.corporate_client_id || selectedCorporateClient;
+        const corporateClientId = effectiveScope === 'corporate' && effectiveScopeId
+          ? effectiveScopeId
+          : (currentUser as any)?.corporate_client_id || selectedCorporateClient;
         // For now, clients are filtered by program, so we'll filter client-side
         // If an endpoint exists, use it: endpoint = `/api/clients/corporate-client/${corporateClientId}`;
-      } else if (level === 'program' && selectedProgram) {
-        endpoint = `/api/clients/program/${selectedProgram}`;
+      } else if (effectiveScope === 'program' && effectiveScopeId) {
+        endpoint = `/api/clients/program/${effectiveScopeId}`;
       }
+      // If scope is 'global' or 'corporate', use the base endpoint
       
       const response = await apiRequest('GET', endpoint);
       const data = await response.json();
       
       // Filter clients by corporate client for corporate_admin if needed
       if (userRole === 'corporate_admin' && data) {
-        const corporateClientId = (currentUser as any)?.corporate_client_id || selectedCorporateClient;
+        const corporateClientId = effectiveScope === 'corporate' && effectiveScopeId
+          ? effectiveScopeId
+          : (currentUser as any)?.corporate_client_id || selectedCorporateClient;
         if (corporateClientId && Array.isArray(data)) {
           // Filter clients whose program belongs to this corporate client
           return data.filter((client: any) => {
@@ -178,28 +195,32 @@ export function useDashboardData(options: DashboardDataOptions = {}) {
       
       return data;
     },
+    staleTime: 120000, // 2 minutes for live data
     ...dynamicQueryConfig,
   });
 
   // Fetch corporate clients data (for super admin)
   const { data: corporateClientsData, isLoading: corporateClientsLoading, error: corporateClientsError } = useQuery({
-    queryKey: ['corporateClients'],
+    queryKey: ['corporateClients', 'scope-selector'],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/corporate-clients');
       return await response.json();
     },
     enabled: isSuperAdmin,
+    staleTime: 600000, // 10 minutes - static list
     ...staticQueryConfig,
   });
 
   // Fetch programs data - only enable if user is authenticated
   const { data: programsData, isLoading: programsLoading, error: programsError } = useQuery({
-    queryKey: ['programs', userRole, (currentUser as any)?.corporate_client_id, selectedCorporateClient],
+    queryKey: ['programs', userRole, effectiveScope, effectiveScopeId],
     enabled: !!currentUser?.user_id, // Only fetch if user is authenticated
     queryFn: async () => {
       // Corporate admin should filter by their corporate client ID for tenant isolation
       if (userRole === 'corporate_admin') {
-        const corporateClientId = (currentUser as any)?.corporate_client_id || selectedCorporateClient;
+        const corporateClientId = effectiveScope === 'corporate' && effectiveScopeId
+          ? effectiveScopeId
+          : (currentUser as any)?.corporate_client_id || selectedCorporateClient;
         if (corporateClientId) {
           try {
             const response = await apiRequest('GET', `/api/programs/corporate-client/${corporateClientId}`);
@@ -240,6 +261,7 @@ export function useDashboardData(options: DashboardDataOptions = {}) {
       const response = await apiRequest('GET', '/api/programs');
       return await response.json();
     },
+    staleTime: 600000, // 10 minutes - static list
     ...staticQueryConfig,
   });
 

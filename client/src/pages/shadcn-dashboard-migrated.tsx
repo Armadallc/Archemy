@@ -41,6 +41,7 @@ import InteractiveMapWidget from "../components/dashboard/InteractiveMapWidget";
 import EnhancedAnalyticsWidget from "../components/dashboard/EnhancedAnalyticsWidget";
 import TaskManagementWidget from "../components/dashboard/TaskManagementWidget";
 import ActivityFeed from "../components/activity-feed/ActivityFeed";
+import { HeaderScopeSelector } from "../components/HeaderScopeSelector";
 
 // Shadcn Header Component with Time Display
 const ShadcnHeader = ({ title, subtitle }: { title: string; subtitle?: string }) => {
@@ -107,6 +108,7 @@ const ShadcnHeader = ({ title, subtitle }: { title: string; subtitle?: string })
         </div>
       </div>
       <div className="flex items-center space-x-4">
+        <HeaderScopeSelector />
         <Button
           variant="outline"
           size="sm"
@@ -143,7 +145,7 @@ export default function ShadcnDashboardMigrated() {
   
   const { user } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { level, selectedCorporateClient, selectedProgram, getFilterParams, navigateToCorporate, navigateToClient, navigateToProgram } = useHierarchy();
+  const { level, selectedCorporateClient, selectedProgram, activeScope, activeScopeName, getFilterParams, navigateToCorporate, navigateToClient, navigateToProgram } = useHierarchy();
   
   // Get real-time dashboard data (preserving existing functionality)
   const {
@@ -179,17 +181,30 @@ export default function ShadcnDashboardMigrated() {
     return true;
   };
 
-  // Helper function to get role-based title
+  // Helper function to get role-based title (scope-aware)
   const getRoleBasedTitle = () => {
+    // Use scope-based state if available, otherwise fall back to hierarchy state
+    const scopeName = activeScopeName || (activeScope === 'corporate' ? selectedCorporateClient : activeScope === 'program' ? selectedProgram : null);
+    
     switch (realTimeUserRole) {
       case "super_admin":
+        if (activeScope === 'global') {
+          return "HALCYON GLOBAL DASHBOARD";
+        } else if (activeScope === 'corporate' && scopeName) {
+          return `HALCYON ${scopeName} DASHBOARD`;
+        } else if (activeScope === 'program' && scopeName) {
+          return `HALCYON ${scopeName} DASHBOARD`;
+        }
         return "HALCYON SUPER ADMIN DASHBOARD";
       case "corporate_admin":
-        return `HALCYON ${selectedCorporateClient || "CORPORATE"} ADMIN DASHBOARD`;
+        if (activeScope === 'program' && scopeName) {
+          return `HALCYON ${scopeName} DASHBOARD`;
+        }
+        return `HALCYON ${scopeName || selectedCorporateClient || "CORPORATE"} ADMIN DASHBOARD`;
       case "program_admin":
-        return `HALCYON ${selectedProgram || "PROGRAM"} ADMIN DASHBOARD`;
+        return `HALCYON ${scopeName || selectedProgram || "PROGRAM"} ADMIN DASHBOARD`;
       case "program_user":
-        return `HALCYON ${selectedProgram || "PROGRAM"} USER DASHBOARD`;
+        return `HALCYON ${scopeName || selectedProgram || "PROGRAM"} USER DASHBOARD`;
       case "driver":
         return "HALCYON DRIVER DASHBOARD";
       default:
@@ -346,14 +361,14 @@ export default function ShadcnDashboardMigrated() {
                 <QuickStatsWidget trips={realTimeTrips} shadow="xl" />
 
                 {/* Fleet Status Widget */}
-                <div style={{ width: '1613px' }}>
+                <div style={{ width: '761px' }}>
                   <FleetStatusWidget drivers={realTimeDrivers} trips={realTimeTrips} shadow="xl" />
                 </div>
               </div>
 
               {/* Right Side: Activity Log (50%) - Scrollable, matching left column height */}
               <div className="flex flex-col">
-                <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl flex flex-col w-full" style={{ height: '634.058px', paddingTop: '12px', paddingBottom: '24px', borderWidth: '1px', borderStyle: 'solid', borderColor: 'var(--color-aqua)' }}>
+                <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl flex flex-col w-full" style={{ height: '895px', paddingTop: '12px', paddingBottom: '24px', borderWidth: '1px', borderStyle: 'solid', borderColor: 'var(--color-aqua)', width: '761px' }}>
                   <CardContent className="p-0 flex-1 overflow-hidden flex flex-col min-h-0">
                     <ActivityFeed />
                   </CardContent>

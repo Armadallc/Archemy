@@ -30,9 +30,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Badge } from '../components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../components/ui/alert-dialog';
-import { Search, Plus, Edit, Trash2, MapPin, Building, Gavel, Stethoscope, Store, MoreHorizontal, FileText, Heart, Users, Church, RefreshCw } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, MapPin, Building, Gavel, Stethoscope, Store, MoreHorizontal, FileText, Heart, Users, Church, RefreshCw, ChevronDown } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
 import { Checkbox } from '../components/ui/checkbox';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/accordion';
 
 interface FrequentLocation {
   id: string;
@@ -954,7 +955,7 @@ export default function FrequentLocationsPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
+          <Accordion type="multiple" className="w-full">
             {/* Show all location types, even if empty */}
             {Object.keys(locationTags)
               .map(locationType => {
@@ -990,29 +991,39 @@ export default function FrequentLocationsPage() {
                   return true;
                 });
 
-                // Show all location type headers, even if empty
-
                 const tagSelectedIds = filteredTagLocations.map(l => l.id);
                 const tagSelectedCount = tagSelectedIds.filter(id => selectedLocations.has(id)).length;
                 const isTagFullySelected = tagSelectedIds.length > 0 && tagSelectedIds.every(id => selectedLocations.has(id));
                 
                 return (
-                  <div key={tag} className="border-b last:border-b-0" style={{ borderColor: 'var(--border)', borderWidth: 'var(--border-weight, 1px)', borderStyle: 'solid' }}>
-                    {/* Tag Header */}
-                    <div className="px-6 py-4 border-b" style={{ backgroundColor: 'var(--gray-1)', borderColor: 'var(--border)', borderWidth: 'var(--border-weight, 1px)', borderStyle: 'solid' }}>
-                      <div className="flex items-center gap-3">
+                  <AccordionItem key={tag} value={tag} className="border-b last:border-b-0" style={{ borderColor: 'var(--border)', borderWidth: 'var(--border-weight, 1px)', borderStyle: 'solid', marginTop: '16px', marginBottom: '16px', marginLeft: '16px', marginRight: '16px', borderRadius: '10px' }}>
+                    {/* Tag Header - Accordion Trigger */}
+                    <AccordionTrigger 
+                      className="px-6 py-4 hover:no-underline"
+                      style={{ 
+                        backgroundColor: 'var(--color-charcoal)',
+                        borderColor: 'var(--border)',
+                        borderWidth: 'var(--border-weight, 1px)',
+                        borderStyle: 'solid',
+                        borderRadius: '10px'
+                      }}
+                    >
+                      <div className="flex items-center gap-3 flex-1" style={{ justifyContent: 'flex-start', alignItems: 'flex-start' }}>
                         <div className="flex items-center gap-2">
                           <h3 className="" style={{ fontFamily: 'Nohemi', fontWeight: 500, color: 'var(--gray-12)' }}>{tagConfig?.label || tag}</h3>
                           <Badge 
                             variant="outline" 
                             className="text-xs"
-                            style={
-                              tagConfig && tagConfig.color === '' 
+                            style={{
+                              position: 'absolute',
+                              justifyContent: 'center',
+                              alignItems: 'flex-end',
+                              ...(tagConfig && tagConfig.color === '' 
                                 ? { backgroundColor: 'rgba(124, 173, 197, 0.2)', color: 'var(--blue-11)' }
                                 : tagConfig?.color 
                                   ? {} 
-                                  : { backgroundColor: 'var(--gray-2)', color: 'var(--gray-11)' }
-                            }
+                                  : { backgroundColor: 'var(--gray-2)', color: 'var(--gray-11)' })
+                            }}
                           >
                             {filteredTagLocations.length} location{filteredTagLocations.length !== 1 ? 's' : ''}
                           </Badge>
@@ -1023,124 +1034,137 @@ export default function FrequentLocationsPage() {
                           )}
                         </div>
                       </div>
-                    </div>
+                    </AccordionTrigger>
 
-                    {/* Locations in this tag */}
-                    <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
-                      {filteredTagLocations.length === 0 ? (
-                        <div className="px-6 py-8 text-center text-gray-500 text-sm">
-                          No locations in this category
-                        </div>
-                      ) : (
-                        filteredTagLocations.map((location: any) => {
-                        const isSelected = selectedLocations.has(location.id);
-                        return (
-                          <div 
-                            key={location.id} 
-                            className="px-6 py-4 transition-colors"
-                            style={isSelected ? { backgroundColor: 'rgba(124, 173, 197, 0.1)', borderLeft: '4px solid var(--blue-9)' } : {}}
-                            onMouseEnter={(e) => {
-                              if (!isSelected) {
-                                e.currentTarget.style.backgroundColor = 'var(--gray-2)';
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!isSelected) {
-                                e.currentTarget.style.backgroundColor = '';
-                              }
-                            }}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3 flex-1">
-                                <div className="flex-shrink-0">
-                                  <Checkbox 
-                                    checked={isSelected}
-                                    onCheckedChange={() => toggleLocationSelection(location.id)}
-                                    className="mr-2 h-4 w-4 rounded-full"
-                                  />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <div className="font-medium truncate" style={{ color: 'var(--gray-12)' }}>{location.name}</div>
-                                    {location.is_service_location && (
-                                      <Badge variant="outline" className="text-xs" style={{ backgroundColor: 'rgba(124, 173, 197, 0.2)', color: 'var(--blue-11)' }}>
-                                        Service Location
-                                      </Badge>
+                    {/* Locations in this tag - Accordion Content */}
+                    <AccordionContent>
+                      <div className="divide-y" style={{ borderColor: 'var(--border)', marginTop: '16px', marginLeft: '16px', marginRight: '16px', paddingTop: '10px', backgroundColor: 'var(--card)' }}>
+                        {filteredTagLocations.length === 0 ? (
+                          <div className="px-6 py-8 text-center text-gray-500 text-sm" style={{ backgroundColor: 'var(--page-background)' }}>
+                            No locations in this category
+                          </div>
+                        ) : (
+                          filteredTagLocations.map((location: any) => {
+                          const isSelected = selectedLocations.has(location.id);
+                          return (
+                            <div 
+                              key={location.id} 
+                              className="px-6 py-4 transition-colors"
+                              style={{
+                                backgroundColor: 'var(--gray-2)',
+                                marginTop: '10px',
+                                paddingTop: '24px',
+                                paddingBottom: '24px',
+                                marginLeft: '16px',
+                                marginRight: '16px',
+                                borderRadius: '10px',
+                                borderWidth: '1px',
+                                borderColor: 'var(--border)',
+                                ...(isSelected ? { borderLeft: '4px solid var(--blue-9)' } : {})
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!isSelected) {
+                                  e.currentTarget.style.backgroundColor = 'var(--gray-2)';
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!isSelected) {
+                                  e.currentTarget.style.backgroundColor = 'var(--page-background)';
+                                }
+                              }}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3 flex-1">
+                                  <div className="flex-shrink-0">
+                                    <Checkbox 
+                                      checked={isSelected}
+                                      onCheckedChange={() => toggleLocationSelection(location.id)}
+                                      className="mr-2 h-4 w-4 rounded-full"
+                                    />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <div className="font-medium truncate" style={{ color: 'var(--gray-12)' }}>{location.name}</div>
+                                      {location.is_service_location && (
+                                        <Badge variant="outline" className="text-xs" style={{ backgroundColor: 'rgba(124, 173, 197, 0.2)', color: 'var(--blue-11)' }}>
+                                          Service Location
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <div className="text-sm text-gray-500 truncate">{location.full_address}</div>
+                                    {location.description && (
+                                      <div className="text-xs text-gray-400 truncate">{location.description}</div>
                                     )}
                                   </div>
-                                  <div className="text-sm text-gray-500 truncate">{location.full_address}</div>
-                                  {location.description && (
-                                    <div className="text-xs text-gray-400 truncate">{location.description}</div>
-                                  )}
                                 </div>
-                              </div>
-                              <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-1">
-                                  <span className="text-sm font-medium" style={{ color: 'var(--gray-12)' }}>{location.usage_count}</span>
-                                  <span className="text-xs text-gray-500">uses</span>
-                                </div>
-                                <Badge 
-                                  variant={location.is_active ? "default" : "secondary"}
-                                  className="text-xs"
-                                >
-                                  {location.is_active ? 'Active' : 'Inactive'}
-                                </Badge>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => handleEdit(location)}>
-                                      <Edit className="h-4 w-4 mr-2" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleIncrementUsage(location.id)}>
-                                      <MapPin className="h-4 w-4 mr-2" />
-                                      Mark as Used
-                                    </DropdownMenuItem>
-                                    <AlertDialog>
-                                      <AlertDialogTrigger asChild>
-                                        <DropdownMenuItem 
-                                          onSelect={(e) => e.preventDefault()}
-                                          className="text-red-600"
-                                        >
-                                          <Trash2 className="h-4 w-4 mr-2" />
-                                          Delete
-                                        </DropdownMenuItem>
-                                      </AlertDialogTrigger>
-                                      <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                          <AlertDialogTitle>Delete Location</AlertDialogTitle>
-                                          <AlertDialogDescription>
-                                            Are you sure you want to delete "{location.name}"? This action cannot be undone.
-                                          </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                          <AlertDialogAction 
-                                            onClick={() => handleDelete(location.id)}
-                                            className="bg-red-600 hover:bg-red-700"
+                                <div className="flex items-center gap-4">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-sm font-medium" style={{ color: 'var(--gray-12)' }}>{location.usage_count}</span>
+                                    <span className="text-xs text-gray-500">uses</span>
+                                  </div>
+                                  <Badge 
+                                    variant={location.is_active ? "default" : "secondary"}
+                                    className="text-xs"
+                                  >
+                                    {location.is_active ? 'Active' : 'Inactive'}
+                                  </Badge>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => handleEdit(location)}>
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Edit
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => handleIncrementUsage(location.id)}>
+                                        <MapPin className="h-4 w-4 mr-2" />
+                                        Mark as Used
+                                      </DropdownMenuItem>
+                                      <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                          <DropdownMenuItem 
+                                            onSelect={(e) => e.preventDefault()}
+                                            className="text-red-600"
                                           >
+                                            <Trash2 className="h-4 w-4 mr-2" />
                                             Delete
-                                          </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                      </AlertDialogContent>
-                                    </AlertDialog>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
+                                          </DropdownMenuItem>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                          <AlertDialogHeader>
+                                            <AlertDialogTitle>Delete Location</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                              Are you sure you want to delete "{location.name}"? This action cannot be undone.
+                                            </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction 
+                                              onClick={() => handleDelete(location.id)}
+                                              className="bg-red-600 hover:bg-red-700"
+                                            >
+                                              Delete
+                                            </AlertDialogAction>
+                                          </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        );
-                      })
-                      )}
-                    </div>
-                  </div>
+                          );
+                        })
+                        )}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
                 );
               })}
-          </div>
+          </Accordion>
         </CardContent>
       </Card>
 

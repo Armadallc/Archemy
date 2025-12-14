@@ -40,7 +40,6 @@ import { useAuth } from "../../hooks/useAuth";
 import { useHierarchy } from "../../hooks/useHierarchy";
 import { useEffectivePermissions, useFeatureFlag } from "../../hooks/use-permissions";
 import { supabase } from "../../lib/supabase";
-import { DrillDownDropdown } from "../DrillDownDropdown";
 import { MiniCalendar } from "../MiniCalendar";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "../../lib/queryClient";
@@ -124,30 +123,46 @@ const navigationCategories = [
       { path: "/trips", label: "My Trips", icon: Route, roles: ["driver"], status: "completed" as PageStatus },
       { path: "/trips", label: "Trips", icon: Route, roles: ["super_admin", "corporate_admin", "program_admin", "program_user"], status: "completed" as PageStatus },
       { path: "/drivers", label: "Drivers", icon: Car, roles: ["super_admin", "program_admin"], status: "completed" as PageStatus }, // Removed corporate_admin
-      { path: "/vehicles", label: "Vehicles", icon: Car, roles: ["super_admin", "program_admin"], status: "not-started" as PageStatus }, // Removed corporate_admin
-      { path: "/frequent-locations", label: "Frequent Locations", icon: MapPin, roles: ["super_admin", "corporate_admin", "program_admin"], status: "has-issues" as PageStatus }
+      { path: "/vehicles", label: "Vehicles", icon: Car, roles: ["super_admin", "program_admin"], status: "not-started" as PageStatus } // Removed corporate_admin
     ]
   },
   {
     id: "corporate",
-    label: "PARTNER MGMT",
+    label: "PARTNER",
     icon: Building2,
     roles: ["super_admin", "corporate_admin"],
     items: [
-      { path: "/clients", label: "Clients", icon: Users, roles: ["super_admin", "corporate_admin", "program_admin", "program_user"], status: "completed" as PageStatus }
+      { path: "/clients", label: "Clients", icon: Users, roles: ["super_admin", "corporate_admin", "program_admin", "program_user"], status: "completed" as PageStatus },
+      { path: "/frequent-locations", label: "Frequent Locations", icon: MapPin, roles: ["super_admin", "corporate_admin", "program_admin"], status: "has-issues" as PageStatus }
     ]
   },
   {
     id: "admin",
-    label: "ADMIN",
+    label: "SYSTEM",
     icon: Settings,
     roles: ["super_admin", "corporate_admin", "program_admin"],
     items: [
-      { path: "/settings", label: "System Settings", icon: Settings, roles: ["super_admin", "corporate_admin", "program_admin"], status: "completed" as PageStatus },
-      { path: "/analytics", label: "Analytics", icon: BarChart3, roles: ["super_admin"], status: "in-progress" as PageStatus },
-      { path: "/prophet", label: "PROPHET", icon: Calculator, roles: ["super_admin"], status: "completed" as PageStatus },
-      { path: "/billing", label: "Billing", icon: DollarSign, roles: ["super_admin", "corporate_admin", "program_admin"], status: "not-started" as PageStatus },
+      { path: "/settings", label: "Settings", icon: Settings, roles: ["super_admin", "corporate_admin", "program_admin"], status: "completed" as PageStatus },
       { path: "/role-templates", label: "Role Templates", icon: Shield, roles: ["super_admin"], status: "completed" as PageStatus }
+    ]
+  },
+  {
+    id: "analytics",
+    label: "ANALYTICS",
+    icon: BarChart3,
+    roles: ["super_admin"],
+    items: [
+      { path: "/analytics", label: "Telematics", icon: BarChart3, roles: ["super_admin"], status: "in-progress" as PageStatus },
+      { path: "/prophet", label: "Prophet", icon: Calculator, roles: ["super_admin"], status: "completed" as PageStatus }
+    ]
+  },
+  {
+    id: "admin-management",
+    label: "ADMIN",
+    icon: DollarSign,
+    roles: ["super_admin", "corporate_admin", "program_admin"],
+    items: [
+      { path: "/billing", label: "Billing", icon: DollarSign, roles: ["super_admin", "corporate_admin", "program_admin"], status: "not-started" as PageStatus }
     ]
   },
   {
@@ -286,10 +301,16 @@ export default function Sidebar({
       category.items.some(item => item.path === location)
     );
     
-    if (currentCategory && !expandedCategories.has(currentCategory.id)) {
-      setExpandedCategories(prev => new Set([...prev, currentCategory.id]));
+    if (currentCategory) {
+      setExpandedCategories(prev => {
+        // Only add if not already in the set to avoid unnecessary re-renders
+        if (!prev.has(currentCategory.id)) {
+          return new Set([...prev, currentCategory.id]);
+        }
+        return prev;
+      });
     }
-  }, [location, expandedCategories]);
+  }, [location]); // Removed expandedCategories from dependencies to prevent re-expansion after manual collapse
 
   // Fetch program options based on user role
   useEffect(() => {
@@ -605,20 +626,10 @@ export default function Sidebar({
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-4 overflow-y-auto" style={{ backgroundColor: 'var(--gray-1)' }}>
-        {/* Mini Calendar - Above PARTNERS drilldown menu */}
+        {/* Mini Calendar */}
         {!isCollapsed && (
           <div className="mb-4" style={{ backgroundColor: 'var(--gray-1)' }}>
             <MiniCalendar />
-          </div>
-        )}
-        
-        {/* Hierarchical Navigation Menu - Single unified menu for all roles except driver */}
-        {!isCollapsed && (user?.role === 'super_admin' || 
-          user?.role === 'corporate_admin' || 
-          user?.role === 'program_admin' || 
-          user?.role === 'program_user') && (
-          <div className="mb-4" style={{ backgroundColor: 'var(--gray-1)' }}>
-            <DrillDownDropdown />
           </div>
         )}
         
@@ -726,7 +737,7 @@ export default function Sidebar({
                       >
                         {/* Icon removed per user request */}
                         {!isCollapsed && (
-                          <div className="flex items-center space-x-2 flex-1">
+                          <div className="flex items-start space-x-2 flex-1" style={{ justifyContent: 'flex-start', alignItems: 'flex-start' }}>
                             <span className="text-sm font-medium" style={{ fontFamily: "'Nohemi', sans-serif" }}>{item.label}</span>
                             {/* Status indicator removed per user request */}
                           </div>

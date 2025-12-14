@@ -8,17 +8,25 @@ import { useAuth } from "../../hooks/useAuth";
 import { useHierarchy } from "../../hooks/useHierarchy";
 
 // Lazy load pages for code splitting
-const Clients = lazy(() => import("../../pages/clients"));
-const Drivers = lazy(() => import("../../pages/drivers"));
-const Vehicles = lazy(() => import("../../pages/vehicles"));
+// Temporarily remove lazy loading to fix React hook errors with useAuth/useHierarchy
+import ClientsComponent from "../../pages/clients";
+const Clients = ClientsComponent;
+import DriversComponent from "../../pages/drivers";
+const Drivers = DriversComponent;
+import VehiclesComponent from "../../pages/vehicles";
+const Vehicles = VehiclesComponent;
 const BillingPage = lazy(() => import("../../pages/billing"));
 // Temporarily remove lazy loading to fix React hook error with useLocation
 import HierarchicalTripsPageComponent from "../HierarchicalTripsPage";
 const HierarchicalTripsPage = HierarchicalTripsPageComponent;
 const Schedule = lazy(() => import("../../pages/schedule"));
-const FrequentLocations = lazy(() => import("../../pages/frequent-locations"));
+// Temporarily remove lazy loading to fix React hook errors with useAuth/useHierarchy
+import FrequentLocationsComponent from "../../pages/frequent-locations";
+const FrequentLocations = FrequentLocationsComponent;
 const Users = lazy(() => import("../../pages/users"));
-const Settings = lazy(() => import("../../pages/settings"));
+// Temporarily remove lazy loading to fix React hook errors with useAuth/useHierarchy
+import SettingsComponent from "../../pages/settings";
+const Settings = SettingsComponent;
 const RoleTemplatesPage = lazy(() => import("../../pages/role-templates"));
 // Temporarily remove lazy loading to fix React hook error with usePageAccess
 import CalendarPageComponent from "../../pages/calendar";
@@ -42,7 +50,9 @@ const ProphetPage = lazy(() => import("../../pages/prophet"));
 const ActivityFeedPage = lazy(() => import("../../pages/activity-feed"));
 const KanbanPage = lazy(() => import("../../pages/kanban"));
 const GanttPage = lazy(() => import("../../pages/gantt"));
-const ChatPage = lazy(() => import("../../pages/chat"));
+// Temporarily remove lazy loading to fix React hook error
+import ChatPageComponent from "../../pages/chat";
+const ChatPage = ChatPageComponent;
 const ProfilePage = lazy(() => import("../../pages/profile"));
 
 interface MainLayoutProps {

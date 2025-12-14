@@ -401,7 +401,7 @@ export default function HierarchicalTripsPage() {
         <Card 
           className="border"
           style={{
-            backgroundColor: 'rgba(204, 51, 171, 0.1)',
+            backgroundColor: 'var(--color-charcoal)',
             borderColor: 'var(--primary)'
           }}
         >
@@ -699,6 +699,8 @@ export default function HierarchicalTripsPage() {
                       size="sm" 
                       style={{ 
                         color: 'var(--destructive)',
+                        backgroundColor: 'unset',
+                        background: 'unset',
                       }}
                       onMouseEnter={(e) => e.currentTarget.style.color = 'var(--destructive)'}
                       onMouseLeave={(e) => e.currentTarget.style.color = 'var(--destructive)'}
