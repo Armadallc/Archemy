@@ -4,7 +4,7 @@ import {
   requireSupabaseAuth, 
   SupabaseAuthenticatedRequest
 } from "../supabase-auth";
-import { enhancedTripsStorage } from "../enhanced-trips-storage";
+import { mobileApi } from "../mobile-api";
 
 const router = express.Router();
 
@@ -43,19 +43,31 @@ router.get("/trips/driver", requireSupabaseAuth, async (req: SupabaseAuthenticat
     const driverId = driver.id;
     console.log('👤 Mobile: Found driver ID:', driverId);
     
-    // Get trips for this driver using the enhanced trips storage
-    console.log('🔍 Mobile: Calling enhancedTripsStorage.getTripsByDriver with driverId:', driverId);
-    const trips = await enhancedTripsStorage.getTripsByDriver(driverId);
+    // Get trips for this driver using the mobile API (which processes trips and adds group names)
+    console.log('🔍 Mobile: Calling mobileApi.getDriverTrips with driverId:', driverId);
+    const trips = await mobileApi.getDriverTrips(driverId);
     console.log('✅ Mobile: Found', trips?.length || 0, 'trips for driver');
-    console.log('📋 Mobile: Trip data:', trips);
+    console.log('📋 Mobile: Trip data sample:', trips?.slice(0, 2)); // Log first 2 trips to avoid spam
     
     res.json(trips || []);
   } catch (error) {
     console.error("❌ Mobile: Error fetching driver trips:", error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     const errorStack = error instanceof Error ? error.stack : undefined;
-    console.error("❌ Mobile: Error details:", errorMessage, errorStack);
-    res.status(500).json({ message: "Failed to fetch driver trips", error: errorMessage });
+    const errorName = error instanceof Error ? error.name : 'Unknown';
+    console.error("❌ Mobile: Error name:", errorName);
+    console.error("❌ Mobile: Error message:", errorMessage);
+    console.error("❌ Mobile: Error stack:", errorStack);
+    if (error instanceof Error && 'code' in error) {
+      console.error("❌ Mobile: Error code:", (error as any).code);
+    }
+    console.error("❌ Mobile: Full error object:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    res.status(500).json({ 
+      message: "Failed to fetch driver trips", 
+      error: errorMessage,
+      errorName: errorName,
+      ...(errorStack && { stack: errorStack })
+    });
   }
 });
 

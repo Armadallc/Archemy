@@ -23,6 +23,7 @@ import systemSettingsRoutes from "./system-settings";
 import contactsRoutes from "./contacts";
 import discussionsRoutes from "./discussions";
 import tenantRolesRoutes from "./tenant-roles";
+import legacyRoutes from "./legacy";
 import { 
   requireSupabaseAuth, 
   SupabaseAuthenticatedRequest
@@ -32,6 +33,11 @@ import { PERMISSIONS } from "../permissions";
 import { corporateClientsStorage } from "../minimal-supabase";
 
 const router = express.Router();
+
+// Legacy routes for backward compatibility (client-groups endpoint)
+// Register BEFORE other routes to ensure /api/client-groups is matched
+// Frontend uses /api/client-groups, but new routes use /api/clients/groups
+router.use("/", legacyRoutes);
 
 router.use("/auth", authRoutes);
 router.use("/bulk", bulkRoutes);

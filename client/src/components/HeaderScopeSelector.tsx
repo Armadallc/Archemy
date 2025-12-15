@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Globe, Building2, FolderOpen, ChevronDown } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
@@ -24,7 +24,7 @@ interface Program {
   name?: string;
 }
 
-export function HeaderScopeSelector() {
+function HeaderScopeSelectorComponent() {
   const { user } = useAuth();
   const { activeScope, activeScopeId, activeScopeName, setScope } = useHierarchy();
   const [isOpen, setIsOpen] = useState(false);
@@ -136,7 +136,7 @@ export function HeaderScopeSelector() {
       onOpenChange={setIsOpen}
     >
       <SelectTrigger
-        className="w-[240px] h-10"
+        className="w-[240px] sm:w-[200px] h-9 sm:h-10 text-sm"
         style={{
           backgroundColor: 'var(--surface)',
           borderColor: 'var(--border)',
@@ -201,4 +201,7 @@ export function HeaderScopeSelector() {
     </Select>
   );
 }
+
+// Memoize to prevent unnecessary re-renders
+export const HeaderScopeSelector = memo(HeaderScopeSelectorComponent);
 

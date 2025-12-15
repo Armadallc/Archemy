@@ -92,6 +92,31 @@ export const lightTheme = {
   confirmed: '#8b5cf6',
   confirmedBg: '#ede9fe',
   
+  // Trip status grouped (for easier access)
+  tripStatus: {
+    scheduled: '#3b82f6',
+    inProgress: '#f59e0b',
+    completed: '#22c55e',
+    cancelled: '#ef4444',
+    confirmed: '#8b5cf6',
+  },
+  
+  // Driver colors (for UI elements)
+  driverColors: {
+    color1: '#3b82f6', // Blue
+    color2: '#22c55e', // Green
+    color3: '#f59e0b', // Amber
+    color4: '#8b5cf6', // Purple
+    color5: '#f59e0b', // Orange/Amber (for warnings, no-show)
+    color6: '#06b6d4', // Cyan
+  },
+  
+  // Additional theme properties
+  foreground: palette.charcoal,
+  mutedForeground: '#8a8f94',
+  secondary: palette.silver,
+  primaryForeground: palette.white,
+  
   // Tab bar
   tabBar: palette.white,
   tabBarBorder: '#d4d7da',
@@ -170,6 +195,31 @@ export const darkTheme = {
   cancelledBg: 'rgba(239, 68, 68, 0.15)',
   confirmed: '#8b5cf6',
   confirmedBg: 'rgba(139, 92, 246, 0.15)',
+  
+  // Trip status grouped (for easier access)
+  tripStatus: {
+    scheduled: '#3b82f6',
+    inProgress: '#f59e0b',
+    completed: '#22c55e',
+    cancelled: '#ef4444',
+    confirmed: '#8b5cf6',
+  },
+  
+  // Driver colors (for UI elements)
+  driverColors: {
+    color1: '#3b82f6', // Blue
+    color2: '#22c55e', // Green
+    color3: '#f59e0b', // Amber
+    color4: '#8b5cf6', // Purple
+    color5: '#f59e0b', // Orange/Amber (for warnings, no-show)
+    color6: '#06b6d4', // Cyan
+  },
+  
+  // Additional theme properties
+  foreground: palette.cloud,
+  mutedForeground: '#8a8f94',
+  secondary: palette.charcoalLight,
+  primaryForeground: palette.white,
   
   // Tab bar
   tabBar: '#1a1c1e',
@@ -323,3 +373,4 @@ export const getTheme = (isDark: boolean) => ({
 
 export type MobileTheme = ReturnType<typeof getTheme>;
 export type MobileColors = typeof lightTheme;
+export type ThemeColors = typeof lightTheme;

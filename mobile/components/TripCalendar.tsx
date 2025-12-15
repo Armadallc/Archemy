@@ -15,6 +15,9 @@ interface Trip {
   scheduled_pickup_time: string;
   status: string;
   client_name?: string;
+  is_group_trip?: boolean;
+  client_group_id?: string;
+  client_group_name?: string;
   clients?: {
     first_name: string;
     last_name: string;
@@ -26,11 +29,12 @@ interface Trip {
 interface TripCalendarProps {
   trips: Trip[];
   onTripPress: (tripId: string) => void;
+  refreshControl?: React.ReactElement;
 }
 
 type ViewMode = 'day' | 'week' | 'month';
 
-export default function TripCalendar({ trips, onTripPress }: TripCalendarProps) {
+export default function TripCalendar({ trips, onTripPress, refreshControl }: TripCalendarProps) {
   const { theme } = useTheme();
   const [viewMode, setViewMode] = useState<ViewMode>('day');
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -98,23 +102,46 @@ export default function TripCalendar({ trips, onTripPress }: TripCalendarProps) 
   };
 
   const getStatusColor = (status: string) => {
+    // Fallback if tripStatus is not available
+    if (!theme.colors.tripStatus) {
+      switch (status) {
+        case 'scheduled':
+        case 'confirmed':
+          return theme.colors.scheduled || '#3b82f6';
+        case 'in_progress':
+          return theme.colors.inProgress || '#f59e0b';
+        case 'completed':
+          return theme.colors.completed || '#22c55e';
+        case 'cancelled':
+        case 'no_show':
+          return theme.colors.cancelled || '#ef4444';
+        default:
+          return theme.colors.mutedForeground || '#8a8f94';
+      }
+    }
+    
     switch (status) {
       case 'scheduled':
       case 'confirmed':
-        return theme.colors.tripStatus.scheduled;
+        return theme.colors.tripStatus?.scheduled || theme.colors.scheduled || '#3b82f6';
       case 'in_progress':
-        return theme.colors.tripStatus.inProgress;
+        return theme.colors.tripStatus?.inProgress || theme.colors.inProgress || '#f59e0b';
       case 'completed':
-        return theme.colors.tripStatus.completed;
+        return theme.colors.tripStatus?.completed || theme.colors.completed || '#22c55e';
       case 'cancelled':
       case 'no_show':
-        return theme.colors.tripStatus.cancelled;
+        return theme.colors.tripStatus?.cancelled || theme.colors.cancelled || '#ef4444';
       default:
-        return theme.colors.mutedForeground;
+        return theme.colors.mutedForeground || '#8a8f94';
     }
   };
 
   const getDisplayName = (trip: Trip) => {
+    // For group trips, use the client group name
+    if (trip.is_group_trip && trip.client_group_name) {
+      return trip.client_group_name;
+    }
+    // For individual trips, use client name
     if (trip.clients?.first_name && trip.clients?.last_name) {
       return `${trip.clients.first_name} ${trip.clients.last_name}`;
     }
@@ -369,6 +396,7 @@ export default function TripCalendar({ trips, onTripPress }: TripCalendarProps) 
             renderItem={renderTrip}
             keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={false}
+            refreshControl={refreshControl}
           />
         )}
       </View>

@@ -217,11 +217,17 @@ router.get("/client-groups/corporate-client/:corporateClientId", requireSupabase
 
 router.post("/client-groups", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin']), async (req: SupabaseAuthenticatedRequest, res) => {
   try {
+    console.log('📦 [LEGACY] POST /client-groups - Creating client group:', {
+      body: req.body,
+      user: req.user?.email,
+      role: req.user?.role
+    });
     const clientGroup = await clientGroupsStorage.createClientGroup(req.body);
+    console.log('✅ [LEGACY] Client group created successfully:', clientGroup.id);
     res.status(201).json(clientGroup);
   } catch (error) {
-    console.error("Error creating client group:", error);
-    res.status(500).json({ message: "Failed to create client group" });
+    console.error("❌ [LEGACY] Error creating client group:", error);
+    res.status(500).json({ message: "Failed to create client group", error: error instanceof Error ? error.message : String(error) });
   }
 });
 

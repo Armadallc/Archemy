@@ -9,6 +9,7 @@ import EIAGasolinePrices from "../components/dashboard/EIAGasolinePrices";
 import { Button } from "../components/ui/button";
 import { usePageAccess } from "../hooks/use-page-access";
 import { Link } from "wouter";
+import { RollbackManager } from "../utils/rollback-manager";
 
 export default function Analytics() {
   // Check page access - super_admin only
@@ -35,28 +36,33 @@ export default function Analytics() {
     );
   }
 
+  // Feature flag check - hide page header when unified header is enabled
+  const ENABLE_UNIFIED_HEADER = RollbackManager.isUnifiedHeaderEnabled();
+
   return (
     <div className="flex-1 overflow-auto mobile-optimized pb-20 md:pb-0">
       <div className="flex-1 overflow-auto p-6" style={{ backgroundColor: 'var(--background)' }}>
         <div className="space-y-6">
-          {/* Page Header */}
-          <div>
-            <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
-              <div>
-                <h1 
-                  className="font-bold text-foreground" 
-                  style={{ 
-                    fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
-                    fontSize: '110px'
-                  }}
-                >
-                  analytics.
-                </h1>
-              </div>
-              <div className="flex items-center gap-3">
+          {/* Page Header - Only show if unified header is disabled (fallback) */}
+          {!ENABLE_UNIFIED_HEADER && (
+            <div>
+              <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+                <div>
+                  <h1 
+                    className="font-bold text-foreground" 
+                    style={{ 
+                      fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+                      fontSize: '110px'
+                    }}
+                  >
+                    analytics.
+                  </h1>
+                </div>
+                <div className="flex items-center gap-3">
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Financial Section */}
           <div className="space-y-4">

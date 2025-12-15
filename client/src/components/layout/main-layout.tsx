@@ -1,11 +1,15 @@
 import React, { ReactNode, useState, Suspense, lazy, useEffect } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import Sidebar from "./sidebar";
+import { UnifiedHeader } from "./unified-header";
+import { UnifiedHeaderMobile } from "./unified-header-mobile";
 import EmptyUniversalCalendar from "../EmptyUniversalCalendar";
 import MobileBottomNav from "../MobileBottomNav";
 // Removed useOrganization - using useHierarchy instead
 import { useAuth } from "../../hooks/useAuth";
 import { useHierarchy } from "../../hooks/useHierarchy";
+import { useLayout } from "../../contexts/layout-context";
+import { RollbackManager } from "../../utils/rollback-manager";
 
 // Lazy load pages for code splitting
 // Temporarily remove lazy loading to fix React hook errors with useAuth/useHierarchy
@@ -36,7 +40,9 @@ const ShadcnDashboard = lazy(() => import("../../pages/shadcn-dashboard"));
 // Temporarily remove lazy loading to fix React hook error
 import ShadcnDashboardMigratedComponent from "../../pages/shadcn-dashboard-migrated";
 const ShadcnDashboardMigrated = ShadcnDashboardMigratedComponent;
-const SimpleBookingForm = lazy(() => import("../../components/booking/simple-booking-form").then(m => ({ default: m.SimpleBookingForm })));
+// Temporarily remove lazy loading to fix React hook error with useLocation
+import SimpleBookingFormComponent from "../../components/booking/simple-booking-form";
+const SimpleBookingForm = SimpleBookingFormComponent;
 const EditTrip = lazy(() => import("../../pages/edit-trip"));
 const NotFound = lazy(() => import("../../pages/not-found"));
 // Design System Pages (lazy loaded - rarely used)
@@ -110,10 +116,43 @@ export default function MainLayout({
   // Use hierarchy context instead of organization context
   const { selectedProgram } = useHierarchy();
   const { user } = useAuth();
+  const layout = useLayout();
+  const [location] = useLocation();
+  const [isNavigating, setIsNavigating] = useState(false);
+  
+  // Track route changes for loading states
+  useEffect(() => {
+    setIsNavigating(true);
+    const timer = setTimeout(() => {
+      setIsNavigating(false);
+    }, 300); // Brief loading state for route transitions
+    
+    return () => clearTimeout(timer);
+  }, [location]);
+  
+  // Feature flag for unified header
+  const ENABLE_UNIFIED_HEADER = RollbackManager.isUnifiedHeaderEnabled();
   
   // Use internal state for kiosk mode and sidebar collapse
   const [internalKioskMode, setInternalKioskMode] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  
+  // Sync sidebar collapse with layout context
+  useEffect(() => {
+    if (sidebarCollapsed !== layout.isSidebarCollapsed) {
+      if (sidebarCollapsed) {
+        layout.toggleSidebarCollapsed();
+      }
+    }
+  }, [sidebarCollapsed, layout]);
+  
+  // Log feature flag state in development
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔧 Unified Header Feature Flag:', ENABLE_UNIFIED_HEADER ? 'ENABLED' : 'DISABLED');
+      console.log('   Toggle with: window.HALCYON_ROLLBACK.toggleUnifiedHeader()');
+    }
+  }, [ENABLE_UNIFIED_HEADER]);
 
   // Use hierarchy program instead of prop/internal state  
   const currentProgramId = selectedProgram || "monarch_competency";
@@ -139,19 +178,44 @@ export default function MainLayout({
         </div>
       
       <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Mobile Header */}
-        <div className="block md:hidden shadow-sm border-b-2 px-4 py-3 bg-background border-border">
-          <div className="flex items-center justify-between">
-            <h1 className="text-lg font-semibold text-foreground">
-              {user?.role === 'driver' ? 'My Trips' : 'Dashboard'}
-            </h1>
-            <div className="text-sm text-foreground">
-              {user?.user_name || user?.email}
+        {/* Route Transition Loading Indicator - Fixed at top */}
+        {isNavigating && (
+          <div className="fixed top-0 left-0 right-0 h-1 bg-primary/20 z-50">
+            <div 
+              className="h-full bg-primary transition-all duration-300"
+              style={{ width: '100%' }}
+            />
+          </div>
+        )}
+        
+        {/* Mobile Header - Unified Header Mobile when enabled, fallback otherwise */}
+        {ENABLE_UNIFIED_HEADER && layout.isHeaderVisible ? (
+          <div className="block md:hidden">
+            <UnifiedHeaderMobile showSearch={true} />
+          </div>
+        ) : (
+          <div className="block md:hidden shadow-sm border-b-2 px-4 py-3 bg-background border-border">
+            <div className="flex items-center justify-between">
+              <h1 className="text-lg font-semibold text-foreground">
+                {user?.role === 'driver' ? 'My Trips' : 'Dashboard'}
+              </h1>
+              <div className="text-sm text-foreground">
+                {user?.user_name || user?.email}
+              </div>
             </div>
           </div>
-        </div>
+        )}
         
         <div className="flex-1 overflow-auto mobile-optimized pb-20 md:pb-0">
+          
+          {/* Unified Header - Desktop only, feature flagged */}
+          {ENABLE_UNIFIED_HEADER && layout.isHeaderVisible && (
+            <div className="hidden md:block px-6 pt-6">
+              <UnifiedHeader showTimeDisplay={false} showSearch={true} />
+            </div>
+          )}
+          
+          {/* Page Content Area */}
           {children || (
             <Suspense fallback={
               <div className="flex items-center justify-center h-full">

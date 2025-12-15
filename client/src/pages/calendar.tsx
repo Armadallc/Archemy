@@ -40,18 +40,73 @@ import {
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
 import { CalendarProvider } from "../components/event-calendar/calendar-context";
+import { useLayout } from "../contexts/layout-context";
+import { RollbackManager } from "../utils/rollback-manager";
+import { Maximize2, Minimize2 } from "lucide-react";
+import { useWebSocket } from "../hooks/useWebSocket";
+import { useRealtimeService } from "../services/realtimeService";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function CalendarPage() {
   const { level, selectedProgram, selectedCorporateClient } = useHierarchy();
+  const layout = useLayout();
+  const queryClient = useQueryClient();
   
   // Check page access permission
   usePageAccess({ permission: "view_calendar" });
+  
+  // Full-screen mode state
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const ENABLE_UNIFIED_HEADER = RollbackManager.isUnifiedHeaderEnabled();
+  
+  // Toggle full-screen mode (hide unified header)
+  const toggleFullScreen = () => {
+    const newFullScreen = !isFullScreen;
+    setIsFullScreen(newFullScreen);
+    layout.setHeaderVisibility(!newFullScreen);
+  };
+  
+  // Restore header when leaving calendar page
+  useEffect(() => {
+    return () => {
+      layout.setHeaderVisibility(true);
+    };
+  }, [layout]);
   
   const [viewMode, setViewMode] = useState<'calendar' | 'list' | 'map'>('calendar');
   
   // Feature flags
   const { isEnabled: realtimeEnabled } = useFeatureFlag("realtime_updates_enabled");
   const { isEnabled: newTripEnabled } = useFeatureFlag("enable_new_trip_creation");
+
+  // Set up WebSocket connection for real-time trip updates
+  const wsConnection = useWebSocket({
+    enabled: realtimeEnabled,
+    onMessage: (message) => {
+      if (message.type === 'trip_update' || message.type === 'new_trip') {
+        // Invalidate trips queries to refresh calendar
+        queryClient.invalidateQueries({ queryKey: ['trips'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/trips'] });
+        if (message.data?.programId) {
+          queryClient.invalidateQueries({ queryKey: [`/api/trips/program/${message.data.programId}`] });
+        }
+        if (message.data?.corporateClientId) {
+          queryClient.invalidateQueries({ queryKey: [`/api/trips/corporate-client/${message.data.corporateClientId}`] });
+        }
+        // Also invalidate universal trips for super admins
+        queryClient.invalidateQueries({ queryKey: ['/api/trips/universal'] });
+      }
+    }
+  });
+
+  // Initialize real-time service to handle WebSocket messages
+  const { createService } = useRealtimeService();
+  useEffect(() => {
+    if (wsConnection.isConnected) {
+      const service = createService(wsConnection);
+      service.initialize();
+    }
+  }, [wsConnection.isConnected, createService, wsConnection]);
 
   // Real-time data
   const {
@@ -264,96 +319,204 @@ export default function CalendarPage() {
         {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden h-full">
           <div className="flex flex-col flex-1 p-6 space-y-6 min-h-0" style={{ paddingBottom: '24px', height: 'calc(100vh - 48px)' }}>
-            {/* Header */}
-            <div>
-              <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
-                <div>
-                  <h1 
-                    className="font-bold text-foreground" 
-                    style={{ 
-                      fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
-                      fontSize: '110px'
-                    }}
-                  >
-                    calendar.
-                  </h1>
-                </div>
+            {/* Header - Only show if unified header is disabled (fallback) */}
+            {!ENABLE_UNIFIED_HEADER && (
+              <div>
+                <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+                  <div>
+                    <h1 
+                      className="font-bold text-foreground" 
+                      style={{ 
+                        fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+                        fontSize: '110px'
+                      }}
+                    >
+                      calendar.
+                    </h1>
+                  </div>
                 <div className="flex items-center space-x-2">
-          {/* View Mode Toggle */}
-          <div className="flex items-center border rounded-lg">
-            <Button
-              variant={viewMode === 'calendar' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('calendar')}
-              className="rounded-r-none"
-            >
-              <Grid3X3 className="h-4 w-4 mr-1" />
-              Calendar
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('list')}
-              className="rounded-none border-x"
-            >
-              <List className="h-4 w-4 mr-1" />
-              List
-            </Button>
-            <Button
-              variant={viewMode === 'map' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('map')}
-              className="rounded-l-none"
-            >
-              <Map className="h-4 w-4 mr-1" />
-              Map
-            </Button>
-          </div>
+                  {/* View Mode Toggle */}
+                  <div className="flex items-center border rounded-lg">
+                    <Button
+                      variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('calendar')}
+                      className="rounded-r-none"
+                    >
+                      <Grid3X3 className="h-4 w-4 mr-1" />
+                      Calendar
+                    </Button>
+                    <Button
+                      variant={viewMode === 'list' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('list')}
+                      className="rounded-none border-x"
+                    >
+                      <List className="h-4 w-4 mr-1" />
+                      List
+                    </Button>
+                    <Button
+                      variant={viewMode === 'map' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('map')}
+                      className="rounded-l-none"
+                    >
+                      <Map className="h-4 w-4 mr-1" />
+                      Map
+                    </Button>
+                  </div>
 
-          {/* Action Buttons */}
-          {newTripEnabled && (
-            <PermissionGuard permission="create_trips">
-              <Button asChild>
-                <Link 
-                  to="/trips/new"
-                  onClick={() => {
-                    // Store current path before navigating to trip creation (preserve hierarchical URLs)
-                    const currentPath = window.location.pathname;
-                    sessionStorage.setItem('previousPath', currentPath);
-                  }}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Trip
-                </Link>
-              </Button>
-            </PermissionGuard>
-          )}
-          
-          <Button 
-            variant="outline"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            Filters
-          </Button>
-          
-          <Button 
-            variant="outline"
-            onClick={() => handleExport()}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-          
-          <Button 
-            variant="outline"
-            onClick={() => setShowSettings(true)}
-          >
-            <Settings className="h-4 w-4" />
-          </Button>
+                  {/* Action Buttons */}
+                  {newTripEnabled && (
+                    <PermissionGuard permission="create_trips">
+                      <Button asChild>
+                        <Link 
+                          to="/trips/new"
+                          onClick={() => {
+                            // Store current path before navigating to trip creation (preserve hierarchical URLs)
+                            const currentPath = window.location.pathname;
+                            sessionStorage.setItem('previousPath', currentPath);
+                          }}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          New Trip
+                        </Link>
+                      </Button>
+                    </PermissionGuard>
+                  )}
+                  
+                  <Button 
+                    variant="outline"
+                    onClick={() => setShowFilters(!showFilters)}
+                  >
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filters
+                  </Button>
+                  
+                  <Button 
+                    variant="outline"
+                    onClick={() => handleExport()}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                  
+                  <Button 
+                    variant="outline"
+                    onClick={() => setShowSettings(true)}
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </div>
+            )}
+            
+            {/* Full-Screen Toggle - Always visible when unified header is enabled */}
+            {ENABLE_UNIFIED_HEADER && (
+              <div className="flex items-center justify-end mb-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={toggleFullScreen}
+                  className="flex items-center gap-2"
+                  title={isFullScreen ? "Exit Full Screen" : "Enter Full Screen"}
+                >
+                  {isFullScreen ? (
+                    <>
+                      <Minimize2 className="h-4 w-4" />
+                      Exit Full Screen
+                    </>
+                  ) : (
+                    <>
+                      <Maximize2 className="h-4 w-4" />
+                      Full Screen
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+            
+            {/* View Mode Toggle - Show when unified header is enabled or in full-screen */}
+            {(ENABLE_UNIFIED_HEADER || isFullScreen) && (
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center border rounded-lg">
+                  <Button
+                    variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('calendar')}
+                    className="rounded-r-none"
+                  >
+                    <Grid3X3 className="h-4 w-4 mr-1" />
+                    Calendar
+                  </Button>
+                  <Button
+                    variant={viewMode === 'list' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('list')}
+                    className="rounded-none border-x"
+                  >
+                    <List className="h-4 w-4 mr-1" />
+                    List
+                  </Button>
+                  <Button
+                    variant={viewMode === 'map' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('map')}
+                    className="rounded-l-none"
+                  >
+                    <Map className="h-4 w-4 mr-1" />
+                    Map
+                  </Button>
+                </div>
+                
+                {/* Action Buttons */}
+                <div className="flex items-center space-x-2">
+                  {newTripEnabled && (
+                    <PermissionGuard permission="create_trips">
+                      <Button asChild size="sm">
+                        <Link 
+                          to="/trips/new"
+                          onClick={() => {
+                            const currentPath = window.location.pathname;
+                            sessionStorage.setItem('previousPath', currentPath);
+                          }}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          New Trip
+                        </Link>
+                      </Button>
+                    </PermissionGuard>
+                  )}
+                  
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowFilters(!showFilters)}
+                  >
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filters
+                  </Button>
+                  
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleExport()}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                  
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowSettings(true)}
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
 
       {/* Filters Panel */}
       {showFilters && (

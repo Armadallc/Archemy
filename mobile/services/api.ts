@@ -85,6 +85,7 @@ class ApiClient {
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
     const headers = await this.getAuthHeaders();
+    const requestMethod = options.method || 'GET'; // Store method in a local variable
 
     try {
       const response = await fetch(url, {
@@ -105,9 +106,61 @@ class ApiClient {
         throw new Error(`API request failed: ${response.statusText} - ${errorText}`);
       }
 
-      return response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        // If JSON parsing fails, try to get text
+        const text = await response.text();
+        console.error('Failed to parse JSON response:', text);
+        throw new Error(`Failed to parse response: ${text}`);
+      }
+      
+      // Log successful responses in development
+      if (__DEV__) {
+        logger.debug(`API request successful: ${requestMethod} ${endpoint}`, 'ApiClient', { 
+          status: response.status,
+          endpoint 
+        });
+      }
+      
+      return data;
     } catch (error) {
-      logger.error(`API request error for ${endpoint}`, 'ApiClient', { endpoint, error: error instanceof Error ? error.message : String(error) });
+      // Safely extract error message
+      let errorMessage = 'Unknown error';
+      try {
+        errorMessage = error instanceof Error ? error.message : String(error);
+      } catch (e) {
+        errorMessage = 'Error extracting error message';
+      }
+      
+      // Safely create error details
+      const errorDetails = {
+        endpoint,
+        method: requestMethod || 'UNKNOWN',
+        url: `${this.baseURL}${endpoint}`,
+        error: errorMessage,
+        timestamp: new Date().toISOString(),
+      };
+      
+      // Safely log error
+      try {
+        logger.error(`API request error for ${endpoint}`, 'ApiClient', errorDetails);
+      } catch (logError) {
+        // If logging fails, just console.error
+        console.error('API request error:', errorDetails);
+      }
+      
+      // Enhanced error for better debugging
+      if (error instanceof Error) {
+        // Preserve original error but add context
+        const enhancedError = new Error(`API Error (${endpoint}): ${errorMessage}`);
+        (enhancedError as any).originalError = error;
+        (enhancedError as any).endpoint = endpoint;
+        (enhancedError as any).url = `${this.baseURL}${endpoint}`;
+        throw enhancedError;
+      }
+      
       throw error;
     }
   }
@@ -145,16 +198,32 @@ class ApiClient {
   }
 
   async logout() {
+    // Always clear tokens, even if API call fails
+    // This ensures logout works even if token is expired/invalid
     try {
-      await this.request('/api/auth/logout', { method: 'POST' });
-      
+      // Try to call logout endpoint, but don't fail if it errors
+      try {
+        await this.request('/api/auth/logout', { method: 'POST' });
+        console.log('✅ API Client: Logout API call successful');
+      } catch (apiError) {
+        // Log but don't throw - we'll clear tokens anyway
+        console.log('⚠️ API Client: Logout API call failed (clearing tokens anyway):', apiError);
+      }
+    } finally {
+      // Always clear tokens regardless of API call success
       if (Platform.OS === 'web') {
         localStorage.removeItem('auth_token');
+        console.log('✅ API Client: Token removed from localStorage');
       } else {
-        await SecureStore.deleteItemAsync('auth_token');
+        if (SecureStore) {
+          try {
+            await SecureStore.deleteItemAsync('auth_token');
+            console.log('✅ API Client: Token removed from SecureStore');
+          } catch (storeError) {
+            console.error('❌ API Client: Error removing token from SecureStore:', storeError);
+          }
+        }
       }
-    } catch (error) {
-      console.log('Logout API error:', error);
     }
   }
 

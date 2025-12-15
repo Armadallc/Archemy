@@ -6,6 +6,7 @@ import { AuthProvider } from "./hooks/useAuth";
 import { ThemeProvider } from "./components/theme-provider";
 import { FireThemeProvider } from "./components/fire-theme-provider";
 import { HierarchyProvider } from "./hooks/useHierarchy";
+import { LayoutProvider } from "./contexts/layout-context";
 import MainLayout from "./components/layout/main-layout";
 import Login from "./pages/login";
 import { useAuth } from "./hooks/useAuth";
@@ -85,7 +86,9 @@ function AppContent() {
   // Show main app
   return (
     <HierarchyProvider>
-      <MainLayout />
+      <LayoutProvider>
+        <MainLayout />
+      </LayoutProvider>
     </HierarchyProvider>
   );
 }

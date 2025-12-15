@@ -34,6 +34,7 @@ import { Search, Plus, Edit, Trash2, MapPin, Building, Gavel, Stethoscope, Store
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
 import { Checkbox } from '../components/ui/checkbox';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/accordion';
+import { RollbackManager } from '../utils/rollback-manager';
 
 interface FrequentLocation {
   id: string;
@@ -688,23 +689,27 @@ export default function FrequentLocationsPage() {
     );
   }
 
+  // Feature flag check - hide page header when unified header is enabled
+  const ENABLE_UNIFIED_HEADER = RollbackManager.isUnifiedHeaderEnabled();
+
   return (
     <div className="space-y-6 p-6">
-      {/* Header */}
-      <div>
-        <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
-          <div>
-            <h1 
-              className="font-bold text-foreground" 
-              style={{ 
-                fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
-                fontSize: '110px'
-              }}
-            >
-              quick locations.
-            </h1>
-          </div>
-          <div className="flex gap-2">
+      {/* Header - Only show if unified header is disabled (fallback) */}
+      {!ENABLE_UNIFIED_HEADER && (
+        <div>
+          <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+            <div>
+              <h1 
+                className="font-bold text-foreground" 
+                style={{ 
+                  fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+                  fontSize: '110px'
+                }}
+              >
+                quick locations.
+              </h1>
+            </div>
+            <div className="flex gap-2">
           <Button 
             variant="outline" 
             onClick={handleSyncServiceLocations}
@@ -723,7 +728,8 @@ export default function FrequentLocationsPage() {
           </Button>
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Filters */}
       <Card>

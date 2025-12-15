@@ -1266,19 +1266,69 @@ export const tripsStorage = {
     
     // Validate group trip has proper group membership
     if (trip.is_group_trip && trip.client_group_id) {
+      console.log('🔍 [createTrip] Checking group members for:', {
+        client_group_id: trip.client_group_id,
+        is_group_trip: trip.is_group_trip,
+        program_id: trip.program_id
+      });
+      
+      // First, verify the group exists and get its program_id
+      const { data: groupData, error: groupDataError } = await supabase
+        .from('client_groups')
+        .select('id, name, program_id')
+        .eq('id', trip.client_group_id)
+        .single();
+      
+      if (groupDataError) {
+        console.error('❌ [createTrip] Error fetching group data:', groupDataError);
+        throw new Error(`Client group not found: ${trip.client_group_id}`);
+      }
+      
+      console.log('🔍 [createTrip] Group data:', {
+        id: groupData.id,
+        name: groupData.name,
+        program_id: groupData.program_id,
+        trip_program_id: trip.program_id,
+        programs_match: groupData.program_id === trip.program_id
+      });
+      
+      // Query memberships - no program filter, just by group ID
       const { data: groupMembers, error: groupError } = await supabase
         .from('client_group_memberships')
-        .select('id')
+        .select('id, client_id, client_group_id')
         .eq('client_group_id', trip.client_group_id);
       
-      if (groupError) throw groupError;
+      if (groupError) {
+        console.error('❌ [createTrip] Error fetching group members:', groupError);
+        throw groupError;
+      }
+      
+      console.log('🔍 [createTrip] Group members query result:', {
+        client_group_id: trip.client_group_id,
+        groupMembers_count: groupMembers?.length || 0,
+        groupMembers: groupMembers
+      });
       
       if (!groupMembers || groupMembers.length === 0) {
-        throw new Error('Cannot create group trip: Client group has no members');
+        console.error('❌ [createTrip] Group has no members - validation failed:', {
+          client_group_id: trip.client_group_id,
+          group_name: groupData.name,
+          group_program_id: groupData.program_id,
+          trip_program_id: trip.program_id,
+          groupMembers: groupMembers,
+          groupMembers_length: groupMembers?.length,
+          suggestion: 'Please add clients to this group before creating a trip'
+        });
+        throw new Error(`Cannot create group trip: Client group "${groupData.name}" has no members. Please add clients to the group first.`);
       }
       
       // Set passenger count to actual group member count for group trips
       trip.passenger_count = groupMembers.length;
+      console.log('✅ [createTrip] Group trip validated successfully:', {
+        client_group_id: trip.client_group_id,
+        group_name: groupData.name,
+        passenger_count: trip.passenger_count
+      });
     }
     
     // Final check: remove any empty string UUIDs before insert
@@ -1336,16 +1386,33 @@ export const clientGroupsStorage = {
             name
           )
         ),
-        client_group_memberships(count)
+        client_group_memberships(id)
       `)
       .eq('is_active', true);
     if (error) throw error;
     
-    // Add member_count to each group
-    const groupsWithCount = (data || []).map(group => ({
-      ...group,
-      member_count: group.client_group_memberships?.[0]?.count || 0
-    }));
+    // Add member_count to each group by counting the memberships array
+    const groupsWithCount = (data || []).map(group => {
+      const memberCount = Array.isArray(group.client_group_memberships) ? group.client_group_memberships.length : 0;
+      
+      // Debug logging for specific groups
+      if (group.name?.includes('MON SHOP') || group.name?.includes('TUE')) {
+        console.log('🔍 [getAllClientGroups] Group:', {
+          id: group.id,
+          name: group.name,
+          program_id: group.program_id,
+          memberships_array: group.client_group_memberships,
+          memberships_is_array: Array.isArray(group.client_group_memberships),
+          memberships_length: Array.isArray(group.client_group_memberships) ? group.client_group_memberships.length : 'not array',
+          calculated_member_count: memberCount
+        });
+      }
+      
+      return {
+        ...group,
+        member_count: memberCount
+      };
+    });
     
     return groupsWithCount;
   },
@@ -1383,17 +1450,35 @@ export const clientGroupsStorage = {
             name
           )
         ),
-        client_group_memberships(count)
+        client_group_memberships(id)
       `)
       .eq('program_id', programId)
       .eq('is_active', true);
     if (error) throw error;
     
-    // Add member_count to each group
-    const groupsWithCount = (data || []).map(group => ({
-      ...group,
-      member_count: group.client_group_memberships?.[0]?.count || 0
-    }));
+    // Add member_count to each group by counting the memberships array
+    const groupsWithCount = (data || []).map(group => {
+      const memberCount = Array.isArray(group.client_group_memberships) ? group.client_group_memberships.length : 0;
+      
+      // Debug logging for specific groups
+      if (group.name?.includes('MON SHOP') || group.name?.includes('TUE')) {
+        console.log('🔍 [getClientGroupsByProgram] Group:', {
+          programId,
+          id: group.id,
+          name: group.name,
+          program_id: group.program_id,
+          memberships_array: group.client_group_memberships,
+          memberships_is_array: Array.isArray(group.client_group_memberships),
+          memberships_length: Array.isArray(group.client_group_memberships) ? group.client_group_memberships.length : 'not array',
+          calculated_member_count: memberCount
+        });
+      }
+      
+      return {
+        ...group,
+        member_count: memberCount
+      };
+    });
     
     return groupsWithCount;
   },
@@ -1429,17 +1514,36 @@ export const clientGroupsStorage = {
             name
           )
         ),
-        client_group_memberships(count)
+        client_group_memberships(id)
       `)
       .in('program_id', programIds)
       .eq('is_active', true);
     if (error) throw error;
     
-    // Add member_count to each group
-    const groupsWithCount = (data || []).map(group => ({
-      ...group,
-      member_count: group.client_group_memberships?.[0]?.count || 0
-    }));
+    // Add member_count to each group by counting the memberships array
+    const groupsWithCount = (data || []).map(group => {
+      const memberCount = Array.isArray(group.client_group_memberships) ? group.client_group_memberships.length : 0;
+      
+      // Debug logging for specific groups
+      if (group.name?.includes('MON SHOP') || group.name?.includes('TUE')) {
+        console.log('🔍 [getClientGroupsByCorporateClient] Group:', {
+          corporateClientId,
+          programIds,
+          id: group.id,
+          name: group.name,
+          program_id: group.program_id,
+          memberships_array: group.client_group_memberships,
+          memberships_is_array: Array.isArray(group.client_group_memberships),
+          memberships_length: Array.isArray(group.client_group_memberships) ? group.client_group_memberships.length : 'not array',
+          calculated_member_count: memberCount
+        });
+      }
+      
+      return {
+        ...group,
+        member_count: memberCount
+      };
+    });
     
     return groupsWithCount;
   },
@@ -1479,6 +1583,11 @@ export const clientGroupsStorage = {
   },
 
   async addClientToGroup(groupId: string, clientId: string) {
+    console.log('🔍 [addClientToGroup] Adding client to group:', {
+      groupId,
+      clientId
+    });
+    
     const { data, error } = await supabase
       .from('client_group_memberships')
       .insert({
@@ -1488,7 +1597,13 @@ export const clientGroupsStorage = {
       })
       .select()
       .single();
-    if (error) throw error;
+    
+    if (error) {
+      console.error('❌ [addClientToGroup] Error adding client to group:', error);
+      throw error;
+    }
+    
+    console.log('✅ [addClientToGroup] Client added successfully:', data);
     return data;
   },
 

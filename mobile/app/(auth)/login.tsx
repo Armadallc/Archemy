@@ -28,10 +28,19 @@ export default function LoginScreen() {
 
     setIsLoading(true);
     try {
-      await login(email, password);
+      console.log('🔍 [Login] Attempting login for:', email);
+      await login(email.trim().toLowerCase(), password);
+      console.log('✅ [Login] Login successful, redirecting...');
       router.replace('/(tabs)');
     } catch (error) {
-      Alert.alert('Login Failed', 'Invalid credentials. Please try again.');
+      console.error('❌ [Login] Login failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      Alert.alert(
+        'Login Failed', 
+        errorMessage.includes('Invalid credentials') || errorMessage.includes('401')
+          ? 'Invalid email or password. Please check your credentials and try again.'
+          : `Login failed: ${errorMessage}. Please try again.`
+      );
     } finally {
       setIsLoading(false);
     }

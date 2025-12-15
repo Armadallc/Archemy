@@ -19,6 +19,7 @@ import { TemplateEditor } from "../components/bentobox-calendar/TemplateEditor";
 import { ClientGroupBuilder } from "../components/bentobox-calendar/ClientGroupBuilder";
 import { useBentoBoxStore } from "../components/bentobox-calendar/store";
 import { Button } from "../components/ui/button";
+import { RollbackManager } from "../utils/rollback-manager";
 // Removed Radix Tabs - using custom implementation for better layout control
 import { cn } from "../lib/utils";
 
@@ -101,23 +102,27 @@ export default function CalendarExperiment() {
     }
   };
 
+  // Feature flag check - hide page header when unified header is enabled
+  const ENABLE_UNIFIED_HEADER = RollbackManager.isUnifiedHeaderEnabled();
+
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden p-6">
-      {/* Header */}
-      <div className="flex-shrink-0 px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between mb-6" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
-        <div>
-          <h1 
-            className="font-bold text-foreground" 
-            style={{ 
-              fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
-              fontSize: '110px'
-            }}
-          >
-            bentobox.
-          </h1>
-        </div>
+      {/* Header - Only show if unified header is disabled (fallback) */}
+      {!ENABLE_UNIFIED_HEADER && (
+        <div className="flex-shrink-0 px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between mb-6" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+          <div>
+            <h1 
+              className="font-bold text-foreground" 
+              style={{ 
+                fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+                fontSize: '110px'
+              }}
+            >
+              bentobox.
+            </h1>
+          </div>
 
-        {/* View Controls */}
+          {/* View Controls */}
         <div className="flex items-center gap-4">
           {/* View Toggle */}
           <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
@@ -192,7 +197,8 @@ export default function CalendarExperiment() {
             {scheduledEncounters.length} scheduled
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden min-h-0">

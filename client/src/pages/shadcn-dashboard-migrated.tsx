@@ -42,8 +42,11 @@ import EnhancedAnalyticsWidget from "../components/dashboard/EnhancedAnalyticsWi
 import TaskManagementWidget from "../components/dashboard/TaskManagementWidget";
 import ActivityFeed from "../components/activity-feed/ActivityFeed";
 import { HeaderScopeSelector } from "../components/HeaderScopeSelector";
+import { RollbackManager } from "../utils/rollback-manager";
 
 // Shadcn Header Component with Time Display
+// NOTE: This is kept as fallback when unified header feature flag is disabled
+// Will be removed in Phase 3 after full migration
 const ShadcnHeader = ({ title, subtitle }: { title: string; subtitle?: string }) => {
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const { user } = useAuth();
@@ -142,8 +145,10 @@ const ShadcnHeader = ({ title, subtitle }: { title: string; subtitle?: string })
 
 // Main Dashboard Component with Shadcn Layout
 export default function ShadcnDashboardMigrated() {
-  
   const { user } = useAuth();
+  
+  // Feature flag check - if unified header is enabled, don't render ShadcnHeader
+  const ENABLE_UNIFIED_HEADER = RollbackManager.isUnifiedHeaderEnabled();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { level, selectedCorporateClient, selectedProgram, activeScope, activeScopeName, getFilterParams, navigateToCorporate, navigateToClient, navigateToProgram } = useHierarchy();
   
@@ -289,10 +294,12 @@ export default function ShadcnDashboardMigrated() {
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'var(--page-background)' }}>
         <div className="flex-1 flex flex-col overflow-hidden" style={{ padding: '24px' }}>
-          {/* Header */}
-          <div>
-            <ShadcnHeader title={getRoleBasedTitle()} subtitle="System-wide operations and performance overview" />
-          </div>
+          {/* Header - Only show if unified header is disabled (fallback) */}
+          {!ENABLE_UNIFIED_HEADER && (
+            <div>
+              <ShadcnHeader title={getRoleBasedTitle()} subtitle="System-wide operations and performance overview" />
+            </div>
+          )}
           {/* Dashboard Content */}
           <div className="flex-1 overflow-auto">
           <div className="space-y-6">
@@ -428,8 +435,10 @@ export default function ShadcnDashboardMigrated() {
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'var(--page-background)' }}>
         <div className="flex-1 flex flex-col overflow-hidden" style={{ padding: '24px' }}>
-          {/* Header */}
-          <ShadcnHeader title={getRoleBasedTitle()} subtitle={`Managing ${selectedCorporateClient || "corporate"} operations`} />
+          {/* Header - Only show if unified header is disabled (fallback) */}
+          {!ENABLE_UNIFIED_HEADER && (
+            <ShadcnHeader title={getRoleBasedTitle()} subtitle={`Managing ${selectedCorporateClient || "corporate"} operations`} />
+          )}
           {/* Dashboard Content */}
           <div className="flex-1 overflow-auto">
           <div className="space-y-6">
@@ -695,8 +704,10 @@ export default function ShadcnDashboardMigrated() {
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'var(--page-background)' }}>
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Header */}
-          <ShadcnHeader title={getRoleBasedTitle()} subtitle={`Viewing ${selectedProgram || "program"} data`} />
+          {/* Header - Only show if unified header is disabled (fallback) */}
+          {!ENABLE_UNIFIED_HEADER && (
+            <ShadcnHeader title={getRoleBasedTitle()} subtitle={`Viewing ${selectedProgram || "program"} data`} />
+          )}
           
           
           {/* Dashboard Content */}
@@ -819,8 +830,10 @@ export default function ShadcnDashboardMigrated() {
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'var(--page-background)' }}>
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Header */}
-          <ShadcnHeader title={getRoleBasedTitle()} subtitle="Your daily operations and trip management" />
+          {/* Header - Only show if unified header is disabled (fallback) */}
+          {!ENABLE_UNIFIED_HEADER && (
+            <ShadcnHeader title={getRoleBasedTitle()} subtitle="Your daily operations and trip management" />
+          )}
           
           
           {/* Dashboard Content */}

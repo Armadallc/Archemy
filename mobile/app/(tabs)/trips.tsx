@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, RefreshControl } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../services/api';
@@ -25,8 +25,9 @@ export default function TripsScreen() {
   const { user } = useAuth();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const [refreshing, setRefreshing] = useState(false);
 
-  const { data: trips = [], isLoading } = useQuery<Trip[]>({
+  const { data: trips = [], isLoading, refetch } = useQuery<Trip[]>({
     queryKey: ['driver-trips'],
     queryFn: () => apiClient.getDriverTrips(),
     enabled: !!user,
@@ -37,6 +38,12 @@ export default function TripsScreen() {
     router.push(`/(tabs)/trip-details?tripId=${tripId}`);
   };
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
+
   const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -45,13 +52,19 @@ export default function TripsScreen() {
     },
   });
 
-  if (isLoading) {
+  if (isLoading && !refreshing) {
     return <View style={styles.container} />;
   }
 
   return (
     <View style={styles.container}>
-      <TripCalendar trips={trips} onTripPress={handleTripPress} />
+      <TripCalendar 
+        trips={trips} 
+        onTripPress={handleTripPress}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />
+        }
+      />
     </View>
   );
 }

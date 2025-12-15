@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTheme } from '../../contexts/ThemeContext';
 import {
   View,
   Text,
@@ -13,25 +14,28 @@ import {
   Modal,
   ActivityIndicator,
   Platform,
+  RefreshControl,
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ProfileScreen() {
-  const { user, logout, refreshUser } = useAuth();
+  const { user, refreshUser } = useAuth();
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [editName, setEditName] = useState(user?.name || '');
   const [editEmail, setEditEmail] = useState(user?.email || '');
+  const [editPhone, setEditPhone] = useState((user as any)?.phone || '');
   const [showImagePicker, setShowImagePicker] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Construct full avatar URL from relative path
   const getAvatarUrl = (avatarUrl: string | null | undefined): string | null => {
@@ -45,11 +49,11 @@ export default function ProfileScreen() {
     return `${apiBaseUrl}${avatarUrl}`;
   };
 
-  const { data: trips = [] } = useQuery({
-    queryKey: ['driver-trips'],
-    queryFn: () => apiClient.getDriverTrips(),
-    enabled: !!user,
-  });
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refreshUser();
+    setRefreshing(false);
+  };
 
   const updateProfileMutation = useMutation({
     mutationFn: async (profileData: { name?: string; email?: string }) => {
@@ -69,16 +73,6 @@ export default function ProfileScreen() {
     },
   });
 
-  const getDriverStats = () => {
-    const totalTrips = trips.length;
-    const completedTrips = trips.filter(t => t.status === 'completed').length;
-    const inProgressTrips = trips.filter(t => t.status === 'in_progress').length;
-    const scheduledTrips = trips.filter(t => t.status === 'scheduled' || t.status === 'confirmed').length;
-    
-    return { totalTrips, completedTrips, inProgressTrips, scheduledTrips };
-  };
-
-  const stats = getDriverStats();
 
   const handleCallSupport = () => {
     Linking.openURL('tel:+1234567890');
@@ -168,16 +162,18 @@ export default function ProfileScreen() {
     setIsEditing(true);
     setEditName(user?.name || '');
     setEditEmail(user?.email || '');
+    setEditPhone((user as any)?.phone || '');
   };
 
   const handleSaveProfile = () => {
     if (!editName.trim() || !editEmail.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert('Error', 'Please fill in name and email');
       return;
     }
     updateProfileMutation.mutate({
       name: editName.trim(),
       email: editEmail.trim(),
+      phone: editPhone.trim() || undefined,
     });
   };
 
@@ -185,81 +181,23 @@ export default function ProfileScreen() {
     setIsEditing(false);
     setEditName(user?.name || '');
     setEditEmail(user?.email || '');
+    setEditPhone((user as any)?.phone || '');
   };
 
-  const handleLogout = () => {
-    console.log('🔍 [Profile] handleLogout called, Platform.OS:', Platform.OS);
-    
-    if (Platform.OS === 'web') {
-      // Show custom modal for web
-      console.log('🔍 [Profile] Showing logout modal...');
-      setShowLogoutModal(true);
-    } else {
-      // Use Alert.alert for native
-      Alert.alert(
-        'Logout',
-        'Are you sure you want to logout?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Logout',
-            style: 'destructive',
-            onPress: async () => {
-              console.log('🔍 [Profile] Logout confirmed (native), calling logout()');
-              try {
-                await logout();
-                router.replace('/(auth)/login');
-              } catch (error) {
-                console.error('❌ [Profile] Logout error:', error);
-                Alert.alert('Error', 'Logout failed. Please try again.');
-              }
-            },
-          },
-        ]
-      );
-    }
-  };
-
-  const confirmLogout = async () => {
-    console.log('🔍 [Profile] Logout confirmed, calling logout()');
-    setShowLogoutModal(false);
-    try {
-      await logout();
-      console.log('✅ [Profile] Logout successful, redirecting...');
-      if (Platform.OS === 'web') {
-        // Use window.location for web to ensure proper navigation
-        window.location.href = '/';
-      } else {
-        router.replace('/(auth)/login');
-      }
-    } catch (error) {
-      console.error('❌ [Profile] Logout error:', error);
-      if (Platform.OS === 'web') {
-        window.alert('Logout failed. Please try again.');
-      } else {
-        Alert.alert('Error', 'Logout failed. Please try again.');
-      }
-    }
-  };
-
-  const cancelLogout = () => {
-    console.log('🔍 [Profile] Logout cancelled');
-    setShowLogoutModal(false);
-  };
 
   const styles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#f5f5f5',
+      backgroundColor: theme.colors.background,
       paddingTop: insets.top,
     },
     header: {
-      backgroundColor: 'white',
+      backgroundColor: theme.colors.card,
       alignItems: 'center',
       paddingVertical: 32,
       paddingHorizontal: 24,
       borderBottomWidth: 1,
-      borderBottomColor: '#e0e0e0',
+      borderBottomColor: theme.colors.border,
     },
     avatarContainer: {
       position: 'relative',
@@ -269,7 +207,7 @@ export default function ProfileScreen() {
       width: 80,
       height: 80,
       borderRadius: 40,
-      backgroundColor: '#f0f0f0',
+      backgroundColor: theme.colors.backgroundSecondary,
       justifyContent: 'center',
       alignItems: 'center',
       overflow: 'hidden',
@@ -286,11 +224,11 @@ export default function ProfileScreen() {
       width: 24,
       height: 24,
       borderRadius: 12,
-      backgroundColor: '#3B82F6',
+      backgroundColor: theme.colors.primary,
       justifyContent: 'center',
       alignItems: 'center',
       borderWidth: 2,
-      borderColor: 'white',
+      borderColor: theme.colors.card,
     },
     uploadingOverlay: {
       position: 'absolute',
@@ -312,13 +250,14 @@ export default function ProfileScreen() {
     },
     editInput: {
       width: '100%',
-      backgroundColor: '#f8f9fa',
+      backgroundColor: theme.colors.input,
       borderWidth: 1,
-      borderColor: '#e0e0e0',
+      borderColor: theme.colors.inputBorder,
       borderRadius: 8,
       paddingHorizontal: 16,
       paddingVertical: 12,
-      fontSize: 16,
+      ...theme.typography.body,
+      color: theme.colors.foreground,
       marginBottom: 12,
     },
     editButtons: {
@@ -329,28 +268,28 @@ export default function ProfileScreen() {
     },
     cancelButton: {
       flex: 1,
-      backgroundColor: '#f0f0f0',
+      backgroundColor: theme.colors.backgroundSecondary,
       paddingVertical: 12,
       borderRadius: 8,
       marginRight: 8,
       alignItems: 'center',
     },
     cancelButtonText: {
-      color: '#666',
-      fontSize: 16,
+      ...theme.typography.body,
+      color: theme.colors.mutedForeground,
       fontWeight: '600',
     },
     saveButton: {
       flex: 1,
-      backgroundColor: '#3B82F6',
+      backgroundColor: theme.colors.primary,
       paddingVertical: 12,
       borderRadius: 8,
       marginLeft: 8,
       alignItems: 'center',
     },
     saveButtonText: {
-      color: 'white',
-      fontSize: 16,
+      ...theme.typography.body,
+      color: theme.colors.primaryForeground,
       fontWeight: '600',
     },
     editProfileButton: {
@@ -359,29 +298,28 @@ export default function ProfileScreen() {
       marginTop: 12,
       paddingHorizontal: 16,
       paddingVertical: 8,
-      backgroundColor: '#f8f9fa',
+      backgroundColor: theme.colors.backgroundSecondary,
       borderRadius: 20,
     },
     editProfileText: {
-      color: '#3B82F6',
-      fontSize: 14,
+      ...theme.typography.bodySmall,
+      color: theme.colors.primary,
       fontWeight: '600',
       marginLeft: 4,
     },
     name: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      color: '#333',
+      ...theme.typography.h2,
+      color: theme.colors.foreground,
       marginBottom: 4,
     },
     email: {
-      fontSize: 16,
-      color: '#666',
+      ...theme.typography.body,
+      color: theme.colors.mutedForeground,
       marginBottom: 8,
     },
     role: {
-      fontSize: 14,
-      color: '#3B82F6',
+      ...theme.typography.bodySmall,
+      color: theme.colors.primary,
       fontWeight: '600',
     },
     content: {
@@ -389,20 +327,21 @@ export default function ProfileScreen() {
       padding: 24,
     },
     infoCard: {
-      backgroundColor: 'white',
+      backgroundColor: theme.colors.card,
       borderRadius: 12,
       padding: 20,
       marginBottom: 24,
-      shadowColor: '#000',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      shadowColor: theme.colors.shadowColor,
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
+      shadowOpacity: theme.colors.shadowOpacity,
       shadowRadius: 4,
       elevation: 3,
     },
     cardTitle: {
-      fontSize: 18,
-      fontWeight: '600',
-      color: '#333',
+      ...theme.typography.h3,
+      color: theme.colors.foreground,
       marginBottom: 16,
     },
     infoRow: {
@@ -411,140 +350,17 @@ export default function ProfileScreen() {
       alignItems: 'center',
       paddingVertical: 8,
       borderBottomWidth: 1,
-      borderBottomColor: '#f0f0f0',
+      borderBottomColor: theme.colors.border,
     },
     infoLabel: {
-      fontSize: 16,
-      color: '#666',
+      ...theme.typography.body,
+      color: theme.colors.mutedForeground,
       fontWeight: '500',
     },
     infoValue: {
-      fontSize: 16,
-      color: '#333',
+      ...theme.typography.body,
+      color: theme.colors.foreground,
       fontWeight: '600',
-    },
-    logoutButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: 'white',
-      borderRadius: 12,
-      paddingVertical: 16,
-      paddingHorizontal: 24,
-      borderWidth: 1,
-      borderColor: '#EF4444',
-      marginTop: 16,
-      marginBottom: 32,
-      minHeight: 48,
-      ...(Platform.OS === 'web' && {
-        cursor: 'pointer',
-        userSelect: 'none',
-        WebkitUserSelect: 'none',
-        MozUserSelect: 'none',
-        msUserSelect: 'none',
-        pointerEvents: 'auto',
-        position: 'relative',
-        zIndex: 1000,
-      }),
-    },
-    logoutButtonPressed: {
-      opacity: 0.7,
-      backgroundColor: '#FEE2E2',
-    },
-    logoutText: {
-      fontSize: 16,
-      color: '#EF4444',
-      fontWeight: '600',
-      marginLeft: 8,
-    },
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 20,
-    },
-    modalContent: {
-      backgroundColor: 'white',
-      borderRadius: 12,
-      padding: 24,
-      width: '100%',
-      maxWidth: 400,
-      ...(Platform.OS === 'web' && {
-        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-      }),
-    },
-    modalTitle: {
-      fontSize: 20,
-      fontWeight: '700',
-      color: '#333',
-      marginBottom: 12,
-    },
-    modalMessage: {
-      fontSize: 16,
-      color: '#666',
-      marginBottom: 24,
-    },
-    modalButtons: {
-      flexDirection: 'row',
-      gap: 12,
-      justifyContent: 'flex-end',
-    },
-    modalButton: {
-      paddingVertical: 12,
-      paddingHorizontal: 24,
-      borderRadius: 8,
-      minWidth: 100,
-      alignItems: 'center',
-    },
-    modalCancelButton: {
-      backgroundColor: '#F3F4F6',
-    },
-    modalCancelButtonText: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: '#333',
-    },
-    modalConfirmButton: {
-      backgroundColor: '#EF4444',
-    },
-    modalConfirmButtonText: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: 'white',
-    },
-    statsCard: {
-      backgroundColor: 'white',
-      borderRadius: 12,
-      padding: 20,
-      marginBottom: 16,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
-    },
-    statsGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'space-between',
-    },
-    statItem: {
-      width: '48%',
-      alignItems: 'center',
-      paddingVertical: 12,
-      marginBottom: 8,
-    },
-    statNumber: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      color: '#3B82F6',
-      marginBottom: 4,
-    },
-    statLabel: {
-      fontSize: 12,
-      color: '#666',
-      fontWeight: '500',
     },
     supportButton: {
       flexDirection: 'row',
@@ -552,18 +368,23 @@ export default function ProfileScreen() {
       paddingVertical: 12,
       paddingHorizontal: 4,
       borderBottomWidth: 1,
-      borderBottomColor: '#f0f0f0',
+      borderBottomColor: theme.colors.border,
     },
     supportButtonText: {
-      fontSize: 16,
-      color: '#333',
+      ...theme.typography.body,
+      color: theme.colors.foreground,
       marginLeft: 12,
       flex: 1,
     },
   });
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />
+      }
+    >
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.avatarContainer}
@@ -574,16 +395,16 @@ export default function ProfileScreen() {
             {getAvatarUrl(user?.avatar_url) ? (
               <Image source={{ uri: getAvatarUrl(user?.avatar_url)! }} style={styles.avatarImage} />
             ) : (
-              <Ionicons name="person" size={40} color="#666" />
+              <Ionicons name="person" size={40} color={theme.colors.mutedForeground} />
             )}
             {isUploading && (
               <View style={styles.uploadingOverlay}>
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={theme.colors.primaryForeground} />
               </View>
             )}
           </View>
           <View style={styles.editIcon}>
-            <Ionicons name="camera" size={16} color="#fff" />
+            <Ionicons name="camera" size={16} color={theme.colors.primaryForeground} />
           </View>
         </TouchableOpacity>
         
@@ -594,14 +415,24 @@ export default function ProfileScreen() {
               value={editName}
               onChangeText={setEditName}
               placeholder="Full Name"
+              placeholderTextColor={theme.colors.inputPlaceholder}
             />
             <TextInput
               style={styles.editInput}
               value={editEmail}
               onChangeText={setEditEmail}
               placeholder="Email"
+              placeholderTextColor={theme.colors.inputPlaceholder}
               keyboardType="email-address"
               autoCapitalize="none"
+            />
+            <TextInput
+              style={styles.editInput}
+              value={editPhone}
+              onChangeText={setEditPhone}
+              placeholder="Phone Number"
+              placeholderTextColor={theme.colors.inputPlaceholder}
+              keyboardType="phone-pad"
             />
             <View style={styles.editButtons}>
               <TouchableOpacity
@@ -616,7 +447,7 @@ export default function ProfileScreen() {
                 disabled={updateProfileMutation.isPending}
               >
                 {updateProfileMutation.isPending ? (
-                  <ActivityIndicator color="#fff" size="small" />
+                  <ActivityIndicator color={theme.colors.primaryForeground} size="small" />
                 ) : (
                   <Text style={styles.saveButtonText}>Save</Text>
                 )}
@@ -632,7 +463,7 @@ export default function ProfileScreen() {
               style={styles.editProfileButton}
               onPress={handleEditProfile}
             >
-              <Ionicons name="pencil" size={16} color="#3B82F6" />
+              <Ionicons name="pencil" size={16} color={theme.colors.primary} />
               <Text style={styles.editProfileText}>Edit Profile</Text>
             </TouchableOpacity>
           </View>
@@ -640,29 +471,6 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.content}>
-        {/* Trip Statistics */}
-        <View style={styles.statsCard}>
-          <Text style={styles.cardTitle}>Trip Statistics</Text>
-          <View style={styles.statsGrid}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{stats.totalTrips}</Text>
-              <Text style={styles.statLabel}>Total Trips</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{stats.completedTrips}</Text>
-              <Text style={styles.statLabel}>Completed</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{stats.inProgressTrips}</Text>
-              <Text style={styles.statLabel}>In Progress</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{stats.scheduledTrips}</Text>
-              <Text style={styles.statLabel}>Scheduled</Text>
-            </View>
-          </View>
-        </View>
-
         {/* Account Information */}
         <View style={styles.infoCard}>
           <Text style={styles.cardTitle}>Account Information</Text>
@@ -670,6 +478,12 @@ export default function ProfileScreen() {
             <Text style={styles.infoLabel}>Email:</Text>
             <Text style={styles.infoValue}>{user?.email}</Text>
           </View>
+          {(user as any)?.phone && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Phone:</Text>
+              <Text style={styles.infoValue}>{(user as any).phone}</Text>
+            </View>
+          )}
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Role:</Text>
             <Text style={styles.infoValue}>{user?.role?.replace('_', ' ')}</Text>
@@ -682,115 +496,9 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* Settings */}
-        <View style={styles.infoCard}>
-          <Text style={styles.cardTitle}>Settings</Text>
-          <TouchableOpacity style={styles.supportButton}>
-            <Ionicons name="notifications" size={20} color="#3B82F6" />
-            <Text style={styles.supportButtonText}>Notifications</Text>
-            <Ionicons name="chevron-forward" size={16} color="#666" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.supportButton}>
-            <Ionicons name="shield-checkmark" size={20} color="#3B82F6" />
-            <Text style={styles.supportButtonText}>Privacy & Security</Text>
-            <Ionicons name="chevron-forward" size={16} color="#666" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.supportButton}>
-            <Ionicons name="help-circle" size={20} color="#3B82F6" />
-            <Text style={styles.supportButtonText}>Help & FAQ</Text>
-            <Ionicons name="chevron-forward" size={16} color="#666" />
-          </TouchableOpacity>
-        </View>
 
-        {/* Support Options */}
-        <View style={styles.infoCard}>
-          <Text style={styles.cardTitle}>Support</Text>
-          <TouchableOpacity style={styles.supportButton} onPress={handleCallSupport}>
-            <Ionicons name="call" size={20} color="#3B82F6" />
-            <Text style={styles.supportButtonText}>Call Support</Text>
-            <Ionicons name="chevron-forward" size={16} color="#666" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.supportButton} onPress={handleEmailSupport}>
-            <Ionicons name="mail" size={20} color="#3B82F6" />
-            <Text style={styles.supportButtonText}>Email Support</Text>
-            <Ionicons name="chevron-forward" size={16} color="#666" />
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity 
-          style={styles.logoutButton} 
-          onPress={(e) => {
-            console.log('🔍 [Profile] Logout button pressed, Platform.OS:', Platform.OS);
-            if (Platform.OS === 'web') {
-              e?.preventDefault?.();
-              e?.stopPropagation?.();
-            } else {
-              e?.stopPropagation?.();
-            }
-            // Call handleLogout immediately
-            handleLogout();
-          }}
-          onPressIn={() => {
-            console.log('🔍 [Profile] Logout button press started');
-          }}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
       </View>
 
-      {/* Logout Confirmation Modal */}
-      <Modal
-        visible={showLogoutModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={cancelLogout}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={cancelLogout}
-        >
-          <TouchableOpacity
-            style={styles.modalContent}
-            activeOpacity={1}
-            onPress={(e) => {
-              // Prevent closing when clicking inside modal
-              if (Platform.OS === 'web') {
-                e?.stopPropagation?.();
-              }
-            }}
-          >
-            <Text style={styles.modalTitle}>Logout</Text>
-            <Text style={styles.modalMessage}>Are you sure you want to logout?</Text>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalCancelButton]}
-                onPress={(e) => {
-                  if (Platform.OS === 'web') {
-                    e?.stopPropagation?.();
-                  }
-                  cancelLogout();
-                }}
-              >
-                <Text style={styles.modalCancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalConfirmButton]}
-                onPress={(e) => {
-                  if (Platform.OS === 'web') {
-                    e?.stopPropagation?.();
-                  }
-                  confirmLogout();
-                }}
-              >
-                <Text style={styles.modalConfirmButtonText}>Logout</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
     </ScrollView>
   );
 }

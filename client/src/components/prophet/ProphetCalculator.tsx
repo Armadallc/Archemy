@@ -26,6 +26,7 @@ import {
   RefreshCw,
   Download,
 } from 'lucide-react';
+import { RollbackManager } from '../../utils/rollback-manager';
 
 export function ProphetCalculator() {
   const {
@@ -80,23 +81,27 @@ export function ProphetCalculator() {
     URL.revokeObjectURL(url);
   };
 
+  // Feature flag check - hide page header when unified header is enabled
+  const ENABLE_UNIFIED_HEADER = RollbackManager.isUnifiedHeaderEnabled();
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
-        <div>
-          <h1 
-            className="font-bold text-foreground" 
-            style={{ 
-              fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
-              fontSize: '110px'
-            }}
-          >
-            prophet.
-          </h1>
-        </div>
-        
-        {/* Sync Status & Actions */}
+      {/* Header - Only show if unified header is disabled (fallback) */}
+      {!ENABLE_UNIFIED_HEADER && (
+        <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+          <div>
+            <h1 
+              className="font-bold text-foreground" 
+              style={{ 
+                fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+                fontSize: '110px'
+              }}
+            >
+              prophet.
+            </h1>
+          </div>
+          
+          {/* Sync Status & Actions */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-sm">
             {pendingSync ? (
@@ -127,7 +132,8 @@ export function ProphetCalculator() {
             Export
           </Button>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>

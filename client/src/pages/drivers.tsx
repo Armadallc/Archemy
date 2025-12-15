@@ -22,6 +22,7 @@ import { usePageAccess } from "../hooks/use-page-access";
 import { getUserDisplayName } from "../lib/displayNames";
 import ExportButton from "../components/export/ExportButton";
 import { format } from "date-fns";
+import { RollbackManager } from "../utils/rollback-manager";
 
 interface Driver {
   id: string;
@@ -289,20 +290,21 @@ export default function Drivers() {
 
   return (
     <div className="space-y-6 p-6">
-      {/* Header */}
-      <div>
-        <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
-          <div>
-            <h1 
-              className="font-bold text-foreground" 
-              style={{ 
-                fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
-                fontSize: '110px'
-              }}
-            >
-              drivers.
-            </h1>
-          </div>
+      {/* Header - Only show if unified header is disabled (fallback) */}
+      {!RollbackManager.isUnifiedHeaderEnabled() && (
+        <div>
+          <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+            <div>
+              <h1 
+                className="font-bold text-foreground" 
+                style={{ 
+                  fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+                  fontSize: '110px'
+                }}
+              >
+                drivers.
+              </h1>
+            </div>
           <div className="flex items-center gap-3">
           <ExportButton
             data={filteredDrivers}
@@ -511,7 +513,8 @@ export default function Drivers() {
         </Dialog>
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
       <div className="flex items-center space-x-2">
         <div className="relative flex-1 max-w-sm">

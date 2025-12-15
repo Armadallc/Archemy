@@ -119,6 +119,8 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000, // Increase limit after optimization
   },
   server: {
+    host: '0.0.0.0', // Allow access from network (for mobile devices)
+    port: 5173,
     fs: {
       strict: true,
       deny: ["**/.*"],
@@ -126,7 +128,7 @@ export default defineConfig({
     middlewareMode: false,
     hmr: {
       protocol: 'ws',
-      host: 'localhost',
+      host: '0.0.0.0', // Allow HMR from network
       port: 5173,
       clientPort: 5173,
     },

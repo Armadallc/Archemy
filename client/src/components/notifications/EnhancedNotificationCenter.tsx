@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, memo, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Bell, X, CheckCircle, AlertCircle, Info, Clock, Car, MapPin, User, Settings, Filter, Search } from "lucide-react";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
@@ -52,10 +53,16 @@ interface EnhancedNotificationCenterProps {
   className?: string;
 }
 
-export default function EnhancedNotificationCenter({ className }: EnhancedNotificationCenterProps) {
+function EnhancedNotificationCenterComponent({ className }: EnhancedNotificationCenterProps) {
+  console.log('📬 EnhancedNotificationCenter: Component rendered/mounted');
+  
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const recentNotificationsRef = useRef<Map<string, number>>(new Map()); // Track recent notifications to prevent duplicates
+  const processingRef = useRef<Set<string>>(new Set()); // Track notifications currently being processed to prevent race conditions
+  const sequenceRef = useRef<number>(0); // Sequence number for unique identification
+  const lastAddedSequenceRef = useRef<Map<string, number>>(new Map()); // Track the last added notification's sequence for each duplicateKey
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedPriority, setSelectedPriority] = useState<string>("all");
@@ -91,11 +98,15 @@ export default function EnhancedNotificationCenter({ className }: EnhancedNotifi
   const { isConnected, connectionStatus } = useWebSocket({
     enabled: true,
     onMessage: (message) => {
-      // Reduced logging to prevent console spam - only log in development and only important messages
-      if (import.meta.env.DEV && (message.type === 'trip_created' || message.type === 'trip_update')) {
-        console.log('📬 EnhancedNotificationCenter: Received WebSocket message:', message.type);
-      }
-      // console.log('📬 Full message data:', JSON.stringify(message, null, 2)); // Disabled to reduce console spam
+      // Log ALL messages for debugging
+      console.log('📬 EnhancedNotificationCenter: Received WebSocket message:', message.type, {
+        tripId: message.data?.id || message.data?.tripId,
+        status: message.data?.status,
+        notificationTitle: message.data?.notificationTitle,
+        notificationMessage: message.data?.notificationMessage,
+        programId: message.data?.programId,
+        fullData: message.data
+      });
       
       // Handle different WebSocket event types
       if (message.type === 'trip_created') {
@@ -123,10 +134,23 @@ export default function EnhancedNotificationCenter({ className }: EnhancedNotifi
         
         // console.log('✅ Notification added successfully'); // Disabled to reduce console spam
       } else if (message.type === 'trip_update') {
+        console.log('📬 EnhancedNotificationCenter: Processing trip_update', {
+          tripId: message.data?.id || message.data?.tripId,
+          status: message.data?.status,
+          notificationTitle: message.data?.notificationTitle,
+          notificationMessage: message.data?.notificationMessage,
+          hasData: !!message.data,
+          dataKeys: message.data ? Object.keys(message.data) : []
+        });
+        
         const trip = message.data;
-        const clientName = trip.clients 
-          ? `${trip.clients.first_name || ''} ${trip.clients.last_name || ''}`.trim() 
-          : trip.client_name || 'Unknown Client';
+        const clientName = trip.clientName 
+          || trip.client_name
+          || (trip.clients 
+            ? `${trip.clients.first_name || ''} ${trip.clients.last_name || ''}`.trim() 
+            : null)
+          || (trip.client_groups?.name)
+          || 'Unknown Client';
         
         // Use enhanced notification fields from server if available
         const title = trip.notificationTitle || (trip.statusChange ? `Trip ${trip.statusChange}` : 'Trip Updated');
@@ -160,6 +184,14 @@ export default function EnhancedNotificationCenter({ className }: EnhancedNotifi
           notificationType = 'info';
         }
         
+        console.log('📬 About to add trip_update notification:', {
+          title,
+          messageText,
+          clientName,
+          status: trip.status,
+          action: trip.action
+        });
+        
         addNotification({
           type: notificationType,
           title: title,
@@ -170,6 +202,8 @@ export default function EnhancedNotificationCenter({ className }: EnhancedNotifi
             : (trip.status === 'in_progress' || trip.action === 'assignment' ? 'medium' : 'low'),
           data: trip
         });
+        
+        console.log('✅ trip_update notification added');
       } else if (message.type === 'driver_update') {
         addNotification({
           type: 'info',
@@ -208,41 +242,154 @@ export default function EnhancedNotificationCenter({ className }: EnhancedNotifi
   // }, []);
 
   const addNotification = (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
-    const newNotification: Notification = {
-      ...notification,
-      id: Date.now().toString(),
-      timestamp: new Date(),
-      read: false
-    };
+    // Create a unique key for duplicate detection
+    // For trip notifications, use tripId + status + action
+    // For others, use category + title + message hash
+    let duplicateKey: string;
+    if (notification.category === 'trip' && notification.data) {
+      const trip = notification.data;
+      duplicateKey = `trip-${trip.tripId || trip.id || 'unknown'}-${trip.status || 'unknown'}-${trip.action || 'update'}`;
+    } else {
+      // For non-trip notifications, use a hash of the content
+      duplicateKey = `${notification.category}-${notification.title}-${notification.message.substring(0, 50)}`;
+    }
 
-    // Reduced logging to prevent console spam
-    // console.log('📬 addNotification called:', {
-    //   title: newNotification.title,
-    //   message: newNotification.message,
-    //   category: newNotification.category,
-    //   id: newNotification.id
-    // });
+    // Check if this notification was recently added (within 100ms for simultaneous processing, 5 seconds for retries)
+    // This check must happen FIRST and synchronously to prevent race conditions
+    const now = Date.now();
+    const recentTime = recentNotificationsRef.current.get(duplicateKey);
+    if (recentTime) {
+      const timeSince = now - recentTime;
+      // Use a shorter window (100ms) for very recent notifications to catch simultaneous processing
+      // Use a longer window (5 seconds) for older notifications to prevent retries
+      const window = timeSince < 1000 ? 100 : 5000;
+      if (timeSince < window) {
+        if (import.meta.env.DEV) {
+          console.log('📬 Duplicate notification prevented (recent):', duplicateKey, 'last added', timeSince, 'ms ago (window:', window, 'ms)');
+        }
+        return; // Skip duplicate notification
+      }
+    }
 
+    // ATOMIC CHECK-AND-SET: Check if processing AND add to processing set in one operation
+    // This prevents race conditions when multiple subscribers process the same message simultaneously
+    if (processingRef.current.has(duplicateKey)) {
+      if (import.meta.env.DEV) {
+        console.log('📬 Duplicate notification prevented (currently processing):', duplicateKey);
+      }
+      return; // Skip duplicate notification
+    }
+    
+    // Generate a unique sequence number for this attempt
+    const sequence = ++sequenceRef.current;
+    
+    // Check if another subscriber already claimed this notification
+    // We check BEFORE claiming to prevent race conditions
+    const lastAddedSequence = lastAddedSequenceRef.current.get(duplicateKey);
+    if (lastAddedSequence !== undefined) {
+      // Another subscriber already claimed this notification
+      if (import.meta.env.DEV) {
+        console.log('📬 Duplicate notification prevented (already claimed):', duplicateKey, 'our sequence:', sequence, 'claimed by sequence:', lastAddedSequence);
+      }
+      return; // Skip duplicate notification
+    }
+    
+    // Claim this notification by updating the sequence IMMEDIATELY and SYNCHRONOUSLY
+    // This must happen BEFORE setState so other calls can see it
+    lastAddedSequenceRef.current.set(duplicateKey, sequence);
+    
+    // Mark as processing IMMEDIATELY - this must happen synchronously before any async operations
+    processingRef.current.add(duplicateKey);
+    
+    // Mark this notification as recently added IMMEDIATELY and SYNCHRONOUSLY
+    recentNotificationsRef.current.set(duplicateKey, now);
+
+    // Clean up old entries (older than 10 seconds) to prevent memory leak
+    for (const [key, timestamp] of recentNotificationsRef.current.entries()) {
+      if (now - timestamp > 10000) {
+        recentNotificationsRef.current.delete(key);
+      }
+    }
+
+    // Also check if a notification with the same key already exists in the current notifications array
+    // This handles the case where multiple subscribers process the same message almost simultaneously
     setNotifications(prev => {
-      // Filter out any mock notifications when adding real ones
+      // CRITICAL: Check if a notification with the same duplicateKey already exists in the array
+      // This is the most reliable check because it uses the actual state, not refs
+      const existing = prev.find(n => {
+        if (n.category === 'trip' && n.data && notification.category === 'trip' && notification.data) {
+          const existingTrip = n.data;
+          const newTrip = notification.data;
+          const existingKey = `trip-${existingTrip.tripId || existingTrip.id || 'unknown'}-${existingTrip.status || 'unknown'}-${existingTrip.action || 'update'}`;
+          return existingKey === duplicateKey;
+        }
+        return false;
+      });
+
+      if (existing) {
+        // Remove from processing set since we're not adding it
+        processingRef.current.delete(duplicateKey);
+        if (import.meta.env.DEV) {
+          console.log('📬 Duplicate notification prevented (exists in array):', duplicateKey, 'sequence:', sequence);
+        }
+        return prev; // Don't add, return existing array
+      }
+
+      // Double-check the processing set - if we're not in it, another subscriber already processed this
+      if (!processingRef.current.has(duplicateKey)) {
+        if (import.meta.env.DEV) {
+          console.log('📬 Duplicate notification prevented (processing set check failed):', duplicateKey, 'sequence:', sequence);
+        }
+        return prev;
+      }
+
+      // CRITICAL: Double-check the last added sequence INSIDE the setState callback
+      // This ensures that even if two calls passed the initial check, only one will actually add
+      // We use sequence numbers instead of timestamps because multiple calls can have the same timestamp
+      const lastAddedSequence = lastAddedSequenceRef.current.get(duplicateKey);
+      if (lastAddedSequence !== undefined && lastAddedSequence < sequence) {
+        // Another subscriber with a lower sequence number already added this notification
+        processingRef.current.delete(duplicateKey);
+        if (import.meta.env.DEV) {
+          console.log('📬 Duplicate notification prevented (sequence check):', duplicateKey, 'our sequence:', sequence, 'last added sequence:', lastAddedSequence);
+        }
+        return prev;
+      }
+      
+      // Update the last added sequence to our sequence
+      lastAddedSequenceRef.current.set(duplicateKey, sequence);
+
+      // Continue with adding the notification
       const filtered = prev.filter(n => !n.id?.startsWith('mock-'));
+      const newNotification: Notification = {
+        ...notification,
+        id: Date.now().toString(),
+        timestamp: new Date(),
+        read: false
+      };
+
+      console.log('📬 addNotification called:', {
+        title: newNotification.title,
+        message: newNotification.message,
+        category: newNotification.category,
+        id: newNotification.id,
+        duplicateKey
+      });
+
       const updated = [newNotification, ...filtered];
-      // console.log('📬 Updated notifications array:', { // Disabled to reduce console spam
-      //   before: prev.length,
-      //   after: updated.length,
-      //   filteredMocks: prev.length - filtered.length,
-      //   newNotificationId: newNotification.id,
-      //   newNotificationTitle: newNotification.title
-      // });
+      setUnreadCount(prev => {
+        const newCount = prev + 1;
+        console.log('📬 Updated unread count:', prev, '→', newCount);
+        return newCount;
+      });
+
+      // Remove from processing set after successfully adding
+      processingRef.current.delete(duplicateKey);
+
       return updated;
     });
-    setUnreadCount(prev => {
-      // Count unread from the new notifications array (excluding mocks)
-      const newCount = prev + 1;
-      // console.log('📬 Updated unread count:', prev, '→', newCount); // Disabled to reduce console spam
-      return newCount;
-    });
   };
+
 
   const markAsRead = (id: string) => {
     setNotifications(prev => 
@@ -366,44 +513,31 @@ export default function EnhancedNotificationCenter({ className }: EnhancedNotifi
     }));
   };
 
-  return (
-    <div className={className}>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setIsOpen(!isOpen)}
-        className="relative"
-        style={{ backgroundColor: 'var(--muted)' }}
-      >
-        <Bell className="h-5 w-5" />
-        {unreadCount > 0 && (
-          <Badge 
-            variant="destructive" 
-            className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-          >
-            {unreadCount}
-          </Badge>
-        )}
-      </Button>
-
-      {isOpen && (
-        <div className="absolute right-0 top-12 w-96 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
-          <Card className="border-0 shadow-none">
-            <CardHeader className="pb-3">
+  const notificationPanel = isOpen ? (
+    <>
+      {/* Backdrop to close on outside click */}
+      <div 
+        className="fixed inset-0 z-[99998] bg-black/20" 
+        onClick={() => setIsOpen(false)}
+      />
+      {/* Notification panel */}
+      <div className="fixed right-4 top-20 w-96 max-h-[calc(100vh-6rem)] bg-background border border-border rounded-lg shadow-2xl z-[99999] flex flex-col" style={{ zIndex: 99999 }}>
+          <Card className="border-0 shadow-none bg-background flex flex-col h-full">
+            <CardHeader className="pb-3 border-b border-border flex-shrink-0">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Notifications</CardTitle>
+                <CardTitle className="text-lg text-foreground">Notifications</CardTitle>
                 <div className="flex items-center space-x-2">
-                  <Button variant="ghost" size="sm" onClick={markAllAsRead}>
+                  <Button variant="ghost" size="sm" onClick={markAllAsRead} className="text-muted-foreground hover:text-foreground">
                     Mark All Read
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => setIsOpen(false)}>
+                  <Button variant="ghost" size="sm" onClick={() => setIsOpen(false)} className="text-muted-foreground hover:text-foreground">
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
             </CardHeader>
 
-            <CardContent className="p-0">
+            <CardContent className="p-0 flex-1 overflow-hidden flex flex-col">
               <Tabs defaultValue="notifications" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="notifications">Notifications</TabsTrigger>
@@ -414,12 +548,12 @@ export default function EnhancedNotificationCenter({ className }: EnhancedNotifi
                   {/* Search and Filters */}
                   <div className="space-y-3">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         placeholder="Search notifications..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
+                        className="pl-10 bg-background border-border"
                       />
                     </div>
 
@@ -427,7 +561,7 @@ export default function EnhancedNotificationCenter({ className }: EnhancedNotifi
                       <select
                         value={selectedCategory}
                         onChange={(e) => setSelectedCategory(e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm"
+                        className="flex-1 px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                       >
                         <option value="all">All Categories</option>
                         <option value="trip">Trips</option>
@@ -441,7 +575,7 @@ export default function EnhancedNotificationCenter({ className }: EnhancedNotifi
                       <select
                         value={selectedPriority}
                         onChange={(e) => setSelectedPriority(e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm"
+                        className="flex-1 px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                       >
                         <option value="all">All Priorities</option>
                         <option value="urgent">Urgent</option>
@@ -453,9 +587,9 @@ export default function EnhancedNotificationCenter({ className }: EnhancedNotifi
                   </div>
 
                   {/* Notifications List */}
-                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                  <div className="space-y-2">
                     {filteredNotifications.length === 0 ? (
-                      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <div className="text-center py-8 text-muted-foreground">
                         No notifications found
                       </div>
                     ) : (
@@ -464,22 +598,22 @@ export default function EnhancedNotificationCenter({ className }: EnhancedNotifi
                           key={notification.id}
                           className={`p-3 rounded-lg border cursor-pointer transition-colors ${
                             notification.read 
-                              ? 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700' 
-                              : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700'
+                              ? 'bg-muted/50 border-border hover:bg-muted' 
+                              : 'bg-primary/10 border-primary/20 hover:bg-primary/20'
                           }`}
                           onClick={() => markAsRead(notification.id)}
                         >
                           <div className="flex items-start space-x-3">
-                            <div className={`${getTypeColor(notification.type)} mt-1`}>
+                            <div className={`${getTypeColor(notification.type)} mt-1 flex-shrink-0`}>
                               {getIcon(notification.type, notification.category)}
                             </div>
                             
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between mb-1">
-                                <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                              <div className="flex items-center justify-between mb-1 gap-2">
+                                <h4 className="text-sm font-medium text-foreground truncate">
                                   {notification.title}
                                 </h4>
-                                <div className="flex items-center space-x-1">
+                                <div className="flex items-center space-x-1 flex-shrink-0">
                                   <Badge className={`text-xs ${getCategoryColor(notification.category)}`}>
                                     {notification.category}
                                   </Badge>
@@ -489,12 +623,12 @@ export default function EnhancedNotificationCenter({ className }: EnhancedNotifi
                                 </div>
                               </div>
                               
-                              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                              <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
                                 {notification.message}
                               </p>
                               
                               <div className="flex items-center justify-between">
-                                <span className="text-xs text-gray-500 dark:text-gray-500">
+                                <span className="text-xs text-muted-foreground">
                                   {notification.timestamp.toLocaleTimeString()}
                                 </span>
                                 <Button
@@ -504,7 +638,7 @@ export default function EnhancedNotificationCenter({ className }: EnhancedNotifi
                                     e.stopPropagation();
                                     removeNotification(notification.id);
                                   }}
-                                  className="h-6 w-6 p-0"
+                                  className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
                                 >
                                   <X className="h-3 w-3" />
                                 </Button>
@@ -541,13 +675,13 @@ export default function EnhancedNotificationCenter({ className }: EnhancedNotifi
 
                     {/* Priority Preferences */}
                     <div>
-                      <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">
+                      <h4 className="text-sm font-medium text-foreground mb-3">
                         Priority Levels
                       </h4>
                       <div className="space-y-2">
                         {Object.entries(preferences.priorities).map(([priority, enabled]) => (
                           <div key={priority} className="flex items-center justify-between">
-                            <span className="text-sm text-gray-700 dark:text-gray-300 capitalize">
+                            <span className="text-sm text-foreground capitalize">
                               {priority}
                             </span>
                             <Switch
@@ -561,13 +695,13 @@ export default function EnhancedNotificationCenter({ className }: EnhancedNotifi
 
                     {/* Channel Preferences */}
                     <div>
-                      <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">
+                      <h4 className="text-sm font-medium text-foreground mb-3">
                         Notification Channels
                       </h4>
                       <div className="space-y-2">
                         {Object.entries(preferences.channels).map(([channel, enabled]) => (
                           <div key={channel} className="flex items-center justify-between">
-                            <span className="text-sm text-gray-700 dark:text-gray-300 capitalize">
+                            <span className="text-sm text-foreground capitalize">
                               {channel === 'inApp' ? 'In-App' : channel.toUpperCase()}
                             </span>
                             <Switch
@@ -598,21 +732,21 @@ export default function EnhancedNotificationCenter({ className }: EnhancedNotifi
                         {preferences.quietHours.enabled && (
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <label className="text-xs text-gray-600 dark:text-gray-400">Start Time</label>
+                              <label className="text-xs text-muted-foreground">Start Time</label>
                               <input
                                 type="time"
                                 value={preferences.quietHours.start}
                                 onChange={(e) => updatePreferences('quietHours', { ...preferences.quietHours, start: e.target.value })}
-                                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-800"
+                                className="w-full px-2 py-1 border border-border rounded text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                               />
                             </div>
                             <div>
-                              <label className="text-xs text-gray-600 dark:text-gray-400">End Time</label>
+                              <label className="text-xs text-muted-foreground">End Time</label>
                               <input
                                 type="time"
                                 value={preferences.quietHours.end}
                                 onChange={(e) => updatePreferences('quietHours', { ...preferences.quietHours, end: e.target.value })}
-                                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-800"
+                                className="w-full px-2 py-1 border border-border rounded text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                               />
                             </div>
                           </div>
@@ -625,12 +759,39 @@ export default function EnhancedNotificationCenter({ className }: EnhancedNotifi
             </CardContent>
           </Card>
         </div>
-      )}
+      </>
+    ) : null;
+
+  return (
+    <div className={`relative ${className || ''}`}>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setIsOpen(!isOpen)}
+        className="relative"
+        style={{ backgroundColor: 'var(--muted)' }}
+      >
+        <Bell className="h-5 w-5" />
+        {unreadCount > 0 && (
+          <Badge 
+            variant="destructive" 
+            className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+          >
+            {unreadCount}
+          </Badge>
+        )}
+      </Button>
+
+      {/* Render notification panel in a portal to escape stacking context */}
+      {typeof document !== 'undefined' && notificationPanel && createPortal(notificationPanel, document.body)}
     </div>
   );
 }
 
-
+// Memoize to prevent unnecessary re-renders
+export default memo(EnhancedNotificationCenterComponent, (prevProps, nextProps) => {
+  return prevProps.className === nextProps.className;
+});
 
 
 

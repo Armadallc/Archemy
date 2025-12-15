@@ -49,6 +49,9 @@ interface SidebarProps {
   setCurrentProgram?: (program: string) => void;
   isCollapsed?: boolean;
   setIsCollapsed?: (collapsed: boolean) => void;
+  autoHide?: boolean; // Foundation for Phase 4 - not implemented yet
+  collapsed?: boolean; // Alias for isCollapsed for consistency
+  onCollapseChange?: (collapsed: boolean) => void; // Alias for setIsCollapsed
 }
 
 // This will be dynamically populated based on user role and corporate client
@@ -181,8 +184,21 @@ export default function Sidebar({
   currentProgram, 
   setCurrentProgram, 
   isCollapsed = false, 
-  setIsCollapsed 
+  setIsCollapsed,
+  autoHide = false, // Foundation for Phase 4 - not implemented yet
+  collapsed,
+  onCollapseChange
 }: SidebarProps) {
+  // Use collapsed prop if provided, otherwise use isCollapsed
+  const actualCollapsed = collapsed !== undefined ? collapsed : isCollapsed;
+  const handleCollapseChange = onCollapseChange || setIsCollapsed || (() => {});
+  
+  // Auto-hide detection foundation (commented for Phase 1)
+  // We'll implement full auto-hide in Phase 4
+  // useEffect(() => {
+  //   if (!autoHide) return;
+  //   // Auto-hide logic will go here
+  // }, [autoHide]);
   const [location, setLocation] = useLocation();
   const { user, logout } = useAuth();
   const { level, selectedProgram, selectedCorporateClient, navigateToProgram } = useHierarchy();
@@ -590,7 +606,7 @@ export default function Sidebar({
   };
 
   return (
-    <div className={`transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} flex flex-col overflow-hidden rounded-lg`} style={{ color: 'var(--color-aqua)', backgroundColor: 'var(--gray-1)', paddingBottom: '24px', borderTop: '1px solid var(--border)', borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', height: 'calc(100vh - 48px)' }}>
+    <div className={`transition-all duration-300 ${actualCollapsed ? 'w-16' : 'w-64'} flex flex-col overflow-hidden rounded-lg`} style={{ color: 'var(--color-aqua)', backgroundColor: 'var(--gray-1)', paddingBottom: '24px', borderTop: '1px solid var(--border)', borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', height: 'calc(100vh - 48px)' }}>
       {/* Header */}
       <div className="px-4 pt-6 pb-4 border-b flex-shrink-0 flex items-center justify-center relative" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--gray-1)', height: '150px' }}>
         {shouldShowLogo() && (
@@ -604,22 +620,22 @@ export default function Sidebar({
             }}
           />
         )}
-        {!shouldShowLogo() && !isCollapsed && (
+        {!shouldShowLogo() && !actualCollapsed && (
           <div>
             <h2 style={{ fontSize: '42px', fontFamily: "'Nohemi', sans-serif" }}>{getCorporateClientName()}</h2>
           </div>
         )}
-        {setIsCollapsed && (
+        {(setIsCollapsed || onCollapseChange) && (
           <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={() => handleCollapseChange(!actualCollapsed)}
             className="p-1 rounded transition-colors absolute right-2"
             style={{ '--hover-bg': 'var(--gray-3)' } as React.CSSProperties & { '--hover-bg': string }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gray-3)'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={actualCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={actualCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            <ChevronLeft className={`w-4 h-4 transition-transform ${isCollapsed ? 'rotate-180' : ''}`} />
+            <ChevronLeft className={`w-4 h-4 transition-transform ${actualCollapsed ? 'rotate-180' : ''}`} />
           </button>
         )}
       </div>
@@ -627,7 +643,7 @@ export default function Sidebar({
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-4 overflow-y-auto" style={{ backgroundColor: 'var(--gray-1)' }}>
         {/* Mini Calendar */}
-        {!isCollapsed && (
+        {!actualCollapsed && (
           <div className="mb-4" style={{ backgroundColor: 'var(--gray-1)' }}>
             <MiniCalendar />
           </div>
@@ -676,13 +692,13 @@ export default function Sidebar({
                   tabIndex={0}
                 >
                   <div className="flex items-center space-x-2">
-                    {!isCollapsed && (
+                    {!actualCollapsed && (
                       <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--gray-9)', fontFamily: "'Nohemi', sans-serif" }}>
                         {category.label}
                       </span>
                     )}
                   </div>
-                  {!isCollapsed && (
+                  {!actualCollapsed && (
                     <div className="flex items-center">
                       {isExpanded ? (
                         <ChevronDown className="w-3 h-3 transition-colors" style={{ color: 'var(--gray-9)' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--gray-11)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--gray-9)'} />
@@ -736,7 +752,7 @@ export default function Sidebar({
                         onMouseLeave={(e) => !isActive && (e.currentTarget.style.backgroundColor = 'transparent')}
                       >
                         {/* Icon removed per user request */}
-                        {!isCollapsed && (
+                        {!actualCollapsed && (
                           <div className="flex items-start space-x-2 flex-1" style={{ justifyContent: 'flex-start', alignItems: 'flex-start' }}>
                             <span className="text-sm font-medium" style={{ fontFamily: "'Nohemi', sans-serif" }}>{item.label}</span>
                             {/* Status indicator removed per user request */}
@@ -763,7 +779,7 @@ export default function Sidebar({
                       onMouseLeave={(e) => !isActive && (e.currentTarget.style.backgroundColor = 'transparent')}
                     >
                       {/* Icon removed per user request */}
-                      {!isCollapsed && (
+                      {!actualCollapsed && (
                         <div className="flex items-center space-x-2 flex-1">
                           <span className="text-sm font-medium" style={{ fontFamily: "'Nohemi', sans-serif" }}>{item.label}</span>
                           {/* Status indicator removed per user request */}
@@ -780,7 +796,7 @@ export default function Sidebar({
 
       {/* User Menu */}
       <div className="p-4 border-t relative user-menu-container flex-shrink-0" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--gray-1)', height: '69px' }}>
-        {!isCollapsed && user && (
+        {!actualCollapsed && user && (
           <div className="flex items-center space-x-3">
             <button
               onClick={toggleUserMenu}
@@ -818,7 +834,7 @@ export default function Sidebar({
             </button>
           </div>
         )}
-        {isCollapsed && user && (
+        {actualCollapsed && user && (
           <button
             onClick={toggleUserMenu}
             className="w-8 h-8 rounded-full flex items-center justify-center mx-auto transition-colors"
