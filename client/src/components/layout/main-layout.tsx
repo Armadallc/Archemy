@@ -1,6 +1,7 @@
 import React, { ReactNode, useState, Suspense, lazy, useEffect } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import Sidebar from "./sidebar";
+import AdaptiveSidebar from "./AdaptiveSidebar";
 import { UnifiedHeader } from "./unified-header";
 import { UnifiedHeaderMobile } from "./unified-header-mobile";
 import EmptyUniversalCalendar from "../EmptyUniversalCalendar";
@@ -28,6 +29,14 @@ const Schedule = lazy(() => import("../../pages/schedule"));
 import FrequentLocationsComponent from "../../pages/frequent-locations";
 const FrequentLocations = FrequentLocationsComponent;
 const Users = lazy(() => import("../../pages/users"));
+// Team Management Pages
+const TeamProgramsPage = lazy(() => import("../../pages/team/programs"));
+const TeamLocationsPage = lazy(() => import("../../pages/team/locations"));
+const TeamStaffPage = lazy(() => import("../../pages/team/staff"));
+const TeamClientCensusPage = lazy(() => import("../../pages/team/client-census"));
+// Partner Management Pages
+const PartnersCorporateClientsPage = lazy(() => import("../../pages/partners/corporate-clients"));
+const PartnersBillingPage = lazy(() => import("../../pages/partners/billing").then(module => ({ default: module.default })));
 // Temporarily remove lazy loading to fix React hook errors with useAuth/useHierarchy
 import SettingsComponent from "../../pages/settings";
 const Settings = SettingsComponent;
@@ -169,7 +178,7 @@ export default function MainLayout({
     <div className="flex h-screen bg-background" style={{ backgroundColor: 'rgba(255, 255, 255, 0)', background: 'unset' }}>
         {/* Desktop Sidebar - hidden on mobile */}
         <div className="hidden md:block" style={{ marginTop: '24px', marginBottom: '24px', backgroundColor: 'var(--card)' }}>
-          <Sidebar 
+          <AdaptiveSidebar 
             currentProgram={currentProgramId}
             setCurrentProgram={setCurrentProgram}
             isCollapsed={sidebarCollapsed}
@@ -302,6 +311,36 @@ export default function MainLayout({
               <Route path="/trips">
                 <HierarchicalTripsPage />
               </Route>
+              {/* Team Management Routes */}
+              <Route path="/team/programs">
+                <TeamProgramsPage />
+              </Route>
+              <Route path="/team/locations">
+                <TeamLocationsPage />
+              </Route>
+              <Route path="/team/staff">
+                <TeamStaffPage />
+              </Route>
+              <Route path="/team/client-census">
+                <TeamClientCensusPage />
+              </Route>
+              <Route path="/team/frequent-locations">
+                <FrequentLocations />
+              </Route>
+              
+              {/* Partner Management Routes (Super Admin Only) */}
+              <Route path="/partners/corporate-clients">
+                <PartnersCorporateClientsPage />
+              </Route>
+              <Route path="/partners/billing">
+                <PartnersBillingPage />
+              </Route>
+              
+              {/* Operations Routes */}
+              <Route path="/operations/clients">
+                <Clients />
+              </Route>
+              {/* Legacy /clients route redirects to operations/clients for backward compatibility */}
               <Route path="/clients">
                 <Clients />
               </Route>
@@ -311,6 +350,7 @@ export default function MainLayout({
               <Route path="/vehicles">
                 <Vehicles />
               </Route>
+              {/* Legacy /frequent-locations route redirects to team/frequent-locations for backward compatibility */}
               <Route path="/frequent-locations">
                 <FrequentLocations />
               </Route>
@@ -323,9 +363,10 @@ export default function MainLayout({
               <Route path="/profile">
                 <ProfilePage />
               </Route>
-              <Route path="/role-templates">
+              {/* Role Templates route removed - roles are now in Settings > Tenant Roles tab */}
+              {/* <Route path="/role-templates">
                 <RoleTemplatesPage />
-              </Route>
+              </Route> */}
               <Route path="/permissions">
                 <RoleTemplatesPage /> {/* Redirect to role templates for backward compatibility */}
               </Route>

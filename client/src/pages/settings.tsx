@@ -39,8 +39,11 @@ import CorporateClientCards from "../components/settings/CorporateClientCards";
 import UsersManagement from "../components/settings/UsersManagement";
 import TenantRolesManagement from "../components/settings/TenantRolesManagement";
 import ProgramCreationForm from "../components/settings/ProgramCreationForm";
+import FeatureFlagsTab from "../components/settings/FeatureFlagsTab";
 import { ThemeSelector } from "../components/ThemeSelector";
 import { ThemePicker } from "../components/design-system/ThemePicker";
+import { IntegratedThemeEditor } from "../components/design-system/IntegratedThemeEditor";
+import { Flag, Palette } from "lucide-react";
 
 interface CorporateClientSettings {
   id: string;
@@ -90,8 +93,10 @@ function getVisibleTabs(userRole?: string) {
     { id: 'vendors', label: 'Vendors', icon: Store },
     { id: 'users', label: 'Users', icon: Users },
     { id: 'tenant-roles', label: 'Tenant Roles', icon: Shield },
+    { id: 'feature-flags', label: 'Feature Flags', icon: Flag },
     { id: 'contacts', label: 'Contacts', icon: Contact },
     { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'theme-management', label: 'Theme Management', icon: Palette },
     { id: 'system', label: 'System', icon: Database }
   ];
 
@@ -113,7 +118,7 @@ function getVisibleTabs(userRole?: string) {
       return allTabs.filter(tab => tab.id !== 'system');
     
     case 'super_admin':
-      // Super admins see all tabs
+      // Super admins see all tabs including Feature Flags and Theme Management
       return allTabs;
     
     default:
@@ -427,11 +432,11 @@ export default function Settings() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-8">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-10 h-auto p-1 gap-1">
           {visibleTabs.map((tab) => (
-            <TabsTrigger key={tab.id} value={tab.id} className="flex items-center space-x-2">
-              <tab.icon className="w-4 h-4" />
-              <span className="hidden sm:inline">{tab.label}</span>
+            <TabsTrigger key={tab.id} value={tab.id} className="flex items-center justify-center space-x-1.5 px-2 py-2 text-xs sm:text-sm flex-1 min-w-0">
+              <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+              <span className="truncate text-center">{tab.label}</span>
             </TabsTrigger>
           ))}
         </TabsList>
@@ -649,6 +654,21 @@ export default function Settings() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="feature-flags" className="space-y-6">
+          {user?.role === 'super_admin' ? (
+            <FeatureFlagsTab />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Feature Flags</CardTitle>
+                <CardDescription>
+                  Feature flags are only available to Super Admins.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          )}
+        </TabsContent>
+
         <TabsContent value="notifications" className="space-y-6">
           {/* Theme Selection - Available to all users */}
           <ThemePicker maxThemes={4} />
@@ -700,6 +720,34 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="theme-management" className="space-y-6">
+          {user?.role === 'super_admin' ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Theme Management</CardTitle>
+                <CardDescription>
+                  Create, edit, and manage themes for the application. Super Admins can edit themes, other users can only select from available themes.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <IntegratedThemeEditor />
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Theme Selection</CardTitle>
+                <CardDescription>
+                  Select a theme for your interface. Only Super Admins can create and edit themes.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ThemePicker />
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="system" className="space-y-6">
