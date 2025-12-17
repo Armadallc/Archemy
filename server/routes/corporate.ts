@@ -8,6 +8,7 @@ import { requirePermission } from "../auth";
 import { PERMISSIONS } from "../permissions";
 import { corporateClientsStorage, programsStorage } from "../minimal-supabase";
 import { upload, processCorporateLogoToSupabase, deleteFileFromSupabase } from "../upload";
+import { handleConstraintError } from "../utils/constraint-errors";
 
 const router = express.Router();
 
@@ -54,6 +55,10 @@ router.post("/clients", requireSupabaseAuth, requireSupabaseRole(['super_admin']
     res.status(201).json(corporateClient);
   } catch (error) {
     console.error("Error creating corporate client:", error);
+    // Handle constraint violations with user-friendly messages
+    if (handleConstraintError(error, res)) {
+      return;
+    }
     res.status(500).json({ message: "Failed to create corporate client" });
   }
 });
@@ -86,6 +91,10 @@ router.patch("/clients/:id", requireSupabaseAuth, requirePermission(PERMISSIONS.
     res.json(corporateClient);
   } catch (error) {
     console.error("Error updating corporate client:", error);
+    // Handle constraint violations with user-friendly messages
+    if (handleConstraintError(error, res)) {
+      return;
+    }
     res.status(500).json({ message: "Failed to update corporate client" });
   }
 });
@@ -284,6 +293,10 @@ router.post("/programs", requireSupabaseAuth, requireSupabaseRole(['super_admin'
     res.status(201).json(program);
   } catch (error) {
     console.error("Error creating program:", error);
+    // Handle constraint violations with user-friendly messages
+    if (handleConstraintError(error, res)) {
+      return;
+    }
     res.status(500).json({ message: "Failed to create program" });
   }
 });

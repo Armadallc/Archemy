@@ -8,6 +8,8 @@ import { requirePermission } from "../auth";
 import { PERMISSIONS } from "../permissions";
 import { programsStorage, corporateClientsStorage } from "../minimal-supabase";
 import { upload, processProgramLogoToSupabase, deleteFileFromSupabase } from "../upload";
+import { handleConstraintError } from "../utils/constraint-errors";
+import { handleConstraintError } from "../utils/constraint-errors";
 
 const router = express.Router();
 
@@ -72,6 +74,10 @@ router.patch("/:id", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'c
     res.json(program);
   } catch (error) {
     console.error("Error updating program:", error);
+    // Handle constraint violations with user-friendly messages
+    if (handleConstraintError(error, res)) {
+      return;
+    }
     res.status(500).json({ message: "Failed to update program" });
   }
 });

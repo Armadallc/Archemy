@@ -228,3 +228,7 @@ function UnifiedHeaderMobileComponent({
 export const UnifiedHeaderMobile = memo(UnifiedHeaderMobileComponent, (prevProps, nextProps) => {
   return prevProps.showSearch === nextProps.showSearch;
 });
+
+
+
+

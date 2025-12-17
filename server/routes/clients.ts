@@ -210,10 +210,21 @@ router.get("/:id", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_CLIEN
 
 router.post("/", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin', 'program_user']), async (req: SupabaseAuthenticatedRequest, res) => {
   try {
+    console.log('🔍 [POST /api/clients] Creating client with data:', {
+      first_name: req.body.first_name,
+      last_name: req.body.last_name,
+      program_id: req.body.program_id,
+      location_id: req.body.location_id
+    });
     const client = await clientsStorage.createClient(req.body);
+    console.log('✅ [POST /api/clients] Client created successfully:', {
+      id: client.id,
+      scid: client.scid,
+      program_id: client.program_id
+    });
     res.status(201).json(client);
   } catch (error) {
-    console.error("Error creating client:", error);
+    console.error("❌ [POST /api/clients] Error creating client:", error);
     res.status(500).json({ message: "Failed to create client" });
   }
 });

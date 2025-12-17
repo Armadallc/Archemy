@@ -126,3 +126,7 @@ If you only see "Local", the network access isn't enabled yet.
 **Your Local IP:** `192.168.12.215`  
 **Web Port:** `5173`  
 **API Port:** `8081`
+
+
+
+

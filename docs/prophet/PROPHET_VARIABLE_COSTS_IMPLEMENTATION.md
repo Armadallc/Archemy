@@ -815,3 +815,7 @@ TOTAL VARIABLE: $17,970/month
 
 
 
+
+
+
+

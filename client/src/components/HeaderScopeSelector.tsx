@@ -205,3 +205,7 @@ function HeaderScopeSelectorComponent() {
 // Memoize to prevent unnecessary re-renders
 export const HeaderScopeSelector = memo(HeaderScopeSelectorComponent);
 
+
+
+
+

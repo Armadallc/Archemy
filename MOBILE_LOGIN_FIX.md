@@ -37,3 +37,7 @@ VITE_API_URL=http://192.168.12.215:8081
 ```
 
 But the dynamic detection should work automatically now!
+
+
+
+

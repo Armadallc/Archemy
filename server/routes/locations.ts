@@ -7,6 +7,7 @@ import {
 import { requirePermission } from "../auth";
 import { PERMISSIONS } from "../permissions";
 import { locationsStorage } from "../minimal-supabase";
+import { handleConstraintError } from "../utils/constraint-errors";
 import { 
   getFrequentLocations, 
   getFrequentLocationById, 
@@ -53,7 +54,9 @@ router.get("/corporate-client/:corporateClientId", requireSupabaseAuth, requireP
 router.get("/program/:programId", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_LOCATIONS), async (req: SupabaseAuthenticatedRequest, res) => {
   try {
     const { programId } = req.params;
-    const locations = await locationsStorage.getLocationsByProgram(programId);
+    // Include inactive locations for settings/admin pages so they can be edited
+    const includeInactive = req.query.includeInactive === 'true';
+    const locations = await locationsStorage.getLocationsByProgram(programId, includeInactive);
     res.json(locations);
   } catch (error) {
     console.error("Error fetching locations by program:", error);
@@ -83,6 +86,10 @@ router.post("/", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corpo
     res.status(201).json(location);
   } catch (error) {
     console.error("Error creating location:", error);
+    // Handle constraint violations with user-friendly messages
+    if (handleConstraintError(error, res)) {
+      return;
+    }
     res.status(500).json({ message: "Failed to create location" });
   }
 });
@@ -94,6 +101,10 @@ router.patch("/:id", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'c
     res.json(location);
   } catch (error) {
     console.error("Error updating location:", error);
+    // Handle constraint violations with user-friendly messages
+    if (handleConstraintError(error, res)) {
+      return;
+    }
     res.status(500).json({ message: "Failed to update location" });
   }
 });

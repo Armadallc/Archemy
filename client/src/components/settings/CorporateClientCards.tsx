@@ -26,7 +26,9 @@ import {
   Loader2,
   QrCode,
   Download,
-  Plus
+  Plus,
+  Edit,
+  X
 } from "lucide-react";
 import { apiRequest } from "../../lib/queryClient";
 import { LogoUpload } from "../LogoUpload";
@@ -57,8 +59,11 @@ interface CorporateClientCensus {
 interface Program {
   id: string;
   name: string;
+  short_name?: string;
   description?: string;
   address?: string;
+  phone?: string;
+  email?: string;
   logo_url?: string | null;
   is_active: boolean;
   corporate_client_id: string;
@@ -70,6 +75,8 @@ interface Location {
   id: string;
   name?: string;
   address: string;
+  phone?: string;
+  contact_person?: string;
   program_id: string;
   is_active: boolean;
   clientCount?: number;
@@ -96,6 +103,8 @@ export default function CorporateClientCards() {
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [expandedPrograms, setExpandedPrograms] = useState<Set<string>>(new Set());
   const [editingClients, setEditingClients] = useState<Record<string, CorporateClient>>({});
+  const [editingPrograms, setEditingPrograms] = useState<Record<string, Program>>({});
+  const [editingLocations, setEditingLocations] = useState<Record<string, Location>>({});
   const [qrCodeDialogOpen, setQrCodeDialogOpen] = useState(false);
   const [selectedProgramForQR, setSelectedProgramForQR] = useState<Program | null>(null);
   const [qrCodeData, setQrCodeData] = useState<QRCodeData | null>(null);
@@ -258,7 +267,7 @@ export default function CorporateClientCards() {
               programs.map(async (program) => {
                 try {
                   const [locationsRes, clientsRes] = await Promise.all([
-                    apiRequest('GET', `/api/locations/program/${program.id}`),
+                    apiRequest('GET', `/api/locations/program/${program.id}?includeInactive=true`),
                     apiRequest('GET', `/api/clients/program/${program.id}`),
                   ]);
                   
@@ -304,7 +313,7 @@ export default function CorporateClientCards() {
         Array.from(expandedPrograms).map(async (programId) => {
           try {
             const [locationsRes, clientsRes] = await Promise.all([
-              apiRequest('GET', `/api/locations/program/${programId}`),
+              apiRequest('GET', `/api/locations/program/${programId}?includeInactive=true`),
               apiRequest('GET', `/api/clients/program/${programId}`),
             ]);
             
@@ -440,7 +449,7 @@ export default function CorporateClientCards() {
     if (!client) return;
 
     try {
-      const response = await apiRequest('PUT', `/api/corporate-clients/${clientId}`, client);
+      const response = await apiRequest('PATCH', `/api/corporate/clients/${clientId}`, client);
       await response.json();
       
       toast({
@@ -452,13 +461,107 @@ export default function CorporateClientCards() {
       const newEditing = { ...editingClients };
       delete newEditing[clientId];
       setEditingClients(newEditing);
-    } catch (error) {
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/corporate-clients'] });
+    } catch (error: any) {
+      console.error('Error updating corporate client:', error);
       toast({
         title: "Error",
-        description: "Failed to save corporate client settings.",
+        description: error.message || "Failed to save corporate client settings.",
         variant: "destructive",
       });
     }
+  };
+
+  const handleEditProgram = (program: Program) => {
+    setEditingPrograms({
+      ...editingPrograms,
+      [program.id]: { ...program },
+    });
+  };
+
+  const handleSaveProgram = async (programId: string) => {
+    const program = editingPrograms[programId];
+    if (!program) return;
+
+    try {
+      const response = await apiRequest('PATCH', `/api/programs/${programId}`, program);
+      await response.json();
+      
+      toast({
+        title: "Program Updated",
+        description: "Program settings have been saved successfully.",
+      });
+      
+      // Remove from editing state
+      const newEditing = { ...editingPrograms };
+      delete newEditing[programId];
+      setEditingPrograms(newEditing);
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/programs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/programs/details'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/corporate-clients/census'] });
+    } catch (error: any) {
+      console.error('Error updating program:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save program settings.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCancelEditProgram = (programId: string) => {
+    const newEditing = { ...editingPrograms };
+    delete newEditing[programId];
+    setEditingPrograms(newEditing);
+  };
+
+  const handleEditLocation = (location: Location) => {
+    setEditingLocations({
+      ...editingLocations,
+      [location.id]: { ...location },
+    });
+  };
+
+  const handleSaveLocation = async (locationId: string) => {
+    const location = editingLocations[locationId];
+    if (!location) return;
+
+    try {
+      const response = await apiRequest('PATCH', `/api/locations/${locationId}`, location);
+      await response.json();
+      
+      toast({
+        title: "Location Updated",
+        description: "Location settings have been saved successfully.",
+      });
+      
+      // Remove from editing state
+      const newEditing = { ...editingLocations };
+      delete newEditing[locationId];
+      setEditingLocations(newEditing);
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/locations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/programs/details'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/corporate-clients/census'] });
+    } catch (error: any) {
+      console.error('Error updating location:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save location settings.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCancelEditLocation = (locationId: string) => {
+    const newEditing = { ...editingLocations };
+    delete newEditing[locationId];
+    setEditingLocations(newEditing);
   };
 
   // Handle show QR code
@@ -820,7 +923,9 @@ export default function CorporateClientCards() {
                                       </div>
                                     )}
                                     <div className="text-left">
-                                      <div className="font-medium">{program.name}</div>
+                                      <div className="font-medium">
+                                        {editingPrograms[program.id] ? editingPrograms[program.id].name : program.name}
+                                      </div>
                                       <div className="text-sm text-muted-foreground flex items-center gap-3">
                                         <span>
                                           {program.locationCount || 0} {program.locationCount === 1 ? 'Location' : 'Locations'}
@@ -831,48 +936,177 @@ export default function CorporateClientCards() {
                                       </div>
                                     </div>
                                   </div>
-                                  <Badge variant={program.is_active ? "default" : "secondary"}>
-                                    {program.is_active ? "Active" : "Inactive"}
-                                  </Badge>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant={program.is_active ? "default" : "secondary"}>
+                                      {program.is_active ? "Active" : "Inactive"}
+                                    </Badge>
+                                    {!editingPrograms[program.id] && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleEditProgram(program);
+                                        }}
+                                        className="h-8 w-8 p-0"
+                                        title="Edit Program"
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                  </div>
                                 </div>
                               </AccordionTrigger>
                               <AccordionContent>
                                 <div className="space-y-4 pt-4">
-                                  {/* Program Admin Contact */}
-                                  {admin && (
-                                    <div className="p-4 bg-muted rounded-lg space-y-2">
-                                      <h5 className="font-medium text-sm">Main Contact (Program Admin)</h5>
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                                        <div>
-                                          <span className="text-muted-foreground">Name: </span>
-                                          <span>{admin.first_name} {admin.last_name}</span>
+                                  {/* Program Edit Form */}
+                                  {editingPrograms[program.id] ? (
+                                    <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                          <Label htmlFor={`prog-name-${program.id}`}>Program Name *</Label>
+                                          <Input
+                                            id={`prog-name-${program.id}`}
+                                            value={editingPrograms[program.id].name}
+                                            onChange={(e) =>
+                                              setEditingPrograms({
+                                                ...editingPrograms,
+                                                [program.id]: { ...editingPrograms[program.id], name: e.target.value },
+                                              })
+                                            }
+                                            placeholder="Enter program name"
+                                          />
                                         </div>
-                                        <div>
-                                          <span className="text-muted-foreground">Email: </span>
-                                          <span>{admin.email}</span>
+                                        <div className="space-y-2">
+                                          <Label htmlFor={`prog-short-name-${program.id}`}>Short Name</Label>
+                                          <Input
+                                            id={`prog-short-name-${program.id}`}
+                                            value={editingPrograms[program.id].short_name || ''}
+                                            onChange={(e) =>
+                                              setEditingPrograms({
+                                                ...editingPrograms,
+                                                [program.id]: { ...editingPrograms[program.id], short_name: e.target.value },
+                                              })
+                                            }
+                                            placeholder="Enter short name"
+                                          />
                                         </div>
-                                        {admin.phone && (
-                                          <div>
-                                            <span className="text-muted-foreground">Phone: </span>
-                                            <span>{admin.phone}</span>
-                                          </div>
-                                        )}
+                                        <div className="space-y-2 md:col-span-2">
+                                          <Label htmlFor={`prog-description-${program.id}`}>Description</Label>
+                                          <Textarea
+                                            id={`prog-description-${program.id}`}
+                                            value={editingPrograms[program.id].description || ''}
+                                            onChange={(e) =>
+                                              setEditingPrograms({
+                                                ...editingPrograms,
+                                                [program.id]: { ...editingPrograms[program.id], description: e.target.value },
+                                              })
+                                            }
+                                            placeholder="Enter program description"
+                                            rows={3}
+                                          />
+                                        </div>
+                                        <div className="space-y-2 md:col-span-2">
+                                          <Label htmlFor={`prog-address-${program.id}`}>Address</Label>
+                                          <Textarea
+                                            id={`prog-address-${program.id}`}
+                                            value={editingPrograms[program.id].address || ''}
+                                            onChange={(e) =>
+                                              setEditingPrograms({
+                                                ...editingPrograms,
+                                                [program.id]: { ...editingPrograms[program.id], address: e.target.value },
+                                              })
+                                            }
+                                            placeholder="Enter program address"
+                                            rows={2}
+                                          />
+                                        </div>
+                                        <div className="space-y-2">
+                                          <Label htmlFor={`prog-email-${program.id}`}>Email</Label>
+                                          <Input
+                                            id={`prog-email-${program.id}`}
+                                            type="email"
+                                            value={editingPrograms[program.id].email || ''}
+                                            onChange={(e) =>
+                                              setEditingPrograms({
+                                                ...editingPrograms,
+                                                [program.id]: { ...editingPrograms[program.id], email: e.target.value },
+                                              })
+                                            }
+                                            placeholder="program@example.com"
+                                          />
+                                        </div>
+                                        <div className="space-y-2">
+                                          <Label htmlFor={`prog-phone-${program.id}`}>Phone</Label>
+                                          <PhoneInput
+                                            id={`prog-phone-${program.id}`}
+                                            value={editingPrograms[program.id].phone || ''}
+                                            onChange={(value) =>
+                                              setEditingPrograms({
+                                                ...editingPrograms,
+                                                [program.id]: { ...editingPrograms[program.id], phone: value },
+                                              })
+                                            }
+                                          />
+                                        </div>
+                                      </div>
+                                      <div className="flex justify-end gap-2">
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleCancelEditProgram(program.id)}
+                                        >
+                                          <X className="w-4 h-4 mr-2" />
+                                          Cancel
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          onClick={() => handleSaveProgram(program.id)}
+                                        >
+                                          <Save className="w-4 h-4 mr-2" />
+                                          Save Changes
+                                        </Button>
                                       </div>
                                     </div>
-                                  )}
+                                  ) : (
+                                    <>
+                                      {/* Program Admin Contact */}
+                                      {admin && (
+                                        <div className="p-4 bg-muted rounded-lg space-y-2">
+                                          <h5 className="font-medium text-sm">Main Contact (Program Admin)</h5>
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                                            <div>
+                                              <span className="text-muted-foreground">Name: </span>
+                                              <span>{admin.first_name} {admin.last_name}</span>
+                                            </div>
+                                            <div>
+                                              <span className="text-muted-foreground">Email: </span>
+                                              <span>{admin.email}</span>
+                                            </div>
+                                            {admin.phone && (
+                                              <div>
+                                                <span className="text-muted-foreground">Phone: </span>
+                                                <span>{admin.phone}</span>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      )}
 
-                                  {/* QR Code Button */}
-                                  <div className="flex justify-end pb-2">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleShowQRCode(program)}
-                                      className="flex items-center gap-2"
-                                    >
-                                      <QrCode className="h-4 w-4" />
-                                      Generate QR Code
-                                    </Button>
-                                  </div>
+                                      {/* QR Code Button */}
+                                      <div className="flex justify-end pb-2">
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleShowQRCode(program)}
+                                          className="flex items-center gap-2"
+                                        >
+                                          <QrCode className="h-4 w-4" />
+                                          Generate QR Code
+                                        </Button>
+                                      </div>
+                                    </>
+                                  )}
 
                                   {/* Locations List */}
                                   <div className="space-y-2">
@@ -886,20 +1120,124 @@ export default function CorporateClientCards() {
                                       <p className="text-sm text-muted-foreground">No locations found.</p>
                                     ) : (
                                       <div className="space-y-2">
-                                        {locations.map((location) => (
-                                          <div
-                                            key={location.id}
-                                            className="p-3 border rounded-lg flex items-center justify-between"
-                                          >
-                                            <div className="flex items-center space-x-2 flex-1 min-w-0">
-                                              <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                                              <span className="text-sm truncate">{location.address || 'No address provided'}</span>
+                                        {locations.map((location) => {
+                                          const editingLocation = editingLocations[location.id] || location;
+                                          const isEditing = !!editingLocations[location.id];
+                                          
+                                          return (
+                                            <div
+                                              key={location.id}
+                                              className="p-3 border rounded-lg space-y-3"
+                                            >
+                                              {isEditing ? (
+                                                <>
+                                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    <div className="space-y-2">
+                                                      <Label htmlFor={`loc-name-${location.id}`}>Location Name</Label>
+                                                      <Input
+                                                        id={`loc-name-${location.id}`}
+                                                        value={editingLocation.name || ''}
+                                                        onChange={(e) =>
+                                                          setEditingLocations({
+                                                            ...editingLocations,
+                                                            [location.id]: { ...editingLocation, name: e.target.value },
+                                                          })
+                                                        }
+                                                        placeholder="Enter location name"
+                                                      />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                      <Label htmlFor={`loc-phone-${location.id}`}>Phone</Label>
+                                                      <PhoneInput
+                                                        id={`loc-phone-${location.id}`}
+                                                        value={editingLocation.phone || ''}
+                                                        onChange={(value) =>
+                                                          setEditingLocations({
+                                                            ...editingLocations,
+                                                            [location.id]: { ...editingLocation, phone: value },
+                                                          })
+                                                        }
+                                                      />
+                                                    </div>
+                                                    <div className="space-y-2 md:col-span-2">
+                                                      <Label htmlFor={`loc-address-${location.id}`}>Address *</Label>
+                                                      <Textarea
+                                                        id={`loc-address-${location.id}`}
+                                                        value={editingLocation.address}
+                                                        onChange={(e) =>
+                                                          setEditingLocations({
+                                                            ...editingLocations,
+                                                            [location.id]: { ...editingLocation, address: e.target.value },
+                                                          })
+                                                        }
+                                                        placeholder="Enter location address"
+                                                        rows={2}
+                                                      />
+                                                    </div>
+                                                    <div className="space-y-2 md:col-span-2">
+                                                      <Label htmlFor={`loc-contact-${location.id}`}>Contact Person</Label>
+                                                      <Input
+                                                        id={`loc-contact-${location.id}`}
+                                                        value={editingLocation.contact_person || ''}
+                                                        onChange={(e) =>
+                                                          setEditingLocations({
+                                                            ...editingLocations,
+                                                            [location.id]: { ...editingLocation, contact_person: e.target.value },
+                                                          })
+                                                        }
+                                                        placeholder="Enter contact person name"
+                                                      />
+                                                    </div>
+                                                  </div>
+                                                  <div className="flex justify-end gap-2">
+                                                    <Button
+                                                      variant="outline"
+                                                      size="sm"
+                                                      onClick={() => handleCancelEditLocation(location.id)}
+                                                    >
+                                                      <X className="w-4 h-4 mr-2" />
+                                                      Cancel
+                                                    </Button>
+                                                    <Button
+                                                      size="sm"
+                                                      onClick={() => handleSaveLocation(location.id)}
+                                                    >
+                                                      <Save className="w-4 h-4 mr-2" />
+                                                      Save Changes
+                                                    </Button>
+                                                  </div>
+                                                </>
+                                              ) : (
+                                                <div className="flex items-center justify-between">
+                                                  <div className="flex items-center space-x-2 flex-1 min-w-0">
+                                                    <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                                    <div className="flex-1 min-w-0">
+                                                      {location.name && (
+                                                        <div className="font-medium text-sm">{location.name}</div>
+                                                      )}
+                                                      <div className="text-sm text-muted-foreground truncate">
+                                                        {location.address || 'No address provided'}
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                  <div className="flex items-center gap-2">
+                                                    <Badge variant="outline" className="flex-shrink-0">
+                                                      {location.clientCount || 0} {location.clientCount === 1 ? 'Client' : 'Clients'}
+                                                    </Badge>
+                                                    <Button
+                                                      variant="ghost"
+                                                      size="sm"
+                                                      onClick={() => handleEditLocation(location)}
+                                                      className="h-8 w-8 p-0"
+                                                    >
+                                                      <Edit className="h-4 w-4" />
+                                                    </Button>
+                                                  </div>
+                                                </div>
+                                              )}
                                             </div>
-                                            <Badge variant="outline" className="ml-2 flex-shrink-0">
-                                              {location.clientCount || 0} {location.clientCount === 1 ? 'Client' : 'Clients'}
-                                            </Badge>
-                                          </div>
-                                        ))}
+                                          );
+                                        })}
                                       </div>
                                     )}
                                   </div>

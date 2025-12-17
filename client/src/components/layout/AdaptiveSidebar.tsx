@@ -722,7 +722,7 @@ export default function AdaptiveSidebar({
                     
                     return (
                       <Link
-                        key={item.path}
+                        key={`${section.id}-${item.path}-${item.label}`}
                         to={dashboardHref}
                         onClick={() => {
                           if (user?.role === 'super_admin') {
@@ -756,7 +756,7 @@ export default function AdaptiveSidebar({
                   
                   return (
                     <Link
-                      key={item.path}
+                      key={`${section.id}-${item.path}-${item.label}`}
                       to={href}
                       className="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors"
                       style={isActive ? { backgroundColor: 'var(--blue-9)', color: 'var(--gray-12)' } : { color: 'var(--gray-11)' }}
@@ -896,3 +896,7 @@ export default function AdaptiveSidebar({
     </div>
   );
 }
+
+
+
+

@@ -35,6 +35,7 @@ const clientFormSchema = z.object({
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
   phone: z.string().optional(),
   phone_type: z.enum(["Mobile", "Home"]).optional(),
+  corporate_client_id: z.string().optional(), // Optional - only required in Global View
   program_id: z.string().min(1, "Program is required"),
   location_id: z.string().optional(),
   is_active: z.boolean().default(true),
@@ -139,6 +140,7 @@ interface Client {
 const initialFormData: ClientFormData = {
   first_name: "",
   last_name: "",
+  corporate_client_id: "",
   phone: "",
   phone_type: undefined,
   email: "",
@@ -215,7 +217,7 @@ export default function Clients() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { level, selectedCorporateClient, selectedProgram, getFilterParams, getPageTitle } = useHierarchy();
+  const { level, selectedCorporateClient, selectedProgram, activeScope, getFilterParams, getPageTitle } = useHierarchy();
 
   console.log('Selected program from hierarchy:', selectedProgram);
 
@@ -431,9 +433,17 @@ export default function Clients() {
   // Create client mutation
   const createClientMutation = useMutation({
     mutationFn: async (clientData: ClientFormData) => {
+      // Validate tenant selection in Global View
+      const isGlobalView = activeScope === 'global' || (level === 'corporate' && !selectedCorporateClient);
+      if (user?.role === 'super_admin' && isGlobalView && !clientData.corporate_client_id) {
+        throw new Error('Please select a tenant/corporate client before creating a client.');
+      }
+      
       const apiData = {
         first_name: clientData.first_name,
         last_name: clientData.last_name,
+        // Note: corporate_client_id is not sent to API - it's determined by program_id
+        // But we validate it here to ensure proper tenant selection
         program_id: clientData.program_id || selectedProgram || '',
         location_id: clientData.location_id || undefined,
         phone: clientData.phone || undefined,
@@ -1243,7 +1253,13 @@ export default function Clients() {
                             </div>
                             <div className="flex items-center gap-2 text-sm text-gray-500">
                               <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--blue-9)' }}></div>
-                              <span className="truncate max-w-32">ID: {client.id.slice(-8)}</span>
+                              <span className="truncate max-w-32 font-mono">
+                                {client.scid ? (
+                                  <>SCID: {client.scid}</>
+                                ) : (
+                                  <span className="text-muted-foreground italic">SCID: Pending</span>
+                                )}
+                              </span>
                             </div>
                           </div>
                         </TableCell>
@@ -1466,14 +1482,14 @@ export default function Clients() {
                         <div key={group.id} className="border rounded-lg p-4 hover:shadow-md transition-all duration-200" style={{ '--hover-bg': 'var(--muted)' } as React.CSSProperties} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--muted)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
                     <div className="flex items-center justify-between mb-3">
                       <div>
-                        <h3 className="font-medium text-gray-900">{group.name}</h3>
-                        <p className="text-sm text-gray-600">{group.description}</p>
+                        <h3 className="font-medium text-foreground">{group.name}</h3>
+                        <p className="text-sm text-muted-foreground">{group.description}</p>
                       </div>
                       <Badge variant="outline">{group.member_count ?? 0} members</Badge>
                     </div>
                     
                     <div className="flex items-center justify-between">
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-muted-foreground">
                         Program: {group.programs?.name || 'Unknown'}
                       </div>
                       <div className="flex space-x-2">

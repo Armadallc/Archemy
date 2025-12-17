@@ -107,3 +107,7 @@ function getAppName(app: NavigationApp): string {
       return 'Maps';
   }
 }
+
+
+
+

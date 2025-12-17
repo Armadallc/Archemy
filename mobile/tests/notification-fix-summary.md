@@ -149,3 +149,7 @@ type: 'trip_update' | 'new_trip' | 'trip_created' | ...
 3. ⏭️ Test with real trip assignments
 4. ⏭️ Verify driver receives notifications correctly
 5. ⏭️ Check client name extraction for both individual and group trips
+
+
+
+

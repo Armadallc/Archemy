@@ -41,14 +41,94 @@ export const corporateClientsStorage = {
   },
 
   async createCorporateClient(corporateClient: any) {
-    const { data, error } = await supabase.from('corporate_clients').insert(corporateClient).select().single();
+    // Generate code if not provided (required by NOT NULL constraint)
+    const clientData = { ...corporateClient };
+    
+    if (!clientData.code || clientData.code.trim() === '') {
+      if (clientData.name) {
+        // Extract uppercase letters from name, take first 2-5 characters
+        let code = clientData.name
+          .replace(/[^A-Z]/g, '')
+          .toUpperCase();
+        
+        // Take first 2-5 characters
+        if (code.length >= 2) {
+          code = code.substring(0, Math.min(code.length, 5));
+        } else {
+          // Fallback: use first 2 uppercase letters or generate from name
+          code = clientData.name.toUpperCase().substring(0, 2).replace(/[^A-Z]/g, '') || 'CC';
+        }
+        
+        clientData.code = code;
+      } else {
+        // Fallback if no name provided
+        clientData.code = 'CC';
+      }
+    }
+    
+    const { data, error } = await supabase.from('corporate_clients').insert(clientData).select().single();
     if (error) throw error;
     return data;
   },
 
   async updateCorporateClient(id: string, updates: any) {
-    const { data, error } = await supabase.from('corporate_clients').update(updates).eq('id', id).select().single();
-    if (error) throw error;
+    // Define allowed fields for corporate_clients table
+    const allowedFields = [
+      'name', 'description', 'address', 'phone', 'email', 'website', 
+      'logo_url', 'is_active', 'code', 'updated_at'
+    ];
+    
+    // Filter to only include allowed fields and map frontend field names
+    const updateData: any = {};
+    
+    for (const [key, value] of Object.entries(updates)) {
+      // Map frontend field names to database field names
+      if (key === 'contact_email') {
+        updateData.email = value;
+      } else if (key === 'contact_phone') {
+        updateData.phone = value;
+      } else if (allowedFields.includes(key)) {
+        updateData[key] = value;
+      } else {
+        console.warn(`⚠️ [updateCorporateClient] Ignoring unknown field: ${key}`);
+      }
+    }
+    
+    // If code is being set to null/empty/undefined, remove it from updates
+    // This preserves the existing code (which is required by NOT NULL constraint)
+    if (updateData.code === null || updateData.code === undefined || 
+        (typeof updateData.code === 'string' && updateData.code.trim() === '')) {
+      delete updateData.code;
+      console.log('🔍 [updateCorporateClient] Code was null/empty, preserving existing code');
+    }
+    
+    // If code is being explicitly updated, validate and normalize it
+    if (updateData.code && typeof updateData.code === 'string') {
+      // Normalize: uppercase, letters only, 2-5 chars
+      let code = updateData.code.toUpperCase().replace(/[^A-Z]/g, '');
+      
+      if (code.length < 2) {
+        // Too short - don't allow invalid codes, preserve existing
+        console.warn('⚠️ [updateCorporateClient] Code too short, preserving existing code');
+        delete updateData.code;
+      } else if (code.length > 5) {
+        code = code.substring(0, 5);
+        updateData.code = code;
+      } else {
+        updateData.code = code;
+      }
+    }
+    
+    // Add updated_at timestamp
+    updateData.updated_at = new Date().toISOString();
+    
+    console.log('🔍 [updateCorporateClient] Updating with filtered data:', updateData);
+    
+    const { data, error } = await supabase.from('corporate_clients').update(updateData).eq('id', id).select().single();
+    if (error) {
+      console.error('❌ [updateCorporateClient] Database error:', error);
+      throw error;
+    }
     return data;
   },
 
@@ -176,14 +256,126 @@ export const programsStorage = {
   },
 
   async createProgram(program: any) {
-    const { data, error } = await supabase.from('programs').insert(program).select().single();
-    if (error) throw error;
+    // Remove null/undefined id to ensure we generate a new one
+    const cleanProgram = { ...program };
+    if (cleanProgram.id === null || cleanProgram.id === undefined) {
+      delete cleanProgram.id;
+    }
+    
+    // Generate UUID for id if not provided
+    const programData = {
+      ...cleanProgram,
+      id: cleanProgram.id || crypto.randomUUID()
+    };
+    
+    // Remove null/undefined code to ensure we generate a new one
+    if (programData.code === null || programData.code === undefined) {
+      delete programData.code;
+    }
+    
+    // Generate code if not provided (required by NOT NULL constraint)
+    // This matches the logic in derive_program_code PostgreSQL function
+    if (!programData.code || (typeof programData.code === 'string' && programData.code.trim() === '')) {
+      console.log('🔍 [createProgram] No code provided, generating from name:', programData.name);
+      
+      if (programData.name) {
+        // Extract uppercase letters from name, removing common words
+        let code = programData.name
+          .replace(/\s+(the|of|and|for|in|on|at|to|a|an)\s+/gi, ' ')
+          .replace(/[^A-Z]/g, '')
+          .toUpperCase();
+        
+        // Take first 2-4 characters
+        if (code.length >= 3) {
+          code = code.substring(0, 3);
+        } else if (code.length >= 2) {
+          code = code.substring(0, 2);
+        } else {
+          // Fallback: use first 2 uppercase letters or 'PR'
+          code = programData.name.toUpperCase().substring(0, 2).replace(/[^A-Z]/g, '') || 'PR';
+        }
+        
+        programData.code = code;
+        console.log('✅ [createProgram] Generated code:', code, 'from name:', programData.name);
+      } else {
+        // Fallback if no name provided
+        programData.code = 'PR';
+        console.log('⚠️ [createProgram] No name provided, using fallback code: PR');
+      }
+    } else {
+      console.log('✅ [createProgram] Code provided:', programData.code);
+    }
+    
+    // Ensure code is always set (safety check)
+    if (!programData.code || (typeof programData.code === 'string' && programData.code.trim() === '')) {
+      programData.code = 'PR';
+      console.log('⚠️ [createProgram] Code was still null/empty after generation, using fallback: PR');
+    }
+    
+    console.log('🔍 [createProgram] Inserting program with data:', {
+      id: programData.id,
+      name: programData.name,
+      code: programData.code,
+      corporate_client_id: programData.corporate_client_id
+    });
+    
+    const { data, error } = await supabase.from('programs').insert(programData).select().single();
+    if (error) {
+      console.error('❌ [createProgram] Database error:', error);
+      throw error;
+    }
+    console.log('✅ [createProgram] Program created successfully:', data.id);
     return data;
   },
 
   async updateProgram(id: string, updates: any) {
-    const { data, error } = await supabase.from('programs').update(updates).eq('id', id).select().single();
-    if (error) throw error;
+    // Define allowed fields for programs table
+    const allowedFields = [
+      'name', 'short_name', 'description', 'address', 'phone', 'email', 
+      'logo_url', 'is_active', 'code', 'corporate_client_id', 'updated_at'
+    ];
+    
+    // Filter to only include allowed fields (exclude computed fields like clientCount, locationCount)
+    const updateData: any = {};
+    
+    for (const [key, value] of Object.entries(updates)) {
+      if (allowedFields.includes(key)) {
+        updateData[key] = value;
+      } else {
+        console.warn(`⚠️ [updateProgram] Ignoring unknown/computed field: ${key}`);
+      }
+    }
+    
+    // If code is being set to null/empty/undefined, remove it from updates
+    // This preserves the existing code (which is required by NOT NULL constraint)
+    if (updateData.code === null || updateData.code === undefined || 
+        (typeof updateData.code === 'string' && updateData.code.trim() === '')) {
+      delete updateData.code;
+      console.log('🔍 [updateProgram] Code was null/empty, preserving existing code');
+    }
+    
+    // If code is being explicitly updated, validate and normalize it
+    if (updateData.code && typeof updateData.code === 'string') {
+      // Normalize: uppercase, letters only, 2-4 chars
+      let code = updateData.code.toUpperCase().replace(/[^A-Z]/g, '');
+      
+      if (code.length < 2) {
+        // Too short - don't allow invalid codes, preserve existing
+        console.warn('⚠️ [updateProgram] Code too short, preserving existing code');
+        delete updateData.code;
+      } else if (code.length > 4) {
+        code = code.substring(0, 4);
+        updateData.code = code;
+      } else {
+        updateData.code = code;
+      }
+    }
+    
+    const { data, error } = await supabase.from('programs').update(updateData).eq('id', id).select().single();
+    if (error) {
+      console.error('❌ [updateProgram] Database error:', error);
+      throw error;
+    }
     return data;
   },
 
@@ -238,8 +430,8 @@ export const locationsStorage = {
     return data;
   },
 
-  async getLocationsByProgram(programId: string) {
-    const { data, error } = await supabase
+  async getLocationsByProgram(programId: string, includeInactive: boolean = false) {
+    let query = supabase
       .from('locations')
       .select(`
         *,
@@ -252,8 +444,14 @@ export const locationsStorage = {
           )
         )
       `)
-      .eq('program_id', programId)
-      .eq('is_active', true);
+      .eq('program_id', programId);
+    
+    // Only filter by is_active if we don't want inactive locations
+    if (!includeInactive) {
+      query = query.eq('is_active', true);
+    }
+    
+    const { data, error } = await query;
     if (error) throw error;
     return data || [];
   },
@@ -297,14 +495,202 @@ export const locationsStorage = {
   },
 
   async createLocation(location: any) {
-    const { data, error } = await supabase.from('locations').insert(location).select().single();
-    if (error) throw error;
+    console.log('🔍 [createLocation] Received location data:', {
+      id: location.id,
+      name: location.name,
+      program_id: location.program_id
+    });
+    
+    // Remove null/undefined id to ensure we generate a new one
+    const cleanLocation = { ...location };
+    if (cleanLocation.id === null || cleanLocation.id === undefined || cleanLocation.id === '') {
+      delete cleanLocation.id;
+      console.log('🔍 [createLocation] Removed null/empty id');
+    }
+    
+    // Always generate UUID for id (required by NOT NULL constraint)
+    const generatedId = cleanLocation.id && cleanLocation.id !== null && cleanLocation.id !== '' 
+      ? cleanLocation.id 
+      : crypto.randomUUID();
+    
+    console.log('🔍 [createLocation] Generated ID:', generatedId);
+    
+    // Generate UUID for id if not provided
+    const locationData = {
+      ...cleanLocation,
+      id: generatedId
+    };
+    
+    // Generate code if not provided (required by NOT NULL constraint)
+    // This matches the logic in derive_location_code PostgreSQL function
+    if (!locationData.code || (typeof locationData.code === 'string' && locationData.code.trim() === '')) {
+      if (locationData.name) {
+        // First try to extract uppercase letters from name
+        let code = locationData.name
+          .replace(/[^A-Z]/g, '')
+          .toUpperCase();
+        
+        // If no letters found, try to use numbers (convert to letters: 0=A, 1=B, ..., 9=J)
+        if (!code || code.length === 0) {
+          // Extract numbers and convert to letters
+          const numbers = locationData.name.replace(/[^0-9]/g, '');
+          if (numbers && numbers.length > 0) {
+            // Take first 3 digits and convert each to a letter (0=A, 1=B, ..., 9=J)
+            const digits = numbers.substring(0, 3).padStart(Math.min(3, numbers.length), '0');
+            code = digits.split('').map(d => {
+              const num = parseInt(d);
+              return String.fromCharCode(65 + num); // 0->A, 1->B, ..., 9->J
+            }).join('');
+            // Ensure we have at least 2 characters (required by constraint)
+            if (code.length < 2) {
+              code = code.padEnd(2, 'A');
+            }
+          }
+        }
+        
+        // Take first 2-5 characters based on length
+        if (code && code.length >= 3) {
+          code = code.substring(0, 3);
+        } else if (code && code.length >= 2) {
+          code = code.substring(0, 2);
+        } else if (!code || code.length === 0) {
+          // Final fallback: use first 3 characters of name (uppercase, alphanumeric only)
+          code = locationData.name.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 3);
+          if (!code || code.length === 0) {
+            code = 'LOC';
+          }
+        }
+        
+        locationData.code = code;
+        console.log('✅ [createLocation] Generated code:', code, 'from name:', locationData.name);
+      } else {
+        // Fallback if no name provided
+        locationData.code = 'LOC';
+        console.log('⚠️ [createLocation] No name provided, using fallback code: LOC');
+      }
+    } else {
+      console.log('✅ [createLocation] Code provided:', locationData.code);
+    }
+    
+    // Ensure code is always set (safety check)
+    if (!locationData.code) {
+      locationData.code = 'LOC';
+      console.log('⚠️ [createLocation] Code was still null after generation, using fallback: LOC');
+    }
+    
+    // Check for duplicate codes and append suffix if needed
+    let finalCode = locationData.code;
+    let suffix = 1;
+    let attempts = 0;
+    const maxAttempts = 100; // Prevent infinite loop
+    
+    while (attempts < maxAttempts) {
+      // Check if this code already exists for this program
+      const { data: existing, error: checkError } = await supabase
+        .from('locations')
+        .select('id')
+        .eq('program_id', locationData.program_id)
+        .eq('code', finalCode)
+        .maybeSingle();
+      
+      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
+        console.error('❌ [createLocation] Error checking for duplicate code:', checkError);
+        break;
+      }
+      
+      if (!existing) {
+        // Code is available, use it
+        locationData.code = finalCode;
+        break;
+      }
+      
+      // Code exists, try with suffix
+      // Append number suffix (1-9, then A-Z if needed)
+      if (suffix <= 9) {
+        finalCode = locationData.code.substring(0, Math.min(locationData.code.length, 4)) + suffix.toString();
+      } else {
+        // Use letter suffix (A-Z) for suffixes 10-35
+        const letterSuffix = String.fromCharCode(64 + (suffix - 9)); // A=10, B=11, etc.
+        finalCode = locationData.code.substring(0, Math.min(locationData.code.length, 4)) + letterSuffix;
+      }
+      
+      suffix++;
+      attempts++;
+    }
+    
+    if (attempts >= maxAttempts) {
+      // Fallback: use UUID substring as suffix
+      const uuidSuffix = generatedId.substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, '');
+      locationData.code = (locationData.code.substring(0, 2) + uuidSuffix).substring(0, 5);
+      console.warn('⚠️ [createLocation] Max attempts reached, using UUID suffix:', locationData.code);
+    } else if (suffix > 1) {
+      console.log('✅ [createLocation] Resolved duplicate code, using:', locationData.code, 'with suffix');
+    }
+    
+    console.log('🔍 [createLocation] Inserting location with data:', {
+      id: locationData.id,
+      name: locationData.name,
+      code: locationData.code,
+      program_id: locationData.program_id
+    });
+    
+    const { data, error } = await supabase.from('locations').insert(locationData).select().single();
+    if (error) {
+      console.error('❌ [createLocation] Database error:', error);
+      throw error;
+    }
+    console.log('✅ [createLocation] Location created successfully:', data.id);
     return data;
   },
 
   async updateLocation(id: string, updates: any) {
-    const { data, error } = await supabase.from('locations').update(updates).eq('id', id).select().single();
-    if (error) throw error;
+    // Define allowed fields for locations table
+    const allowedFields = [
+      'name', 'address', 'phone', 'contact_person', 'description',
+      'latitude', 'longitude', 'is_active', 'program_id', 'code', 'updated_at'
+    ];
+    
+    // Filter to only include allowed fields (exclude computed fields like clientCount)
+    const updateData: any = {};
+    
+    for (const [key, value] of Object.entries(updates)) {
+      if (allowedFields.includes(key)) {
+        updateData[key] = value;
+      } else {
+        console.warn(`⚠️ [updateLocation] Ignoring unknown/computed field: ${key}`);
+      }
+    }
+    
+    // If code is being set to null/empty/undefined, remove it from updates
+    // This preserves the existing code (which is required by NOT NULL constraint)
+    if (updateData.code === null || updateData.code === undefined || 
+        (typeof updateData.code === 'string' && updateData.code.trim() === '')) {
+      delete updateData.code;
+      console.log('🔍 [updateLocation] Code was null/empty, preserving existing code');
+    }
+    
+    // If code is being explicitly updated, validate and normalize it
+    if (updateData.code && typeof updateData.code === 'string') {
+      // Normalize: uppercase, letters only, 2-5 chars
+      let code = updateData.code.toUpperCase().replace(/[^A-Z]/g, '');
+      
+      if (code.length < 2) {
+        // Too short - don't allow invalid codes, preserve existing
+        console.warn('⚠️ [updateLocation] Code too short, preserving existing code');
+        delete updateData.code;
+      } else if (code.length > 5) {
+        code = code.substring(0, 5);
+        updateData.code = code;
+      } else {
+        updateData.code = code;
+      }
+    }
+    
+    const { data, error } = await supabase.from('locations').update(updateData).eq('id', id).select().single();
+    if (error) {
+      console.error('❌ [updateLocation] Database error:', error);
+      throw error;
+    }
     return data;
   },
 
@@ -851,6 +1237,14 @@ export const clientsStorage = {
   },
 
   async createClient(client: any) {
+    console.log('🔍 [clientsStorage.createClient] Starting client creation');
+    console.log('🔍 [clientsStorage.createClient] Input data:', {
+      first_name: client.first_name,
+      last_name: client.last_name,
+      program_id: client.program_id,
+      location_id: client.location_id
+    });
+    
     // Defensive: Remove any fields that shouldn't be in the clients table
     const { program_contacts, client_program_contacts, pin, ...clientData } = client;
     
@@ -865,8 +1259,140 @@ export const clientsStorage = {
     }
     
     // Database will auto-generate UUID for id field
+    console.log('🔍 [clientsStorage.createClient] Inserting client into database...');
     const { data, error } = await supabase.from('clients').insert(clientData).select().single();
-    if (error) throw error;
+    if (error) {
+      console.error('❌ [clientsStorage.createClient] Database insert error:', error);
+      throw error;
+    }
+    console.log('✅ [clientsStorage.createClient] Client inserted successfully:', {
+      id: data.id,
+      program_id: data.program_id,
+      scid: data.scid
+    });
+    
+    // Generate SCID after insertion if program_id is present
+    if (data && data.program_id) {
+      try {
+        console.log('🔍 [createClient] Starting SCID generation for client:', data.id, 'program_id:', data.program_id);
+        
+        // Fetch program to get its code
+        const { data: program, error: programError } = await supabase
+          .from('programs')
+          .select('code, name')
+          .eq('id', data.program_id)
+          .single();
+        
+        if (programError) {
+          console.error('❌ [createClient] Could not fetch program code for SCID generation:', programError);
+          // Continue without SCID - it can be generated later via backfill
+          return data;
+        }
+        
+        console.log('🔍 [createClient] Fetched program:', { code: program?.code, name: program?.name });
+        
+        // If program code exists, generate SCID
+        if (program?.code) {
+          // Try calling the PostgreSQL function via RPC wrapper
+          // Note: Supabase requires functions to be explicitly exposed as RPCs
+          // We use the _rpc suffix wrapper function created in migration 004
+          const { data: scidResult, error: scidError } = await supabase.rpc('generate_client_scid_rpc', {
+            p_program_code: program.code
+          });
+          
+          if (scidError) {
+            console.error('❌ [createClient] RPC call failed:', scidError);
+            console.error('❌ [createClient] Error code:', scidError.code);
+            console.error('❌ [createClient] Error message:', scidError.message);
+            console.error('❌ [createClient] Error details:', JSON.stringify(scidError, null, 2));
+            console.warn('⚠️ [createClient] SCID will need to be generated via backfill script');
+            console.warn('⚠️ [createClient] Make sure migration 004_create_scid_rpc_wrapper.sql has been run');
+            // Continue without SCID - it can be generated later via backfill
+            return data;
+          }
+          
+          // RPC succeeded
+          console.log('✅ [createClient] Generated SCID via RPC:', scidResult);
+          
+          // Update client with generated SCID
+          // Retry logic: if duplicate, generate a new SCID (up to 3 retries)
+          let retryCount = 0;
+          const maxRetries = 3;
+          let currentSCID = scidResult;
+          let updatedClient = null;
+          
+          while (retryCount < maxRetries) {
+            const { data: clientUpdate, error: updateError } = await supabase
+              .from('clients')
+              .update({ scid: currentSCID })
+              .eq('id', data.id)
+              .select()
+              .single();
+            
+            if (!updateError) {
+              // Success!
+              updatedClient = clientUpdate;
+              console.log('✅ [createClient] Successfully updated client with SCID:', currentSCID);
+              break;
+            }
+            
+            // Check if it's a duplicate key error (code 23505 = unique constraint violation)
+            const isDuplicateSCID = updateError.code === '23505' && (
+              updateError.message?.includes('scid') || 
+              updateError.message?.includes('SCID') ||
+              updateError.details?.includes('scid') ||
+              updateError.details?.includes('SCID') ||
+              updateError.hint?.includes('scid') ||
+              updateError.hint?.includes('SCID')
+            );
+            
+            if (isDuplicateSCID) {
+              console.warn(`⚠️ [createClient] SCID ${currentSCID} already exists, generating new one... (retry ${retryCount + 1}/${maxRetries})`);
+              
+              // Generate a new SCID
+              const { data: newSCID, error: newSCIDError } = await supabase.rpc('generate_client_scid_rpc', {
+                p_program_code: program.code
+              });
+              
+              if (newSCIDError) {
+                console.error('❌ [createClient] Failed to generate new SCID after duplicate:', newSCIDError);
+                return data; // Give up and return without SCID
+              }
+              
+              console.log(`🔄 [createClient] Generated new SCID for retry: ${newSCID}`);
+              currentSCID = newSCID;
+              retryCount++;
+            } else {
+              // Different error - log and give up
+              console.error('❌ [createClient] Could not update client with SCID:', updateError);
+              console.error('❌ [createClient] Error code:', updateError.code);
+              console.error('❌ [createClient] Error message:', updateError.message);
+              console.error('❌ [createClient] Error details:', updateError.details);
+              return data; // Return original data if update fails
+            }
+          }
+          
+          if (!updatedClient) {
+            console.error('❌ [createClient] Failed to assign SCID after', maxRetries, 'retries');
+            console.warn('⚠️ [createClient] Client created but SCID will need to be generated via backfill script');
+            return data; // Return without SCID
+          }
+          
+          return updatedClient;
+        } else {
+          console.warn('⚠️ [createClient] Program code is missing for program:', program?.name || data.program_id);
+          console.warn('⚠️ [createClient] Cannot generate SCID - program may need code backfilled');
+          // Continue without SCID - it can be generated later via backfill
+          return data;
+        }
+      } catch (err: any) {
+        console.error('❌ [createClient] Exception during SCID generation:', err);
+        console.error('❌ [createClient] Error details:', err.message, err.stack);
+        // Continue without SCID - it can be generated later via backfill
+        return data;
+      }
+    }
+    
     return data;
   },
 
