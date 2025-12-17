@@ -23,9 +23,15 @@ router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    console.log('🔍 Mobile Login: Received credentials:', { email, password: password ? password.substring(0, 3) + '***' : 'missing' });
+    // Normalize email (trim and lowercase)
+    const normalizedEmail = email ? email.trim().toLowerCase() : '';
     
-    if (!email || !password) {
+    console.log('🔍 Mobile Login: Received credentials:', { 
+      email: normalizedEmail, 
+      password: password ? password.substring(0, 3) + '***' : 'missing' 
+    });
+    
+    if (!normalizedEmail || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
@@ -35,9 +41,9 @@ router.post("/login", async (req, res) => {
       process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY!
     );
 
-    // Authenticate with Supabase
+    // Authenticate with Supabase (using normalized email)
     const { data, error } = await supabaseAnon.auth.signInWithPassword({
-      email,
+      email: normalizedEmail,
       password
     });
 
@@ -133,16 +139,19 @@ router.get("/user", requireSupabaseAuth, async (req: SupabaseAuthenticatedReques
   }
 });
 
-// Logout endpoint
-router.post("/logout", requireSupabaseAuth, async (req: SupabaseAuthenticatedRequest, res) => {
+// Logout endpoint - don't require auth so logout works even with expired tokens
+router.post("/logout", async (req, res) => {
   try {
     // Logout is primarily handled client-side (clearing tokens)
     // This endpoint just confirms the logout request
-    // In the future, we could invalidate server-side sessions here if needed
+    // We don't require auth so logout works even if token is expired/invalid
+    console.log('✅ Logout endpoint called');
     res.json({ message: "Logout successful" });
   } catch (error) {
     console.error("Error in /auth/logout:", error);
-    res.status(500).json({ message: "Internal server error" });
+    // Still return success even if there's an error
+    // Client-side token clearing is what matters
+    res.json({ message: "Logout successful" });
   }
 });
 

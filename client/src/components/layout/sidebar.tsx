@@ -40,13 +40,18 @@ import { useAuth } from "../../hooks/useAuth";
 import { useHierarchy } from "../../hooks/useHierarchy";
 import { useEffectivePermissions, useFeatureFlag } from "../../hooks/use-permissions";
 import { supabase } from "../../lib/supabase";
-import { DrillDownDropdown } from "../DrillDownDropdown";
+import { MiniCalendar } from "../MiniCalendar";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "../../lib/queryClient";
 
 interface SidebarProps {
   currentProgram?: string;
   setCurrentProgram?: (program: string) => void;
   isCollapsed?: boolean;
   setIsCollapsed?: (collapsed: boolean) => void;
+  autoHide?: boolean; // Foundation for Phase 4 - not implemented yet
+  collapsed?: boolean; // Alias for isCollapsed for consistency
+  onCollapseChange?: (collapsed: boolean) => void; // Alias for setIsCollapsed
 }
 
 // This will be dynamically populated based on user role and corporate client
@@ -87,9 +92,6 @@ const navigationItemPermissions: Record<string, string | string[]> = {
   "/drivers": "view_drivers",
   "/vehicles": "view_vehicles",
   "/frequent-locations": "view_locations",
-  "/corporate-clients": "view_corporate_clients",
-  "/programs": "view_programs",
-  "/locations": "view_locations",
   "/clients": "view_clients",
   "/settings": ["view_users", "manage_users"], // Any permission
   "/users": "view_users",
@@ -98,7 +100,7 @@ const navigationItemPermissions: Record<string, string | string[]> = {
   "/role-templates": "manage_users", // Super admin only
   "/prophet": "manage_users", // Super admin only - PROPHET Calculator
   "/design-system": "manage_users", // Super admin only
-  "/calendar-experiment": "view_calendar",
+  "/bentobox": "view_calendar",
   "/chat": "view_calendar", // All users can access chat
 };
 
@@ -111,6 +113,7 @@ const navigationCategories = [
     roles: ["super_admin", "corporate_admin", "program_admin", "program_user", "driver"],
     items: [
       { path: "/", label: "Dashboard", icon: Home, roles: ["super_admin", "corporate_admin", "program_admin", "program_user", "driver"], status: "completed" as PageStatus },
+      { path: "/calendar", label: "Calendar", icon: Calendar, roles: ["super_admin", "corporate_admin", "program_admin", "program_user", "driver"], status: "completed" as PageStatus },
       { path: "/chat", label: "Chat", icon: MessageSquare, roles: ["super_admin", "corporate_admin", "program_admin", "program_user", "driver"], status: "completed" as PageStatus }
     ]
   },
@@ -122,36 +125,47 @@ const navigationCategories = [
     items: [
       { path: "/trips", label: "My Trips", icon: Route, roles: ["driver"], status: "completed" as PageStatus },
       { path: "/trips", label: "Trips", icon: Route, roles: ["super_admin", "corporate_admin", "program_admin", "program_user"], status: "completed" as PageStatus },
-      { path: "/calendar", label: "Calendar", icon: Calendar, roles: ["super_admin", "corporate_admin", "program_admin", "program_user", "driver"], status: "completed" as PageStatus },
       { path: "/drivers", label: "Drivers", icon: Car, roles: ["super_admin", "program_admin"], status: "completed" as PageStatus }, // Removed corporate_admin
-      { path: "/vehicles", label: "Vehicles", icon: Car, roles: ["super_admin", "program_admin"], status: "not-started" as PageStatus }, // Removed corporate_admin
-      { path: "/frequent-locations", label: "Frequent Locations", icon: MapPin, roles: ["super_admin", "corporate_admin", "program_admin"], status: "has-issues" as PageStatus }
+      { path: "/vehicles", label: "Vehicles", icon: Car, roles: ["super_admin", "program_admin"], status: "not-started" as PageStatus } // Removed corporate_admin
     ]
   },
   {
     id: "corporate",
-    label: "CORPORATE",
+    label: "PARTNER",
     icon: Building2,
     roles: ["super_admin", "corporate_admin"],
     items: [
-      { path: "/corporate-clients", label: "Corporate Clients", icon: Building2, roles: ["super_admin"], status: "completed" as PageStatus },
-      { path: "/programs", label: "Programs", icon: Building, roles: ["super_admin", "corporate_admin"], status: "completed" as PageStatus },
-      { path: "/locations", label: "Locations", icon: MapPin, roles: ["super_admin", "corporate_admin", "program_admin"], status: "completed" as PageStatus }, // Moved from OPERATIONS to CORPORATE
-      { path: "/clients", label: "Clients", icon: Users, roles: ["super_admin", "corporate_admin", "program_admin", "program_user"], status: "completed" as PageStatus }
+      { path: "/clients", label: "Clients", icon: Users, roles: ["super_admin", "corporate_admin", "program_admin", "program_user"], status: "completed" as PageStatus },
+      { path: "/frequent-locations", label: "Frequent Locations", icon: MapPin, roles: ["super_admin", "corporate_admin", "program_admin"], status: "has-issues" as PageStatus }
     ]
   },
   {
     id: "admin",
-    label: "ADMIN",
+    label: "SYSTEM",
     icon: Settings,
     roles: ["super_admin", "corporate_admin", "program_admin"],
     items: [
-      { path: "/settings", label: "System Settings", icon: Settings, roles: ["super_admin", "corporate_admin", "program_admin"], status: "completed" as PageStatus },
-      { path: "/users", label: "User Management", icon: UserCheck, roles: ["super_admin", "corporate_admin", "program_admin"], status: "completed" as PageStatus },
-      { path: "/analytics", label: "Analytics", icon: BarChart3, roles: ["super_admin"], status: "in-progress" as PageStatus },
-      { path: "/prophet", label: "PROPHET", icon: Calculator, roles: ["super_admin"], status: "completed" as PageStatus },
-      { path: "/billing", label: "Billing", icon: DollarSign, roles: ["super_admin", "corporate_admin", "program_admin"], status: "not-started" as PageStatus },
+      { path: "/settings", label: "Settings", icon: Settings, roles: ["super_admin", "corporate_admin", "program_admin"], status: "completed" as PageStatus },
       { path: "/role-templates", label: "Role Templates", icon: Shield, roles: ["super_admin"], status: "completed" as PageStatus }
+    ]
+  },
+  {
+    id: "analytics",
+    label: "ANALYTICS",
+    icon: BarChart3,
+    roles: ["super_admin"],
+    items: [
+      { path: "/analytics", label: "Telematics", icon: BarChart3, roles: ["super_admin"], status: "in-progress" as PageStatus },
+      { path: "/prophet", label: "Prophet", icon: Calculator, roles: ["super_admin"], status: "completed" as PageStatus }
+    ]
+  },
+  {
+    id: "admin-management",
+    label: "ADMIN",
+    icon: DollarSign,
+    roles: ["super_admin", "corporate_admin", "program_admin"],
+    items: [
+      { path: "/billing", label: "Billing", icon: DollarSign, roles: ["super_admin", "corporate_admin", "program_admin"], status: "not-started" as PageStatus }
     ]
   },
   {
@@ -161,7 +175,7 @@ const navigationCategories = [
     roles: ["super_admin"],
     items: [
       { path: "/design-system", label: "Design System", icon: Palette, roles: ["super_admin"], status: "completed" as PageStatus },
-      { path: "/calendar-experiment", label: "Experiment", icon: Calendar, roles: ["super_admin", "corporate_admin", "program_admin"], status: "completed" as PageStatus },
+      { path: "/bentobox", label: "BENTOBOX", icon: Calendar, roles: ["super_admin", "corporate_admin", "program_admin"], status: "completed" as PageStatus },
     ]
   }
 ];
@@ -170,8 +184,21 @@ export default function Sidebar({
   currentProgram, 
   setCurrentProgram, 
   isCollapsed = false, 
-  setIsCollapsed 
+  setIsCollapsed,
+  autoHide = false, // Foundation for Phase 4 - not implemented yet
+  collapsed,
+  onCollapseChange
 }: SidebarProps) {
+  // Use collapsed prop if provided, otherwise use isCollapsed
+  const actualCollapsed = collapsed !== undefined ? collapsed : isCollapsed;
+  const handleCollapseChange = onCollapseChange || setIsCollapsed || (() => {});
+  
+  // Auto-hide detection foundation (commented for Phase 1)
+  // We'll implement full auto-hide in Phase 4
+  // useEffect(() => {
+  //   if (!autoHide) return;
+  //   // Auto-hide logic will go here
+  // }, [autoHide]);
   const [location, setLocation] = useLocation();
   const { user, logout } = useAuth();
   const { level, selectedProgram, selectedCorporateClient, navigateToProgram } = useHierarchy();
@@ -184,8 +211,86 @@ export default function Sidebar({
   
   // User menu state
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme: originalToggleTheme } = useTheme();
   const isDarkMode = theme === 'dark';
+  const queryClient = useQueryClient();
+
+  // Mutation to save theme mode to database
+  const saveThemeModeMutation = useMutation({
+    mutationFn: async (themeMode: 'light' | 'dark') => {
+      const response = await apiRequest('PUT', '/api/themes/user/mode', {
+        theme_mode: themeMode,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/themes/user/selection'] });
+    },
+    onError: (error: any) => {
+      console.error('Failed to save theme mode:', error);
+      // Don't show error to user - theme toggle still works locally
+    },
+  });
+
+  // Enhanced toggle theme that saves to database
+  const toggleTheme = () => {
+    try {
+      const newMode = isDarkMode ? 'light' : 'dark';
+      const root = document.documentElement;
+      
+      // Toggle theme locally first
+      originalToggleTheme();
+      
+      // Immediately toggle dark class (works in Cursor browser)
+      if (newMode === 'dark') {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+      
+      // Force FireThemeProvider to re-apply by dispatching a custom event
+      // This ensures the theme is applied even if MutationObserver doesn't fire
+      const event = new CustomEvent('theme-toggle', { 
+        detail: { mode: newMode } 
+      });
+      window.dispatchEvent(event);
+      
+      // Also trigger a manual re-application after a short delay
+      // This is a fallback in case the MutationObserver doesn't catch it
+      setTimeout(() => {
+        // Check if class was actually applied
+        const hasDarkClass = root.classList.contains('dark');
+        const shouldHaveDark = newMode === 'dark';
+        
+        if (hasDarkClass !== shouldHaveDark) {
+          // Class wasn't applied correctly, fix it
+          if (shouldHaveDark) {
+            root.classList.add('dark');
+          } else {
+            root.classList.remove('dark');
+          }
+        }
+        
+        // Force a re-render by triggering a resize event
+        // This sometimes helps with browser rendering issues
+        window.dispatchEvent(new Event('resize'));
+      }, 10);
+      
+      // Save to database if user is authenticated
+      if (user) {
+        saveThemeModeMutation.mutate(newMode);
+      }
+    } catch (error) {
+      console.error('Error toggling theme:', error);
+      // Fallback: manually toggle dark class
+      const root = document.documentElement;
+      if (root.classList.contains('dark')) {
+        root.classList.remove('dark');
+      } else {
+        root.classList.add('dark');
+      }
+    }
+  };
   
   // Feature flags
   const { isEnabled: darkModeEnabled } = useFeatureFlag("dark_mode_enabled");
@@ -212,10 +317,16 @@ export default function Sidebar({
       category.items.some(item => item.path === location)
     );
     
-    if (currentCategory && !expandedCategories.has(currentCategory.id)) {
-      setExpandedCategories(prev => new Set([...prev, currentCategory.id]));
+    if (currentCategory) {
+      setExpandedCategories(prev => {
+        // Only add if not already in the set to avoid unnecessary re-renders
+        if (!prev.has(currentCategory.id)) {
+          return new Set([...prev, currentCategory.id]);
+        }
+        return prev;
+      });
     }
-  }, [location, expandedCategories]);
+  }, [location]); // Removed expandedCategories from dependencies to prevent re-expansion after manual collapse
 
   // Fetch program options based on user role
   useEffect(() => {
@@ -398,80 +509,146 @@ export default function Sidebar({
     navigateToProgram(programId, programId);
   };
 
+  // Fetch system settings for main logo (super admin only, but we'll fetch for all to check)
+  const { data: systemSettings } = useQuery({
+    queryKey: ['/api/system-settings'],
+    queryFn: async () => {
+      try {
+        const response = await apiRequest('GET', '/api/system-settings');
+        if (!response.ok) {
+          return null;
+        }
+        return await response.json();
+      } catch (error) {
+        // If not super admin or settings don't exist, return null
+        return null;
+      }
+    },
+    enabled: true, // Always try to fetch (will fail gracefully for non-super-admins)
+    retry: false,
+  });
+
+  // Get corporate client ID from user or selected corporate client
+  const corporateClientId = (user as any)?.corporate_client_id || selectedCorporateClient;
+
+  // Fetch corporate client data to get logo
+  const { data: corporateClientData } = useQuery({
+    queryKey: ['/api/corporate-clients', corporateClientId],
+    queryFn: async () => {
+      if (!corporateClientId) return null;
+      try {
+        // Try the corporate route first (preferred)
+        const response = await apiRequest('GET', `/api/corporate/clients/${corporateClientId}`);
+        return await response.json();
+      } catch (error: any) {
+        // Try legacy endpoint as fallback
+        try {
+          const response = await apiRequest('GET', `/api/corporate-clients/${corporateClientId}`);
+          return await response.json();
+        } catch (legacyError: any) {
+          console.error('Error fetching corporate client:', legacyError);
+          return null;
+        }
+      }
+    },
+    enabled: !!corporateClientId && (user?.role === 'corporate_admin' || !!selectedCorporateClient),
+    retry: false,
+  });
+
   // Get corporate client logo
   const getCorporateClientLogo = () => {
-    // Logo functionality would need to be implemented with actual data fetching
-    return null; // No fallback logo for now
+    if (corporateClientData?.logo_url) {
+      return corporateClientData.logo_url;
+    }
+    return null;
   };
 
-  // Get corporate client name
+  // Get main logo URL from system settings
+  const getMainLogoUrl = () => {
+    return systemSettings?.main_logo_url || null;
+  };
+
+  // Get corporate client name or app name
   const getCorporateClientName = () => {
     if (selectedCorporateClient) {
       return selectedCorporateClient;
     }
-    return "HALCYON";
+    return systemSettings?.app_name || "HALCYON";
+  };
+
+  // Determine what to display: main logo, corporate client logo, or text
+  const getDisplayLogo = () => {
+    // For corporate admins, prioritize their corporate client logo
+    // For super admins, prioritize main logo
+    if (user?.role === 'corporate_admin') {
+      const corporateLogo = getCorporateClientLogo();
+      if (corporateLogo) {
+        return corporateLogo;
+      }
+      // Fallback to main logo if no corporate logo
+      return getMainLogoUrl();
+    }
+    // For super admins and others: main logo > corporate client logo
+    const mainLogo = getMainLogoUrl();
+    if (mainLogo) {
+      return mainLogo;
+    }
+    return getCorporateClientLogo();
+  };
+
+  const shouldShowLogo = () => {
+    return getDisplayLogo() !== null;
+  };
+
+  const shouldShowText = () => {
+    // Show text if no logo is available, or if corporate client is selected (logo is secondary)
+    return !shouldShowLogo() || (selectedCorporateClient && !getMainLogoUrl());
   };
 
   return (
-    <div className={`transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} h-screen flex flex-col overflow-hidden pt-6`} style={{ color: 'var(--gray-12)', backgroundColor: 'var(--gray-1)' }}>
+    <div className={`transition-all duration-300 ${actualCollapsed ? 'w-16' : 'w-64'} flex flex-col overflow-hidden rounded-lg`} style={{ color: 'var(--color-aqua)', backgroundColor: 'var(--gray-1)', paddingBottom: '24px', borderTop: '1px solid var(--border)', borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', height: 'calc(100vh - 48px)' }}>
       {/* Header */}
-      <div className="p-4 border-b flex-shrink-0" style={{ borderColor: 'var(--gray-7)', backgroundColor: 'var(--gray-1)' }}>
-        <div className="flex items-center justify-between">
-          {!isCollapsed && (
-            <div className="flex items-center space-x-3">
-              {getCorporateClientLogo() && (
-                <img 
-                  src={getCorporateClientLogo()!} 
-                  alt="Corporate Client Logo" 
-                  className="w-8 h-8 rounded"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-              )}
-              <div>
-                <h2 style={{ fontSize: '42px' }}>{getCorporateClientName()}</h2>
-              </div>
-            </div>
-          )}
-          {isCollapsed && getCorporateClientLogo() && (
-            <img 
-              src={getCorporateClientLogo()!} 
-              alt="Corporate Client Logo" 
-              className="w-8 h-8 rounded mx-auto"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-          )}
-          {setIsCollapsed && (
-            <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-1 rounded transition-colors"
-              style={{ '--hover-bg': 'var(--gray-3)' } as React.CSSProperties & { '--hover-bg': string }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gray-3)'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-              title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              <ChevronLeft className={`w-4 h-4 transition-transform ${isCollapsed ? 'rotate-180' : ''}`} />
-            </button>
-          )}
-        </div>
+      <div className="px-4 pt-6 pb-4 border-b flex-shrink-0 flex items-center justify-center relative" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--gray-1)', height: '150px' }}>
+        {shouldShowLogo() && (
+          <img 
+            src={getDisplayLogo()!} 
+            alt={getMainLogoUrl() ? "Main Application Logo" : "Corporate Client Logo"} 
+            className="object-cover"
+            style={{ width: '120px', height: '120px', minWidth: '120px', minHeight: '120px', maxWidth: '120px', maxHeight: '120px', display: 'block' }}
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        )}
+        {!shouldShowLogo() && !actualCollapsed && (
+          <div>
+            <h2 style={{ fontSize: '42px', fontFamily: "'Nohemi', sans-serif" }}>{getCorporateClientName()}</h2>
+          </div>
+        )}
+        {(setIsCollapsed || onCollapseChange) && (
+          <button
+            onClick={() => handleCollapseChange(!actualCollapsed)}
+            className="p-1 rounded transition-colors absolute right-2"
+            style={{ '--hover-bg': 'var(--gray-3)' } as React.CSSProperties & { '--hover-bg': string }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gray-3)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            title={actualCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={actualCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <ChevronLeft className={`w-4 h-4 transition-transform ${actualCollapsed ? 'rotate-180' : ''}`} />
+          </button>
+        )}
       </div>
-
-      {/* Hierarchical Navigation Menu - Single unified menu for all roles except driver */}
-      {!isCollapsed && (user?.role === 'super_admin' || 
-        user?.role === 'corporate_admin' || 
-        user?.role === 'program_admin' || 
-        user?.role === 'program_user') && (
-        <div className="p-4 border-b flex-shrink-0" style={{ borderColor: 'var(--border)', borderWidth: 'var(--border-weight, 1px)', backgroundColor: 'var(--gray-1)' }}>
-          <DrillDownDropdown />
-        </div>
-      )}
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-4 overflow-y-auto" style={{ backgroundColor: 'var(--gray-1)' }}>
+        {/* Mini Calendar */}
+        {!actualCollapsed && (
+          <div className="mb-4" style={{ backgroundColor: 'var(--gray-1)' }}>
+            <MiniCalendar />
+          </div>
+        )}
+        
         {visibleCategories.map((category, index) => {
           const CategoryIcon = category.icon;
           
@@ -515,13 +692,13 @@ export default function Sidebar({
                   tabIndex={0}
                 >
                   <div className="flex items-center space-x-2">
-                    {!isCollapsed && (
-                      <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--gray-9)' }}>
+                    {!actualCollapsed && (
+                      <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--gray-9)', fontFamily: "'Nohemi', sans-serif" }}>
                         {category.label}
                       </span>
                     )}
                   </div>
-                  {!isCollapsed && (
+                  {!actualCollapsed && (
                     <div className="flex items-center">
                       {isExpanded ? (
                         <ChevronDown className="w-3 h-3 transition-colors" style={{ color: 'var(--gray-9)' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--gray-11)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--gray-9)'} />
@@ -575,9 +752,9 @@ export default function Sidebar({
                         onMouseLeave={(e) => !isActive && (e.currentTarget.style.backgroundColor = 'transparent')}
                       >
                         {/* Icon removed per user request */}
-                        {!isCollapsed && (
-                          <div className="flex items-center space-x-2 flex-1">
-                            <span className="text-sm font-medium">{item.label}</span>
+                        {!actualCollapsed && (
+                          <div className="flex items-start space-x-2 flex-1" style={{ justifyContent: 'flex-start', alignItems: 'flex-start' }}>
+                            <span className="text-sm font-medium" style={{ fontFamily: "'Nohemi', sans-serif" }}>{item.label}</span>
                             {/* Status indicator removed per user request */}
                           </div>
                         )}
@@ -602,9 +779,9 @@ export default function Sidebar({
                       onMouseLeave={(e) => !isActive && (e.currentTarget.style.backgroundColor = 'transparent')}
                     >
                       {/* Icon removed per user request */}
-                      {!isCollapsed && (
+                      {!actualCollapsed && (
                         <div className="flex items-center space-x-2 flex-1">
-                          <span className="text-sm font-medium">{item.label}</span>
+                          <span className="text-sm font-medium" style={{ fontFamily: "'Nohemi', sans-serif" }}>{item.label}</span>
                           {/* Status indicator removed per user request */}
                         </div>
                       )}
@@ -618,8 +795,8 @@ export default function Sidebar({
       </nav>
 
       {/* User Menu */}
-      <div className="p-4 border-t relative user-menu-container flex-shrink-0" style={{ borderColor: 'var(--gray-7)', backgroundColor: 'var(--gray-1)' }}>
-        {!isCollapsed && user && (
+      <div className="p-4 border-t relative user-menu-container flex-shrink-0" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--gray-1)', height: '69px' }}>
+        {!actualCollapsed && user && (
           <div className="flex items-center space-x-3">
             <button
               onClick={toggleUserMenu}
@@ -644,11 +821,11 @@ export default function Sidebar({
                 </span>
               </div>
               <div className="flex-1 min-w-0 text-left">
-                <p className="text-sm font-medium truncate" style={{ color: 'var(--gray-12)' }}>
+                <p className="text-sm font-medium truncate" style={{ color: 'var(--gray-12)', fontFamily: "'Nohemi', sans-serif" }}>
                   {user?.first_name || 'User'}
                 </p>
                 {userRole !== 'super_admin' && (
-                  <p className="text-xs capitalize" style={{ color: 'var(--gray-9)' }}>
+                  <p className="text-xs capitalize" style={{ color: 'var(--gray-9)', fontFamily: "'Nohemi', sans-serif" }}>
                     {userRole.replace('_', ' ')}
                   </p>
                 )}
@@ -657,7 +834,7 @@ export default function Sidebar({
             </button>
           </div>
         )}
-        {isCollapsed && user && (
+        {actualCollapsed && user && (
           <button
             onClick={toggleUserMenu}
             className="w-8 h-8 rounded-full flex items-center justify-center mx-auto transition-colors"
@@ -684,7 +861,7 @@ export default function Sidebar({
         
         {/* Slide-up User Menu */}
         {isUserMenuOpen && (
-          <div className="absolute bottom-full left-0 right-0 mb-2 rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: 'var(--gray-2)', borderColor: 'var(--gray-7)', borderWidth: '1px', borderStyle: 'solid' }}>
+          <div className="absolute bottom-full mb-2 rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', borderWidth: '1px', borderStyle: 'solid', width: '223.45px' }}>
             <div className="py-2">
               {/* User Settings */}
               <button
@@ -693,7 +870,7 @@ export default function Sidebar({
                   setIsUserMenuOpen(false);
                 }}
                 className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors"
-                style={{ color: 'var(--gray-11)' }}
+                style={{ color: 'var(--gray-11)', fontFamily: "'Nohemi', sans-serif" }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gray-3)'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
@@ -706,7 +883,7 @@ export default function Sidebar({
                 <button
                   onClick={toggleTheme}
                   className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors"
-                  style={{ color: 'var(--gray-11)' }}
+                  style={{ color: 'var(--gray-11)', fontFamily: "'Nohemi', sans-serif" }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gray-3)'}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 >
@@ -716,13 +893,13 @@ export default function Sidebar({
               )}
               
               {/* Divider */}
-              <div className="border-t my-1" style={{ borderColor: 'var(--gray-7)' }}></div>
+              <div className="border-t my-1" style={{ borderColor: 'var(--border)' }}></div>
               
               {/* Logout */}
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors"
-                style={{ color: 'rgb(248, 113, 113)' }}
+                style={{ color: 'rgb(248, 113, 113)', fontFamily: "'Nohemi', sans-serif" }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gray-3)'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >

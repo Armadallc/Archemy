@@ -15,6 +15,7 @@ import {
   PanResponder,
   Dimensions,
   Image,
+  RefreshControl,
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
@@ -111,8 +112,11 @@ export default function ChatScreen() {
   const isMobile = screenData.width < 768;
 
 
+  const [refreshingDiscussions, setRefreshingDiscussions] = useState(false);
+  const [refreshingMessages, setRefreshingMessages] = useState(false);
+
   // Fetch discussions
-  const { data: discussionsRaw = [], isLoading: discussionsLoading } = useQuery({
+  const { data: discussionsRaw = [], isLoading: discussionsLoading, refetch: refetchDiscussions } = useQuery({
     queryKey: ['discussions'],
     queryFn: async () => {
       const response = await apiClient.request<Discussion[]>('/api/discussions');
@@ -136,7 +140,7 @@ export default function ChatScreen() {
   }, [discussionsRaw]);
 
   // Fetch messages for selected discussion
-  const { data: messages = [], isLoading: messagesLoading } = useQuery({
+  const { data: messages = [], isLoading: messagesLoading, refetch: refetchMessages } = useQuery({
     queryKey: ['discussions', selectedDiscussionId, 'messages'],
     queryFn: async () => {
       if (!selectedDiscussionId) return [];
@@ -1121,6 +1125,17 @@ export default function ChatScreen() {
             style={styles.discussionsList}
             data={discussions}
             keyExtractor={(item) => item.id}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshingDiscussions}
+                onRefresh={async () => {
+                  setRefreshingDiscussions(true);
+                  await refetchDiscussions();
+                  setRefreshingDiscussions(false);
+                }}
+                tintColor="#3B82F6"
+              />
+            }
             renderItem={({ item }) => {
               const isSelected = item.id === selectedDiscussionId;
               return (
@@ -1183,6 +1198,17 @@ export default function ChatScreen() {
                   data={messages} // Backend returns newest first (descending)
                   keyExtractor={(item) => item.id}
                   inverted={true} // Inverted shows newest at bottom (standard chat pattern)
+                  refreshControl={
+                    <RefreshControl
+                      refreshing={refreshingMessages}
+                      onRefresh={async () => {
+                        setRefreshingMessages(true);
+                        await refetchMessages();
+                        setRefreshingMessages(false);
+                      }}
+                      tintColor="#3B82F6"
+                    />
+                  }
                   renderItem={({ item }) => {
                     const isCurrentUser = item.author?.user_id === user?.id;
                     const author = item.author || {

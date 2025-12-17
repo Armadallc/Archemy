@@ -192,3 +192,17 @@ export function FacilityCard({ facility, slot, onEdit, onDelete, onAdd, onAnalyz
 
 export default FacilityCard;
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -33,3 +33,17 @@ COMMENT ON COLUMN discussion_messages.reactions IS 'Array of reaction objects: [
 COMMIT;
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+

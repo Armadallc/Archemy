@@ -114,25 +114,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       console.log('🔍 [AuthContext] Starting logout...');
-      await apiClient.logout();
-      console.log('✅ [AuthContext] API logout successful');
+      
+      // Clear user state first
       setUser(null);
       console.log('✅ [AuthContext] User state cleared');
       
-      // Clear token based on platform
+      // Call API logout (which will also clear tokens)
+      // Even if this fails, we've already cleared user state
+      try {
+        await apiClient.logout();
+        console.log('✅ [AuthContext] API logout successful');
+      } catch (apiError) {
+        // Log but don't throw - tokens are cleared by apiClient.logout() anyway
+        console.log('⚠️ [AuthContext] API logout call failed (tokens still cleared):', apiError);
+      }
+      
+      // Double-check tokens are cleared (redundant but safe)
       if (Platform.OS === 'web') {
         localStorage.removeItem('auth_token');
-        console.log('✅ [AuthContext] Token removed from localStorage');
+        console.log('✅ [AuthContext] Token removed from localStorage (double-check)');
       } else {
         if (SecureStore) {
-          await SecureStore.deleteItemAsync('auth_token');
-          console.log('✅ [AuthContext] Token removed from SecureStore');
+          try {
+            await SecureStore.deleteItemAsync('auth_token');
+            console.log('✅ [AuthContext] Token removed from SecureStore (double-check)');
+          } catch (storeError) {
+            console.error('❌ [AuthContext] Error removing token from SecureStore:', storeError);
+          }
         }
       }
+      
       console.log('✅ [AuthContext] Logout completed successfully');
     } catch (error) {
       console.error('❌ [AuthContext] Logout failed:', error);
-      throw error; // Re-throw so the caller can handle it
+      // Don't throw - ensure logout always succeeds even if there's an error
+      // This prevents users from being stuck logged in
+      setUser(null);
+      if (Platform.OS === 'web') {
+        localStorage.removeItem('auth_token');
+      } else if (SecureStore) {
+        try {
+          await SecureStore.deleteItemAsync('auth_token');
+        } catch (e) {
+          // Ignore errors
+        }
+      }
     }
   };
 

@@ -31,6 +31,14 @@ export interface NotificationData {
   title: string;
   body: string;
   data?: any;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  author?: {
+    userId?: string;
+    name?: string;
+    role?: string;
+  };
+  timestamp?: string;
+  read?: boolean;
 }
 
 class NotificationService {

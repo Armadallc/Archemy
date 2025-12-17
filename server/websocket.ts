@@ -237,6 +237,10 @@ export class RealtimeWebSocketServer {
       this.clients.set(user.userId, ws);
 
       console.log(`🔌 WebSocket connected: ${user.email} (${user.role})`);
+      console.log(`🔌 Stored with userId: ${user.userId}`);
+      console.log(`🔌 Total connected clients: ${this.clients.size}`);
+      console.log(`🔌 All connected user IDs:`, Array.from(this.clients.keys()));
+      console.log(`🔌 Driver connection check - If this is a driver, their user_id should match: ${user.userId}`);
 
       // Handle pong responses
       ws.on('pong', () => {
@@ -296,11 +300,41 @@ export class RealtimeWebSocketServer {
   }
 
   // Broadcast to specific user
-  public sendToUser(userId: string, data: any) {
+  public sendToUser(userId: string, data: any): boolean {
+    console.log(`🔍 sendToUser called for userId: ${userId}`);
+    console.log(`🔍 Connected clients:`, Array.from(this.clients.keys()));
+    console.log(`🔍 Message type:`, data?.type || 'unknown');
+    console.log(`🔍 Message data keys:`, data?.data ? Object.keys(data.data) : 'no data');
+    
     const ws = this.clients.get(userId);
     if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(data));
+      try {
+        const messageStr = JSON.stringify(data);
+        console.log(`📤 Sending message to user ${userId}, message length: ${messageStr.length}`);
+        ws.send(messageStr);
+        console.log(`✅ Message sent successfully to user ${userId}`);
+        return true;
+      } catch (error) {
+        console.error(`❌ Error sending message to user ${userId}:`, error);
+        return false;
+      }
+    } else {
+      if (!ws) {
+        console.warn(`⚠️ User ${userId} is not in connected clients map.`);
+      } else if (ws.readyState !== WebSocket.OPEN) {
+        console.warn(`⚠️ User ${userId} WebSocket is not OPEN. State: ${ws.readyState}`);
+      }
+      console.warn(`⚠️ Available user IDs:`, Array.from(this.clients.keys()));
+      return false;
     }
+  }
+
+  public getConnectedClientsCount(): number {
+    return this.clients.size;
+  }
+
+  public getConnectedUserIds(): string[] {
+    return Array.from(this.clients.keys());
   }
 
   // Broadcast to users by role
@@ -469,7 +503,7 @@ export class RealtimeWebSocketServer {
 
 // Real-time event types
 export interface RealtimeEvent {
-  type: 'trip_update' | 'trip_created' | 'driver_update' | 'client_update' | 'system_update' | 'connection';
+  type: 'trip_update' | 'new_trip' | 'trip_created' | 'driver_update' | 'client_update' | 'system_update' | 'connection';
   data: any;
   timestamp: string;
   target?: {

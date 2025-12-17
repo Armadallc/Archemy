@@ -30,9 +30,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Badge } from '../components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../components/ui/alert-dialog';
-import { Search, Plus, Edit, Trash2, MapPin, Building, Gavel, Stethoscope, Store, MoreHorizontal, FileText, Heart, Users, Church, RefreshCw } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, MapPin, Building, Gavel, Stethoscope, Store, MoreHorizontal, FileText, Heart, Users, Church, RefreshCw, ChevronDown } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
 import { Checkbox } from '../components/ui/checkbox';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/accordion';
+import { RollbackManager } from '../utils/rollback-manager';
 
 interface FrequentLocation {
   id: string;
@@ -123,9 +125,13 @@ export default function FrequentLocationsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Local hierarchy filter state (separate from global hierarchy context)
+  const [filterCorporateClient, setFilterCorporateClient] = useState<string>('all');
+  const [filterProgram, setFilterProgram] = useState<string>('all');
+  const [filterLocation, setFilterLocation] = useState<string>('all');
+
   const [searchTerm, setSearchTerm] = useState('');
   const [locationTypeFilter, setLocationTypeFilter] = useState<string>('all');
-  const [tagFilter, setTagFilter] = useState<string>('all');
   const [selectedLocations, setSelectedLocations] = useState<Set<string>>(new Set());
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -158,32 +164,167 @@ export default function FrequentLocationsPage() {
     }
   });
 
+  // Initialize filter state based on user role and current hierarchy
+  useEffect(() => {
+    if (!user?.role) return;
+    
+    if (user.role === 'super_admin') {
+      // Super admin: can filter by corporate client → program → location
+      // Initialize from hierarchy context if available and filter is 'all'
+      if (selectedCorporateClient && filterCorporateClient === 'all') {
+        setFilterCorporateClient(selectedCorporateClient);
+      }
+      if (selectedProgram && filterProgram === 'all') {
+        setFilterProgram(selectedProgram);
+      }
+    } else if (user.role === 'corporate_admin') {
+      // Corporate admin: can filter by program → location (scoped to their corporate client)
+      const corporateClientId = (user as any).corporate_client_id;
+      if (corporateClientId && filterCorporateClient === 'all') {
+        setFilterCorporateClient(corporateClientId);
+      }
+      if (selectedProgram && filterProgram === 'all') {
+        setFilterProgram(selectedProgram);
+      }
+    } else if (user.role === 'program_admin') {
+      // Program admin: can filter by program(s) → location
+      if (selectedProgram && filterProgram === 'all') {
+        setFilterProgram(selectedProgram);
+      }
+    } else if (user.role === 'program_user') {
+      // Program user: can filter by location only
+      // Location filter will be set based on their assigned location
+      const locationId = (user as any).location_id;
+      if (locationId && filterLocation === 'all') {
+        setFilterLocation(locationId);
+      }
+    }
+  }, [user?.role, selectedCorporateClient, selectedProgram, filterCorporateClient, filterProgram, filterLocation]);
+
+  // Fetch corporate clients for filter dropdown (Super Admin only)
+  const { data: corporateClients = [] } = useQuery({
+    queryKey: ['/api/corporate-clients'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/corporate-clients');
+      return await response.json();
+    },
+    enabled: user?.role === 'super_admin',
+  });
+
+  // Fetch programs for filter dropdown
+  const { data: programs = [] } = useQuery({
+    queryKey: ['/api/programs', filterCorporateClient, user?.role, (user as any)?.corporate_client_id],
+    queryFn: async () => {
+      let endpoint = '/api/programs';
+      const corporateClientId = filterCorporateClient || (user as any)?.corporate_client_id;
+      
+      if (user?.role === 'corporate_admin' && corporateClientId) {
+        endpoint = `/api/programs/corporate-client/${corporateClientId}`;
+      } else if (user?.role === 'super_admin' && filterCorporateClient) {
+        endpoint = `/api/programs/corporate-client/${filterCorporateClient}`;
+      } else if (user?.role === 'program_admin') {
+        // Program admin: fetch their authorized programs
+        const primaryProgramId = (user as any).primary_program_id;
+        const authorizedPrograms = (user as any).authorized_programs || [];
+        const allProgramIds = [primaryProgramId, ...authorizedPrograms].filter(Boolean);
+        
+        if (allProgramIds.length > 0) {
+          // Fetch programs by IDs
+          const response = await apiRequest('GET', '/api/programs');
+          const allPrograms = await response.json();
+          return allPrograms.filter((p: any) => allProgramIds.includes(p.id));
+        }
+      }
+      
+      const response = await apiRequest('GET', endpoint);
+      return await response.json();
+    },
+    enabled: user?.role === 'super_admin' || user?.role === 'corporate_admin' || user?.role === 'program_admin',
+  });
+
+  // Fetch locations for filter dropdown
+  const { data: locations = [] } = useQuery({
+    queryKey: ['/api/locations', filterProgram, filterCorporateClient, user?.role, (user as any)?.corporate_client_id],
+    queryFn: async () => {
+      let endpoint = '/api/locations';
+      
+      if (filterProgram) {
+        endpoint = `/api/locations/program/${filterProgram}`;
+      } else if (user?.role === 'corporate_admin') {
+        const corporateClientId = (user as any).corporate_client_id || filterCorporateClient;
+        if (corporateClientId) {
+          endpoint = `/api/locations/corporate-client/${corporateClientId}`;
+        }
+      } else if (user?.role === 'program_user') {
+        // Program user: fetch their assigned location
+        const locationId = (user as any).location_id;
+        if (locationId) {
+          endpoint = `/api/locations/${locationId}`;
+        } else {
+          return [];
+        }
+      }
+      
+      const response = await apiRequest('GET', endpoint);
+      const data = await response.json();
+      return Array.isArray(data) ? data : (data ? [data] : []);
+    },
+    enabled: user?.role === 'super_admin' || user?.role === 'corporate_admin' || user?.role === 'program_admin' || user?.role === 'program_user',
+  });
+
+  // Determine effective filter values based on user role
+  const effectiveCorporateClient = useMemo(() => {
+    const filterValue = filterCorporateClient === 'all' ? undefined : filterCorporateClient;
+    if (user?.role === 'super_admin') {
+      return filterValue || selectedCorporateClient;
+    } else if (user?.role === 'corporate_admin') {
+      return (user as any).corporate_client_id || filterValue;
+    }
+    return undefined;
+  }, [user?.role, filterCorporateClient, selectedCorporateClient]);
+
+  const effectiveProgram = useMemo(() => {
+    const filterValue = filterProgram === 'all' ? undefined : filterProgram;
+    if (user?.role === 'super_admin' || user?.role === 'corporate_admin') {
+      return filterValue || selectedProgram;
+    } else if (user?.role === 'program_admin') {
+      // Program admin can filter by their authorized programs
+      return filterValue || selectedProgram || (user as any).primary_program_id;
+    }
+    return undefined;
+  }, [user?.role, filterProgram, selectedProgram]);
+
+  const effectiveLocation = useMemo(() => {
+    const filterValue = filterLocation === 'all' ? undefined : filterLocation;
+    if (user?.role === 'program_user') {
+      return (user as any).location_id || filterValue;
+    }
+    return filterValue;
+  }, [user?.role, filterLocation]);
+
   // Fetch frequent locations organized by tag
   const { data: frequentLocationsByTag = {}, isLoading, error } = useQuery({
-    queryKey: ['/api/locations/frequent/by-tag', level, selectedProgram, selectedCorporateClient, debouncedSearchTerm, locationTypeFilter],
+    queryKey: ['/api/locations/frequent/by-tag', effectiveCorporateClient, effectiveProgram, effectiveLocation, debouncedSearchTerm, locationTypeFilter],
     queryFn: async () => {
       console.log('🔍 Fetching frequent locations by tag with params:', {
-        level,
-        selectedProgram,
-        selectedCorporateClient,
+        effectiveCorporateClient,
+        effectiveProgram,
+        effectiveLocation,
         debouncedSearchTerm,
         locationTypeFilter
       });
       
       const params = new URLSearchParams();
       
-      // For corporate_admin, always filter by their corporate_client_id for tenant isolation
-      if (user?.role === 'corporate_admin') {
-        const corporateClientId = (user as any).corporate_client_id || selectedCorporateClient;
-        if (corporateClientId) {
-          params.append('corporate_client_id', corporateClientId);
-        } else {
-          console.warn('⚠️ Corporate admin missing corporate_client_id for frequent locations');
-        }
-      } else {
-        // For other roles, use hierarchy-based filtering
-        if (selectedProgram) params.append('program_id', selectedProgram);
-        if (selectedCorporateClient) params.append('corporate_client_id', selectedCorporateClient);
+      // Apply hierarchy filters based on user role
+      if (effectiveCorporateClient) {
+        params.append('corporate_client_id', effectiveCorporateClient);
+      }
+      if (effectiveProgram) {
+        params.append('program_id', effectiveProgram);
+      }
+      if (effectiveLocation) {
+        params.append('location_id', effectiveLocation);
       }
       
       if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
@@ -191,11 +332,19 @@ export default function FrequentLocationsPage() {
       params.append('is_active', 'true');
 
       const url = `/api/locations/frequent/by-tag?${params.toString()}`;
-      console.log('🔍 API URL:', url);
+      console.log('🔍 [Frontend] API URL:', url);
+      console.log('🔍 [Frontend] Effective filters:', {
+        effectiveCorporateClient,
+        effectiveProgram,
+        effectiveLocation,
+        hasCorporateClient: !!effectiveCorporateClient,
+        hasProgram: !!effectiveProgram,
+        hasLocation: !!effectiveLocation
+      });
 
       const response = await apiRequest('GET', url);
       const data = await response.json();
-      console.log('🔍 API Response:', data);
+      console.log('🔍 [Frontend] API Response:', data);
       return data;
     },
     enabled: !isTyping, // Disable query while user is typing
@@ -507,10 +656,6 @@ export default function FrequentLocationsPage() {
     if (locationTypeFilter !== 'all' && location.location_type !== locationTypeFilter) {
       return false;
     }
-    // tagFilter is now based on location_type since we removed the tag field
-    if (tagFilter !== 'all' && location.location_type !== tagFilter) {
-      return false;
-    }
     return true;
   });
 
@@ -544,27 +689,27 @@ export default function FrequentLocationsPage() {
     );
   }
 
+  // Feature flag check - hide page header when unified header is enabled
+  const ENABLE_UNIFIED_HEADER = RollbackManager.isUnifiedHeaderEnabled();
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 p-6">
+      {/* Header - Only show if unified header is disabled (fallback) */}
+      {!ENABLE_UNIFIED_HEADER && (
         <div>
-          <h1 
-            className="uppercase"
-            style={{
-              fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
-              fontWeight: 600,
-              fontSize: '68px',
-              lineHeight: 1.15,
-              letterSpacing: '-0.015em',
-              textTransform: 'uppercase',
-              color: 'var(--foreground)',
-            }}
-          >
-            FREQUENT LOCATIONS
-          </h1>
-        </div>
-        <div className="flex gap-2">
+          <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+            <div>
+              <h1 
+                className="font-bold text-foreground" 
+                style={{ 
+                  fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+                  fontSize: '110px'
+                }}
+              >
+                quick locations.
+              </h1>
+            </div>
+            <div className="flex gap-2">
           <Button 
             variant="outline" 
             onClick={handleSyncServiceLocations}
@@ -581,89 +726,154 @@ export default function FrequentLocationsPage() {
             <Plus className="h-4 w-4 mr-2" />
             Add Location
           </Button>
+          </div>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Filters */}
       <Card>
         <CardContent className="p-6">
-          <div className="flex items-end gap-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
-              <div>
-                <Label htmlFor="search" className="text-sm font-medium">Search</Label>
-                <div className="relative mt-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    ref={searchInputRef}
-                    id="search"
-                    placeholder="Search locations..."
-                    value={searchTerm}
-                    onChange={handleSearchChange}
-                    className="pl-10 h-10"
-                  />
-                  {isTyping && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2" style={{ borderColor: 'var(--blue-9)' }}></div>
-                    </div>
-                  )}
+          <div className="space-y-4">
+            {/* Hierarchy Filters - Role-based */}
+            {(user?.role === 'super_admin' || user?.role === 'corporate_admin' || user?.role === 'program_admin' || user?.role === 'program_user') && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 border-b" style={{ borderColor: 'var(--border)' }}>
+                {/* Corporate Client Filter - Super Admin only */}
+                {user?.role === 'super_admin' && (
+                  <div>
+                    <Label htmlFor="corporate-client-filter" className="text-sm font-medium">Corporate Client</Label>
+                    <Select 
+                      value={filterCorporateClient} 
+                      onValueChange={(value) => {
+                        setFilterCorporateClient(value);
+                        setFilterProgram('all'); // Reset program when corporate client changes
+                        setFilterLocation('all'); // Reset location when corporate client changes
+                      }}
+                    >
+                      <SelectTrigger className="mt-1 h-10">
+                        <SelectValue placeholder="All Corporate Clients" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Corporate Clients</SelectItem>
+                        {Array.isArray(corporateClients) && corporateClients.map((cc: any) => (
+                          <SelectItem key={cc.id} value={cc.id}>{cc.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Program Filter - Super Admin, Corporate Admin, Program Admin */}
+                {(user?.role === 'super_admin' || user?.role === 'corporate_admin' || user?.role === 'program_admin') && (
+                  <div>
+                    <Label htmlFor="program-filter" className="text-sm font-medium">Program</Label>
+                    <Select 
+                      value={filterProgram} 
+                      onValueChange={(value) => {
+                        setFilterProgram(value);
+                        setFilterLocation('all'); // Reset location when program changes
+                      }}
+                    >
+                      <SelectTrigger className="mt-1 h-10">
+                        <SelectValue placeholder="All Programs" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Programs</SelectItem>
+                        {Array.isArray(programs) && programs.map((program: any) => (
+                          <SelectItem key={program.id} value={program.id}>{program.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Location Filter - All roles */}
+                {(user?.role === 'super_admin' || user?.role === 'corporate_admin' || user?.role === 'program_admin' || user?.role === 'program_user') && (
+                  <div>
+                    <Label htmlFor="location-filter" className="text-sm font-medium">Location</Label>
+                    <Select 
+                      value={filterLocation} 
+                      onValueChange={setFilterLocation}
+                    >
+                      <SelectTrigger className="mt-1 h-10">
+                        <SelectValue placeholder={user?.role === 'program_user' ? "Your Location" : "All Locations"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{user?.role === 'program_user' ? "Your Location" : "All Locations"}</SelectItem>
+                        {Array.isArray(locations) && locations.map((location: any) => (
+                          <SelectItem key={location.id} value={location.id}>{location.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Search and Type Filters */}
+            <div className="flex items-end gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
+                <div>
+                  <Label htmlFor="search" className="text-sm font-medium">Search</Label>
+                  <div className="relative mt-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      ref={searchInputRef}
+                      id="search"
+                      placeholder="Search locations..."
+                      value={searchTerm}
+                      onChange={handleSearchChange}
+                      className="pl-10 h-10"
+                    />
+                    {isTyping && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2" style={{ borderColor: 'var(--blue-9)' }}></div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="location-type" className="text-sm font-medium">Location Type</Label>
+                  <Select value={locationTypeFilter} onValueChange={setLocationTypeFilter}>
+                    <SelectTrigger className="mt-1 h-10">
+                      <SelectValue placeholder="All location types" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Location Types</SelectItem>
+                      <SelectItem value="service_location">Service Location</SelectItem>
+                      <SelectItem value="legal">Legal</SelectItem>
+                      <SelectItem value="healthcare">Healthcare</SelectItem>
+                      <SelectItem value="dmv">DMV</SelectItem>
+                      <SelectItem value="grocery">Grocery</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="status-filter" className="text-sm font-medium">Status</Label>
+                  <Select value="all" onValueChange={() => {}}>
+                    <SelectTrigger className="mt-1 h-10">
+                      <SelectValue placeholder="All statuses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-              <div>
-                <Label htmlFor="category" className="text-sm font-medium">Category</Label>
-                <Select value={tagFilter} onValueChange={setTagFilter}>
-                  <SelectTrigger className="mt-1 h-10">
-                    <SelectValue placeholder="All categories" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    <SelectItem value="service_location">Service Location</SelectItem>
-                    <SelectItem value="legal">Legal</SelectItem>
-                    <SelectItem value="healthcare">Healthcare</SelectItem>
-                    <SelectItem value="dmv">DMV</SelectItem>
-                    <SelectItem value="grocery">Grocery</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="flex-shrink-0">
+                <Button variant="outline" size="sm" className="h-10" onClick={() => {
+                  setSearchTerm('');
+                  setLocationTypeFilter('all');
+                  setFilterCorporateClient('all');
+                  setFilterProgram('all');
+                  setFilterLocation('all');
+                }}>
+                  Clear
+                </Button>
               </div>
-              <div>
-                <Label htmlFor="location-type" className="text-sm font-medium">Type</Label>
-                <Select value={locationTypeFilter} onValueChange={setLocationTypeFilter}>
-                  <SelectTrigger className="mt-1 h-10">
-                    <SelectValue placeholder="All types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="service_location">Service Location</SelectItem>
-                    <SelectItem value="legal">Legal</SelectItem>
-                    <SelectItem value="healthcare">Healthcare</SelectItem>
-                    <SelectItem value="dmv">DMV</SelectItem>
-                    <SelectItem value="grocery">Grocery</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="status-filter" className="text-sm font-medium">Status</Label>
-                <Select value="all" onValueChange={() => {}}>
-                  <SelectTrigger className="mt-1 h-10">
-                    <SelectValue placeholder="All statuses" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex-shrink-0">
-              <Button variant="outline" size="sm" className="h-10" onClick={() => {
-                setSearchTerm('');
-                setLocationTypeFilter('all');
-                setTagFilter('all');
-              }}>
-                Clear
-              </Button>
             </div>
           </div>
         </CardContent>
@@ -751,7 +961,7 @@ export default function FrequentLocationsPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
+          <Accordion type="multiple" className="w-full">
             {/* Show all location types, even if empty */}
             {Object.keys(locationTags)
               .map(locationType => {
@@ -787,29 +997,39 @@ export default function FrequentLocationsPage() {
                   return true;
                 });
 
-                // Show all location type headers, even if empty
-
                 const tagSelectedIds = filteredTagLocations.map(l => l.id);
                 const tagSelectedCount = tagSelectedIds.filter(id => selectedLocations.has(id)).length;
                 const isTagFullySelected = tagSelectedIds.length > 0 && tagSelectedIds.every(id => selectedLocations.has(id));
                 
                 return (
-                  <div key={tag} className="border-b last:border-b-0" style={{ borderColor: 'var(--border)', borderWidth: 'var(--border-weight, 1px)', borderStyle: 'solid' }}>
-                    {/* Tag Header */}
-                    <div className="px-6 py-4 border-b" style={{ backgroundColor: 'var(--gray-1)', borderColor: 'var(--border)', borderWidth: 'var(--border-weight, 1px)', borderStyle: 'solid' }}>
-                      <div className="flex items-center gap-3">
+                  <AccordionItem key={tag} value={tag} className="border-b last:border-b-0" style={{ borderColor: 'var(--border)', borderWidth: 'var(--border-weight, 1px)', borderStyle: 'solid', marginTop: '16px', marginBottom: '16px', marginLeft: '16px', marginRight: '16px', borderRadius: '10px' }}>
+                    {/* Tag Header - Accordion Trigger */}
+                    <AccordionTrigger 
+                      className="px-6 py-4 hover:no-underline"
+                      style={{ 
+                        backgroundColor: 'var(--color-charcoal)',
+                        borderColor: 'var(--border)',
+                        borderWidth: 'var(--border-weight, 1px)',
+                        borderStyle: 'solid',
+                        borderRadius: '10px'
+                      }}
+                    >
+                      <div className="flex items-center gap-3 flex-1" style={{ justifyContent: 'flex-start', alignItems: 'flex-start' }}>
                         <div className="flex items-center gap-2">
                           <h3 className="" style={{ fontFamily: 'Nohemi', fontWeight: 500, color: 'var(--gray-12)' }}>{tagConfig?.label || tag}</h3>
                           <Badge 
                             variant="outline" 
                             className="text-xs"
-                            style={
-                              tagConfig && tagConfig.color === '' 
+                            style={{
+                              position: 'absolute',
+                              justifyContent: 'center',
+                              alignItems: 'flex-end',
+                              ...(tagConfig && tagConfig.color === '' 
                                 ? { backgroundColor: 'rgba(124, 173, 197, 0.2)', color: 'var(--blue-11)' }
                                 : tagConfig?.color 
                                   ? {} 
-                                  : { backgroundColor: 'var(--gray-2)', color: 'var(--gray-11)' }
-                            }
+                                  : { backgroundColor: 'var(--gray-2)', color: 'var(--gray-11)' })
+                            }}
                           >
                             {filteredTagLocations.length} location{filteredTagLocations.length !== 1 ? 's' : ''}
                           </Badge>
@@ -820,124 +1040,137 @@ export default function FrequentLocationsPage() {
                           )}
                         </div>
                       </div>
-                    </div>
+                    </AccordionTrigger>
 
-                    {/* Locations in this tag */}
-                    <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
-                      {filteredTagLocations.length === 0 ? (
-                        <div className="px-6 py-8 text-center text-gray-500 text-sm">
-                          No locations in this category
-                        </div>
-                      ) : (
-                        filteredTagLocations.map((location: any) => {
-                        const isSelected = selectedLocations.has(location.id);
-                        return (
-                          <div 
-                            key={location.id} 
-                            className="px-6 py-4 transition-colors"
-                            style={isSelected ? { backgroundColor: 'rgba(124, 173, 197, 0.1)', borderLeft: '4px solid var(--blue-9)' } : {}}
-                            onMouseEnter={(e) => {
-                              if (!isSelected) {
-                                e.currentTarget.style.backgroundColor = 'var(--gray-2)';
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!isSelected) {
-                                e.currentTarget.style.backgroundColor = '';
-                              }
-                            }}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3 flex-1">
-                                <div className="flex-shrink-0">
-                                  <Checkbox 
-                                    checked={isSelected}
-                                    onCheckedChange={() => toggleLocationSelection(location.id)}
-                                    className="mr-2 h-4 w-4 rounded-full"
-                                  />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <div className="font-medium truncate" style={{ color: 'var(--gray-12)' }}>{location.name}</div>
-                                    {location.is_service_location && (
-                                      <Badge variant="outline" className="text-xs" style={{ backgroundColor: 'rgba(124, 173, 197, 0.2)', color: 'var(--blue-11)' }}>
-                                        Service Location
-                                      </Badge>
+                    {/* Locations in this tag - Accordion Content */}
+                    <AccordionContent>
+                      <div className="divide-y" style={{ borderColor: 'var(--border)', marginTop: '16px', marginLeft: '16px', marginRight: '16px', paddingTop: '10px', backgroundColor: 'var(--card)' }}>
+                        {filteredTagLocations.length === 0 ? (
+                          <div className="px-6 py-8 text-center text-gray-500 text-sm" style={{ backgroundColor: 'var(--page-background)' }}>
+                            No locations in this category
+                          </div>
+                        ) : (
+                          filteredTagLocations.map((location: any) => {
+                          const isSelected = selectedLocations.has(location.id);
+                          return (
+                            <div 
+                              key={location.id} 
+                              className="px-6 py-4 transition-colors"
+                              style={{
+                                backgroundColor: 'var(--gray-2)',
+                                marginTop: '10px',
+                                paddingTop: '24px',
+                                paddingBottom: '24px',
+                                marginLeft: '16px',
+                                marginRight: '16px',
+                                borderRadius: '10px',
+                                borderWidth: '1px',
+                                borderColor: 'var(--border)',
+                                ...(isSelected ? { borderLeft: '4px solid var(--blue-9)' } : {})
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!isSelected) {
+                                  e.currentTarget.style.backgroundColor = 'var(--gray-2)';
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!isSelected) {
+                                  e.currentTarget.style.backgroundColor = 'var(--page-background)';
+                                }
+                              }}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3 flex-1">
+                                  <div className="flex-shrink-0">
+                                    <Checkbox 
+                                      checked={isSelected}
+                                      onCheckedChange={() => toggleLocationSelection(location.id)}
+                                      className="mr-2 h-4 w-4 rounded-full"
+                                    />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <div className="font-medium truncate" style={{ color: 'var(--gray-12)' }}>{location.name}</div>
+                                      {location.is_service_location && (
+                                        <Badge variant="outline" className="text-xs" style={{ backgroundColor: 'rgba(124, 173, 197, 0.2)', color: 'var(--blue-11)' }}>
+                                          Service Location
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <div className="text-sm text-gray-500 truncate">{location.full_address}</div>
+                                    {location.description && (
+                                      <div className="text-xs text-gray-400 truncate">{location.description}</div>
                                     )}
                                   </div>
-                                  <div className="text-sm text-gray-500 truncate">{location.full_address}</div>
-                                  {location.description && (
-                                    <div className="text-xs text-gray-400 truncate">{location.description}</div>
-                                  )}
                                 </div>
-                              </div>
-                              <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-1">
-                                  <span className="text-sm font-medium" style={{ color: 'var(--gray-12)' }}>{location.usage_count}</span>
-                                  <span className="text-xs text-gray-500">uses</span>
-                                </div>
-                                <Badge 
-                                  variant={location.is_active ? "default" : "secondary"}
-                                  className="text-xs"
-                                >
-                                  {location.is_active ? 'Active' : 'Inactive'}
-                                </Badge>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => handleEdit(location)}>
-                                      <Edit className="h-4 w-4 mr-2" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleIncrementUsage(location.id)}>
-                                      <MapPin className="h-4 w-4 mr-2" />
-                                      Mark as Used
-                                    </DropdownMenuItem>
-                                    <AlertDialog>
-                                      <AlertDialogTrigger asChild>
-                                        <DropdownMenuItem 
-                                          onSelect={(e) => e.preventDefault()}
-                                          className="text-red-600"
-                                        >
-                                          <Trash2 className="h-4 w-4 mr-2" />
-                                          Delete
-                                        </DropdownMenuItem>
-                                      </AlertDialogTrigger>
-                                      <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                          <AlertDialogTitle>Delete Location</AlertDialogTitle>
-                                          <AlertDialogDescription>
-                                            Are you sure you want to delete "{location.name}"? This action cannot be undone.
-                                          </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                          <AlertDialogAction 
-                                            onClick={() => handleDelete(location.id)}
-                                            className="bg-red-600 hover:bg-red-700"
+                                <div className="flex items-center gap-4">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-sm font-medium" style={{ color: 'var(--gray-12)' }}>{location.usage_count}</span>
+                                    <span className="text-xs text-gray-500">uses</span>
+                                  </div>
+                                  <Badge 
+                                    variant={location.is_active ? "default" : "secondary"}
+                                    className="text-xs"
+                                  >
+                                    {location.is_active ? 'Active' : 'Inactive'}
+                                  </Badge>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => handleEdit(location)}>
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Edit
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => handleIncrementUsage(location.id)}>
+                                        <MapPin className="h-4 w-4 mr-2" />
+                                        Mark as Used
+                                      </DropdownMenuItem>
+                                      <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                          <DropdownMenuItem 
+                                            onSelect={(e) => e.preventDefault()}
+                                            className="text-red-600"
                                           >
+                                            <Trash2 className="h-4 w-4 mr-2" />
                                             Delete
-                                          </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                      </AlertDialogContent>
-                                    </AlertDialog>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
+                                          </DropdownMenuItem>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                          <AlertDialogHeader>
+                                            <AlertDialogTitle>Delete Location</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                              Are you sure you want to delete "{location.name}"? This action cannot be undone.
+                                            </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction 
+                                              onClick={() => handleDelete(location.id)}
+                                              className="bg-red-600 hover:bg-red-700"
+                                            >
+                                              Delete
+                                            </AlertDialogAction>
+                                          </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        );
-                      })
-                      )}
-                    </div>
-                  </div>
+                          );
+                        })
+                        )}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
                 );
               })}
-          </div>
+          </Accordion>
         </CardContent>
       </Card>
 
@@ -974,6 +1207,7 @@ function CreateLocationDialog({
   onOpenChange: (open: boolean) => void; 
   onSave: (data: Partial<FrequentLocation>) => void; 
 }) {
+  const { user } = useAuth();
   const { selectedProgram, selectedCorporateClient } = useHierarchy();
   const [formData, setFormData] = useState({
     name: '',
@@ -983,16 +1217,66 @@ function CreateLocationDialog({
     state: '',
     zip_code: '',
     location_type: 'service_location' as const,
+    corporate_client_id: '',
+    program_id: '',
+    location_id: '',
+  });
+
+  // Fetch corporate clients for super admin
+  const { data: corporateClients = [] } = useQuery({
+    queryKey: ['/api/corporate-clients'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/corporate-clients');
+      const data = await response.json();
+      return Array.isArray(data) ? data : (data?.corporateClients || []);
+    },
+    enabled: user?.role === 'super_admin' && isOpen,
+  });
+
+  // Fetch programs based on selected corporate client
+  const { data: programs = [] } = useQuery({
+    queryKey: ['/api/programs', formData.corporate_client_id],
+    queryFn: async () => {
+      if (!formData.corporate_client_id) return [];
+      const response = await apiRequest('GET', `/api/programs/corporate-client/${formData.corporate_client_id}`);
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: user?.role === 'super_admin' && isOpen && !!formData.corporate_client_id,
+  });
+
+  // Fetch locations based on selected program
+  const { data: locations = [] } = useQuery({
+    queryKey: ['/api/locations', formData.program_id],
+    queryFn: async () => {
+      if (!formData.program_id) return [];
+      const response = await apiRequest('GET', `/api/locations?program_id=${formData.program_id}`);
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: user?.role === 'super_admin' && isOpen && !!formData.program_id,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const full_address = `${formData.street_address}, ${formData.city}, ${formData.state} ${formData.zip_code}`.trim();
     
-          // For super admin users, we need to provide default values since the database constraint
-          // requires either corporate_client_id or program_id to be set
-          const corporateClientId = selectedCorporateClient || 'monarch'; // Default to Monarch corporate client
-          const programId = selectedProgram || 'monarch_competency'; // Default to Monarch Competency program
+    // For super admin, use selected hierarchy or form selections
+    let corporateClientId = selectedCorporateClient;
+    let programId = selectedProgram;
+    let locationId = formData.location_id || undefined;
+    
+    if (user?.role === 'super_admin') {
+      // Use form selections if provided, otherwise fall back to hierarchy
+      corporateClientId = formData.corporate_client_id || selectedCorporateClient;
+      programId = formData.program_id || selectedProgram;
+    }
+    
+    // For non-super admin, use hierarchy context
+    if (!corporateClientId || !programId) {
+      corporateClientId = corporateClientId || 'monarch';
+      programId = programId || 'monarch_competency';
+    }
     
     onSave({
       ...formData,
@@ -1004,8 +1288,23 @@ function CreateLocationDialog({
       auto_synced: false,
       corporate_client_id: corporateClientId,
       program_id: programId,
+      location_id: locationId,
     });
   };
+
+  // Reset hierarchy selections when corporate client changes
+  useEffect(() => {
+    if (formData.corporate_client_id) {
+      setFormData(prev => ({ ...prev, program_id: '', location_id: '' }));
+    }
+  }, [formData.corporate_client_id]);
+
+  // Reset location selection when program changes
+  useEffect(() => {
+    if (formData.program_id) {
+      setFormData(prev => ({ ...prev, location_id: '' }));
+    }
+  }, [formData.program_id]);
 
   const resetForm = () => {
     setFormData({
@@ -1016,6 +1315,9 @@ function CreateLocationDialog({
       state: '',
       zip_code: '',
       location_type: 'service_location' as const,
+      corporate_client_id: '',
+      program_id: '',
+      location_id: '',
     });
   };
 
@@ -1036,6 +1338,73 @@ function CreateLocationDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Hierarchy Selection for Super Admin */}
+          {user?.role === 'super_admin' && (
+            <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+              <h4 className="font-medium text-sm">Assign to Hierarchy</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="corp-client-select">Corporate Client *</Label>
+                  <Select
+                    value={formData.corporate_client_id}
+                    onValueChange={(value) => setFormData({ ...formData, corporate_client_id: value })}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select corporate client" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {corporateClients.map((client: any) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="program-select">Program *</Label>
+                  <Select
+                    value={formData.program_id}
+                    onValueChange={(value) => setFormData({ ...formData, program_id: value })}
+                    disabled={!formData.corporate_client_id}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={formData.corporate_client_id ? "Select program" : "Select corporate client first"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {programs.map((program: any) => (
+                        <SelectItem key={program.id} value={program.id}>
+                          {program.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="location-select">Location</Label>
+                  <Select
+                    value={formData.location_id}
+                    onValueChange={(value) => setFormData({ ...formData, location_id: value })}
+                    disabled={!formData.program_id}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={formData.program_id ? "Select location (optional)" : "Select program first"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locations.map((location: any) => (
+                        <SelectItem key={location.id} value={location.id}>
+                          {location.name || location.address}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="name">Name *</Label>
@@ -1116,7 +1485,15 @@ function CreateLocationDialog({
           </div>
 
           <DialogFooter>
-            <Button type="submit">Add Location</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button 
+              type="submit"
+              disabled={user?.role === 'super_admin' && (!formData.corporate_client_id || !formData.program_id)}
+            >
+              Add Location
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

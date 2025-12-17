@@ -46,12 +46,31 @@ export function MainLogoUpload({ currentLogoUrl, onLogoUpdate }: MainLogoUploadP
       const formData = new FormData();
       formData.append('logo', file);
 
-      const response = await fetch('/api/system/main-logo', {
+      // Get auth token from Supabase session (PRIORITY)
+      const { supabase } = await import('../lib/supabase');
+      const { data: { session } } = await supabase.auth.getSession();
+      let authToken = session?.access_token || null;
+      
+      // Fallback to localStorage only if Supabase session fails
+      if (!authToken) {
+        authToken = localStorage.getItem('auth_token') || localStorage.getItem('authToken');
+      }
+      
+      if (!authToken) {
+        throw new Error('No authentication token available');
+      }
+
+      // Use API base URL (not relative URL)
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8081';
+      
+      const response = await fetch(`${apiBaseUrl}/api/system/main-logo`, {
         method: 'POST',
         body: formData,
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`
-        }
+          'Authorization': `Bearer ${authToken}`
+          // Don't set Content-Type - let browser set it with boundary for FormData
+        },
+        credentials: 'include',
       });
 
       if (!response.ok) {

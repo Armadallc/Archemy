@@ -16,7 +16,6 @@ import { ScenarioBuilder } from './ScenarioBuilder';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import {
-  Calculator,
   DollarSign,
   FileCode,
   Building2,
@@ -27,6 +26,7 @@ import {
   RefreshCw,
   Download,
 } from 'lucide-react';
+import { RollbackManager } from '../../utils/rollback-manager';
 
 export function ProphetCalculator() {
   const {
@@ -81,107 +81,59 @@ export function ProphetCalculator() {
     URL.revokeObjectURL(url);
   };
 
+  // Feature flag check - hide page header when unified header is enabled
+  const ENABLE_UNIFIED_HEADER = RollbackManager.isUnifiedHeaderEnabled();
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <Card style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgba(255, 85, 93, 0.1)' }}>
-                <Calculator className="h-8 w-8" style={{ color: 'var(--primary)' }} />
-              </div>
-              <div>
-                <CardTitle className="text-2xl" style={{ color: 'var(--foreground)' }}>
-                  PROPHET Calculator
-                </CardTitle>
-                <p className="text-sm mt-1" style={{ color: 'var(--muted-foreground)' }}>
-                  Precision Revenue Outcome Planning for Healthcare Expense Tracking
-                </p>
-              </div>
-            </div>
-            
-            {/* Sync Status & Actions */}
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 text-sm">
-                {pendingSync ? (
-                  <Badge variant="outline" className="gap-1" style={{ borderColor: 'var(--status-warning)' }}>
-                    <CloudOff className="h-3 w-3" style={{ color: 'var(--status-warning)' }} />
-                    Unsaved
-                  </Badge>
-                ) : lastSyncedAt ? (
-                  <Badge variant="outline" className="gap-1" style={{ borderColor: 'var(--color-lime)' }}>
-                    <Cloud className="h-3 w-3" style={{ color: 'var(--color-lime)' }} />
-                    Synced
-                  </Badge>
-                ) : null}
-              </div>
-              
-              <Button variant="outline" size="sm" onClick={() => syncToSupabase()}>
-                <Save className="h-4 w-4 mr-1" />
-                Save
-              </Button>
-              
-              <Button variant="outline" size="sm" onClick={() => syncFromSupabase()}>
-                <RefreshCw className="h-4 w-4 mr-1" />
-                Sync
-              </Button>
-              
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="h-4 w-4 mr-1" />
-                Export
-              </Button>
-            </div>
+      {/* Header - Only show if unified header is disabled (fallback) */}
+      {!ENABLE_UNIFIED_HEADER && (
+        <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+          <div>
+            <h1 
+              className="font-bold text-foreground" 
+              style={{ 
+                fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+                fontSize: '110px'
+              }}
+            >
+              prophet.
+            </h1>
           </div>
-        </CardHeader>
-        
-        <CardContent>
-          {/* Quick Stats */}
-          <div className="grid grid-cols-4 gap-4">
-            <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
-              <DollarSign className="h-5 w-5" style={{ color: 'var(--color-coral)' }} />
-              <div>
-                <div className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>
-                  ${totalMonthlyOverhead.toLocaleString()}
-                </div>
-                <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Monthly Overhead</div>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
-              <Building2 className="h-5 w-5" style={{ color: 'var(--color-ice)' }} />
-              <div>
-                <div className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>
-                  {totalFacilities}/3
-                </div>
-                <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Facilities</div>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
-              <BarChart3 className="h-5 w-5" style={{ color: 'var(--color-lime)' }} />
-              <div>
-                <div className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>
-                  {totalScenarios}
-                </div>
-                <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Scenarios</div>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
-              <FileCode className="h-5 w-5" style={{ color: 'var(--color-silver)' }} />
-              <div>
-                <div className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>
-                  {serviceCodes.length}
-                </div>
-                <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                  Service Codes {customCodes > 0 && `(${customCodes} custom)`}
-                </div>
-              </div>
-            </div>
+          
+          {/* Sync Status & Actions */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-sm">
+            {pendingSync ? (
+              <Badge variant="outline" className="gap-1" style={{ borderColor: 'var(--status-warning)' }}>
+                <CloudOff className="h-3 w-3" style={{ color: 'var(--status-warning)' }} />
+                Unsaved
+              </Badge>
+            ) : lastSyncedAt ? (
+              <Badge variant="outline" className="gap-1" style={{ borderColor: 'var(--color-lime)' }}>
+                <Cloud className="h-3 w-3" style={{ color: 'var(--color-lime)' }} />
+                Synced
+              </Badge>
+            ) : null}
           </div>
-        </CardContent>
-      </Card>
+          
+          <Button variant="outline" size="sm" onClick={() => syncToSupabase()}>
+            <Save className="h-4 w-4 mr-1" />
+            Save
+          </Button>
+          
+          <Button variant="outline" size="sm" onClick={() => syncFromSupabase()}>
+            <RefreshCw className="h-4 w-4 mr-1" />
+            Sync
+          </Button>
+          
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-1" />
+            Export
+          </Button>
+        </div>
+        </div>
+      )}
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
@@ -203,6 +155,55 @@ export function ProphetCalculator() {
             Scenarios
           </TabsTrigger>
         </TabsList>
+
+        {/* Quick Stats - Moved from header */}
+        <Card className="mt-4" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
+          <CardContent className="p-6 pt-0">
+            <div className="grid grid-cols-4 gap-4">
+              <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
+                <DollarSign className="h-5 w-5" style={{ color: 'var(--color-coral)' }} />
+                <div>
+                  <div className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>
+                    ${totalMonthlyOverhead.toLocaleString()}
+                  </div>
+                  <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Monthly Overhead</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
+                <Building2 className="h-5 w-5" style={{ color: 'var(--color-ice)' }} />
+                <div>
+                  <div className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>
+                    {totalFacilities}/3
+                  </div>
+                  <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Facilities</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
+                <BarChart3 className="h-5 w-5" style={{ color: 'var(--color-lime)' }} />
+                <div>
+                  <div className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>
+                    {totalScenarios}
+                  </div>
+                  <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Scenarios</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
+                <FileCode className="h-5 w-5" style={{ color: 'var(--color-silver)' }} />
+                <div>
+                  <div className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>
+                    {serviceCodes.length}
+                  </div>
+                  <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                    Service Codes {customCodes > 0 && `(${customCodes} custom)`}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <TabsContent value="costs" className="mt-4">
           <CostStructureManager />

@@ -184,7 +184,7 @@ const StatsCards = () => (
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold text-white">${mockData.stats.totalRevenue.toLocaleString()}</div>
-        <p className="text-xs text-green-400">+12.5% from last month</p>
+        <p className="text-xs" style={{ color: 'var(--priority-medium)' }}>+12.5% from last month</p>
         <p className="text-xs text-gray-400">Trending up this month</p>
         <p className="text-xs text-gray-500">Visitors for the last 6 months</p>
       </CardContent>
@@ -210,7 +210,7 @@ const StatsCards = () => (
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold text-white">{mockData.stats.activeAccounts.toLocaleString()}</div>
-        <p className="text-xs text-green-400">+12.5% from last month</p>
+        <p className="text-xs" style={{ color: 'var(--priority-medium)' }}>+12.5% from last month</p>
         <p className="text-xs text-gray-400">Strong user retention</p>
         <p className="text-xs text-gray-500">Engagement exceed targets</p>
       </CardContent>
@@ -223,7 +223,7 @@ const StatsCards = () => (
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold text-white">{mockData.stats.growthRate}%</div>
-        <p className="text-xs text-green-400">+4.5% from last month</p>
+        <p className="text-xs" style={{ color: 'var(--priority-medium)' }}>+4.5% from last month</p>
         <p className="text-xs text-gray-400">Steady performance increase</p>
         <p className="text-xs text-gray-500">Meets growth projections</p>
       </CardContent>

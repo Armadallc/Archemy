@@ -302,6 +302,64 @@ export async function processProgramLogoToSupabase(buffer: Buffer, programId: st
 }
 
 /**
+ * Process and upload main application logo to Supabase Storage
+ */
+export async function processMainLogoToSupabase(buffer: Buffer): Promise<string> {
+  // Check if file is SVG
+  const bufferStart = buffer.toString('utf8', 0, Math.min(100, buffer.length));
+  const isSVG = bufferStart.includes('<svg');
+
+  let processedBuffer: Buffer;
+  let filename: string;
+  let contentType: string;
+
+  if (isSVG) {
+    // Handle SVG files directly
+    processedBuffer = buffer;
+    filename = `main-logo-${nanoid()}.svg`;
+    contentType = 'image/svg+xml';
+  } else {
+    // Process other image formats with Sharp - resize to 180x180 for sidebar display
+    processedBuffer = await sharp(buffer)
+      .resize(180, 180, { 
+        fit: 'contain',
+        background: { r: 255, g: 255, b: 255, alpha: 0 },
+        withoutEnlargement: false // Allow enlargement to ensure 180x180
+      })
+      .png({ 
+        quality: 100,
+        compressionLevel: 0,
+        palette: false
+      })
+      .toBuffer();
+    filename = `main-logo-${nanoid()}.png`;
+    contentType = 'image/png';
+  }
+
+  // Generate file path
+  const filePath = `system/main/${filename}`;
+
+  // Upload to Supabase Storage
+  const { data, error } = await supabase.storage
+    .from('avatars')
+    .upload(filePath, processedBuffer, {
+      contentType,
+      upsert: true
+    });
+
+  if (error) {
+    throw new Error(`Failed to upload main logo to Supabase Storage: ${error.message}`);
+  }
+
+  // Get public URL
+  const { data: urlData } = supabase.storage
+    .from('avatars')
+    .getPublicUrl(filePath);
+
+  return urlData.publicUrl;
+}
+
+/**
  * Delete file from Supabase Storage by URL
  */
 export async function deleteFileFromSupabase(fileUrl: string): Promise<void> {

@@ -105,3 +105,17 @@ if (args.length < 2) {
 const [email, password] = args;
 createAuthUser(email, password);
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+

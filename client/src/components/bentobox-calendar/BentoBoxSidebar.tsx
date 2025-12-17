@@ -70,7 +70,7 @@ export function BentoBoxSidebar({ className }: BentoBoxSidebarProps) {
 
   const getColorClasses = (color: string) => {
     const colorMap: Record<string, string> = {
-      coral: 'bg-[#ff555d]/20 text-[#ff555d] border-[#ff555d]/30',
+      coral: 'bg-[#ff8475]/20 text-[#ff8475] border-[#ff8475]/30',
       lime: 'bg-[#f1fec9]/40 text-[#26282b] border-[#f1fec9]/50',
       ice: 'bg-[#e8fffe]/40 text-[#26282b] border-[#e8fffe]/50',
       charcoal: 'bg-[#26282b]/20 text-[#26282b] border-[#26282b]/30 dark:bg-[#26282b]/40 dark:text-[#eaeaea]',

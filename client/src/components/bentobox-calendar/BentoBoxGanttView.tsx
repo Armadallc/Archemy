@@ -25,7 +25,8 @@ interface BentoBoxGanttViewProps {
 
 export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBoxGanttViewProps) {
   const { scheduledEncounters, currentView, setCurrentDate, library, scheduleEncounter, updateScheduledEncounter } = useBentoBoxStore();
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const headerScrollRef = useRef<HTMLDivElement>(null);
+  const calendarScrollRef = useRef<HTMLDivElement>(null);
   const timeSlotRef = useRef<HTMLDivElement>(null);
   const [scrollPosition, setScrollPosition] = useState(0);
   const [draggedOverSlot, setDraggedOverSlot] = useState<{ day: Date; hour: number } | null>(null);
@@ -37,6 +38,34 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
   // Generate time slots (6 AM to 10 PM)
   const timeSlots = Array.from({ length: 17 }, (_, i) => i + 6);
   const minutesPerSlot = 60;
+
+  // Sync horizontal scroll between header and calendar
+  useEffect(() => {
+    const headerEl = headerScrollRef.current;
+    const calendarEl = calendarScrollRef.current;
+    
+    if (!headerEl || !calendarEl) return;
+    
+    const syncHeaderToCalendar = () => {
+      if (headerEl && calendarEl) {
+        headerEl.scrollLeft = calendarEl.scrollLeft;
+      }
+    };
+    
+    const syncCalendarToHeader = () => {
+      if (headerEl && calendarEl) {
+        calendarEl.scrollLeft = headerEl.scrollLeft;
+      }
+    };
+    
+    calendarEl.addEventListener('scroll', syncHeaderToCalendar);
+    headerEl.addEventListener('scroll', syncCalendarToHeader);
+    
+    return () => {
+      calendarEl.removeEventListener('scroll', syncHeaderToCalendar);
+      headerEl.removeEventListener('scroll', syncCalendarToHeader);
+    };
+  }, [currentView]);
 
   // Calculate pixels per minute based on actual rendered time slot height
   useEffect(() => {
@@ -104,7 +133,7 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
 
   const getColorClasses = (color: FireColor) => {
     const colorMap: Record<FireColor, string> = {
-      coral: 'bg-[#ff555d]/20 text-[#ff555d] border-l-4 border-[#ff555d] hover:bg-[#ff555d]/30',
+      coral: 'bg-[#ff8475]/20 text-[#ff8475] border-l-4 border-[#ff8475] hover:bg-[#ff8475]/30',
       lime: 'bg-[#f1fec9]/60 text-[#26282b] border-l-4 border-[#d4e5a8] hover:bg-[#f1fec9]/80 dark:text-[#26282b]',
       ice: 'bg-[#e8fffe]/60 text-[#26282b] border-l-4 border-[#b8e5e3] hover:bg-[#e8fffe]/80 dark:text-[#26282b]',
       charcoal: 'bg-[#26282b]/20 text-[#26282b] border-l-4 border-[#26282b] hover:bg-[#26282b]/30 dark:bg-[#26282b]/40 dark:text-[#eaeaea]',
@@ -292,13 +321,17 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
         <div className="w-16 md:w-20 bg-muted/50 border-r flex-shrink-0"></div>
         
         {/* Days header - flex for week, scrollable for month */}
-        <div className={cn(
-          "flex-1",
-          isWeekView ? "overflow-hidden" : "overflow-x-auto"
-        )}>
+        <div 
+          className={cn(
+            "flex-1",
+            isWeekView ? "overflow-hidden" : "overflow-x-auto"
+          )} 
+          ref={headerScrollRef}
+        >
           <div className={cn(
             "flex h-full",
-            isWeekView ? "w-full" : "min-w-max"
+            isWeekView ? "w-full" : "min-w-max",
+            !isWeekView && "pr-4"
           )}>
             {days.map((day) => (
               <div
@@ -328,7 +361,7 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
       <div className={cn(
         "flex flex-1 overflow-y-auto min-h-0",
         isWeekView ? "overflow-x-hidden" : "overflow-x-auto"
-      )} ref={scrollContainerRef}>
+      )}>
         {/* Time column - sticky */}
         <div className="w-16 md:w-20 bg-muted/50 border-r flex-shrink-0 sticky left-0 z-10">
           {timeSlots.map((hour, index) => (
@@ -345,13 +378,17 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
         </div>
         
         {/* Days grid - flex for week, scrollable for month */}
-        <div className={cn(
-          "flex-1",
-          isWeekView ? "overflow-hidden" : "overflow-x-auto"
-        )}>
+        <div 
+          className={cn(
+            "flex-1",
+            isWeekView ? "overflow-hidden" : "overflow-x-auto"
+          )}
+          ref={calendarScrollRef}
+        >
           <div className={cn(
             "flex h-full",
-            isWeekView ? "w-full" : "min-w-max"
+            isWeekView ? "w-full" : "min-w-max",
+            !isWeekView && "pr-4"
           )}>
             {days.map((day) => {
               const dayEvents = getEventsForDay(day);

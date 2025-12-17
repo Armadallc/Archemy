@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useWatch, useFieldArray } from 'react-hook-form';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "../../components/ui/form";
 import { Input } from "../../components/ui/input";
@@ -11,6 +11,9 @@ import { CustomSelector } from "../../components/ui/custom-selector";
 import { Trash2, UserPlus, Upload, X } from "lucide-react";
 import { useToast } from "../../hooks/use-toast";
 import { apiRequest } from "../../lib/queryClient";
+import { useHierarchy } from "../../hooks/useHierarchy";
+import { useAuth } from "../../hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 
 interface ClientFormProps {
   createForm: any;
@@ -25,12 +28,51 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
   locations,
   selectedProgram
 }) => {
+  const { user } = useAuth();
+  const { level, selectedCorporateClient, activeScope } = useHierarchy();
+  
+  // Determine if we need to show tenant selector
+  // Show for super admin in Global View OR corporate admin without program selected
+  const isGlobalView = activeScope === 'global' || (level === 'corporate' && !selectedCorporateClient);
+  const needsTenantSelector = (user?.role === 'super_admin' && isGlobalView) || 
+                              (user?.role === 'corporate_admin' && !selectedProgram);
+  
+  // Watch the selected tenant (corporate_client_id) from the form
+  const selectedTenantId = useWatch({
+    control: createForm.control,
+    name: "corporate_client_id",
+    defaultValue: selectedCorporateClient || ""
+  });
+  
   // Watch the selected program_id from the form
   const selectedProgramId = useWatch({
     control: createForm.control,
     name: "program_id",
     defaultValue: selectedProgram || ""
   });
+  
+  // Fetch corporate clients for tenant selector (super admin only)
+  const { data: corporateClients = [] } = useQuery({
+    queryKey: ['/api/corporate-clients', 'client-form'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/corporate-clients');
+      const data = await response.json();
+      return Array.isArray(data) ? data : (data?.corporateClients || []);
+    },
+    enabled: needsTenantSelector && user?.role === 'super_admin',
+    staleTime: 600000, // 10 minutes
+  });
+  
+  // Filter programs based on selected tenant
+  const filteredPrograms = useMemo(() => {
+    if (!needsTenantSelector || !selectedTenantId) {
+      return programs; // Show all programs if no tenant selected or tenant selector not needed
+    }
+    return programs.filter((program: any) => 
+      program.corporate_client_id === selectedTenantId || 
+      program.corporateClient?.id === selectedTenantId
+    );
+  }, [programs, selectedTenantId, needsTenantSelector]);
 
   // Watch location_id and use_location_address to populate address
   const selectedLocationId = useWatch({
@@ -317,7 +359,57 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
         </div>
       </div>
 
-      {/* 2. Program & Location Section */}
+      {/* 2. Tenant/Corporate Client Section (if needed) */}
+      {needsTenantSelector && (
+        <div className="border-t pt-4" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
+          <h4 className="text-sm font-medium mb-3" style={{ fontFamily: 'Nohemi', fontWeight: 500, color: 'var(--foreground)' }}>Tenant Selection</h4>
+          <div className="grid grid-cols-1 gap-4">
+            <FormField
+              control={createForm.control}
+              name="corporate_client_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium" style={{ fontFamily: 'Nohemi', fontWeight: 500 }}>
+                    {user?.role === 'super_admin' ? 'Corporate Client / Tenant *' : 'Tenant *'}
+                  </FormLabel>
+                  <FormControl>
+                    <CustomSelector
+                      value={field.value || selectedCorporateClient || ''}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        // Clear program selection when tenant changes
+                        createForm.setValue('program_id', '');
+                      }}
+                      placeholder="Select tenant"
+                      options={user?.role === 'super_admin' 
+                        ? corporateClients.map((client: any) => ({
+                            value: client.id || client.corporate_client_id,
+                            label: client.name
+                          }))
+                        : user?.role === 'corporate_admin' && (user as any)?.corporate_client_id
+                          ? [{
+                              value: (user as any).corporate_client_id,
+                              label: (user as any).corporate_client_name || 'Your Organization'
+                            }]
+                          : []
+                      }
+                      className="mt-1"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                  <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>
+                    {user?.role === 'super_admin' 
+                      ? 'Select a tenant to assign this client. Programs will be filtered by the selected tenant.'
+                      : 'Select a tenant to continue. Programs will be filtered by the selected tenant.'}
+                  </p>
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* 3. Program & Location Section */}
       <div className="border-t pt-4" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
         <h4 className="text-sm font-medium mb-3" style={{ fontFamily: 'Nohemi', fontWeight: 500, color: 'var(--foreground)' }}>Program & Location</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -331,15 +423,21 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
                   <CustomSelector
                     value={field.value || selectedProgram || ''}
                     onValueChange={field.onChange}
-                    placeholder="Select program"
-                    options={programs.map(program => ({
+                    placeholder={needsTenantSelector && !selectedTenantId ? "Select tenant first" : "Select program"}
+                    options={filteredPrograms.map((program: any) => ({
                       value: program.id,
                       label: program.name
                     }))}
                     className="mt-1"
+                    disabled={needsTenantSelector && !selectedTenantId}
                   />
                 </FormControl>
                 <FormMessage />
+                {needsTenantSelector && !selectedTenantId && (
+                  <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>
+                    Please select a tenant first to see available programs.
+                  </p>
+                )}
               </FormItem>
             )}
           />

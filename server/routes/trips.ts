@@ -362,26 +362,48 @@ router.post("/", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corpo
     if (trip.driver_id) {
       try {
         const driver = await driversStorage.getDriver(trip.driver_id);
+        console.log(`🔍 Driver data for driver_id ${trip.driver_id}:`, {
+          driver_id: driver?.id,
+          user_id: driver?.user_id,
+          hasUser: !!driver?.user_id
+        });
         if (driver?.user_id) {
           driverUserId = driver.user_id;
+          console.log(`✅ Found driver user_id for trip ${trip.id}: ${driverUserId} (driver_id: ${trip.driver_id})`);
+        } else {
+          console.warn(`⚠️ Driver ${trip.driver_id} has no user_id assigned`);
         }
       } catch (driverError) {
-        console.warn("Could not fetch driver for notification:", driverError);
+        console.error("❌ Could not fetch driver for notification:", driverError);
         // Continue without driver notification - still notify program users
       }
+    } else {
+      console.log(`ℹ️ Trip ${trip.id} has no driver assigned, will only notify program users`);
     }
     
-    // Broadcast trip creation notification
+    // Fetch trip with client data BEFORE broadcasting to ensure client name is available
+    const tripWithClient = await tripsStorage.getTrip(trip.id);
+    
+    // Broadcast trip creation notification with client data
     // Use program's corporate_client_id (fetched above) or fallback to user's corporate_client_id
-    broadcastTripCreated(trip, {
-      userId: driverUserId, // Send to assigned driver if exists
-      programId: trip.program_id, // Also notify all program users
-      corporateClientId: programCorporateClientId || req.user?.corporateClientId || undefined
-    });
+    if (tripWithClient) {
+      broadcastTripCreated(tripWithClient, {
+        userId: driverUserId, // Send to assigned driver if exists
+        programId: trip.program_id, // Also notify all program users
+        corporateClientId: programCorporateClientId || req.user?.corporateClientId || undefined
+      });
+    } else {
+      // Fallback to trip without client data if fetch fails
+      broadcastTripCreated(trip, {
+        userId: driverUserId,
+        programId: trip.program_id,
+        corporateClientId: programCorporateClientId || req.user?.corporateClientId || undefined
+      });
+    }
 
-    // Fetch trip with client data for push notifications and activity logging
-    tripsStorage.getTrip(trip.id).then(async (tripWithClient) => {
-      if (tripWithClient) {
+    // Use tripWithClient for push notifications and activity logging
+    if (tripWithClient) {
+      (async () => {
         // Send push notification to client(s) for new trip (async, don't block response)
         sendClientPushNotifications(tripWithClient, undefined, 'scheduled').catch((error) => {
           console.error('Error sending client push notification for new trip:', error);
@@ -439,10 +461,10 @@ router.post("/", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corpo
           console.error('❌ [Trip Activity] Error stack:', activityError instanceof Error ? activityError.stack : 'No stack trace');
           // Don't throw - activity logging is non-critical
         }
-      }
-    }).catch((error) => {
-      console.error('Error fetching trip for push notifications:', error);
-    });
+      })().catch((error) => {
+        console.error('Error in async trip processing:', error);
+      });
+    }
     
     res.status(201).json(trip);
   } catch (error: any) {
@@ -589,6 +611,13 @@ router.patch("/:id", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'c
     const { id } = req.params;
     const updates = req.body;
     
+    console.log('🔍 PATCH /api/trips/:id called:', {
+      tripId: id,
+      updates: updates,
+      userRole: req.user?.role,
+      userId: req.user?.userId
+    });
+    
     // Fetch current trip to get previous status and driver info for notifications
     let previousStatus: string | undefined;
     let previousDriverId: string | undefined;
@@ -707,22 +736,52 @@ router.patch("/:id", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'c
       } else if (finalTrip.driver_id && isDriverUpdate) {
         // If driver is updating their own trip status, get their name
         driverName = await getDriverDisplayName(finalTrip.driver_id);
+        // Also get driver's user_id if not already set
+        if (!driverUserId && finalTrip.driver_id) {
+          try {
+            const driver = await driversStorage.getDriver(finalTrip.driver_id);
+            if (driver?.user_id) {
+              driverUserId = driver.user_id;
+            }
+          } catch (driverError) {
+            console.warn("Could not fetch driver user_id for notification:", driverError);
+          }
+        }
       }
+      
+      // Fetch trip with client data before broadcasting to ensure client name is available
+      const tripWithClientData = await tripsStorage.getTrip(id);
+      const tripForBroadcast = tripWithClientData || finalTrip;
+      
+      console.log('🔍 About to broadcast trip update:', {
+        tripId: id,
+        status: finalTrip.status,
+        previousStatus: previousStatus,
+        programId: finalTrip.program_id,
+        driverUserId: driverUserId,
+        driverName: driverName,
+        actionType: actionType,
+        isDriverUpdate: isDriverUpdate,
+        userRole: req.user?.role
+      });
       
       // Broadcast trip update via WebSocket with driver context
       broadcastTripUpdate(
-        finalTrip,
+        tripForBroadcast,
         previousStatus,
         {
           programId: finalTrip.program_id,
           corporateClientId: req.user?.corporateClientId || undefined,
           role: req.user?.role,
           driverId: driverUserId,
+          userId: driverUserId, // Also send to driver's user_id
           updatedBy: req.user?.userId,
           driverName: driverName,
           action: actionType
         }
       );
+      
+      console.log('✅ broadcastTripUpdate call completed');
       
       // If driver was reassigned, notify old driver
       if (oldDriverUserId && actionType === 'assignment') {

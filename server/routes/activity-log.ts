@@ -54,10 +54,6 @@ router.get("/", requireSupabaseAuth, async (req: SupabaseAuthenticatedRequest, r
 
     const activities = await getActivityLog(req.user.userId, options);
 
-    // Add caching headers for better performance (60 seconds cache)
-    res.set('Cache-Control', 'private, max-age=60');
-    res.set('ETag', `"${Date.now()}-${activities.length}"`);
-    
     res.json(activities);
   } catch (error: any) {
     console.error("Error fetching activity log:", error);
@@ -104,10 +100,6 @@ router.get("/mentions", requireSupabaseAuth, async (req: SupabaseAuthenticatedRe
 
     const activities = await getActivityLog(req.user.userId, options);
 
-    // Add caching headers for better performance (60 seconds cache)
-    res.set('Cache-Control', 'private, max-age=60');
-    res.set('ETag', `"${Date.now()}-${activities.length}"`);
-    
     res.json(activities);
   } catch (error: any) {
     console.error("Error fetching mentioned activities:", error);

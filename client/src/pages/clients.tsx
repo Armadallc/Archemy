@@ -26,6 +26,7 @@ import { format, parseISO } from "date-fns";
 import { apiRequest } from "../lib/queryClient";
 import ExportButton from "../components/export/ExportButton";
 import { ComprehensiveClientForm } from "../components/forms/ComprehensiveClientForm";
+import { RollbackManager } from "../utils/rollback-manager";
 
 // Zod schema for client validation
 const clientFormSchema = z.object({
@@ -34,6 +35,7 @@ const clientFormSchema = z.object({
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
   phone: z.string().optional(),
   phone_type: z.enum(["Mobile", "Home"]).optional(),
+  corporate_client_id: z.string().optional(), // Optional - only required in Global View
   program_id: z.string().min(1, "Program is required"),
   location_id: z.string().optional(),
   is_active: z.boolean().default(true),
@@ -138,6 +140,7 @@ interface Client {
 const initialFormData: ClientFormData = {
   first_name: "",
   last_name: "",
+  corporate_client_id: "",
   phone: "",
   phone_type: undefined,
   email: "",
@@ -214,7 +217,7 @@ export default function Clients() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { level, selectedCorporateClient, selectedProgram, getFilterParams, getPageTitle } = useHierarchy();
+  const { level, selectedCorporateClient, selectedProgram, activeScope, getFilterParams, getPageTitle } = useHierarchy();
 
   console.log('Selected program from hierarchy:', selectedProgram);
 
@@ -430,9 +433,17 @@ export default function Clients() {
   // Create client mutation
   const createClientMutation = useMutation({
     mutationFn: async (clientData: ClientFormData) => {
+      // Validate tenant selection in Global View
+      const isGlobalView = activeScope === 'global' || (level === 'corporate' && !selectedCorporateClient);
+      if (user?.role === 'super_admin' && isGlobalView && !clientData.corporate_client_id) {
+        throw new Error('Please select a tenant/corporate client before creating a client.');
+      }
+      
       const apiData = {
         first_name: clientData.first_name,
         last_name: clientData.last_name,
+        // Note: corporate_client_id is not sent to API - it's determined by program_id
+        // But we validate it here to ensure proper tenant selection
         program_id: clientData.program_id || selectedProgram || '',
         location_id: clientData.location_id || undefined,
         phone: clientData.phone || undefined,
@@ -581,8 +592,13 @@ export default function Clients() {
     },
     onSuccess: () => {
       // Invalidate all client groups queries (with and without parameters)
-      queryClient.invalidateQueries({ queryKey: ["/api/clients/groups"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/client-groups"] });
+      // Use predicate to match all queries that start with the key
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return key === "/api/clients/groups" || key === "/api/client-groups";
+        }
+      });
       setIsCreateGroupDialogOpen(false);
       setGroupFormData({ name: "", description: "", selectedClients: [], program_id: selectedProgram || "", expiryOption: "never" });
       toast({ 
@@ -606,8 +622,12 @@ export default function Clients() {
     },
     onSuccess: () => {
       // Invalidate all client groups queries (with and without parameters)
-      queryClient.invalidateQueries({ queryKey: ["/api/clients/groups"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/client-groups"] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return key === "/api/clients/groups" || key === "/api/client-groups";
+        }
+      });
       setIsEditGroupDialogOpen(false);
       setEditingGroup(null);
       setGroupFormData({ name: "", description: "", selectedClients: [], program_id: selectedProgram || "", expiryOption: "never" });
@@ -632,10 +652,14 @@ export default function Clients() {
     },
     onSuccess: () => {
       // Invalidate all client groups queries (with and without parameters)
-      queryClient.invalidateQueries({ queryKey: ["/api/clients/groups"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/client-groups"] });
-      toast({ 
-        title: "Group Deleted", 
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return key === "/api/clients/groups" || key === "/api/client-groups";
+        }
+      });
+      toast({
+        title: "Group Deleted",
         description: "Client group deleted successfully" 
       });
     },
@@ -658,8 +682,12 @@ export default function Clients() {
     },
     onSuccess: () => {
       // Invalidate all client groups queries (with and without parameters)
-      queryClient.invalidateQueries({ queryKey: ["/api/clients/groups"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/client-groups"] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return key === "/api/clients/groups" || key === "/api/client-groups";
+        }
+      });
       // Refresh group members list
       if (viewingGroup) {
         const fetchMembers = async () => {
@@ -694,8 +722,12 @@ export default function Clients() {
     },
     onSuccess: () => {
       // Invalidate all client groups queries (with and without parameters)
-      queryClient.invalidateQueries({ queryKey: ["/api/clients/groups"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/client-groups"] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return key === "/api/clients/groups" || key === "/api/client-groups";
+        }
+      });
       // Refresh group members list
       if (viewingGroup) {
         const fetchMembers = async () => {
@@ -960,27 +992,23 @@ export default function Clients() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 p-6">
+      {/* Header - Only show if unified header is disabled (fallback) */}
+      {!RollbackManager.isUnifiedHeaderEnabled() && (
         <div>
-          <h1 
-            className="uppercase"
-            style={{
-              fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
-              fontWeight: 600,
-              fontSize: '68px',
-              lineHeight: 1.15,
-              letterSpacing: '-0.015em',
-              textTransform: 'uppercase',
-              color: 'var(--foreground)',
-            }}
-          >
-            CLIENT MANAGEMENT
-          </h1>
-        </div>
-        
-        <div className="flex space-x-2">
+          <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+            <div>
+              <h1 
+                className="font-bold text-foreground" 
+                style={{ 
+                  fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+                  fontSize: '110px'
+                }}
+              >
+                clients.
+              </h1>
+            </div>
+          <div className="flex space-x-2">
           <ExportButton
             data={filteredClients}
             columns={[
@@ -1037,15 +1065,16 @@ export default function Clients() {
             <Upload className="w-4 h-4 mr-2" />
             Import
           </Button>
+          </div>
         </div>
       </div>
+      )}
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card className="border-0 shadow-sm" style={{ background: 'linear-gradient(to bottom right, rgba(204, 51, 171, 0.1), rgba(204, 51, 171, 0.05))' }}>
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Card className="border-0 shadow-sm" style={{ backgroundColor: 'var(--card)' }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Active Clients</CardTitle>
-            <Users className="h-5 w-5" style={{ color: 'var(--primary)' }} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>{activeClients}</div>
@@ -1053,10 +1082,9 @@ export default function Clients() {
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-sm" style={{ background: 'linear-gradient(to bottom right, rgba(51, 204, 173, 0.1), rgba(51, 204, 173, 0.05))' }}>
+        <Card className="border-0 shadow-sm" style={{ backgroundColor: 'var(--card)' }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Total Clients</CardTitle>
-            <User className="h-5 w-5" style={{ color: 'var(--accent)' }} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>{totalClients}</div>
@@ -1064,10 +1092,9 @@ export default function Clients() {
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-sm" style={{ background: 'linear-gradient(to bottom right, rgba(204, 51, 171, 0.15), rgba(204, 51, 171, 0.08))' }}>
+        <Card className="border-0 shadow-sm" style={{ backgroundColor: 'var(--card)', color: 'var(--card-foreground)' }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Recent Clients</CardTitle>
-            <Calendar className="h-5 w-5" style={{ color: 'var(--primary)' }} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>{recentClients}</div>
@@ -1076,7 +1103,6 @@ export default function Clients() {
         </Card>
         
       </div>
-
 
       {/* Two-Panel Layout */}
       <div className="grid grid-cols-1 gap-6">
@@ -1093,7 +1119,7 @@ export default function Clients() {
                 <DialogTrigger asChild>
                   <Button 
                     className="text-white"
-                    style={{ backgroundColor: 'var(--primary)' }}
+                    style={{ backgroundColor: 'var(--primary)', color: 'var(--color-aqua)', borderWidth: '1px', borderColor: 'var(--border)' }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.backgroundColor = 'var(--primary)';
                       e.currentTarget.style.opacity = '0.9';
@@ -1109,51 +1135,58 @@ export default function Clients() {
                 </DialogTrigger>
               </Dialog>
             </div>
-            
-                  {/* Enhanced Search and Filters */}
-                  <div className="flex flex-col sm:flex-row gap-4 items-center justify-between mt-4">
-                    <div className="flex flex-1 items-center space-x-2">
-                      <div className="relative flex-1 max-w-sm">
-                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
-                        <Input
-                          placeholder="Search clients..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-8"
-                        />
-                      </div>
-                      <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                        <SelectTrigger className="w-40">
-                          <Filter className="h-4 w-4 mr-2" />
-                          <SelectValue placeholder="Location" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Locations</SelectItem>
-                          {locations.map((location: any) => (
-                            <SelectItem key={location.id} value={location.id}>
-                              {location.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-            
-            <div className="flex items-center justify-between text-sm text-gray-600 mt-2">
-              <span className="flex items-center">
-                <Users className="w-4 h-4 mr-1" />
-                {filteredClients.length} clients
-              </span>
-              <div className="flex items-center space-x-2">
-                <Button variant="outline" size="sm">
-                  <Filter className="w-4 h-4 mr-1" />
-                  Filters
-                </Button>
-              </div>
-            </div>
           </CardHeader>
+        </Card>
+        
+        {/* BOTTOM PANEL: Client Groups - moved outside for now */}
+      </div>
+
+      {/* Enhanced Search and Filters */}
+      <Card className="flex flex-col">
+        <CardHeader className="flex-shrink-0">
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+            <div className="flex flex-1 items-center space-x-2">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                  placeholder="Search clients..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+              <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                <SelectTrigger className="w-40">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Location" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Locations</SelectItem>
+                  {locations.map((location: any) => (
+                    <SelectItem key={location.id} value={location.id}>
+                      {location.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           
-          <CardContent className="flex-1 overflow-auto">
+          <div className="flex items-center justify-between text-sm text-gray-600 mt-2">
+            <span className="flex items-center">
+              <Users className="w-4 h-4 mr-1" />
+              {filteredClients.length} clients
+            </span>
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" size="sm">
+                <Filter className="w-4 h-4 mr-1" />
+                Filters
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="flex-1 overflow-auto">
           {loadingClients ? (
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
@@ -1220,7 +1253,13 @@ export default function Clients() {
                             </div>
                             <div className="flex items-center gap-2 text-sm text-gray-500">
                               <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--blue-9)' }}></div>
-                              <span className="truncate max-w-32">ID: {client.id.slice(-8)}</span>
+                              <span className="truncate max-w-32 font-mono">
+                                {client.scid ? (
+                                  <>SCID: {client.scid}</>
+                                ) : (
+                                  <span className="text-muted-foreground italic">SCID: Pending</span>
+                                )}
+                              </span>
                             </div>
                           </div>
                         </TableCell>
@@ -1390,6 +1429,8 @@ export default function Clients() {
           </CardContent>
         </Card>
 
+      {/* Two-Panel Layout - Client Groups */}
+      <div className="grid grid-cols-1 gap-6 mt-6">
         {/* BOTTOM PANEL: Client Groups */}
         <Card className="flex flex-col">
           <CardHeader className="flex-shrink-0">
@@ -1441,14 +1482,14 @@ export default function Clients() {
                         <div key={group.id} className="border rounded-lg p-4 hover:shadow-md transition-all duration-200" style={{ '--hover-bg': 'var(--muted)' } as React.CSSProperties} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--muted)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
                     <div className="flex items-center justify-between mb-3">
                       <div>
-                        <h3 className="font-medium text-gray-900">{group.name}</h3>
-                        <p className="text-sm text-gray-600">{group.description}</p>
+                        <h3 className="font-medium text-foreground">{group.name}</h3>
+                        <p className="text-sm text-muted-foreground">{group.description}</p>
                       </div>
                       <Badge variant="outline">{group.member_count ?? 0} members</Badge>
                     </div>
                     
                     <div className="flex items-center justify-between">
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-muted-foreground">
                         Program: {group.programs?.name || 'Unknown'}
                       </div>
                       <div className="flex space-x-2">
@@ -1799,8 +1840,12 @@ export default function Clients() {
               onClick={() => {
                 // Save changes - refresh the group data
                 // Invalidate all client groups queries (with and without parameters)
-                queryClient.invalidateQueries({ queryKey: ["/api/clients/groups"] });
-                queryClient.invalidateQueries({ queryKey: ["/api/client-groups"] });
+                queryClient.invalidateQueries({ 
+                  predicate: (query) => {
+                    const key = query.queryKey[0];
+                    return key === "/api/clients/groups" || key === "/api/client-groups";
+                  }
+                });
                 setIsViewEditMembersDialogOpen(false);
                 setViewingGroup(null);
                 setGroupMembers([]);

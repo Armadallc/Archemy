@@ -35,6 +35,17 @@ import { useHierarchy } from "../hooks/useHierarchy";
 import { useAuth } from "../hooks/useAuth";
 import { LogoUpload } from "../components/LogoUpload";
 import { MainLogoUpload } from "../components/MainLogoUpload";
+import CorporateClientCards from "../components/settings/CorporateClientCards";
+import UsersManagement from "../components/settings/UsersManagement";
+import TenantRolesManagement from "../components/settings/TenantRolesManagement";
+import ProgramCreationForm from "../components/settings/ProgramCreationForm";
+import FeatureFlagsTab from "../components/settings/FeatureFlagsTab";
+import { ThemeSelector } from "../components/ThemeSelector";
+import { ThemePicker } from "../components/design-system/ThemePicker";
+import { IntegratedThemeEditor } from "../components/design-system/IntegratedThemeEditor";
+import { Flag, Palette } from "lucide-react";
+import { UserAvatar } from "../components/users/UserAvatar";
+import ContactsTab from "../components/settings/ContactsTab";
 
 interface CorporateClientSettings {
   id: string;
@@ -65,16 +76,7 @@ interface SystemSettings {
   language: string;
 }
 
-interface ContactUser {
-  id: string;
-  user_name: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone?: string;
-  role: string;
-  is_active: boolean;
-}
+// ContactUser interface moved to ContactsTab component
 
 // Define which tabs are visible for each role
 function getVisibleTabs(userRole?: string) {
@@ -83,8 +85,11 @@ function getVisibleTabs(userRole?: string) {
     { id: 'program', label: 'Program', icon: Building2 },
     { id: 'vendors', label: 'Vendors', icon: Store },
     { id: 'users', label: 'Users', icon: Users },
+    { id: 'tenant-roles', label: 'Tenant Roles', icon: Shield },
+    { id: 'feature-flags', label: 'Feature Flags', icon: Flag },
     { id: 'contacts', label: 'Contacts', icon: Contact },
     { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'theme-management', label: 'Theme Management', icon: Palette },
     { id: 'system', label: 'System', icon: Database }
   ];
 
@@ -106,7 +111,7 @@ function getVisibleTabs(userRole?: string) {
       return allTabs.filter(tab => tab.id !== 'system');
     
     case 'super_admin':
-      // Super admins see all tabs
+      // Super admins see all tabs including Feature Flags and Theme Management
       return allTabs;
     
     default:
@@ -122,7 +127,18 @@ export default function Settings() {
   
   // Get visible tabs and set default active tab to first available
   const visibleTabs = getVisibleTabs(user?.role);
-  const [activeTab, setActiveTab] = useState(visibleTabs[0]?.id || "corporate-client");
+  
+  // Check for tab query parameter in URL
+  const getInitialTab = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam && visibleTabs.find(tab => tab.id === tabParam)) {
+      return tabParam;
+    }
+    return visibleTabs[0]?.id || "corporate-client";
+  };
+  
+  const [activeTab, setActiveTab] = useState(getInitialTab);
   const [isLoading, setIsLoading] = useState(false);
 
   // Corporate client settings - sync with current corporate client
@@ -214,24 +230,7 @@ export default function Settings() {
     refetchOnMount: true,
   });
 
-  // Fetch contacts for the current hierarchy level
-  const { data: contacts = [] } = useQuery<ContactUser[]>({
-    queryKey: ["/api/contacts", level, selectedCorporateClient, selectedProgram],
-    queryFn: async () => {
-      let endpoint = "/api/contacts";
-      
-      if (level === 'program' && selectedProgram) {
-        endpoint = `/api/contacts/program/${selectedProgram}`;
-      } else if (level === 'client' && selectedCorporateClient) {
-        endpoint = `/api/contacts/corporate-client/${selectedCorporateClient}`;
-      }
-      
-      const response = await apiRequest("GET", endpoint);
-      const data = await response.json();
-      return data;
-    },
-    enabled: true,
-  });
+  // Contacts are now handled by ContactsTab component
 
   // Update active tab if current tab is not visible
   useEffect(() => {
@@ -239,6 +238,30 @@ export default function Settings() {
       setActiveTab(visibleTabs[0].id);
     }
   }, [visibleTabs, activeTab]);
+
+  // Sync URL query parameter with active tab
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentTab = urlParams.get('tab');
+    if (currentTab !== activeTab) {
+      urlParams.set('tab', activeTab);
+      const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [activeTab]);
+
+  // Listen for URL changes (e.g., browser back/forward)
+  useEffect(() => {
+    const handlePopState = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get('tab');
+      if (tabParam && visibleTabs.find(tab => tab.id === tabParam)) {
+        setActiveTab(tabParam);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [visibleTabs]);
 
   // Update form when data changes
   useEffect(() => {
@@ -351,28 +374,22 @@ export default function Settings() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 
-            className="uppercase"
-            style={{
-              fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
-              fontWeight: 600,
-              fontSize: '68px',
-              lineHeight: 1.15,
-              letterSpacing: '-0.015em',
-              textTransform: 'uppercase',
-              color: 'var(--foreground)',
-            }}
-          >
-            SETTINGS
-          </h1>
-          <p className="text-gray-600">
-            Manage your {getPageTitle()} settings and preferences
-          </p>
-        </div>
-        <div className="flex items-center space-x-2">
+    <div className="container mx-auto space-y-6 p-6">
+      {/* Header */}
+      <div>
+        <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+          <div>
+            <h1 
+              className="font-bold text-foreground" 
+              style={{ 
+                fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+                fontSize: '110px'
+              }}
+            >
+              settings.
+            </h1>
+          </div>
+          <div className="flex items-center space-x-2">
           <Badge variant="outline">
             {level?.toUpperCase() || 'CORPORATE'} Level
           </Badge>
@@ -386,28 +403,32 @@ export default function Settings() {
               {selectedProgram}
             </Badge>
           )}
+          </div>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-8">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-10 h-auto p-1 gap-1">
           {visibleTabs.map((tab) => (
-            <TabsTrigger key={tab.id} value={tab.id} className="flex items-center space-x-2">
-              <tab.icon className="w-4 h-4" />
-              <span className="hidden sm:inline">{tab.label}</span>
+            <TabsTrigger key={tab.id} value={tab.id} className="flex items-center justify-center space-x-1.5 px-2 py-2 text-xs sm:text-sm flex-1 min-w-0">
+              <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+              <span className="truncate text-center">{tab.label}</span>
             </TabsTrigger>
           ))}
         </TabsList>
 
         <TabsContent value="corporate-client" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Corporate Client Information</CardTitle>
-              <CardDescription>
-                Manage your corporate client's basic information and settings.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+          {user?.role === 'super_admin' ? (
+            <CorporateClientCards />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Corporate Client Information</CardTitle>
+                <CardDescription>
+                  Manage your corporate client's basic information and settings.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
               <div className="flex items-center space-x-6">
                 <LogoUpload 
                   organizationId={corporateClientSettings.id} 
@@ -491,100 +512,11 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="program" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Program Information</CardTitle>
-              <CardDescription>
-                Manage your program's basic information and settings.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center space-x-6">
-                <LogoUpload 
-                  organizationId={programSettings.id} 
-                  onLogoUpdate={() => {}} 
-                  type="program"
-                />
-                <div>
-                  <h3 className="text-lg font-medium">Program</h3>
-                  <p className="text-gray-600">
-                    {selectedProgram || 'No program selected'}
-                  </p>
-                </div>
-              </div>
-              
-              <Separator />
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="prog-name">Program Name</Label>
-                  <Input
-                    id="prog-name"
-                    value={programSettings.name}
-                    onChange={(e) => setProgramSettings({...programSettings, name: e.target.value})}
-                    placeholder="Enter program name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="prog-description">Description</Label>
-                  <Input
-                    id="prog-description"
-                    value={programSettings.description || ''}
-                    onChange={(e) => setProgramSettings({...programSettings, description: e.target.value})}
-                    placeholder="Enter program description"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="prog-address">Address</Label>
-                  <Textarea
-                    id="prog-address"
-                    value={programSettings.address || ''}
-                    onChange={(e) => setProgramSettings({...programSettings, address: e.target.value})}
-                    placeholder="Enter program address"
-                    rows={3}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="prog-corporate-client">Corporate Client</Label>
-                  <Input
-                    id="prog-corporate-client"
-                    value={programSettings.corporate_client_id}
-                    disabled
-                    className="bg-gray-50"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="prog-active"
-                  checked={programSettings.isActive}
-                  onCheckedChange={(checked) => setProgramSettings({...programSettings, isActive: checked})}
-                />
-                <Label htmlFor="prog-active">Active</Label>
-              </div>
-              
-              <div className="flex justify-end space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() => window.location.reload()}
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Reset
-                </Button>
-                <Button
-                  onClick={handleSaveProgram}
-                  disabled={saveProgramMutation.isPending}
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Program Settings
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <ProgramCreationForm />
         </TabsContent>
 
         <TabsContent value="vendors" className="space-y-6">
@@ -607,71 +539,74 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="users" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>User Management</CardTitle>
-              <CardDescription>
-                Manage user roles and permissions for your {level} level.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  User management is handled through the Users page. Use the navigation menu to access user management features.
-                </AlertDescription>
-              </Alert>
-            </CardContent>
-          </Card>
+          {(user?.role === 'super_admin' || user?.role === 'corporate_admin' || user?.role === 'program_admin') ? (
+            <UsersManagement />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>User Management</CardTitle>
+                <CardDescription>
+                  Manage user roles and permissions for your {level} level.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    User management is only available to Super Admins, Corporate Admins, and Program Admins. If you need user management access, please contact your administrator.
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="tenant-roles" className="space-y-6">
+          {(user?.role === 'super_admin' || user?.role === 'corporate_admin') ? (
+            <TenantRolesManagement />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Tenant Roles</CardTitle>
+                <CardDescription>
+                  Create and manage custom roles for your corporate client.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    Tenant role management is only available to Super Admins and Corporate Admins. If you need access, please contact your administrator.
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="contacts" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Contacts Directory</CardTitle>
-              <CardDescription>
-                Directory of all users in your {level} with their contact information.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {contacts.length > 0 ? (
-                  <div className="grid gap-4">
-                    {contacts.map((contact) => (
-                      <div key={contact.id} className="flex items-center space-x-4 p-4 border rounded-lg">
-                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                          <User className="w-5 h-5 text-gray-600" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-medium">{contact.first_name} {contact.last_name}</h3>
-                          <p className="text-sm text-gray-600">{contact.email}</p>
-                          {contact.phone && (
-                            <p className="text-sm text-gray-600">{contact.phone}</p>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant={contact.is_active ? "default" : "secondary"}>
-                            {contact.is_active ? "Active" : "Inactive"}
-                          </Badge>
-                          <Badge variant="outline">
-                            {contact.role.replace('_', ' ').toUpperCase()}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p>No contacts found for the current {level} level.</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <ContactsTab />
+        </TabsContent>
+
+        <TabsContent value="feature-flags" className="space-y-6">
+          {user?.role === 'super_admin' ? (
+            <FeatureFlagsTab />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Feature Flags</CardTitle>
+                <CardDescription>
+                  Feature flags are only available to Super Admins.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-6">
+          {/* Theme Selection - Available to all users */}
+          <ThemePicker maxThemes={4} />
+          
           <Card>
             <CardHeader>
               <CardTitle>Notification Settings</CardTitle>
@@ -721,6 +656,34 @@ export default function Settings() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="theme-management" className="space-y-6">
+          {user?.role === 'super_admin' ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Theme Management</CardTitle>
+                <CardDescription>
+                  Create, edit, and manage themes for the application. Super Admins can edit themes, other users can only select from available themes.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <IntegratedThemeEditor />
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Theme Selection</CardTitle>
+                <CardDescription>
+                  Select a theme for your interface. Only Super Admins can create and edit themes.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ThemePicker />
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
         <TabsContent value="system" className="space-y-6">
           <Card>
             <CardHeader>
@@ -731,7 +694,18 @@ export default function Settings() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center space-x-6">
-                <MainLogoUpload onLogoUpdate={() => {}} />
+                <MainLogoUpload 
+                  currentLogoUrl={systemSettings.main_logo_url}
+                  onLogoUpdate={(logoUrl) => {
+                    // Update local state
+                    setSystemSettings({
+                      ...systemSettings,
+                      main_logo_url: logoUrl,
+                    });
+                    // Invalidate query to refresh data
+                    queryClient.invalidateQueries({ queryKey: ['/api/system-settings'] });
+                  }} 
+                />
                 <div>
                   <h3 className="text-lg font-medium">System Logo</h3>
                   <p className="text-gray-600">Upload the main system logo</p>

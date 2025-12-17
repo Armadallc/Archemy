@@ -24,6 +24,7 @@ import { apiRequest } from '../lib/queryClient';
 import { useToast } from '../hooks/use-toast';
 import BillingPinSetup from '../components/BillingPinSetup';
 import CMS1500Form from '../components/CMS1500Form';
+import { RollbackManager } from '../utils/rollback-manager';
 
 export default function BillingPage() {
   const { user } = useAuth();
@@ -185,18 +186,23 @@ export default function BillingPage() {
     );
   }
 
+  // Feature flag check - hide page header when unified header is enabled
+  const ENABLE_UNIFIED_HEADER = RollbackManager.isUnifiedHeaderEnabled();
+
   return (
     <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 
-            className="uppercase"
-            style={{
-              fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
-              fontWeight: 600,
-              fontSize: '68px',
-              lineHeight: 1.15,
-              letterSpacing: '-0.015em',
+      {/* Header - Only show if unified header is disabled (fallback) */}
+      {!ENABLE_UNIFIED_HEADER && (
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 
+              className="uppercase"
+              style={{
+                fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+                fontWeight: 600,
+                fontSize: '68px',
+                lineHeight: 1.15,
+                letterSpacing: '-0.015em',
               textTransform: 'uppercase',
               color: 'var(--foreground)',
             }}
@@ -216,7 +222,8 @@ export default function BillingPage() {
             Lock Module
           </Button>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

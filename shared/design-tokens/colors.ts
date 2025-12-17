@@ -14,9 +14,11 @@ export const palette = {
   charcoal: '#26282b',
   ice: '#e8fffe',
   lime: '#f1fec9',
-  coral: '#ff555d',
+  coral: '#ff8475',
   silver: '#eaeaea',
   cloud: '#f4f4f4',
+  shadow: '#343434',
+  aqua: '#a5c8ca',
   
   // Extended charcoal shades
   charcoalLight: '#363a3e',

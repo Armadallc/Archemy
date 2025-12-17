@@ -30,6 +30,7 @@ import { usePageAccess } from "../hooks/use-page-access";
 import { useFeatureFlag } from "../hooks/use-permissions";
 import AdvancedFilters from "./filters/AdvancedFilters";
 import { useBulkOperations } from "../hooks/useBulkOperations";
+import { RollbackManager } from "../utils/rollback-manager";
 
 interface Trip {
   id: string;
@@ -89,6 +90,9 @@ interface Trip {
 export default function HierarchicalTripsPage() {
   const { user } = useAuth();
   const { level, selectedCorporateClient, selectedProgram, getFilterParams } = useHierarchy();
+  
+  // Feature flag check - hide page header when unified header is enabled
+  const ENABLE_UNIFIED_HEADER = RollbackManager.isUnifiedHeaderEnabled();
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -310,25 +314,22 @@ export default function HierarchicalTripsPage() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header - Only show if unified header is disabled (fallback) */}
+      {!ENABLE_UNIFIED_HEADER && (
         <div>
-          <h1 
-            className="uppercase"
-            style={{
-              fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
-              fontWeight: 600,
-              fontSize: '68px',
-              lineHeight: 1.15,
-              letterSpacing: '-0.015em',
-              textTransform: 'uppercase',
-              color: 'var(--foreground)',
-            }}
-          >
-            CORPORATE TRIPS
-          </h1>
-        </div>
-        <div className="flex items-center gap-3">
+          <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+            <div>
+              <h1 
+                className="font-bold text-foreground" 
+                style={{ 
+                  fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+                  fontSize: '110px'
+                }}
+              >
+                trips.
+              </h1>
+            </div>
+            <div className="flex items-center gap-3">
           {/* View Toggle (only shown if compact view feature flag is enabled) */}
           {compactViewEnabled && (
             <div className="flex items-center gap-1 border rounded-md p-1">
@@ -396,15 +397,17 @@ export default function HierarchicalTripsPage() {
               </Button>
             </PermissionGuard>
           )}
+          </div>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Bulk Operations Bar */}
       {bulkOpsEnabled && bulkOps.selectedItems.length > 0 && (
         <Card 
           className="border"
           style={{
-            backgroundColor: 'rgba(204, 51, 171, 0.1)',
+            backgroundColor: 'var(--color-charcoal)',
             borderColor: 'var(--primary)'
           }}
         >
@@ -702,6 +705,8 @@ export default function HierarchicalTripsPage() {
                       size="sm" 
                       style={{ 
                         color: 'var(--destructive)',
+                        backgroundColor: 'unset',
+                        background: 'unset',
                       }}
                       onMouseEnter={(e) => e.currentTarget.style.color = 'var(--destructive)'}
                       onMouseLeave={(e) => e.currentTarget.style.color = 'var(--destructive)'}

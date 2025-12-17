@@ -11,13 +11,14 @@ interface WidgetProps {
   actions?: React.ReactNode;
   loading?: boolean;
   error?: string;
+  shadow?: 'sm' | 'xl';
 }
 
 const sizeClasses = {
   small: 'col-span-1',
   medium: 'col-span-2',
   large: 'col-span-3',
-  full: 'col-span-4'
+  full: 'w-full' // Full width when not in grid context
 };
 
 export default function Widget({ 
@@ -28,12 +29,34 @@ export default function Widget({
   icon,
   actions,
   loading = false,
-  error
+  error,
+  shadow = 'sm'
 }: WidgetProps) {
+  // Override Card's default shadow-sm when shadow-xl is requested
+  // The cn utility should handle class merging, but we'll explicitly set shadow-xl
+  const shadowClass = shadow === 'xl' ? 'shadow-xl' : undefined;
+  // Determine height class based on size and context
+  const heightClass = size === 'small' ? "h-auto" : size === 'full' ? "w-full h-auto" : "h-full";
+  
+  // Extract max-height from className if present
+  const maxHeightMatch = className?.match(/max-h-\[(\d+)px\]/);
+  const maxHeight = maxHeightMatch ? `${maxHeightMatch[1]}px` : undefined;
+  
   return (
-    <Card className={cn("h-full", sizeClasses[size], className)}>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center justify-between text-lg">
+    <Card 
+      className={cn(
+        heightClass,
+        sizeClasses[size], 
+        shadowClass, 
+        className
+      )}
+      style={{
+        ...(shadow === 'xl' ? { boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' } : {}),
+        ...(maxHeight ? { height: maxHeight, maxHeight: maxHeight, overflow: 'hidden' } : {})
+      }}
+    >
+      <CardHeader className="pb-2 flex-shrink-0">
+        <CardTitle className="flex items-center justify-between text-base">
           <div className="flex items-center space-x-2">
             {icon && <span className="text-muted-foreground">{icon}</span>}
             <span>{title}</span>
@@ -41,7 +64,7 @@ export default function Widget({
           {actions && <div className="flex items-center space-x-1">{actions}</div>}
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent className="pt-0 flex-1 overflow-hidden flex flex-col min-h-0">
         {loading ? (
           <div className="flex items-center justify-center h-32">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

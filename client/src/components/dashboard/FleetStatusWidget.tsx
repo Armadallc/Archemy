@@ -8,9 +8,10 @@ interface FleetStatusWidgetProps {
   className?: string;
   drivers?: any[];
   trips?: any[];
+  shadow?: 'sm' | 'xl';
 }
 
-export default function FleetStatusWidget({ className, drivers, trips }: FleetStatusWidgetProps) {
+export default function FleetStatusWidget({ className, drivers, trips, shadow }: FleetStatusWidgetProps) {
   // Get in-progress trips
   const inProgressTrips = trips?.filter((trip: any) => trip.status === 'in_progress') || [];
   
@@ -79,8 +80,9 @@ export default function FleetStatusWidget({ className, drivers, trips }: FleetSt
     <Widget
       title="Fleet Status"
       icon={<MapPin className="h-5 w-5" />}
-      size="large"
+      size="full"
       className={className}
+      shadow={shadow}
       actions={
         <Button variant="outline" size="sm">
           <Navigation className="h-4 w-4 mr-1" />
@@ -132,7 +134,7 @@ export default function FleetStatusWidget({ className, drivers, trips }: FleetSt
                       className="h-2 rounded-full transition-all"
                       style={{ 
                         width: `${batteryPercent}%`,
-                        backgroundColor: statusColor
+                        backgroundColor: 'rgba(241, 254, 96, 1)'
                       }}
                     />
                   </div>
@@ -151,23 +153,23 @@ export default function FleetStatusWidget({ className, drivers, trips }: FleetSt
         {/* Fleet Summary */}
         {hasActiveTrips && (
           <div className="grid grid-cols-3 gap-4 pt-2 pb-2 border-t">
-            <div className="text-center shadow-xl">
+            <div className="text-center shadow-xl flex flex-col justify-center items-center" style={{ height: '75px' }}>
               <div className="text-2xl font-bold text-foreground">
                 {inProgressTrips.length}
               </div>
-              <div className="text-xs text-foreground-secondary">In Progress</div>
+              <div className="text-xs text-foreground-secondary flex flex-col justify-center items-center">In Progress</div>
             </div>
-            <div className="text-center shadow-xl">
+            <div className="text-center shadow-xl flex flex-col justify-center items-center" style={{ height: '75px' }}>
               <div className="text-2xl font-bold text-foreground">
                 {trips?.filter((t: any) => t.status === 'scheduled').length || 0}
               </div>
-              <div className="text-xs text-foreground-secondary">Scheduled</div>
+              <div className="text-xs text-foreground-secondary flex flex-col justify-center items-center">Scheduled</div>
             </div>
-            <div className="text-center shadow-xl">
+            <div className="text-center shadow-xl flex flex-col justify-center items-center" style={{ height: '75px' }}>
               <div className="text-2xl font-bold text-foreground">
                 {trips?.filter((t: any) => t.status === 'completed').length || 0}
               </div>
-              <div className="text-xs text-foreground-secondary">Completed</div>
+              <div className="text-xs text-foreground-secondary flex flex-col justify-center items-center">Completed</div>
             </div>
           </div>
         )}

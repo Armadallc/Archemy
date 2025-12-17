@@ -344,7 +344,7 @@ export default function ChatWidget() {
   ];
 
   return (
-    <div className="flex h-full min-h-0 border-t">
+    <div className="flex h-full min-h-0">
       {discussionsLoading ? (
         <div className="flex items-center justify-center w-full h-full">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -612,7 +612,7 @@ export default function ChatWidget() {
             </div>
 
             {/* New Chat Button at Bottom (like reference) */}
-            <div className="flex-shrink-0 p-4 border-t">
+            <div className="flex-shrink-0 p-4 border-t" style={{ height: '93px' }}>
               <Dialog open={isNewChatDialogOpen} onOpenChange={setIsNewChatDialogOpen}>
                 <DialogTrigger asChild>
                   <Button className="w-full" size="sm">

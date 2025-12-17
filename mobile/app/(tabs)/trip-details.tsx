@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,15 +7,20 @@ import {
   StyleSheet,
   Alert,
   Linking,
+  RefreshControl,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import * as Location from 'expo-location';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { apiClient } from '../../services/api';
 import { useFeatureFlag } from '../../hooks/useFeatureFlag';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { navigationPreferences } from '../../services/navigationPreferences';
+import { openNavigation } from '../../utils/navigation';
 
 interface Trip {
   id: string;
@@ -35,6 +40,9 @@ interface Trip {
   passenger_count: number;
   notes?: string;
   special_requirements?: string;
+  is_group_trip?: boolean;
+  client_group_id?: string;
+  client_group_name?: string;
   programs?: {
     name: string;
     corporate_clients?: {
@@ -66,13 +74,21 @@ export default function TripDetailsScreen() {
   // Feature flag for mobile check-in
   const { isEnabled: mobileCheckInEnabled } = useFeatureFlag('mobile_check_in_enabled');
 
-  const { data: trips = [] } = useQuery({
+  const [refreshing, setRefreshing] = useState(false);
+
+  const { data: trips = [], refetch: refetchTrips } = useQuery({
     queryKey: ['driver-trips'],
     queryFn: () => apiClient.getDriverTrips(),
     enabled: !!user,
   });
 
   const trip = trips.find((t: Trip) => t.id === tripId);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refetchTrips();
+    setRefreshing(false);
+  };
 
   const updateTripMutation = useMutation({
     mutationFn: ({ tripId, status }: { tripId: string; status: string }) =>
@@ -107,49 +123,66 @@ export default function TripDetailsScreen() {
     }
   };
 
-  const handleNavigateToPickup = () => {
+  const getCurrentLocationForNavigation = async (): Promise<string | null> => {
+    try {
+      // Request location permissions
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('Location permission not granted');
+        return null;
+      }
+
+      // Get current location
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      // Return coordinates as "lat,lng" for maps URLs
+      return `${location.coords.latitude},${location.coords.longitude}`;
+    } catch (error) {
+      console.error('Error getting current location:', error);
+      return null;
+    }
+  };
+
+  const handleNavigateToPickup = async () => {
     const address = getPickupLocation(trip);
-    if (address) {
-      const encodedAddress = encodeURIComponent(address);
-      const mapsUrl = `https://maps.google.com/maps?daddr=${encodedAddress}`;
-      Linking.openURL(mapsUrl).catch(() => {
-        // Fallback to Apple Maps on iOS
-        const appleMapsUrl = `http://maps.apple.com/?daddr=${encodedAddress}`;
-        Linking.openURL(appleMapsUrl);
-      });
-    } else {
+    if (!address) {
       Alert.alert('Error', 'Pickup address not available.');
+      return;
     }
+    
+    // Try to get current location for source
+    const currentLocation = await getCurrentLocationForNavigation();
+    
+    // Get preferred navigation app and open
+    const preferredApp = await navigationPreferences.getPreferredApp();
+    await openNavigation(preferredApp, address, currentLocation);
   };
 
-  const handleNavigateToDropoff = () => {
+  const handleNavigateToDropoff = async () => {
     const address = getDropoffLocation(trip);
-    if (address) {
-      const encodedAddress = encodeURIComponent(address);
-      const mapsUrl = `https://maps.google.com/maps?daddr=${encodedAddress}`;
-      Linking.openURL(mapsUrl).catch(() => {
-        // Fallback to Apple Maps on iOS
-        const appleMapsUrl = `http://maps.apple.com/?daddr=${encodedAddress}`;
-        Linking.openURL(appleMapsUrl);
-      });
-    } else {
+    if (!address) {
       Alert.alert('Error', 'Dropoff address not available.');
+      return;
     }
+    
+    // Try to get current location for source
+    const currentLocation = await getCurrentLocationForNavigation();
+    
+    // Get preferred navigation app and open
+    const preferredApp = await navigationPreferences.getPreferredApp();
+    await openNavigation(preferredApp, address, currentLocation);
   };
 
-  const handleNavigateRoundTrip = () => {
+  const handleNavigateRoundTrip = async () => {
     const pickupAddress = getPickupLocation(trip);
     const dropoffAddress = getDropoffLocation(trip);
-    
+
     if (pickupAddress && dropoffAddress) {
-      const encodedPickup = encodeURIComponent(pickupAddress);
-      const encodedDropoff = encodeURIComponent(dropoffAddress);
-      const mapsUrl = `https://maps.google.com/maps?saddr=${encodedPickup}&daddr=${encodedDropoff}`;
-      Linking.openURL(mapsUrl).catch(() => {
-        // Fallback to Apple Maps on iOS
-        const appleMapsUrl = `http://maps.apple.com/?saddr=${encodedPickup}&daddr=${encodedDropoff}`;
-        Linking.openURL(appleMapsUrl);
-      });
+      // For round trip, navigate from pickup to dropoff
+      const preferredApp = await navigationPreferences.getPreferredApp();
+      await openNavigation(preferredApp, dropoffAddress, pickupAddress);
     } else {
       Alert.alert('Error', 'Addresses not available for navigation.');
     }
@@ -185,6 +218,11 @@ export default function TripDetailsScreen() {
   };
 
   const getDisplayName = (trip: Trip) => {
+    // For group trips, use the client group name
+    if (trip.is_group_trip && trip.client_group_name) {
+      return trip.client_group_name;
+    }
+    // For individual trips, use client name
     if (trip.clients?.first_name && trip.clients?.last_name) {
       return `${trip.clients.first_name} ${trip.clients.last_name}`;
     }
@@ -193,6 +231,30 @@ export default function TripDetailsScreen() {
 
   const getDisplayPhone = (trip: Trip) => {
     return trip.clients?.phone || trip.client_phone || 'No phone available';
+  };
+
+  const getPickupLocation = (trip: Trip | undefined): string | null => {
+    if (!trip) return null;
+    // Prefer location name with address, fallback to address field
+    if (trip.pickup_locations?.address) {
+      return trip.pickup_locations.address;
+    }
+    if (trip.pickup_locations?.name) {
+      return trip.pickup_locations.name;
+    }
+    return trip.pickup_address || null;
+  };
+
+  const getDropoffLocation = (trip: Trip | undefined): string | null => {
+    if (!trip) return null;
+    // Prefer location name with address, fallback to address field
+    if (trip.dropoff_locations?.address) {
+      return trip.dropoff_locations.address;
+    }
+    if (trip.dropoff_locations?.name) {
+      return trip.dropoff_locations.name;
+    }
+    return trip.dropoff_address || null;
   };
 
   // Create styles with theme colors
@@ -444,7 +506,12 @@ export default function TripDetailsScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary || '#3B82F6'} />
+      }
+    >
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color={theme.colors.foreground} />
@@ -514,7 +581,7 @@ export default function TripDetailsScreen() {
               <Ionicons name="car" size={20} color={theme.colors.mutedForeground} />
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Trip Type</Text>
-                <Text style={styles.infoValue}>{trip.trip_type.replace('_', ' ')}</Text>
+                <Text style={styles.infoValue}>{(trip.trip_type || (trip.scheduled_return_time ? 'round_trip' : 'one_way')).replace('_', ' ')}</Text>
               </View>
             </View>
           </View>
@@ -584,7 +651,7 @@ export default function TripDetailsScreen() {
         {mobileCheckInEnabled && (
           <View style={styles.actionsContainer}>
             {/* Round Trip Navigation Button */}
-            {trip.trip_type === 'round_trip' && (
+            {(trip.trip_type || (trip.scheduled_return_time ? 'round_trip' : 'one_way')) === 'round_trip' && (
               <TouchableOpacity
                 style={[styles.actionButton, styles.navigationButton]}
                 onPress={handleNavigateRoundTrip}

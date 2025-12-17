@@ -16,8 +16,14 @@ import usersRoutes from "./users";
 import corporateRoutes from "./corporate";
 import programsRoutes from "./programs";
 import clientNotificationsRoutes from "./client-notifications";
+import themePreferencesRoutes from "./theme-preferences";
+import themesRoutes from "./themes";
 import activityLogRoutes from "./activity-log";
+import systemSettingsRoutes from "./system-settings";
+import contactsRoutes from "./contacts";
 import discussionsRoutes from "./discussions";
+import tenantRolesRoutes from "./tenant-roles";
+import legacyRoutes from "./legacy";
 import { 
   requireSupabaseAuth, 
   SupabaseAuthenticatedRequest
@@ -27,6 +33,11 @@ import { PERMISSIONS } from "../permissions";
 import { corporateClientsStorage } from "../minimal-supabase";
 
 const router = express.Router();
+
+// Legacy routes for backward compatibility (client-groups endpoint)
+// Register BEFORE other routes to ensure /api/client-groups is matched
+// Frontend uses /api/client-groups, but new routes use /api/clients/groups
+router.use("/", legacyRoutes);
 
 router.use("/auth", authRoutes);
 router.use("/bulk", bulkRoutes);
@@ -42,26 +53,28 @@ router.use("/drivers", driversRoutes);
 router.use("/locations", locationsRoutes);
 router.use("/trips", tripsRoutes);
 router.use("/users", usersRoutes);
-// Alias route for corporate-clients (frontend compatibility) - MUST be before /corporate route
-router.get("/corporate-clients", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_CORPORATE_CLIENTS), async (req: SupabaseAuthenticatedRequest, res) => {
-  try {
-    console.log('🔍 [CORPORATE-CLIENTS] GET request received');
-    const corporateClients = await corporateClientsStorage.getAllCorporateClients();
-    console.log('✅ [CORPORATE-CLIENTS] Fetched', corporateClients?.length || 0, 'clients');
-    // Add caching headers (5 minutes - corporate clients don't change often)
-    res.set('Cache-Control', 'private, max-age=300');
-    // Frontend expects { corporateClients: [...] } format
-    res.json({ corporateClients });
-    console.log('✅ [CORPORATE-CLIENTS] Response sent');
-  } catch (error) {
-    console.error("❌ [CORPORATE-CLIENTS] Error fetching corporate clients:", error);
-    res.status(500).json({ message: "Failed to fetch corporate clients" });
-  }
-});
 router.use("/corporate", corporateRoutes);
 router.use("/programs", programsRoutes);
 router.use("/client-notifications", clientNotificationsRoutes);
+router.use("/theme-preferences", themePreferencesRoutes);
+router.use("/themes", themesRoutes);
 router.use("/activity-log", activityLogRoutes);
+router.use("/system-settings", systemSettingsRoutes);
+// Also register system routes for main-logo endpoints (component uses /api/system/main-logo)
+router.use("/system", systemSettingsRoutes);
+router.use("/contacts", contactsRoutes);
 router.use("/discussions", discussionsRoutes);
+router.use("/tenant-roles", tenantRolesRoutes);
+
+// Alias route for corporate-clients (frontend compatibility)
+router.get("/corporate-clients", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_CORPORATE_CLIENTS), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const corporateClients = await corporateClientsStorage.getAllCorporateClients();
+    res.json(corporateClients);
+  } catch (error) {
+    console.error("Error fetching corporate clients:", error);
+    res.status(500).json({ message: "Failed to fetch corporate clients" });
+  }
+});
 
 export default router;

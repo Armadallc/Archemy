@@ -27,6 +27,39 @@ router.get("/corporate-clients/:id", requireSupabaseAuth, requireSupabaseRole(['
   res.redirect(307, `/api/corporate/clients/${req.params.id}`);
 });
 
+// Legacy PUT/PATCH for corporate clients - handle directly (can't redirect with body)
+router.put("/corporate-clients/:id", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin']), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const { corporateClientsStorage } = await import("../minimal-supabase");
+    const corporateClient = await corporateClientsStorage.updateCorporateClient(id, req.body);
+    res.json(corporateClient);
+  } catch (error) {
+    console.error("Error updating corporate client:", error);
+    const { handleConstraintError } = await import("../utils/constraint-errors");
+    if (handleConstraintError(error, res)) {
+      return;
+    }
+    res.status(500).json({ message: "Failed to update corporate client" });
+  }
+});
+
+router.patch("/corporate-clients/:id", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin']), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const { corporateClientsStorage } = await import("../minimal-supabase");
+    const corporateClient = await corporateClientsStorage.updateCorporateClient(id, req.body);
+    res.json(corporateClient);
+  } catch (error) {
+    console.error("Error updating corporate client:", error);
+    const { handleConstraintError } = await import("../utils/constraint-errors");
+    if (handleConstraintError(error, res)) {
+      return;
+    }
+    res.status(500).json({ message: "Failed to update corporate client" });
+  }
+});
+
 // Legacy programs routes (redirect to new corporate routes)
 // Use requirePermission to allow program_admin and program_user access
 router.get("/programs", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_PROGRAMS), async (req: SupabaseAuthenticatedRequest, res) => {
@@ -217,11 +250,17 @@ router.get("/client-groups/corporate-client/:corporateClientId", requireSupabase
 
 router.post("/client-groups", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin']), async (req: SupabaseAuthenticatedRequest, res) => {
   try {
+    console.log('📦 [LEGACY] POST /client-groups - Creating client group:', {
+      body: req.body,
+      user: req.user?.email,
+      role: req.user?.role
+    });
     const clientGroup = await clientGroupsStorage.createClientGroup(req.body);
+    console.log('✅ [LEGACY] Client group created successfully:', clientGroup.id);
     res.status(201).json(clientGroup);
   } catch (error) {
-    console.error("Error creating client group:", error);
-    res.status(500).json({ message: "Failed to create client group" });
+    console.error("❌ [LEGACY] Error creating client group:", error);
+    res.status(500).json({ message: "Failed to create client group", error: error instanceof Error ? error.message : String(error) });
   }
 });
 

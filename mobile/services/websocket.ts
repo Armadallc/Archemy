@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
 interface WebSocketMessage {
-  type: 'trip_update' | 'new_trip' | 'emergency' | 'system' | 'ping' | 'pong';
+  type: 'trip_update' | 'new_trip' | 'trip_created' | 'emergency' | 'system' | 'ping' | 'pong';
   data: any;
   timestamp: string;
 }
@@ -115,12 +115,21 @@ class WebSocketService {
 
   private handleMessage(message: WebSocketMessage) {
     console.log('📨 WebSocket message received:', message.type);
+    console.log('📨 Message data:', JSON.stringify(message.data, null, 2));
 
     switch (message.type) {
       case 'trip_update':
+        console.log('📨 Calling onTripUpdate callback');
         this.callbacks.onTripUpdate?.(message.data);
         break;
       case 'new_trip':
+        console.log('📨 Calling onNewTrip callback');
+        this.callbacks.onNewTrip?.(message.data);
+        break;
+      case 'trip_created':
+        // Handle legacy 'trip_created' type by treating it as 'new_trip'
+        // This ensures backward compatibility if any old messages are still sent
+        console.log('📨 Converting trip_created to new_trip for compatibility');
         this.callbacks.onNewTrip?.(message.data);
         break;
       case 'emergency':

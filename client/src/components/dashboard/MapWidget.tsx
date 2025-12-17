@@ -238,7 +238,7 @@ export default function MapWidget({ className }: MapWidgetProps) {
           <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Status Legend</h4>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 rounded-full bg-green-500" />
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'var(--completed)' }} />
               <span className="text-gray-900 dark:text-gray-100">Available/Scheduled</span>
             </div>
             <div className="flex items-center space-x-2">

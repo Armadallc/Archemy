@@ -22,6 +22,7 @@ import { usePageAccess } from "../hooks/use-page-access";
 import { getUserDisplayName } from "../lib/displayNames";
 import ExportButton from "../components/export/ExportButton";
 import { format } from "date-fns";
+import { RollbackManager } from "../utils/rollback-manager";
 
 interface Driver {
   id: string;
@@ -288,25 +289,23 @@ export default function Drivers() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 p-6">
+      {/* Header - Only show if unified header is disabled (fallback) */}
+      {!RollbackManager.isUnifiedHeaderEnabled() && (
         <div>
-          <h1 
-            className="uppercase"
-            style={{
-              fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
-              fontWeight: 600,
-              fontSize: '68px',
-              lineHeight: 1.15,
-              letterSpacing: '-0.015em',
-              textTransform: 'uppercase',
-              color: 'var(--foreground)',
-            }}
-          >
-            DRIVERS
-          </h1>
-        </div>
-        <div className="flex items-center gap-3">
+          <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+            <div>
+              <h1 
+                className="font-bold text-foreground" 
+                style={{ 
+                  fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+                  fontSize: '110px'
+                }}
+              >
+                drivers.
+              </h1>
+            </div>
+          <div className="flex items-center gap-3">
           <ExportButton
             data={filteredDrivers}
             columns={[
@@ -333,7 +332,7 @@ export default function Drivers() {
                 Add Driver
               </Button>
             </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
                 {selectedDriver ? "Edit Driver" : "Add New Driver"}
@@ -512,8 +511,10 @@ export default function Drivers() {
             </Form>
           </DialogContent>
         </Dialog>
+          </div>
         </div>
-      </div>
+        </div>
+      )}
 
       <div className="flex items-center space-x-2">
         <div className="relative flex-1 max-w-sm">

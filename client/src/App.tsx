@@ -6,16 +6,28 @@ import { AuthProvider } from "./hooks/useAuth";
 import { ThemeProvider } from "./components/theme-provider";
 import { FireThemeProvider } from "./components/fire-theme-provider";
 import { HierarchyProvider } from "./hooks/useHierarchy";
+import { LayoutProvider } from "./contexts/layout-context";
 import MainLayout from "./components/layout/main-layout";
 import Login from "./pages/login";
 import { useAuth } from "./hooks/useAuth";
+import { useThemePreferences } from "./hooks/useThemePreferences";
+import { useSelectedTheme } from "./hooks/useSelectedTheme";
 import { Toaster } from "./components/ui/toaster";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { WelcomeScreen } from "./components/welcome-screen";
 
 function AppContent() {
   const { user, isLoading } = useAuth();
+  const { loadPreferences } = useThemePreferences(); // Load theme preferences on app start (legacy)
+  const { isLoading: themeLoading } = useSelectedTheme(); // Load selected theme from database
   const [showWelcome, setShowWelcome] = useState<boolean | null>(null); // null = checking
+  
+  // Load theme preferences when user is authenticated (legacy - for backward compatibility)
+  useEffect(() => {
+    if (user && !isLoading) {
+      loadPreferences();
+    }
+  }, [user, isLoading, loadPreferences]);
   
   // Check if we've already shown welcome this session
   useEffect(() => {
@@ -39,6 +51,7 @@ function AppContent() {
   };
 
   // Show loading spinner during initial auth check
+  // Don't wait for theme loading - it's non-blocking
   if (isLoading || showWelcome === null) {
     return (
       <div className="flex items-center justify-center h-screen" style={{ backgroundColor: 'var(--page-background)' }}>
@@ -73,7 +86,9 @@ function AppContent() {
   // Show main app
   return (
     <HierarchyProvider>
-      <MainLayout />
+      <LayoutProvider>
+        <MainLayout />
+      </LayoutProvider>
     </HierarchyProvider>
   );
 }

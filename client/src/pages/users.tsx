@@ -70,7 +70,9 @@ const roleLabels = {
   super_admin: "Super Admin",
   program_admin: "Program Manager",
   program_user: "Staff Member", 
-  driver: "Driver"
+  driver: "Driver",
+  client_user: "Client User",
+  "client-user": "Client User"
 };
 
 // Role colors using Fire palette - using inline styles with CSS variables for proper color application
@@ -177,6 +179,7 @@ export default function Users() {
       toast({
         title: "User created successfully",
         description: "The new user has been added to the system.",
+        variant: "success",
       });
     },
     onError: (error: any) => {
@@ -291,26 +294,22 @@ export default function Users() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 
-            className="uppercase"
-            style={{
-              fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
-              fontWeight: 600,
-              fontSize: '68px',
-              lineHeight: 1.15,
-              letterSpacing: '-0.015em',
-              textTransform: 'uppercase',
-              color: 'var(--foreground)',
-            }}
-          >
-            USER MANAGEMENT
-          </h1>
-        </div>
-        
+      <div>
+        <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+          <div>
+            <h1 
+              className="font-bold text-foreground" 
+              style={{ 
+                fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+                fontSize: '110px'
+              }}
+            >
+              users.
+            </h1>
+          </div>
+          <div className="flex items-center gap-3">
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-primary hover:bg-primary-hover">
@@ -319,6 +318,8 @@ export default function Users() {
             </Button>
           </DialogTrigger>
         </Dialog>
+          </div>
+        </div>
       </div>
 
       {/* Search and Stats */}

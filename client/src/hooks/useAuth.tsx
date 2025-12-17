@@ -67,7 +67,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Reduced logging to prevent console spam
       // console.log('🔍 Making request to /api/auth/user with token:', currentSession.access_token.substring(0, 20) + '...');
       
-      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+      // Use environment variable, or detect from current hostname for network access
+      let apiBaseUrl = import.meta.env.VITE_API_URL;
+      if (!apiBaseUrl) {
+        const currentHost = window.location.hostname;
+        if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+          apiBaseUrl = 'http://localhost:8081';
+        } else {
+          // Use the same hostname but port 8081 for API
+          apiBaseUrl = `http://${currentHost}:8081`;
+        }
+      }
       const response = await fetch(`${apiBaseUrl}/api/auth/user`, {
         method: 'GET',
         headers: {

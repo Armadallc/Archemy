@@ -57,6 +57,9 @@ export interface MobileTrip {
     address: string;
   };
   is_group_trip: boolean;
+  trip_type?: string;
+  client_group_id?: string;
+  client_group_name?: string;
   group_members?: Array<{
     id: string;
     name: string;
@@ -134,7 +137,8 @@ export const mobileApi = {
       if (error) throw error;
 
       const currentStatus = await driverSchedulesStorage.getCurrentDutyStatus(driverId);
-      const lastLocation = await this.getLastLocation(driverId);
+      // Call method - executes at runtime, so circular reference is fine
+      const lastLocation = await mobileApi.getLastLocation(driverId);
 
       return {
         id: driver.id,
@@ -206,41 +210,191 @@ export const mobileApi = {
         trips = await enhancedTripsStorage.getTripsByDriver(driverId);
       }
 
-      return await Promise.all(trips.map(async trip => ({
-        id: trip.id,
-        client_name: `${trip.client?.first_name || ''} ${trip.client?.last_name || ''}`.trim(),
-        pickup_address: trip.pickup_address,
-        dropoff_address: trip.dropoff_address,
-        scheduled_pickup_time: trip.scheduled_pickup_time,
-        scheduled_return_time: trip.scheduled_return_time,
-        status: trip.status,
-        passenger_count: trip.passenger_count,
-        special_requirements: trip.special_requirements,
-        notes: trip.notes,
-        trip_category: {
-          name: trip.trip_category?.name || 'Personal',
-          color: this.getCategoryColor(trip.trip_category?.name || 'Personal')
-        },
-        client: {
-          id: trip.client_id,
-          first_name: trip.client?.first_name || '',
-          last_name: trip.client?.last_name || '',
-          phone: trip.client?.phone,
-          address: trip.client?.address
-        },
-        pickup_location: trip.pickup_location ? {
-          name: trip.pickup_location.name,
-          address: trip.pickup_location.address
-        } : undefined,
-        dropoff_location: trip.dropoff_location ? {
-          name: trip.dropoff_location.name,
-          address: trip.dropoff_location.address
-        } : undefined,
-        is_group_trip: trip.is_group_trip,
-        group_members: trip.is_group_trip ? await this.getGroupMembers(trip.client_group_id) : undefined
-      })));
+      return await Promise.all(trips.map(async trip => {
+        // Get client group name if it's a group trip
+        let clientGroupName: string | undefined = undefined;
+        if (trip.is_group_trip && trip.client_group_id) {
+          try {
+            // Debug: Log what we have
+            console.log('🔍 [Mobile API] Processing group trip:', {
+              trip_id: trip.id,
+              client_group_id: trip.client_group_id,
+              client_groups_type: typeof trip.client_groups,
+              client_groups_value: trip.client_groups,
+              is_array: Array.isArray(trip.client_groups),
+              has_client_groups: !!trip.client_groups
+            });
+            
+            // Check if client_groups is already populated from the query
+            // Supabase returns it as an object (not array) for single relations
+            // But it might be null if the relation doesn't exist
+            const group = trip.client_groups as any;
+            
+            // Handle different possible structures
+            let groupFromRelation = null;
+            if (Array.isArray(group) && group.length > 0) {
+              groupFromRelation = group[0];
+            } else if (group && typeof group === 'object' && !Array.isArray(group)) {
+              groupFromRelation = group;
+            }
+            
+            if (groupFromRelation?.name) {
+              clientGroupName = groupFromRelation.name;
+              console.log('✅ [Mobile API] Found group name from trip.client_groups:', groupFromRelation.name);
+            } else {
+              // Fallback: query the group directly if not in trip data
+              console.log('⚠️ [Mobile API] Group not in trip data, querying directly for:', trip.client_group_id);
+              const { data: groupData, error: groupError } = await supabase
+                .from('client_groups')
+                .select('id, name')
+                .eq('id', trip.client_group_id)
+                .single();
+              
+              if (!groupError && groupData?.name) {
+                clientGroupName = groupData.name;
+                console.log('✅ [Mobile API] Fetched group name directly:', groupData.name);
+              } else {
+                console.error('❌ [Mobile API] Error fetching group:', groupError || 'No data returned');
+                // Last resort: use a placeholder that indicates it's a group
+                clientGroupName = `Group ${trip.client_group_id.slice(0, 8)}`;
+                console.warn('⚠️ [Mobile API] Using fallback group name:', clientGroupName);
+              }
+            }
+          } catch (error) {
+            console.error('❌ [Mobile API] Error getting client group name:', error);
+            // Last resort fallback
+            if (trip.client_group_id) {
+              clientGroupName = `Group ${trip.client_group_id.slice(0, 8)}`;
+            }
+          }
+        }
+        
+        // Ensure client_name is set correctly for group trips and individual trips
+        let finalClientName: string;
+        if (trip.is_group_trip && clientGroupName) {
+          finalClientName = clientGroupName;
+        } else if (trip.is_group_trip) {
+          finalClientName = 'Group Trip'; // Fallback if we couldn't get the name
+        } else {
+          // For individual trips, use client name
+          let clientFirstName = trip.client?.first_name || '';
+          let clientLastName = trip.client?.last_name || '';
+          
+          // If client relation wasn't loaded, query it directly
+          if (!trip.client && trip.client_id) {
+            try {
+              const { data: clientData, error: clientError } = await supabase
+                .from('clients')
+                .select('id, first_name, last_name, phone, address')
+                .eq('id', trip.client_id)
+                .single();
+              
+              if (!clientError && clientData) {
+                clientFirstName = clientData.first_name || '';
+                clientLastName = clientData.last_name || '';
+                // Update trip.client for use below
+                (trip as any).client = clientData;
+                console.log('✅ [Mobile API] Fetched client directly:', {
+                  trip_id: trip.id,
+                  client_id: trip.client_id,
+                  client_name: `${clientFirstName} ${clientLastName}`.trim()
+                });
+              } else {
+                console.log('⚠️ [Mobile API] Could not fetch client:', clientError);
+              }
+            } catch (error) {
+              console.error('❌ [Mobile API] Error fetching client:', error);
+            }
+          }
+          
+          const clientFullName = `${clientFirstName} ${clientLastName}`.trim();
+          finalClientName = clientFullName || 'Unknown Client';
+          
+          // Debug log for individual trips
+          if (process.env.NODE_ENV !== 'production') {
+            if (!clientFullName) {
+              console.log('⚠️ [Mobile API] Individual trip with no client name:', {
+                trip_id: trip.id,
+                client_id: trip.client_id,
+                has_client: !!trip.client,
+                client_data: trip.client
+              });
+            } else {
+              console.log('✅ [Mobile API] Individual trip client name:', {
+                trip_id: trip.id,
+                client_id: trip.client_id,
+                client_name: clientFullName,
+                has_client: !!trip.client
+              });
+            }
+          }
+        }
+        
+        // Ensure clients field is populated for individual trips (needed by mobile app)
+        let clientsField;
+        if (trip.client) {
+          clientsField = {
+            first_name: trip.client.first_name || '',
+            last_name: trip.client.last_name || '',
+            phone: trip.client.phone || ''
+          };
+        } else if (!trip.is_group_trip && finalClientName && finalClientName !== 'Unknown Client') {
+          // Fallback: parse client_name if client relation wasn't loaded
+          const nameParts = finalClientName.trim().split(/\s+/);
+          clientsField = {
+            first_name: nameParts[0] || '',
+            last_name: nameParts.slice(1).join(' ') || '',
+            phone: ''
+          };
+        }
+
+        return {
+          id: trip.id,
+          client_name: finalClientName,
+          pickup_address: trip.pickup_address,
+          dropoff_address: trip.dropoff_address,
+          scheduled_pickup_time: trip.scheduled_pickup_time,
+          scheduled_return_time: trip.scheduled_return_time,
+          status: trip.status,
+          passenger_count: trip.passenger_count,
+          special_requirements: trip.special_requirements,
+          notes: trip.notes,
+          trip_category: {
+            name: trip.trip_category?.name || 'Personal',
+            color: getCategoryColor(trip.trip_category?.name || 'Personal')
+          },
+          client: {
+            id: trip.client_id,
+            first_name: trip.client?.first_name || '',
+            last_name: trip.client?.last_name || '',
+            phone: trip.client?.phone,
+            address: trip.client?.address
+          },
+          clients: clientsField,
+          pickup_location: trip.pickup_location ? {
+            name: trip.pickup_location.name,
+            address: trip.pickup_location.address
+          } : undefined,
+          dropoff_location: trip.dropoff_location ? {
+            name: trip.dropoff_location.name,
+            address: trip.dropoff_location.address
+          } : undefined,
+          is_group_trip: trip.is_group_trip,
+          trip_type: trip.trip_type || (trip.scheduled_return_time ? 'round_trip' : 'one_way'),
+          client_group_id: trip.client_group_id,
+          client_group_name: clientGroupName,
+          group_members: trip.is_group_trip && trip.client_group_id ? await getGroupMembersHelper(trip.client_group_id) : undefined
+        };
+      }));
     } catch (error) {
-      console.error('Error fetching driver trips:', error);
+      console.error('❌ [Mobile API] Error in getDriverTrips:', error);
+      console.error('❌ [Mobile API] Error type:', typeof error);
+      console.error('❌ [Mobile API] Error name:', error instanceof Error ? error.name : 'N/A');
+      console.error('❌ [Mobile API] Error message:', error instanceof Error ? error.message : String(error));
+      console.error('❌ [Mobile API] Error stack:', error instanceof Error ? error.stack : 'N/A');
+      if (error instanceof Error && 'code' in error) {
+        console.error('❌ [Mobile API] Error code:', (error as any).code);
+      }
       throw error;
     }
   },
@@ -350,7 +504,7 @@ export const mobileApi = {
 
       // If going on duty, start location tracking
       if (status === 'on_duty' && location) {
-        await this.updateDriverLocation(driverId, {
+        await mobileApi.updateDriverLocation(driverId, {
           ...location,
           accuracy: 10 // Default accuracy for duty status location
         });
@@ -366,11 +520,10 @@ export const mobileApi = {
   // Offline data sync
   async getOfflineData(driverId: string): Promise<OfflineData> {
     try {
-      const profile = await this.getDriverProfile(driverId);
-      const trips = await this.getDriverTrips(driverId);
-      
-      // Get pending updates from offline storage
-      const pendingUpdates = await this.getPendingUpdates(driverId);
+      // Call methods - these execute at runtime so circular reference is fine
+      const profile = await mobileApi.getDriverProfile(driverId);
+      const trips = await mobileApi.getDriverTrips(driverId);
+      const pendingUpdates = await mobileApi.getPendingUpdates(driverId);
 
       return {
         trips,
@@ -398,13 +551,13 @@ export const mobileApi = {
         try {
           switch (update.type) {
             case 'trip_status':
-              await this.updateTripStatus(update.data.tripId, update.data.status, update.data.actualTimes, driverId);
+              await mobileApi.updateTripStatus(update.data.tripId, update.data.status, update.data.actualTimes, driverId);
               break;
             case 'location':
-              await this.updateDriverLocation(driverId, update.data);
+              await mobileApi.updateDriverLocation(driverId, update.data);
               break;
             case 'duty_status':
-              await this.updateDutyStatus(driverId, update.data.status, update.data.location, update.data.notes);
+              await mobileApi.updateDutyStatus(driverId, update.data.status, update.data.location, update.data.notes);
               break;
           }
           results.push({ id: update.id, success: true });
@@ -468,16 +621,50 @@ export const mobileApi = {
   },
 
   getCategoryColor(category: string): string {
-    const colorMap: Record<string, string> = {
-      'Medical': '#3B82F6',
-      'Legal': '#EF4444',
-      'Personal': '#10B981',
-      'Program': '#8B5CF6',
-      '12-Step': '#F59E0B',
-      'Group': '#06B6D4',
-      'Staff': '#6B7280',
-      'Carpool': '#84CC16'
-    };
-    return colorMap[category] || '#6B7280';
+    return getCategoryColor(category);
   }
 };
+
+// Helper functions (defined outside to avoid circular references)
+function getCategoryColor(category: string): string {
+  const colorMap: Record<string, string> = {
+    'Medical': '#3B82F6',
+    'Legal': '#EF4444',
+    'Personal': '#10B981',
+    'Program': '#8B5CF6',
+    '12-Step': '#F59E0B',
+    'Group': '#06B6D4',
+    'Staff': '#6B7280',
+    'Carpool': '#84CC16'
+  };
+  return colorMap[category] || '#6B7280';
+}
+
+async function getGroupMembersHelper(clientGroupId?: string) {
+  if (!clientGroupId) return [];
+
+  try {
+    const { data, error } = await supabase
+      .from('client_group_memberships')
+      .select(`
+        clients:client_id (
+          id,
+          first_name,
+          last_name,
+          phone
+        )
+      `)
+      .eq('client_group_id', clientGroupId);
+
+    if (error) throw error;
+
+    return data?.map((membership: any) => ({
+      id: membership.clients?.id || '',
+      name: `${membership.clients?.first_name || ''} ${membership.clients?.last_name || ''}`.trim(),
+      phone: membership.clients?.phone
+    })) || [];
+  } catch (error) {
+    console.error('Error fetching group members:', error);
+    return [];
+  }
+}

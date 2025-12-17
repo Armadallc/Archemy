@@ -100,11 +100,23 @@ export async function verifySupabaseToken(token: string, skipCache = false): Pro
     }
     
     // Verify the JWT token with Supabase
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    // First, decode the token to get user ID (without verification)
+    const decoded = decodeJWT(token);
+    if (!decoded || !decoded.sub) {
+      if (DEBUG_MODE) {
+        console.log('❌ [BACKEND AUTH] Token missing sub claim (user ID)');
+      }
+      return null;
+    }
+    
+    const authUserId = decoded.sub;
+    
+    // Use admin client to get user by ID (bypasses session requirements)
+    const { data: { user }, error } = await supabaseAdmin.auth.admin.getUserById(authUserId);
     
     if (error) {
       // Handle expired token specifically
-      if (error.status === 403 || error.code === 'bad_jwt' || error.message?.includes('expired')) {
+      if (error.status === 403 || error.code === 'bad_jwt' || error.message?.includes('expired') || error.message?.includes('session')) {
         if (DEBUG_MODE) {
           console.log('❌ [BACKEND AUTH] Token expired or invalid:', error.message);
         }

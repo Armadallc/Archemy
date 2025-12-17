@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -40,18 +40,73 @@ import {
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
 import { CalendarProvider } from "../components/event-calendar/calendar-context";
+import { useLayout } from "../contexts/layout-context";
+import { RollbackManager } from "../utils/rollback-manager";
+import { Maximize2, Minimize2 } from "lucide-react";
+import { useWebSocket } from "../hooks/useWebSocket";
+import { useRealtimeService } from "../services/realtimeService";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function CalendarPage() {
   const { level, selectedProgram, selectedCorporateClient } = useHierarchy();
+  const layout = useLayout();
+  const queryClient = useQueryClient();
   
   // Check page access permission
   usePageAccess({ permission: "view_calendar" });
+  
+  // Full-screen mode state
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const ENABLE_UNIFIED_HEADER = RollbackManager.isUnifiedHeaderEnabled();
+  
+  // Toggle full-screen mode (hide unified header)
+  const toggleFullScreen = () => {
+    const newFullScreen = !isFullScreen;
+    setIsFullScreen(newFullScreen);
+    layout.setHeaderVisibility(!newFullScreen);
+  };
+  
+  // Restore header when leaving calendar page
+  useEffect(() => {
+    return () => {
+      layout.setHeaderVisibility(true);
+    };
+  }, [layout]);
   
   const [viewMode, setViewMode] = useState<'calendar' | 'list' | 'map'>('calendar');
   
   // Feature flags
   const { isEnabled: realtimeEnabled } = useFeatureFlag("realtime_updates_enabled");
   const { isEnabled: newTripEnabled } = useFeatureFlag("enable_new_trip_creation");
+
+  // Set up WebSocket connection for real-time trip updates
+  const wsConnection = useWebSocket({
+    enabled: realtimeEnabled,
+    onMessage: (message) => {
+      if (message.type === 'trip_update' || message.type === 'new_trip') {
+        // Invalidate trips queries to refresh calendar
+        queryClient.invalidateQueries({ queryKey: ['trips'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/trips'] });
+        if (message.data?.programId) {
+          queryClient.invalidateQueries({ queryKey: [`/api/trips/program/${message.data.programId}`] });
+        }
+        if (message.data?.corporateClientId) {
+          queryClient.invalidateQueries({ queryKey: [`/api/trips/corporate-client/${message.data.corporateClientId}`] });
+        }
+        // Also invalidate universal trips for super admins
+        queryClient.invalidateQueries({ queryKey: ['/api/trips/universal'] });
+      }
+    }
+  });
+
+  // Initialize real-time service to handle WebSocket messages
+  const { createService } = useRealtimeService();
+  useEffect(() => {
+    if (wsConnection.isConnected) {
+      const service = createService(wsConnection);
+      service.initialize();
+    }
+  }, [wsConnection.isConnected, createService, wsConnection]);
 
   // Real-time data
   const {
@@ -88,6 +143,26 @@ export default function CalendarPage() {
 
   // Calendar date state
   const [calendarDate, setCalendarDate] = useState(new Date());
+  
+  // Listen for mini calendar date changes from sidebar
+  useEffect(() => {
+    const handleMiniCalendarDateChange = (event: CustomEvent) => {
+      if (event.detail?.date) {
+        setCalendarDate(event.detail.date);
+      }
+    };
+    
+    // Also notify mini calendar of current date when calendar page loads
+    window.dispatchEvent(new CustomEvent('calendar-page-date-change', { 
+      detail: { date: calendarDate } 
+    }));
+    
+    window.addEventListener('mini-calendar-date-change', handleMiniCalendarDateChange as EventListener);
+    
+    return () => {
+      window.removeEventListener('mini-calendar-date-change', handleMiniCalendarDateChange as EventListener);
+    };
+  }, [calendarDate]);
 
   const getPageTitle = () => {
     if (level === 'corporate') {
@@ -240,104 +315,208 @@ export default function CalendarPage() {
 
   return (
     <CalendarProvider date={calendarDate} onDateChange={setCalendarDate}>
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden h-full">
         {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="space-y-6 p-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-        <div>
-          <h1 
-            className="uppercase"
-            style={{
-              fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
-              fontWeight: 600,
-              fontSize: '68px',
-              lineHeight: 1.15,
-              letterSpacing: '-0.015em',
-              textTransform: 'uppercase',
-              color: 'var(--foreground)',
-            }}
-          >
-            {getPageTitle().toUpperCase()}
-          </h1>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          {/* View Mode Toggle */}
-          <div className="flex items-center border rounded-lg">
-            <Button
-              variant={viewMode === 'calendar' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('calendar')}
-              className="rounded-r-none"
-            >
-              <Grid3X3 className="h-4 w-4 mr-1" />
-              Calendar
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('list')}
-              className="rounded-none border-x"
-            >
-              <List className="h-4 w-4 mr-1" />
-              List
-            </Button>
-            <Button
-              variant={viewMode === 'map' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('map')}
-              className="rounded-l-none"
-            >
-              <Map className="h-4 w-4 mr-1" />
-              Map
-            </Button>
-          </div>
+        <div className="flex-1 flex flex-col overflow-hidden h-full">
+          <div className="flex flex-col flex-1 p-6 space-y-6 min-h-0" style={{ paddingBottom: '24px', height: 'calc(100vh - 48px)' }}>
+            {/* Header - Only show if unified header is disabled (fallback) */}
+            {!ENABLE_UNIFIED_HEADER && (
+              <div>
+                <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+                  <div>
+                    <h1 
+                      className="font-bold text-foreground" 
+                      style={{ 
+                        fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+                        fontSize: '110px'
+                      }}
+                    >
+                      calendar.
+                    </h1>
+                  </div>
+                <div className="flex items-center space-x-2">
+                  {/* View Mode Toggle */}
+                  <div className="flex items-center border rounded-lg">
+                    <Button
+                      variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('calendar')}
+                      className="rounded-r-none"
+                    >
+                      <Grid3X3 className="h-4 w-4 mr-1" />
+                      Calendar
+                    </Button>
+                    <Button
+                      variant={viewMode === 'list' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('list')}
+                      className="rounded-none border-x"
+                    >
+                      <List className="h-4 w-4 mr-1" />
+                      List
+                    </Button>
+                    <Button
+                      variant={viewMode === 'map' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('map')}
+                      className="rounded-l-none"
+                    >
+                      <Map className="h-4 w-4 mr-1" />
+                      Map
+                    </Button>
+                  </div>
 
-          {/* Action Buttons */}
-          {newTripEnabled && (
-            <PermissionGuard permission="create_trips">
-              <Button asChild>
-                <Link 
-                  to="/trips/new"
-                  onClick={() => {
-                    // Store current path before navigating to trip creation (preserve hierarchical URLs)
-                    const currentPath = window.location.pathname;
-                    sessionStorage.setItem('previousPath', currentPath);
-                  }}
+                  {/* Action Buttons */}
+                  {newTripEnabled && (
+                    <PermissionGuard permission="create_trips">
+                      <Button asChild>
+                        <Link 
+                          to="/trips/new"
+                          onClick={() => {
+                            // Store current path before navigating to trip creation (preserve hierarchical URLs)
+                            const currentPath = window.location.pathname;
+                            sessionStorage.setItem('previousPath', currentPath);
+                          }}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          New Trip
+                        </Link>
+                      </Button>
+                    </PermissionGuard>
+                  )}
+                  
+                  <Button 
+                    variant="outline"
+                    onClick={() => setShowFilters(!showFilters)}
+                  >
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filters
+                  </Button>
+                  
+                  <Button 
+                    variant="outline"
+                    onClick={() => handleExport()}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                  
+                  <Button 
+                    variant="outline"
+                    onClick={() => setShowSettings(true)}
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+            )}
+            
+            {/* Full-Screen Toggle - Always visible when unified header is enabled */}
+            {ENABLE_UNIFIED_HEADER && (
+              <div className="flex items-center justify-end mb-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={toggleFullScreen}
+                  className="flex items-center gap-2"
+                  title={isFullScreen ? "Exit Full Screen" : "Enter Full Screen"}
                 >
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Trip
-                </Link>
-              </Button>
-            </PermissionGuard>
-          )}
-          
-          <Button 
-            variant="outline"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            Filters
-          </Button>
-          
-          <Button 
-            variant="outline"
-            onClick={() => handleExport()}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-          
-          <Button 
-            variant="outline"
-            onClick={() => setShowSettings(true)}
-          >
-            <Settings className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+                  {isFullScreen ? (
+                    <>
+                      <Minimize2 className="h-4 w-4" />
+                      Exit Full Screen
+                    </>
+                  ) : (
+                    <>
+                      <Maximize2 className="h-4 w-4" />
+                      Full Screen
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+            
+            {/* View Mode Toggle - Show when unified header is enabled or in full-screen */}
+            {(ENABLE_UNIFIED_HEADER || isFullScreen) && (
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center border rounded-lg">
+                  <Button
+                    variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('calendar')}
+                    className="rounded-r-none"
+                  >
+                    <Grid3X3 className="h-4 w-4 mr-1" />
+                    Calendar
+                  </Button>
+                  <Button
+                    variant={viewMode === 'list' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('list')}
+                    className="rounded-none border-x"
+                  >
+                    <List className="h-4 w-4 mr-1" />
+                    List
+                  </Button>
+                  <Button
+                    variant={viewMode === 'map' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('map')}
+                    className="rounded-l-none"
+                  >
+                    <Map className="h-4 w-4 mr-1" />
+                    Map
+                  </Button>
+                </div>
+                
+                {/* Action Buttons */}
+                <div className="flex items-center space-x-2">
+                  {newTripEnabled && (
+                    <PermissionGuard permission="create_trips">
+                      <Button asChild size="sm">
+                        <Link 
+                          to="/trips/new"
+                          onClick={() => {
+                            const currentPath = window.location.pathname;
+                            sessionStorage.setItem('previousPath', currentPath);
+                          }}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          New Trip
+                        </Link>
+                      </Button>
+                    </PermissionGuard>
+                  )}
+                  
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowFilters(!showFilters)}
+                  >
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filters
+                  </Button>
+                  
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleExport()}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                  
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowSettings(true)}
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
 
       {/* Filters Panel */}
       {showFilters && (
@@ -417,10 +596,10 @@ export default function CalendarPage() {
       )}
 
       {/* Calendar Content */}
-      <Card className="flex-1 flex flex-col overflow-hidden">
-        <CardContent className="px-0 pb-0 flex-1 overflow-hidden">
+      <Card className="flex-1 flex flex-col overflow-hidden min-h-0" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        <CardContent className="px-0 pb-0 flex-1 overflow-hidden min-h-0" style={{ display: 'flex', flexDirection: 'column', flex: '1 1 0%', minHeight: 0 }}>
           {viewMode === 'calendar' && (
-            <div className="h-full min-h-[600px]">
+            <div className="flex-1 min-h-0" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
               <EnhancedTripCalendar />
             </div>
           )}
@@ -765,62 +944,6 @@ export default function CalendarPage() {
         </CardContent>
       </Card>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Today's Trips</p>
-                <p className="text-2xl font-bold">{stats.todayTrips}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Completed</p>
-                <p className="text-2xl font-bold">{stats.completed}</p>
-              </div>
-              <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--completed)' }}>
-                <span className="text-white text-sm font-bold">✓</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">In Progress</p>
-                <p className="text-2xl font-bold">{stats.inProgress}</p>
-              </div>
-              <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--in-progress)' }}>
-                <span className="text-white text-sm font-bold">→</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Scheduled</p>
-                <p className="text-2xl font-bold">{stats.scheduled}</p>
-              </div>
-              <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--scheduled)' }}>
-                <span className="text-white text-sm font-bold">⏰</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Settings Dialog */}
       {showSettings && (
         <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: 'rgba(32, 32, 35, 0.5)' }}>
@@ -1016,6 +1139,62 @@ export default function CalendarPage() {
           </Card>
         </div>
       )}
+
+      {/* Quick Stats - Fixed at bottom, aligned with sidebar */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-shrink-0" style={{ marginTop: 'auto', height: '93px', paddingTop: '24px', paddingBottom: '24px', marginBottom: '24px' }}>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Today's Trips</p>
+                <p className="text-2xl font-bold">{stats.todayTrips}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Completed</p>
+                <p className="text-2xl font-bold">{stats.completed}</p>
+              </div>
+              <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--completed)' }}>
+                <span className="text-white text-sm font-bold">✓</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">In Progress</p>
+                <p className="text-2xl font-bold">{stats.inProgress}</p>
+              </div>
+              <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--in-progress)' }}>
+                <span className="text-white text-sm font-bold">→</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Scheduled</p>
+                <p className="text-2xl font-bold">{stats.scheduled}</p>
+              </div>
+              <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--scheduled)' }}>
+                <span className="text-white text-sm font-bold">⏰</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
           </div>
         </div>
       </div>

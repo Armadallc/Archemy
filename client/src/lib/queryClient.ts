@@ -88,7 +88,18 @@ export async function apiRequest(
   }
   
   // Add base URL if the URL doesn't start with http
-  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+  // Use environment variable, or detect from current hostname for network access
+  let apiBaseUrl = import.meta.env.VITE_API_URL;
+  if (!apiBaseUrl) {
+    // If accessing from network IP, use the same hostname for API
+    const currentHost = window.location.hostname;
+    if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+      apiBaseUrl = 'http://localhost:8081';
+    } else {
+      // Use the same hostname but port 8081 for API
+      apiBaseUrl = `http://${currentHost}:8081`;
+    }
+  }
   const fullUrl = url.startsWith('http') ? url : `${apiBaseUrl}${url}`;
   
   const res = await fetch(fullUrl, {
@@ -134,7 +145,17 @@ export const getQueryFn: <T>(options: {
     }
     
     // Add base URL if the URL doesn't start with http
-    const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+    // Use environment variable, or detect from current hostname for network access
+    let apiBaseUrl = import.meta.env.VITE_API_URL;
+    if (!apiBaseUrl) {
+      const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+      if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+        apiBaseUrl = 'http://localhost:8081';
+      } else {
+        // Use the same hostname but port 8081 for API
+        apiBaseUrl = `http://${currentHost}:8081`;
+      }
+    }
     const fullUrl = (queryKey[0] as string).startsWith('http') ? queryKey[0] as string : `${apiBaseUrl}${queryKey[0] as string}`;
     
     const res = await fetch(fullUrl, {

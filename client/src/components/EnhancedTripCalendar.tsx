@@ -172,81 +172,7 @@ export default function EnhancedTripCalendar() {
   const currentDate = calendarContext?.currentDate ?? localDate;
   const setCurrentDate = calendarContext?.setCurrentDate ?? setLocalDate;
 
-  // Mini Calendar Component
-  const MiniCalendar = () => {
-    // Use calendar context if available, otherwise use local state
-    const miniDate = calendarContext?.currentDate ?? localDate;
-    const setMiniDate = calendarContext?.setCurrentDate ?? setLocalDate;
-    const sidebarDate = miniDate;
-    
-    const calendarDays = useMemo(() => {
-      const monthStart = startOfMonth(sidebarDate);
-      const monthEnd = endOfMonth(sidebarDate);
-      const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 });
-      const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
-      return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
-    }, [sidebarDate]);
-
-    return (
-      <div className="w-64 rounded-lg p-3 bg-card border" style={{ borderColor: 'var(--border)', borderWidth: 'var(--border-weight, 1px)' }}>
-        <div className="text-center">
-          {/* Month Navigation */}
-          <div className="flex items-center justify-between mb-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => setMiniDate(subMonths(sidebarDate, 1))}
-              className="h-8 w-8"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            
-            <div className="text-sm font-medium">{format(sidebarDate, "MMMM yyyy")}</div>
-            
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => setMiniDate(addMonths(sidebarDate, 1))}
-              className="h-8 w-8"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          <div className="grid grid-cols-7 gap-1 text-xs">
-            {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
-              <div key={index} className="p-1 text-center text-muted-foreground">{day}</div>
-            ))}
-            {calendarDays.map((day) => {
-              const isCurrentMonth = isSameMonth(day, sidebarDate);
-              const isSelected = isSameDay(day, miniDate);
-              const isTodayDate = isToday(day);
-              
-              return (
-                <div
-                  key={day.toISOString()}
-                  onClick={() => setMiniDate(day)}
-                  className={`p-1 text-center rounded cursor-pointer transition-colors text-xs ${
-                    isSelected 
-                      ? 'bg-primary text-primary-foreground font-semibold' 
-                      : isTodayDate 
-                        ? 'bg-accent text-accent-foreground font-semibold' 
-                        : isCurrentMonth 
-                          ? 'text-foreground hover:bg-accent' 
-                          : 'text-muted-foreground hover:bg-accent/50'
-                  }`}
-                >
-                  {format(day, "d")}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    );
-  };
+  // Mini Calendar has been moved to the sidebar
   // Default to 'month' view for all users
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   // Color mode is always 'status' now (color mode select removed)
@@ -511,16 +437,11 @@ export default function EnhancedTripCalendar() {
   }
 
   return (
-    <Card>
+    <Card className="flex-1 flex flex-col overflow-hidden min-h-0" style={{ display: 'flex', flexDirection: 'column', flex: '1 1 0%', minHeight: 0 }}>
       <CardHeader>
-        {/* Bento Grid: 2 columns, 3 rows */}
-        <div className="grid grid-rows-3 gap-4" style={{ gridTemplateColumns: 'auto 1fr' }}>
-          {/* Column 1: Mini Calendar (spans all 3 rows) */}
-          <div className="row-span-3">
-            <MiniCalendar />
-          </div>
-
-          {/* Column 2, Row 1: Trip Status Legend */}
+        {/* Header Content */}
+        <div className="flex flex-col gap-4">
+          {/* Row 1: Trip Status Legend */}
           <div className="flex items-center justify-end">
             <div className="flex items-center gap-4">
               {Object.entries({
@@ -540,13 +461,18 @@ export default function EnhancedTripCalendar() {
             </div>
           </div>
 
-          {/* Column 2, Row 2: Empty (navigation moved to row 3) */}
-          <div></div>
-
-          {/* Column 2, Row 3: Month/Year Title, Navigation Buttons, and View Mode Select */}
-          <div className="flex items-end justify-between w-full pb-0">
+          {/* Row 2: Month/Year Title, Navigation Buttons, and View Mode Select */}
+          <div className="flex items-center justify-between w-full pb-0">
             {/* Month/Year Title - positioned just to the right of mini calendar */}
-            <h1 className="text-h2">{getViewTitle()}</h1>
+            <h1 
+              style={{ 
+                fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+                fontSize: '42px',
+                fontWeight: 400
+              }}
+            >
+              {getViewTitle()}
+            </h1>
             
             {/* Navigation Buttons and View Mode Select */}
             <div className="flex items-center gap-2">
@@ -591,7 +517,7 @@ export default function EnhancedTripCalendar() {
         </div>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="flex-1 overflow-hidden min-h-0" style={{ display: 'flex', flexDirection: 'column', flex: '1 1 0%', minHeight: 0 }}>
         {viewMode === 'today' ? (
           <div className="space-y-4">
             <div className="text-sm mb-4" style={{ color: 'var(--muted-foreground)' }}>
@@ -664,26 +590,32 @@ export default function EnhancedTripCalendar() {
         ) : viewMode === 'week' ? (
           <div className="flex flex-col h-full">
             {/* Week header */}
-            <div className="grid grid-cols-8 border-b" style={{ backgroundColor: 'var(--secondary)', borderColor: 'var(--border)' }}>
-              <div className="p-2 border-r" style={{ borderColor: 'var(--border)' }}></div>
-              {days.slice(0, 7).map(day => {
-                const isDayToday = isToday(day);
-                return (
-                  <div 
-                    key={day.toISOString()} 
-                    className="p-2 text-center border-r"
-                    style={{ 
-                      borderColor: 'var(--border)',
-                      backgroundColor: isDayToday ? 'var(--primary)' : 'transparent',
-                      color: isDayToday ? 'var(--primary-foreground)' : 'var(--foreground)',
-                      opacity: isDayToday ? 0.15 : 1,
-                    }}
-                  >
-                    <div className="text-sm font-medium">{format(day, 'EEE')}</div>
-                    <div className="text-lg font-semibold">{format(day, 'd')}</div>
-                  </div>
-                );
-              })}
+            <div className="flex border-b" style={{ backgroundColor: '#343434', borderColor: 'var(--border)' }}>
+              {/* Time column header - matches time column width */}
+              <div className="w-12 sm:w-16 border-r" style={{ borderColor: 'var(--border)' }}></div>
+              {/* Days header - matches the 7-column grid below */}
+              <div className="flex-1 grid grid-cols-7 gap-px" style={{ backgroundColor: 'var(--border)' }}>
+                {days.slice(0, 7).map(day => {
+                  const isDayToday = isToday(day);
+                  return (
+                    <div 
+                      key={day.toISOString()} 
+                      className="p-2 text-center"
+                      style={isDayToday ? {
+                        backgroundColor: "#343434",
+                        color: "var(--color-coral)",
+                      } : {
+                        borderColor: 'var(--border)',
+                        backgroundColor: '#343434',
+                        color: 'var(--foreground)',
+                      }}
+                    >
+                      <div className="text-sm font-medium">{format(day, 'EEE')}</div>
+                      <div className="text-lg font-semibold">{format(day, 'd')}</div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             
             {/* Time grid */}
@@ -704,7 +636,7 @@ export default function EnhancedTripCalendar() {
               </div>
               
               {/* Days grid */}
-              <div className="flex-1 grid grid-cols-7 gap-px" style={{ backgroundColor: 'var(--border)' }}>
+              <div className="flex-1 grid grid-cols-7 gap-px" style={{ backgroundColor: 'var(--card)' }}>
                 {days.slice(0, 7).map(day => {
                   const dayTrips = getTripsForDate(day);
                   const isDayToday = isToday(day);
@@ -722,8 +654,7 @@ export default function EnhancedTripCalendar() {
                           className="h-12 border-b"
                           style={{ 
                             borderColor: 'var(--border)',
-                            backgroundColor: isDayToday ? 'var(--primary)' : 'transparent',
-                            opacity: isDayToday ? 0.05 : 1,
+                            backgroundColor: 'transparent',
                           }}
                         />
                       ))}
@@ -763,16 +694,17 @@ export default function EnhancedTripCalendar() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-7 gap-px rounded-lg overflow-hidden" style={{ backgroundColor: 'var(--border)' }}>
-            {/* Header row */}
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="p-2 text-center text-sm font-medium" style={{ backgroundColor: 'var(--secondary)', color: 'var(--foreground)' }}>
-                {day}
-              </div>
-            ))}
-            
-            {/* Calendar days */}
-            {days.map(day => {
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <div className="flex-1 grid grid-cols-7 gap-px rounded-lg overflow-hidden" style={{ backgroundColor: 'var(--border)', display: 'grid', height: '100%' }}>
+              {/* Header row */}
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} className="p-2 text-center text-sm font-medium" style={{ backgroundColor: 'var(--secondary)', color: 'var(--foreground)', border: '1px solid var(--border)' }}>
+                  {day}
+                </div>
+              ))}
+              
+              {/* Calendar days */}
+              {days.map(day => {
               const dayTrips = getTripsForDate(day);
               const isCurrentMonth = viewMode === 'month' ? isSameMonth(day, currentDate) : true;
               const isDayToday = isToday(day);
@@ -780,24 +712,27 @@ export default function EnhancedTripCalendar() {
               return (
                 <div 
                   key={day.toISOString()} 
-                  className="p-2 min-h-[100px] border-r border-b relative"
-                  style={{
-                    borderColor: 'var(--border)',
-                    backgroundColor: isCurrentMonth 
-                      ? (isDayToday ? 'rgba(204, 51, 171, 0.1)' : 'var(--card)')
-                      : 'var(--secondary)',
-                    color: isCurrentMonth 
-                      ? (isDayToday ? 'var(--primary-foreground)' : 'var(--foreground)')
-                      : 'var(--muted-foreground)',
+                  className="p-2 relative flex-1"
+                  style={isDayToday && isCurrentMonth ? {
+                    border: '1px solid var(--border)',
+                    backgroundColor: 'var(--card)',
+                    color: 'var(--color-coral)',
+                    minHeight: '100px',
+                  } : {
+                    border: '1px solid var(--border)',
+                    backgroundColor: isCurrentMonth ? 'var(--card)' : 'var(--secondary)',
+                    color: isCurrentMonth ? 'var(--foreground)' : 'var(--muted-foreground)',
+                    minHeight: '100px',
                   }}
                 >
                   <div 
                     className="text-sm font-medium mb-1"
-                    style={{
-                      color: isCurrentMonth 
-                        ? (isDayToday ? 'var(--primary)' : 'var(--foreground)')
-                        : 'var(--muted-foreground)',
-                      fontWeight: isDayToday ? 'bold' : 'normal',
+                    style={isDayToday && isCurrentMonth ? {
+                      color: 'var(--color-coral)',
+                      fontWeight: 'bold',
+                    } : {
+                      color: isCurrentMonth ? 'var(--foreground)' : 'var(--muted-foreground)',
+                      fontWeight: 'normal',
                     }}
                   >
                     {format(day, 'd')}
@@ -828,6 +763,7 @@ export default function EnhancedTripCalendar() {
                 </div>
               );
             })}
+            </div>
           </div>
         )}
       </CardContent>

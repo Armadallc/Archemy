@@ -105,7 +105,7 @@ export const enhancedTripsStorage = {
           name,
           address
         ),
-        clients:client_id (
+        clients!client_id (
           id,
           first_name,
           last_name,
@@ -161,7 +161,7 @@ export const enhancedTripsStorage = {
           name,
           address
         ),
-        clients:client_id (
+        clients!client_id (
           id,
           first_name,
           last_name,
@@ -218,7 +218,7 @@ export const enhancedTripsStorage = {
           name,
           address
         ),
-        clients:client_id (
+        clients!client_id (
           id,
           first_name,
           last_name,
@@ -275,12 +275,17 @@ export const enhancedTripsStorage = {
           name,
           address
         ),
-        clients:client_id (
+        clients!client_id (
           id,
           first_name,
           last_name,
           phone,
           address
+        ),
+        client_groups:client_group_id (
+          id,
+          name,
+          description
         ),
         drivers:driver_id (
           id,
@@ -291,11 +296,6 @@ export const enhancedTripsStorage = {
           )
         ),
         trip_categories:trip_category_id (
-          id,
-          name,
-          description
-        ),
-        client_groups:client_group_id (
           id,
           name,
           description
@@ -332,7 +332,7 @@ export const enhancedTripsStorage = {
           name,
           address
         ),
-        clients:client_id (
+        clients!client_id (
           id,
           first_name,
           last_name,
@@ -389,7 +389,7 @@ export const enhancedTripsStorage = {
           name,
           address
         ),
-        clients:client_id (
+        clients!client_id (
           id,
           first_name,
           last_name,
@@ -447,7 +447,7 @@ export const enhancedTripsStorage = {
           name,
           address
         ),
-        clients:client_id (
+        clients!client_id (
           id,
           first_name,
           last_name,

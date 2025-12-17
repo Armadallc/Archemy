@@ -48,7 +48,7 @@ interface TripLocation {
   eta?: string;
 }
 
-export default function InteractiveMapWidget({ className }: InteractiveMapWidgetProps) {
+export default function InteractiveMapWidget({ className, shadow }: InteractiveMapWidgetProps) {
   const [map, setMap] = useState<any>(null);
   const [selectedView, setSelectedView] = useState<'drivers' | 'trips'>('drivers');
   const [isMapLoaded, setIsMapLoaded] = useState(false);
@@ -312,6 +312,7 @@ export default function InteractiveMapWidget({ className }: InteractiveMapWidget
       icon={<MapPin className="h-5 w-5" />}
       size="large"
       className={className}
+      shadow={shadow}
       loading={isLoading}
       actions={
         <div className="flex items-center space-x-1">
@@ -385,12 +386,11 @@ export default function InteractiveMapWidget({ className }: InteractiveMapWidget
         </Tabs>
 
         {/* Interactive Map */}
-        <div className="relative">
-          <div 
-            ref={(el) => setMapContainer(el)} 
-            className="w-full h-64 min-h-64 rounded-lg border border-border"
-          />
-          
+        <div 
+          ref={(el) => setMapContainer(el)} 
+          className="w-full h-64 min-h-64 rounded-lg border border-border relative"
+          style={{ fontFamily: '"Space Grotesk"', height: '485px' }}
+        >
           {!isMapLoaded && (
             <div className="absolute inset-0 flex items-center justify-center bg-secondary rounded-lg">
               <div className="text-center">

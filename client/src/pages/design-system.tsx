@@ -11,7 +11,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { designTokens } from '../design-system/tokens';
 import { Button } from '../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -22,6 +22,15 @@ import { Separator } from '../components/ui/separator';
 import { useTheme } from '../components/theme-provider';
 import { ThemeController } from '../components/design-system/ThemeController';
 import { FireThemePanel } from '../components/fire-theme-panel';
+import { IntegratedThemeEditor } from '../components/design-system/IntegratedThemeEditor';
+import { ThemePicker } from '../components/design-system/ThemePicker';
+import { useThemePreferences } from '../hooks/useThemePreferences';
+import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../hooks/use-toast';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '../lib/queryClient';
+import { Alert, AlertDescription } from '../components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 import { 
   StatusBadge, 
   StatusIcon,
@@ -79,7 +88,7 @@ const getCssVariableName = (path: string): string | null => {
     
     // Border/Input colors
     'colors.semantic.border.primary': '--border',
-    'colors.primary.500': '--ring',
+    // Note: --ring uses same color as --primary (defined below)
     
     // Typography - Font Families (need to convert array to string)
     'typography.fontFamily.sans': '--font-sans',
@@ -120,30 +129,29 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
     return typeof current === 'string' ? current : null;
   };
 
-  // Apply CSS variables from token object
-  const applyStagedCssVariables = useCallback((tokenObj: any) => {
-    const mapping: Record<string, string> = {
-      'colors.semantic.background.primary': '--background',
-      'colors.semantic.text.primary': '--foreground',
-      'colors.semantic.background.secondary': '--card',
-      'colors.semantic.text.secondary': '--card-foreground',
-      'colors.semantic.background.tertiary': '--popover',
-      'colors.semantic.text.tertiary': '--popover-foreground',
-      'colors.primary.500': '--primary',
-      'colors.semantic.text.inverse': '--primary-foreground',
-      'colors.secondary.100': '--secondary',
-      'colors.info.500': '--accent',
-      'colors.error.500': '--destructive',
-      'colors.semantic.border.primary': '--border',
-      'colors.primary.500': '--ring',
-      'spacing.borderRadius.base': '--radius',
-      
-      // Status Colors
-      'colors.semantic.status.active': '--completed',
-      'colors.semantic.status.inactive': '--cancelled',
-      'colors.semantic.status.pending': '--scheduled',
-      'colors.semantic.status.warning': '--in-progress',
-    };
+    // Apply CSS variables from token object
+    const applyStagedCssVariables = useCallback((tokenObj: any) => {
+      const mapping: Record<string, string> = {
+        'colors.semantic.background.primary': '--background',
+        'colors.semantic.text.primary': '--foreground',
+        'colors.semantic.background.secondary': '--card',
+        'colors.semantic.text.secondary': '--card-foreground',
+        'colors.semantic.background.tertiary': '--popover',
+        'colors.semantic.text.tertiary': '--popover-foreground',
+        'colors.primary.500': '--primary',
+        'colors.semantic.text.inverse': '--primary-foreground',
+        'colors.secondary.100': '--secondary',
+        'colors.info.500': '--accent',
+        'colors.error.500': '--destructive',
+        'colors.semantic.border.primary': '--border',
+        'spacing.borderRadius.base': '--radius',
+        
+        // Status Colors
+        'colors.semantic.status.active': '--completed',
+        'colors.semantic.status.inactive': '--cancelled',
+        'colors.semantic.status.pending': '--scheduled',
+        'colors.semantic.status.warning': '--in-progress',
+      };
     
     Object.entries(mapping).forEach(([path, cssVar]) => {
       const value = getTokenValueByPath(tokenObj, path);
@@ -151,6 +159,12 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
         updateCssVariable(cssVar, value, theme === 'dark');
       }
     });
+    
+    // Set --ring to same value as --primary (focus ring color)
+    const primaryValue = getTokenValueByPath(tokenObj, 'colors.primary.500');
+    if (primaryValue) {
+      updateCssVariable('--ring', primaryValue, theme === 'dark');
+    }
   }, [theme]);
 
   // Load staged changes from localStorage on mount
@@ -309,9 +323,11 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
             { name: 'Charcoal', value: '#26282b', cssVar: '--color-charcoal', usage: 'Dark backgrounds, light mode text' },
             { name: 'Ice', value: '#e8fffe', cssVar: '--color-ice', usage: 'Light accent backgrounds' },
             { name: 'Lime', value: '#f1fec9', cssVar: '--color-lime', usage: 'Elevated surfaces, accent' },
-            { name: 'Coral', value: '#ff555d', cssVar: '--color-coral', usage: 'Primary actions, highlights' },
+            { name: 'Coral', value: '#ff8475', cssVar: '--color-coral', usage: 'Primary actions, highlights' },
             { name: 'Silver', value: '#eaeaea', cssVar: '--color-silver', usage: 'Borders, muted backgrounds' },
             { name: 'Cloud', value: '#f4f4f4', cssVar: '--color-cloud', usage: 'Light mode background' },
+            { name: 'Shadow', value: '#343434', cssVar: '--color-shadow', usage: 'Dark gray accents' },
+            { name: 'Aqua', value: '#a5c8ca', cssVar: '--color-aqua', usage: 'Light teal accents' },
           ].map(({ name, value, cssVar, usage }) => (
             <div key={name} className="space-y-2 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
               <div 
@@ -390,7 +406,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
           <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
             <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-3">Actions & Text</h4>
             {[
-              { key: 'primary', value: 'var(--primary)', label: 'Primary', color: '#ff555d' },
+              { key: 'primary', value: 'var(--primary)', label: 'Primary', color: '#ff8475' },
               { key: 'accent', value: 'var(--accent)', label: 'Accent', color: '#f1fec9' },
               { key: 'foreground', value: 'var(--foreground)', label: 'Foreground', color: '#26282b' },
               { key: 'foreground-secondary', value: 'var(--foreground-secondary)', label: 'Foreground Secondary', color: '#5c6166' },
@@ -490,7 +506,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
           <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
             <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-3">Actions</h4>
             {[
-              { cssVar: '--primary', value: '#ff555d', label: 'Primary' },
+              { cssVar: '--primary', value: '#ff8475', label: 'Primary' },
               { cssVar: '--primary-hover', value: '#e04850', label: 'Primary Hover' },
               { cssVar: '--primary-foreground', value: '#ffffff', label: 'Primary Foreground' },
               { cssVar: '--accent', value: '#f1fec9', label: 'Accent' },
@@ -527,8 +543,8 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
               { cssVar: '--border-strong', value: '#b8bcc0', label: 'Border Strong' },
               { cssVar: '--input', value: '#ffffff', label: 'Input' },
               { cssVar: '--input-border', value: '#d4d7da', label: 'Input Border' },
-              { cssVar: '--input-focus', value: '#ff555d', label: 'Input Focus' },
-              { cssVar: '--ring', value: '#ff555d', label: 'Ring' },
+              { cssVar: '--input-focus', value: '#ff8475', label: 'Input Focus' },
+              { cssVar: '--ring', value: '#ff8475', label: 'Ring' },
               { cssVar: '--ring-offset', value: '#f4f4f4', label: 'Ring Offset' },
               { cssVar: '--muted', value: '#eaeaea', label: 'Muted' },
             ].map(({ cssVar, value, label }) => (
@@ -561,7 +577,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
               { cssVar: '--status-success-bg', value: 'rgba(59, 254, 201, 0.15)', label: 'Success BG', derived: '15% opacity' },
               { cssVar: '--status-warning', value: '#f1fe60', label: 'Warning', derived: 'From Lime (#f1fec9) - Blue: 60' },
               { cssVar: '--status-warning-bg', value: 'rgba(241, 254, 96, 0.15)', label: 'Warning BG', derived: '15% opacity' },
-              { cssVar: '--status-error', value: '#e04850', label: 'Error', derived: 'From Coral (#ff555d) - darker' },
+              { cssVar: '--status-error', value: '#e04850', label: 'Error', derived: 'From Coral (#ff8475) - darker' },
               { cssVar: '--status-error-bg', value: 'rgba(224, 72, 80, 0.15)', label: 'Error BG', derived: '15% opacity' },
               { cssVar: '--status-info', value: '#7afffe', label: 'Info', derived: 'From Ice (#e8fffe) - Red: 7A' },
               { cssVar: '--status-info-bg', value: 'rgba(122, 255, 254, 0.15)', label: 'Info BG', derived: '15% opacity' },
@@ -598,7 +614,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
               { cssVar: '--in-progress-bg', value: 'rgba(241, 254, 96, 0.15)', label: 'In Progress BG', derived: '15% opacity' },
               { cssVar: '--completed', value: '#3bfec9', label: 'Completed', derived: 'From Lime (#f1fec9) - Red: 3B' },
               { cssVar: '--completed-bg', value: 'rgba(59, 254, 201, 0.15)', label: 'Completed BG', derived: '15% opacity' },
-              { cssVar: '--cancelled', value: '#e04850', label: 'Cancelled', derived: 'From Coral (#ff555d) - darker' },
+              { cssVar: '--cancelled', value: '#e04850', label: 'Cancelled', derived: 'From Coral (#ff8475) - darker' },
               { cssVar: '--cancelled-bg', value: 'rgba(224, 72, 80, 0.15)', label: 'Cancelled BG', derived: '15% opacity' },
               { cssVar: '--confirmed', value: '#c2b4fe', label: 'Confirmed', derived: 'From Ice (#e8fffe) - Red: C2, Green: B4' },
               { cssVar: '--confirmed-bg', value: 'rgba(194, 180, 254, 0.15)', label: 'Confirmed BG', derived: '15% opacity' },
@@ -631,12 +647,12 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
               { cssVar: '--sidebar', value: '#26282b', label: 'Sidebar' },
               { cssVar: '--sidebar-foreground', value: '#f4f4f4', label: 'Sidebar Foreground' },
               { cssVar: '--sidebar-foreground-muted', value: '#9ca3af', label: 'Sidebar Foreground Muted' },
-              { cssVar: '--sidebar-primary', value: '#ff555d', label: 'Sidebar Primary' },
+              { cssVar: '--sidebar-primary', value: '#ff8475', label: 'Sidebar Primary' },
               { cssVar: '--sidebar-primary-foreground', value: '#ffffff', label: 'Sidebar Primary FG' },
               { cssVar: '--sidebar-accent', value: '#f1fec9', label: 'Sidebar Accent' },
               { cssVar: '--sidebar-accent-foreground', value: '#26282b', label: 'Sidebar Accent FG' },
               { cssVar: '--sidebar-border', value: '#363a3e', label: 'Sidebar Border' },
-              { cssVar: '--sidebar-ring', value: '#ff555d', label: 'Sidebar Ring' },
+              { cssVar: '--sidebar-ring', value: '#ff8475', label: 'Sidebar Ring' },
             ].map(({ cssVar, value, label }) => (
               <div key={cssVar} className="space-y-2">
                 <Label className="text-sm text-[#26282b]/80 dark:text-[#eaeaea]/80">{label}</Label>
@@ -900,7 +916,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
               </div>
               <div className="flex items-center space-x-3">
                 <div 
-                  className="h-16 w-16 bg-gradient-to-br from-[#ff555d] to-[#e04850] border-2 border-white/30 dark:border-white/20 shadow-lg flex-shrink-0 flex items-center justify-center"
+                  className="h-16 w-16 bg-gradient-to-br from-[#ff8475] to-[#e04850] border-2 border-white/30 dark:border-white/20 shadow-lg flex-shrink-0 flex items-center justify-center"
                   style={{ 
                     borderRadius: value === '0.5rem' ? '0.5rem' : 
                                  value.includes('calc') && value.includes('- 2px') ? '0.375rem' :
@@ -954,7 +970,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
               <div className="space-y-2">
                 <div className="flex items-center space-x-3">
                   <div 
-                    className="h-8 bg-gradient-to-r from-[#ff555d] to-[#e04850] rounded border border-white/30 dark:border-white/20 shadow-md flex-shrink-0 flex items-center justify-center"
+                    className="h-8 bg-gradient-to-r from-[#ff8475] to-[#e04850] rounded border border-white/30 dark:border-white/20 shadow-md flex-shrink-0 flex items-center justify-center"
                     style={{ width: `min(${value}, 120px)` }}
                   >
                     <span className="text-xs font-bold text-white px-1">{pixels}</span>
@@ -1003,7 +1019,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
             size="sm"
             onClick={handleSave}
             disabled={!hasChanges}
-            className="bg-[#ff555d]/20 hover:bg-[#ff555d]/30 border-[#ff555d]/30 text-[#ff555d] backdrop-blur-sm"
+            className="bg-[#ff8475]/20 hover:bg-[#ff8475]/30 border-[#ff8475]/30 text-[#ff8475] backdrop-blur-sm"
           >
             <Save className="w-4 h-4 mr-2" />
             Stage Changes
@@ -1012,7 +1028,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
       </div>
 
       {hasChanges && (
-        <div className="bg-[#ff555d]/10 border border-[#ff555d]/30 rounded-lg p-3 backdrop-blur-sm">
+        <div className="bg-[#ff8475]/10 border border-[#ff8475]/30 rounded-lg p-3 backdrop-blur-sm">
           <p className="text-sm text-[#26282b] dark:text-[#eaeaea]">
             <span className="font-semibold">⚠️ Unsaved changes:</span> You have unsaved changes. Click "Stage Changes" to save them, or "Reset" to discard.
           </p>
@@ -1217,307 +1233,6 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
           </div>
         </TabsContent>
       </Tabs>
-    </div>
-  );
-};
-
-// Component builder component
-const ComponentBuilder = () => {
-  const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
-  const [components, setComponents] = useState<any[]>([]);
-  const [hasChanges, setHasChanges] = useState(false);
-
-  const availableComponents = [
-    { id: 'button', name: 'Button', icon: Component, category: 'atoms' },
-    { id: 'input', name: 'Input', icon: Component, category: 'atoms' },
-    { id: 'card', name: 'Card', icon: Component, category: 'atoms' },
-    { id: 'badge', name: 'Badge', icon: Component, category: 'atoms' },
-    { id: 'form-field', name: 'Form Field', icon: Component, category: 'molecules' },
-    { id: 'search-input', name: 'Search Input', icon: Component, category: 'molecules' },
-    { id: 'data-table', name: 'Data Table', icon: Component, category: 'organisms' },
-    { id: 'navigation', name: 'Navigation', icon: Component, category: 'organisms' },
-  ];
-
-  // Load staged components from localStorage on mount
-  useEffect(() => {
-    const staged = localStorage.getItem('design-system-staged-components');
-    if (staged) {
-      try {
-        const parsed = JSON.parse(staged);
-        setComponents(parsed);
-        setHasChanges(true);
-      } catch (e) {
-        console.error('Failed to load staged components:', e);
-      }
-    }
-  }, []);
-
-  const addComponent = (component: any) => {
-    const newComponent = {
-      id: `${component.id}-${Date.now()}`,
-      type: component.id,
-      name: component.name,
-      category: component.category,
-      props: {},
-      position: { x: 100, y: 100 + components.length * 60 }
-    };
-    setComponents([...components, newComponent]);
-    setHasChanges(true);
-  };
-
-  const deleteComponent = (componentId: string) => {
-    setComponents(components.filter(c => c.id !== componentId));
-    if (selectedComponent === componentId) {
-      setSelectedComponent(null);
-    }
-    setHasChanges(true);
-  };
-
-  const updateComponentProps = (componentId: string, props: any) => {
-    setComponents(components.map(c => 
-      c.id === componentId ? { ...c, props: { ...c.props, ...props } } : c
-    ));
-    setHasChanges(true);
-  };
-
-  const handleCopy = () => {
-    const json = JSON.stringify(components, null, 2);
-    navigator.clipboard.writeText(json);
-    // You can add toast notification here
-    console.log('Components copied to clipboard');
-  };
-
-  const handleExport = () => {
-    const json = JSON.stringify(components, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `components-${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleSave = () => {
-    localStorage.setItem('design-system-staged-components', JSON.stringify(components));
-    setHasChanges(false);
-    console.log('Components staged successfully');
-  };
-
-  const handleReset = () => {
-    setComponents([]);
-    setSelectedComponent(null);
-    setHasChanges(false);
-    localStorage.removeItem('design-system-staged-components');
-  };
-
-  const selectedComponentData = components.find(c => c.id === selectedComponent);
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-[#26282b] to-[#26282b]/80 dark:from-[#eaeaea] dark:to-[#eaeaea]/80 bg-clip-text text-transparent">
-            Component Builder
-          </h2>
-          <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mt-1">
-            Build and test component configurations
-          </p>
-        </div>
-        <div className="flex space-x-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleReset}
-            disabled={!hasChanges && components.length === 0}
-            className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 hover:bg-white/40 dark:hover:bg-white/20 backdrop-blur-sm"
-          >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Reset
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleCopy}
-            disabled={components.length === 0}
-            className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 hover:bg-white/40 dark:hover:bg-white/20 backdrop-blur-sm"
-          >
-            <Copy className="w-4 h-4 mr-2" />
-            Copy JSON
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleExport}
-            disabled={components.length === 0}
-            className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 hover:bg-white/40 dark:hover:bg-white/20 backdrop-blur-sm"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Export
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleSave}
-            disabled={!hasChanges}
-            className="bg-[#ff555d]/20 hover:bg-[#ff555d]/30 border-[#ff555d]/30 text-[#ff555d] backdrop-blur-sm"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            Stage
-          </Button>
-        </div>
-      </div>
-
-      {hasChanges && (
-        <div className="bg-[#ff555d]/10 border border-[#ff555d]/30 rounded-lg p-3 backdrop-blur-sm">
-          <p className="text-sm text-[#26282b] dark:text-[#eaeaea]">
-            <span className="font-semibold">⚠️ Unsaved changes:</span> Click "Stage" to save your component configuration.
-          </p>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[600px]">
-        {/* Component Palette */}
-        <div className="lg:col-span-3">
-          <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl h-full">
-            <CardHeader>
-              <CardTitle className="text-sm text-[#26282b] dark:text-[#eaeaea]">Components</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 max-h-[600px] overflow-y-auto">
-              {availableComponents.map((component) => (
-                <div
-                  key={component.id}
-                  className="flex items-center space-x-2 p-3 rounded-lg border border-white/20 dark:border-white/10 bg-white/20 dark:bg-white/10 cursor-pointer hover:bg-white/30 dark:hover:bg-white/20 transition-all backdrop-blur-sm"
-                  onClick={() => addComponent(component)}
-                >
-                  <component.icon className="w-4 h-4 text-[#26282b] dark:text-[#eaeaea]" />
-                  <span className="text-sm text-[#26282b] dark:text-[#eaeaea] flex-1">{component.name}</span>
-                  <Badge variant="outline" className="text-xs bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20">
-                    {component.category}
-                  </Badge>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Canvas */}
-        <div className="lg:col-span-6">
-          <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl h-full">
-            <CardHeader>
-              <CardTitle className="text-sm text-[#26282b] dark:text-[#eaeaea]">Canvas</CardTitle>
-            </CardHeader>
-            <CardContent className="relative h-full min-h-[500px] bg-gradient-to-br from-white/10 to-white/5 dark:from-white/5 dark:to-white/0 rounded-lg border-2 border-dashed border-white/20 dark:border-white/10">
-              {components.length === 0 ? (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <Layers className="w-16 h-16 mx-auto mb-4 opacity-30 text-[#26282b] dark:text-[#eaeaea]" />
-                    <p className="text-[#26282b]/70 dark:text-[#eaeaea]/70">Click components to add them to the canvas</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3 p-4">
-                  {components.map((component) => (
-                    <div
-                      key={component.id}
-                      className={`p-4 rounded-lg border-2 transition-all cursor-pointer backdrop-blur-sm ${
-                        selectedComponent === component.id
-                          ? 'bg-[#ff555d]/20 border-[#ff555d]/50 shadow-lg'
-                          : 'bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 hover:bg-white/40 dark:hover:bg-white/20 hover:shadow-md'
-                      }`}
-                      onClick={() => setSelectedComponent(component.id)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <Component className="w-5 h-5 text-[#26282b] dark:text-[#eaeaea]" />
-                          <div>
-                            <span className="text-sm font-medium text-[#26282b] dark:text-[#eaeaea]">{component.name}</span>
-                            <Badge variant="outline" className="text-xs ml-2 bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20">
-                              {component.category}
-                            </Badge>
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteComponent(component.id);
-                          }}
-                          className="text-[#ff555d] hover:text-[#ff444c] hover:bg-[#ff555d]/10"
-                        >
-                          <Minus className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Properties Panel */}
-        <div className="lg:col-span-3">
-          <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl h-full">
-            <CardHeader>
-              <CardTitle className="text-sm text-[#26282b] dark:text-[#eaeaea]">Properties</CardTitle>
-            </CardHeader>
-            <CardContent className="max-h-[600px] overflow-y-auto">
-              {selectedComponentData ? (
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-[#26282b] dark:text-[#eaeaea]">Component Type</Label>
-                    <Input 
-                      value={selectedComponentData.name} 
-                      disabled 
-                      className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea] backdrop-blur-sm"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-[#26282b] dark:text-[#eaeaea]">Category</Label>
-                    <Input 
-                      value={selectedComponentData.category} 
-                      disabled 
-                      className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea] backdrop-blur-sm"
-                    />
-                  </div>
-                  <Separator className="bg-white/20 dark:bg-white/10" />
-                  <div>
-                    <Label className="text-[#26282b] dark:text-[#eaeaea]">Component ID</Label>
-                    <Input 
-                      value={selectedComponentData.id} 
-                      disabled 
-                      className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea] backdrop-blur-sm text-xs"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-[#26282b] dark:text-[#eaeaea]">Properties (JSON)</Label>
-                    <Textarea
-                      value={JSON.stringify(selectedComponentData.props, null, 2)}
-                      onChange={(e) => {
-                        try {
-                          const parsed = JSON.parse(e.target.value);
-                          updateComponentProps(selectedComponentData.id, parsed);
-                        } catch {
-                          // Invalid JSON, ignore
-                        }
-                      }}
-                      className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea] font-mono text-xs backdrop-blur-sm min-h-[200px]"
-                      placeholder='{"prop": "value"}'
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <Settings className="w-12 h-12 mx-auto mb-4 opacity-30 text-[#26282b] dark:text-[#eaeaea]" />
-                  <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70">Select a component to edit properties</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
     </div>
   );
 };
@@ -1780,388 +1495,150 @@ const LivePreview = ({ tokens }: { tokens: any }) => {
   );
 };
 
-// Theme manager component
-// Purpose: Manage and stage multiple theme configurations before committing
-// Functionality:
-// - Create new themes from current design tokens
-// - Save/load themes from localStorage
-// - Import/export themes as JSON files
-// - Activate themes to preview them (applies CSS variables)
-// - Delete themes
-// - Theme preview with color swatches
-const ThemeManager = ({ currentTokens }: { currentTokens?: any }) => {
-  const [themes, setThemes] = useState<Array<{
-    id: string;
-    name: string;
-    isActive: boolean;
-    tokens?: any;
-    createdAt?: string;
-  }>>([]);
-  const [newThemeName, setNewThemeName] = useState('');
-  
-  // Get current tokens from prop, localStorage, or defaults
-  const getCurrentTokens = () => {
-    if (currentTokens) return currentTokens;
-    const staged = localStorage.getItem('design-system-staged-tokens');
-    return staged ? JSON.parse(staged) : designTokens;
-  };
-
-  // Load themes from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem('design-system-themes');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setThemes(parsed);
-      } catch (e) {
-        console.error('Failed to load themes:', e);
-      }
-    } else {
-      // Initialize with default themes
-      const defaultThemes = [
-        { id: 'default', name: 'Default Theme', isActive: true, tokens: designTokens, createdAt: new Date().toISOString() },
-        { id: 'dark', name: 'Dark Theme', isActive: false, tokens: designTokens, createdAt: new Date().toISOString() },
-      ];
-      setThemes(defaultThemes);
-      localStorage.setItem('design-system-themes', JSON.stringify(defaultThemes));
-    }
-  }, []);
-
-  const saveThemes = (updatedThemes: typeof themes) => {
-    localStorage.setItem('design-system-themes', JSON.stringify(updatedThemes));
-    setThemes(updatedThemes);
-  };
-
-  const createTheme = () => {
-    if (newThemeName.trim()) {
-      const currentTokens = getCurrentTokens();
-      const newTheme = {
-        id: newThemeName.toLowerCase().replace(/\s+/g, '-'),
-        name: newThemeName,
-        isActive: false,
-        tokens: JSON.parse(JSON.stringify(currentTokens)), // Deep clone current tokens
-        createdAt: new Date().toISOString()
-      };
-      const updated = [...themes, newTheme];
-      saveThemes(updated);
-      setNewThemeName('');
-    }
-  };
-
-  const activateTheme = (themeId: string) => {
-    const updated = themes.map(theme => ({
-      ...theme,
-      isActive: theme.id === themeId
-    }));
-    saveThemes(updated);
-    
-    // Apply theme's CSS variables
-    const theme = themes.find(t => t.id === themeId);
-    if (theme && theme.tokens) {
-      applyThemeTokens(theme.tokens);
-    }
-  };
-
-  const applyThemeTokens = (themeTokens: any) => {
-    // Apply all CSS variables from theme tokens
-    const mapping: Record<string, string> = {
-      'colors.semantic.background.primary': '--background',
-      'colors.semantic.text.primary': '--foreground',
-      'colors.semantic.background.secondary': '--card',
-      'colors.semantic.text.secondary': '--card-foreground',
-      'colors.primary.500': '--primary',
-      'colors.error.500': '--destructive',
-      'colors.info.500': '--accent',
-      'colors.semantic.border.primary': '--border',
-      'spacing.borderRadius.base': '--radius',
-    };
-
-    Object.entries(mapping).forEach(([path, cssVar]) => {
-      const keys = path.split('.');
-      let value: any = themeTokens;
-      for (const key of keys) {
-        if (value && typeof value === 'object' && key in value) {
-          value = value[key];
-        } else {
-          return;
-        }
-      }
-      if (typeof value === 'string') {
-        document.documentElement.style.setProperty(cssVar, value);
-      }
-    });
-  };
-
-  const resetTheme = () => {
-    // Remove all inline CSS variable overrides to restore original values from index.css
-    const cssVarsToReset = [
-      '--background',
-      '--foreground',
-      '--card',
-      '--card-foreground',
-      '--primary',
-      '--destructive',
-      '--accent',
-      '--border',
-      '--radius',
-    ];
-    
-    cssVarsToReset.forEach(cssVar => {
-      document.documentElement.style.removeProperty(cssVar);
-    });
-    
-    // Also remove dark mode custom styles if they exist
-    const darkModeStyleElement = document.getElementById('dark-mode-custom-styles');
-    if (darkModeStyleElement) {
-      darkModeStyleElement.remove();
-    }
-    
-    // Deactivate all themes
-    const updated = themes.map(theme => ({
-      ...theme,
-      isActive: false
-    }));
-    saveThemes(updated);
-    
-    console.log('Theme reset - original CSS variables restored');
-  };
-
-  const deleteTheme = (themeId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (confirm(`Are you sure you want to delete "${themes.find(t => t.id === themeId)?.name}"?`)) {
-      const updated = themes.filter(t => t.id !== themeId);
-      saveThemes(updated);
-    }
-  };
-
-  const handleExport = (themeId?: string) => {
-    const themesToExport = themeId 
-      ? themes.filter(t => t.id === themeId)
-      : themes;
-    
-    const json = JSON.stringify(themesToExport, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = themeId 
-      ? `theme-${themeId}-${Date.now()}.json`
-      : `themes-${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleImport = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          try {
-            const imported = JSON.parse(event.target?.result as string);
-            const importedArray = Array.isArray(imported) ? imported : [imported];
-            const updated = [...themes, ...importedArray];
-            saveThemes(updated);
-            console.log('Themes imported successfully');
-          } catch (error) {
-            alert('Failed to import themes. Invalid JSON file.');
-            console.error('Import error:', error);
-          }
-        };
-        reader.readAsText(file);
-      }
-    };
-    input.click();
-  };
-
-  const getThemeColors = (theme: typeof themes[0]) => {
-    if (!theme.tokens) return ['#cc33ab', '#33ccad', '#cc5833', '#8933cc'];
-    const tokens = theme.tokens;
-    return [
-      tokens.colors?.primary?.[500] || tokens.colors?.semantic?.status?.active || '#cc33ab',
-      tokens.colors?.info?.[500] || tokens.colors?.semantic?.status?.info || '#33ccad',
-      tokens.colors?.error?.[500] || tokens.colors?.semantic?.status?.error || '#cc5833',
-      tokens.colors?.primary?.[700] || '#8933cc',
-    ];
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-[#26282b] to-[#26282b]/80 dark:from-[#eaeaea] dark:to-[#eaeaea]/80 bg-clip-text text-transparent">
-            Theme Manager
-          </h2>
-          <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mt-1">
-            Create, manage, and stage theme configurations before committing
-          </p>
-        </div>
-        <div className="flex space-x-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={resetTheme}
-            className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 hover:bg-white/40 dark:hover:bg-white/20 backdrop-blur-sm text-[#ff555d] hover:text-[#ff444c]"
-          >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Reset Theme
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleImport}
-            className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 hover:bg-white/40 dark:hover:bg-white/20 backdrop-blur-sm"
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            Import
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => handleExport()}
-            disabled={themes.length === 0}
-            className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 hover:bg-white/40 dark:hover:bg-white/20 backdrop-blur-sm"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Export All
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {themes.map((theme) => (
-          <Card 
-            key={theme.id} 
-            className={`cursor-pointer transition-all backdrop-blur-sm ${
-              theme.isActive 
-                ? 'ring-2 ring-[#ff555d] bg-[#ff555d]/20 border-[#ff555d]/50 shadow-xl' 
-                : 'bg-white/25 dark:bg-[#2f3235]/25 border-white/20 dark:border-white/10 hover:bg-white/30 dark:hover:bg-white/20 hover:shadow-lg'
-            }`}
-            onClick={() => activateTheme(theme.id)}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-[#26282b] dark:text-[#eaeaea]">{theme.name}</h3>
-                <div className="flex items-center space-x-2">
-                  {theme.isActive && (
-                    <Badge className="text-xs bg-[#ff555d] text-white">
-                      Active
-                    </Badge>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => deleteTheme(theme.id, e)}
-                    className="h-6 w-6 p-0 text-[#ff555d] hover:text-[#ff444c] hover:bg-[#ff555d]/10"
-                  >
-                    <Minus className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleExport(theme.id);
-                    }}
-                    className="h-6 w-6 p-0 text-[#26282b] dark:text-[#eaeaea] hover:bg-white/20"
-                  >
-                    <Download className="w-3 h-3" />
-                  </Button>
-                </div>
-              </div>
-              <div className="flex space-x-2 mb-3">
-                {getThemeColors(theme).map((color, idx) => (
-                  <div 
-                    key={idx}
-                    className="w-8 h-8 rounded-lg border-2 border-white/30 dark:border-white/20 shadow-md"
-                    style={{ backgroundColor: color }}
-                    title={color}
-                  />
-                ))}
-              </div>
-              {theme.createdAt && (
-                <p className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60">
-                  Created: {new Date(theme.createdAt).toLocaleDateString()}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-4 border border-white/20 dark:border-white/10">
-        <div className="flex space-x-2">
-          <Input
-            placeholder="New theme name..."
-            value={newThemeName}
-            onChange={(e) => setNewThemeName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && newThemeName.trim()) {
-                createTheme();
-              }
-            }}
-            className="flex-1 bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea] placeholder:text-[#26282b]/50 dark:placeholder:text-[#eaeaea]/50 backdrop-blur-sm"
-          />
-          <Button 
-            onClick={createTheme} 
-            disabled={!newThemeName.trim()}
-            className="bg-[#ff555d] hover:bg-[#ff444c] text-white shadow-lg hover:shadow-xl transition-all hover:scale-105"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Create Theme
-          </Button>
-        </div>
-        <p className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mt-2">
-          Creates a new theme from your current design token configuration
-        </p>
-      </div>
-    </div>
-  );
-};
-
 // Main design system page
 export default function DesignSystem() {
   const [tokens, setTokens] = useState(designTokens);
   const [activePanel, setActivePanel] = useState('tokens');
+  const { theme } = useTheme();
+  const { user, isAuthenticated } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // Super admin check
+  if (!user || user.role !== 'super_admin') {
+    return (
+      <div className="flex-1 flex items-center justify-center min-h-screen">
+        <Alert className="max-w-md">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Design System is only available to Super Administrators.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  // Fetch all themes
+  const { data: themes = [], isLoading: themesLoading } = useQuery({
+    queryKey: ['/api/themes'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/themes');
+      return response.json();
+    },
+  });
+
+  // Create/Update theme mutation
+  const saveThemeMutation = useMutation({
+    mutationFn: async ({ themeId, name, description, isNew }: { themeId?: string; name: string; description?: string; isNew: boolean }) => {
+      const lightTokens = theme === 'light' ? tokens : (await getTokensForMode('light'));
+      const darkTokens = theme === 'dark' ? tokens : (await getTokensForMode('dark'));
+
+      if (isNew) {
+        const response = await apiRequest('POST', '/api/themes', {
+          name,
+          description: description || null,
+          light_mode_tokens: lightTokens,
+          dark_mode_tokens: darkTokens,
+          is_active: true,
+        });
+        return response.json();
+      } else {
+        const response = await apiRequest('PUT', `/api/themes/${themeId}`, {
+          light_mode_tokens: lightTokens,
+          dark_mode_tokens: darkTokens,
+        });
+        return response.json();
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/themes'] });
+      alert('Theme saved successfully!');
+    },
+    onError: (error: any) => {
+      alert(`Failed to save theme: ${error.message}`);
+    },
+  });
+
+  // Helper to get tokens for a specific mode (would need to be implemented based on your token structure)
+  const getTokensForMode = async (mode: 'light' | 'dark'): Promise<any> => {
+    // This would need to fetch or reconstruct tokens for the other mode
+    // For now, returning current tokens as fallback
+    return tokens;
+  };
 
   const updateTokens = useCallback((newTokens: any) => {
     setTokens(newTokens);
   }, []);
 
+  // Handle saving theme
+  const handleSaveTheme = async () => {
+    if (!isAuthenticated || !user) {
+      alert('You must be logged in to save themes');
+      return;
+    }
+
+    // Check theme limit
+    const activeThemes = themes.filter((t: any) => t.is_active);
+    if (activeThemes.length >= 4) {
+      const hasInactive = themes.some((t: any) => !t.is_active);
+      if (!hasInactive) {
+        alert('Maximum of 4 active themes allowed. Please deactivate an existing theme first.');
+        return;
+      }
+    }
+
+    // Prompt for theme name
+    const themeName = prompt('Enter theme name:');
+    if (!themeName) return;
+
+    const description = prompt('Enter theme description (optional):') || undefined;
+
+    // Check if theme with this name already exists
+    const existingTheme = themes.find((t: any) => t.name === themeName);
+    
+    if (existingTheme) {
+      const update = confirm(`Theme "${themeName}" already exists. Update it?`);
+      if (update) {
+        saveThemeMutation.mutate({ themeId: existingTheme.id, name: themeName, description, isNew: false });
+      }
+    } else {
+      saveThemeMutation.mutate({ name: themeName, description, isNew: true });
+    }
+  };
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--page-background)' }}>
-      {/* Header */}
-      <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border-b border-white/20 dark:border-white/10 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-[#26282b] to-[#26282b]/80 dark:from-[#eaeaea] dark:to-[#eaeaea]/80 bg-clip-text text-transparent">
-                  Design System Control Panel
-                </h1>
-                <p className="text-lg text-[#26282b]/70 dark:text-[#eaeaea]/70 mt-2">
-                  Comprehensive tool for managing design tokens, building components, and creating themes
-                </p>
-              </div>
-              <div className="flex space-x-2">
-                <Button 
-                  variant="outline"
-                  className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 hover:bg-white/40 dark:hover:bg-white/20 backdrop-blur-sm"
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Settings
-                </Button>
-                <Button 
-                  className="bg-[#ff555d] hover:bg-[#ff444c] text-white shadow-lg hover:shadow-xl transition-all hover:scale-105"
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  Save All
-                </Button>
-              </div>
-            </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Header */}
+        <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between mb-6" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+          <div>
+            <h1 
+              className="font-bold text-foreground" 
+              style={{ 
+                fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+                fontSize: '110px'
+              }}
+            >
+              design.
+            </h1>
+          </div>
+          <div className="flex space-x-2">
+            <Button 
+              variant="outline"
+              className="bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 hover:bg-white/40 dark:hover:bg-white/20 backdrop-blur-sm"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
+            </Button>
+            {/* Save Theme button removed - now handled by IntegratedThemeEditor */}
+            {/* <Button 
+              onClick={handleSaveTheme}
+              disabled={saveThemeMutation.isPending || !isAuthenticated}
+              className="bg-[#ff8475] hover:bg-[#ff444c] text-white shadow-lg hover:shadow-xl transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {saveThemeMutation.isPending ? 'Saving...' : 'Save Theme'}
+            </Button> */}
           </div>
         </div>
       </div>
@@ -2169,34 +1646,232 @@ export default function DesignSystem() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-8">
-          {/* Fire Theme Panel - Persistent Theme Controller */}
-          <FireThemePanel />
+          {/* Theme Picker - For selecting themes to apply to live app */}
+          {user?.role === 'super_admin' && (
+            <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <CardHeader>
+                <CardTitle>Apply Theme to Live App</CardTitle>
+                <CardDescription>
+                  Select a theme to apply it to the live application. This will change the theme for all users.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ThemePicker maxThemes={4} />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Integrated Theme Editor - Combines Management, Preview, and Editor */}
+          <IntegratedThemeEditor />
+
+          {/* Legacy Theme Management - HIDDEN - Replaced by IntegratedThemeEditor */}
+          <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl hidden">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Theme Management</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Each theme includes both light and dark mode configurations
+                  </p>
+                </div>
+                <Badge variant="outline">
+                  {themes.filter((t: any) => t.is_active).length} / 4 Active
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              {themesLoading ? (
+                <div>Loading themes...</div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {themes.map((savedTheme: any) => (
+                      <Card key={savedTheme.id} className={savedTheme.is_active ? '' : 'opacity-50'}>
+                        <CardHeader>
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-lg">{savedTheme.name}</CardTitle>
+                            <Badge variant={savedTheme.is_active ? 'default' : 'secondary'}>
+                              {savedTheme.is_active ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </div>
+                          {savedTheme.description && (
+                            <p className="text-sm text-muted-foreground">{savedTheme.description}</p>
+                          )}
+                          <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <span>☀️</span>
+                              <span>Light Mode</span>
+                              {savedTheme.light_mode_tokens ? (
+                                <Badge variant="outline" className="ml-1 text-green-600 text-xs">
+                                  ✓
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="ml-1 text-muted-foreground text-xs">
+                                  ✗
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span>🌙</span>
+                              <span>Dark Mode</span>
+                              {savedTheme.dark_mode_tokens ? (
+                                <Badge variant="outline" className="ml-1 text-green-600 text-xs">
+                                  ✓
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="ml-1 text-muted-foreground text-xs">
+                                  ✗
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                // Load light mode tokens
+                                if (savedTheme.light_mode_tokens) {
+                                  setTokens(savedTheme.light_mode_tokens);
+                                  toast({
+                                    title: 'Theme Loaded',
+                                    description: 'Light mode tokens loaded. Switch to dark mode tab to load dark tokens.',
+                                  });
+                                } else {
+                                  toast({
+                                    title: 'No Light Mode',
+                                    description: 'This theme does not have light mode tokens configured.',
+                                    variant: 'destructive',
+                                  });
+                                }
+                              }}
+                            >
+                              Load Light
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                // Load dark mode tokens
+                                if (savedTheme.dark_mode_tokens) {
+                                  setTokens(savedTheme.dark_mode_tokens);
+                                  toast({
+                                    title: 'Theme Loaded',
+                                    description: 'Dark mode tokens loaded. Switch to light mode tab to load light tokens.',
+                                  });
+                                } else {
+                                  toast({
+                                    title: 'No Dark Mode',
+                                    description: 'This theme does not have dark mode tokens configured.',
+                                    variant: 'destructive',
+                                  });
+                                }
+                              }}
+                            >
+                              Load Dark
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={async () => {
+                                // Update only the current mode, preserving the other mode
+                                const currentMode = theme; // 'light' or 'dark'
+                                const currentTokens = tokens;
+                                
+                                // Preserve the other mode's tokens
+                                const lightTokens = currentMode === 'light' 
+                                  ? currentTokens 
+                                  : savedTheme.light_mode_tokens;
+                                const darkTokens = currentMode === 'dark' 
+                                  ? currentTokens 
+                                  : savedTheme.dark_mode_tokens;
+                                
+                                try {
+                                  const response = await apiRequest('PUT', `/api/themes/${savedTheme.id}`, {
+                                    name: savedTheme.name,
+                                    description: savedTheme.description,
+                                    light_mode_tokens: lightTokens,
+                                    dark_mode_tokens: darkTokens,
+                                  });
+                                  
+                                  queryClient.invalidateQueries({ queryKey: ['/api/themes'] });
+                                  toast({
+                                    title: 'Success',
+                                    description: `${currentMode === 'light' ? 'Light' : 'Dark'} mode updated successfully`,
+                                  });
+                                } catch (error: any) {
+                                  toast({
+                                    title: 'Error',
+                                    description: `Failed to update theme: ${error.message}`,
+                                    variant: 'destructive',
+                                  });
+                                }
+                              }}
+                            >
+                              Update Current Mode
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={async () => {
+                                if (confirm(`Deactivate "${savedTheme.name}"?`)) {
+                                  try {
+                                    await apiRequest('PUT', `/api/themes/${savedTheme.id}`, {
+                                      is_active: !savedTheme.is_active,
+                                    });
+                                    queryClient.invalidateQueries({ queryKey: ['/api/themes'] });
+                                    toast({
+                                      title: 'Success',
+                                      description: `Theme ${savedTheme.is_active ? 'deactivated' : 'activated'}`,
+                                    });
+                                  } catch (error: any) {
+                                    toast({
+                                      title: 'Error',
+                                      description: `Failed to update theme: ${error.message}`,
+                                      variant: 'destructive',
+                                    });
+                                  }
+                                }
+                              }}
+                            >
+                              {savedTheme.is_active ? 'Deactivate' : 'Activate'}
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                  
+                  {themes.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>No themes created yet.</p>
+                      <p className="text-sm mt-2">Use the theme editor below to create your first theme with both light and dark modes.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Legacy components - Hidden, now integrated in IntegratedThemeEditor */}
+          <div className="hidden">
+            {/* Live Preview - Moved to top for better workflow */}
+            <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
+              <CardContent className="p-6">
+                <LivePreview tokens={tokens} />
+              </CardContent>
+            </Card>
+
+            {/* Fire Theme Panel - Persistent Theme Controller */}
+            <FireThemePanel />
+          </div>
 
           {/* Design Tokens */}
           <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
             <CardContent className="p-6">
               <TokenEditor tokens={tokens} onUpdate={updateTokens} />
-            </CardContent>
-          </Card>
-
-          {/* Component Builder */}
-          <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
-            <CardContent className="p-6">
-              <ComponentBuilder />
-            </CardContent>
-          </Card>
-
-          {/* Live Preview */}
-          <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
-            <CardContent className="p-6">
-              <LivePreview tokens={tokens} />
-            </CardContent>
-          </Card>
-
-          {/* Theme Manager */}
-          <Card className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl">
-            <CardContent className="p-6">
-              <ThemeManager currentTokens={tokens} />
             </CardContent>
           </Card>
 

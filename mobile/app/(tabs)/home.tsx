@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,9 +12,11 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../services/api';
 import { useTheme } from '../../contexts/ThemeContext';
+import { logger } from '../../services/logger';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNotifications } from '../../contexts/NotificationContext';
 
 interface Trip {
   id: string;
@@ -34,6 +36,9 @@ interface Trip {
   passenger_count: number;
   notes?: string;
   special_requirements?: string;
+  is_group_trip?: boolean;
+  client_group_id?: string;
+  client_group_name?: string;
   programs?: {
     name: string;
     corporate_clients?: {
@@ -60,23 +65,97 @@ export default function HomeScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
+  const { unreadCount } = useNotifications();
 
-  const { data: trips = [], isLoading, refetch } = useQuery<Trip[]>({
+  const { data: trips = [], isLoading, error: tripsError, refetch } = useQuery<Trip[]>({
     queryKey: ['driver-trips'],
     queryFn: () => apiClient.getDriverTrips(),
     enabled: !!user,
+    onError: (error) => {
+      console.error('❌ [Home] Error fetching trips:', error);
+      logger.error('Failed to fetch driver trips', 'HomeScreen', { 
+        error: error instanceof Error ? error.message : String(error),
+        userId: user?.id 
+      });
+    },
+    retry: 2,
+    retryDelay: 1000,
   });
 
-  // Filter trips for today
+  // Debug: Log trip data to see what we're receiving
+  React.useEffect(() => {
+    if (trips.length > 0 && __DEV__) {
+      const groupTrips = trips.filter(t => t.is_group_trip);
+      if (groupTrips.length > 0) {
+        console.log('🔍 [Home] Group trips data:', groupTrips.map(t => ({
+          id: t.id,
+          is_group_trip: t.is_group_trip,
+          client_group_id: t.client_group_id,
+          client_group_name: t.client_group_name,
+          client_name: t.client_name,
+          clients: t.clients
+        })));
+      }
+    }
+  }, [trips]);
+  
+  // Log errors for debugging
+  React.useEffect(() => {
+    if (tripsError) {
+      console.error('🚨 [Home] Trips query error:', {
+        error: tripsError,
+        message: tripsError instanceof Error ? tripsError.message : String(tripsError),
+        userId: user?.id,
+        userEmail: user?.email,
+      });
+    }
+  }, [tripsError, user]);
+
+  // Filter trips for today (handle timezone properly)
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
   const todayTrips = trips.filter((trip) => {
-    const tripDate = new Date(trip.scheduled_pickup_time);
-    return tripDate >= today && tripDate < tomorrow;
+    if (!trip.scheduled_pickup_time) return false;
+    try {
+      const tripDate = new Date(trip.scheduled_pickup_time);
+      // Compare dates only (ignore time for today's filter)
+      const tripDateOnly = new Date(tripDate.getFullYear(), tripDate.getMonth(), tripDate.getDate());
+      const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const isToday = tripDateOnly.getTime() === todayDateOnly.getTime();
+      
+      // Debug logging (only in development)
+      if (__DEV__ && isToday) {
+        console.log('📅 Trip matches today:', {
+          tripId: trip.id,
+          scheduledTime: trip.scheduled_pickup_time,
+          tripDate: tripDateOnly.toISOString(),
+          todayDate: todayDateOnly.toISOString(),
+        });
+      }
+      
+      return isToday;
+    } catch (error) {
+      console.error('Error parsing trip date:', trip.scheduled_pickup_time, error);
+      return false;
+    }
   });
+  
+  // Debug: Log trip filtering results
+  if (__DEV__) {
+    console.log('📊 Trip filtering:', {
+      totalTrips: trips.length,
+      todayTrips: todayTrips.length,
+      today: today.toISOString(),
+      sampleTripDates: trips.slice(0, 3).map(t => ({
+        id: t.id,
+        scheduled: t.scheduled_pickup_time,
+        status: t.status,
+      })),
+    });
+  }
 
   // Get trip statistics
   const getDriverStats = () => {
@@ -97,19 +176,37 @@ export default function HomeScreen() {
   };
 
   const getStatusColor = (status: string) => {
+    // Fallback if tripStatus is not available
+    if (!theme.colors.tripStatus) {
+      switch (status) {
+        case 'scheduled':
+        case 'confirmed':
+          return theme.colors.scheduled || '#3b82f6';
+        case 'in_progress':
+          return theme.colors.inProgress || '#f59e0b';
+        case 'completed':
+          return theme.colors.completed || '#22c55e';
+        case 'cancelled':
+        case 'no_show':
+          return theme.colors.cancelled || '#ef4444';
+        default:
+          return theme.colors.mutedForeground || '#8a8f94';
+      }
+    }
+    
     switch (status) {
       case 'scheduled':
       case 'confirmed':
-        return theme.colors.tripStatus.scheduled;
+        return theme.colors.tripStatus?.scheduled || theme.colors.scheduled || '#3b82f6';
       case 'in_progress':
-        return theme.colors.tripStatus.inProgress;
+        return theme.colors.tripStatus?.inProgress || theme.colors.inProgress || '#f59e0b';
       case 'completed':
-        return theme.colors.tripStatus.completed;
+        return theme.colors.tripStatus?.completed || theme.colors.completed || '#22c55e';
       case 'cancelled':
       case 'no_show':
-        return theme.colors.tripStatus.cancelled;
+        return theme.colors.tripStatus?.cancelled || theme.colors.cancelled || '#ef4444';
       default:
-        return theme.colors.mutedForeground;
+        return theme.colors.mutedForeground || '#8a8f94';
     }
   };
 
@@ -124,6 +221,33 @@ export default function HomeScreen() {
   };
 
   const getDisplayName = (trip: Trip) => {
+    // Debug log for troubleshooting
+    if (trip.is_group_trip && __DEV__) {
+      console.log('🔍 [Home] getDisplayName for group trip:', {
+        id: trip.id,
+        is_group_trip: trip.is_group_trip,
+        client_group_id: trip.client_group_id,
+        client_group_name: trip.client_group_name,
+        client_name: trip.client_name,
+        has_clients: !!trip.clients
+      });
+    }
+    
+    // For group trips, prioritize client_group_name, then client_name (which should be set by API)
+    if (trip.is_group_trip) {
+      if (trip.client_group_name) {
+        console.log('✅ [Home] Using client_group_name:', trip.client_group_name);
+        return trip.client_group_name;
+      }
+      // Fallback: API should set client_name to group name, but check it as fallback
+      if (trip.client_name && trip.client_name !== 'Unknown Client' && trip.client_name.trim() !== '') {
+        console.log('✅ [Home] Using client_name as fallback:', trip.client_name);
+        return trip.client_name;
+      }
+      console.warn('⚠️ [Home] No group name found, returning Unknown Group');
+      return 'Unknown Group';
+    }
+    // For individual trips, use client name
     if (trip.clients?.first_name && trip.clients?.last_name) {
       return `${trip.clients.first_name} ${trip.clients.last_name}`;
     }
@@ -179,6 +303,43 @@ export default function HomeScreen() {
       flex: 1,
       backgroundColor: theme.colors.background,
       paddingTop: insets.top,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: theme.colors.card,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    headerTitle: {
+      ...theme.typography.h2,
+      color: theme.colors.foreground,
+    },
+    notificationBell: {
+      position: 'relative',
+      padding: 8,
+    },
+    badge: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      minWidth: 20,
+      height: 20,
+      borderRadius: 10,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 6,
+      borderWidth: 2,
+      borderColor: theme.colors.card,
+    },
+    badgeText: {
+      ...theme.typography.caption,
+      color: theme.colors.primaryForeground,
+      fontWeight: '700',
+      fontSize: 11,
     },
     content: {
       flex: 1,
@@ -286,8 +447,53 @@ export default function HomeScreen() {
     },
   });
 
+  // Show error state if trips query failed
+  if (tripsError && !isLoading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
+        <Ionicons name="alert-circle-outline" size={48} color={theme.colors.error || '#EF4444'} />
+        <Text style={[styles.cardTitle, { color: theme.colors.error || '#EF4444', marginTop: 16 }]}>
+          Error Loading Trips
+        </Text>
+        <Text style={[styles.emptyStateText, { marginTop: 8, textAlign: 'center' }]}>
+          {tripsError instanceof Error ? tripsError.message : 'Failed to load trips. Please try again.'}
+        </Text>
+        <TouchableOpacity 
+          style={[styles.tripCard, { backgroundColor: theme.colors.primary || '#3B82F6', marginTop: 20, paddingHorizontal: 24, paddingVertical: 12 }]}
+          onPress={() => refetch()}
+        >
+          <Text style={{ color: 'white', fontWeight: '600' }}>Retry</Text>
+        </TouchableOpacity>
+        {__DEV__ && (
+          <Text style={[styles.emptyStateText, { marginTop: 16, fontSize: 10, fontFamily: 'monospace' }]}>
+            {JSON.stringify(tripsError, null, 2)}
+          </Text>
+        )}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
+      {/* Header with Notification Bell */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Today's Trips</Text>
+        <TouchableOpacity
+          style={styles.notificationBell}
+          onPress={() => router.push('/(tabs)/notifications')}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="notifications" size={24} color={theme.colors.foreground} />
+          {unreadCount > 0 && (
+            <View style={[styles.badge, { backgroundColor: theme.colors.error }]}>
+              <Text style={styles.badgeText}>
+                {unreadCount > 99 ? '99+' : unreadCount.toString()}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         style={styles.content}
         refreshControl={
@@ -318,7 +524,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Today's Trips */}
-        <Text style={styles.sectionTitle}>Today's Trips</Text>
+        <Text style={styles.sectionTitle}>Scheduled Trips</Text>
         {todayTrips.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="calendar-outline" size={48} color={theme.colors.mutedForeground} />

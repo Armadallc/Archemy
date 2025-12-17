@@ -164,9 +164,16 @@ function SimpleBookingForm() {
   });
 
   // Fetch client groups based on current hierarchy level
-  const { data: clientGroups = [] } = useQuery({
+  const { data: clientGroups = [], isLoading: clientGroupsLoading, error: clientGroupsError } = useQuery({
     queryKey: ["/api/client-groups", level, effectiveCorporateClient, effectiveProgram],
     queryFn: async () => {
+      console.log('🔍 [Booking Form] Client groups query STARTING:', {
+        level,
+        effectiveProgram,
+        effectiveCorporateClient,
+        enabled: !!(effectiveProgram || effectiveCorporateClient)
+      });
+      
       let endpoint = "/api/client-groups";
       
       if (level === 'program' && effectiveProgram) {
@@ -177,11 +184,45 @@ function SimpleBookingForm() {
         endpoint = `/api/client-groups/program/${effectiveProgram}`;
       }
       
+      console.log('🔍 [Booking Form] Fetching client groups from:', endpoint);
       const response = await apiRequest("GET", endpoint);
-      return await response.json();
+      const data = await response.json();
+      
+      // Debug: Log client groups data to verify member_count
+      console.log('🔍 [Booking Form] Client groups fetched:', {
+        endpoint,
+        level,
+        effectiveProgram,
+        effectiveCorporateClient,
+        count: data?.length || 0,
+        groups: data?.map((g: any) => ({
+          id: g.id,
+          name: g.name,
+          program_id: g.program_id,
+          member_count: g.member_count,
+          memberships_array: g.client_group_memberships,
+          memberships_length: Array.isArray(g.client_group_memberships) ? g.client_group_memberships.length : 'not array',
+          raw_data: g
+        })) || []
+      });
+      
+      return data;
     },
     enabled: !!(effectiveProgram || effectiveCorporateClient),
   });
+  
+  // Debug: Log query status
+  React.useEffect(() => {
+    console.log('🔍 [Booking Form] Client groups query status:', {
+      enabled: !!(effectiveProgram || effectiveCorporateClient),
+      effectiveProgram,
+      effectiveCorporateClient,
+      isLoading: clientGroupsLoading,
+      error: clientGroupsError,
+      dataLength: clientGroups?.length || 0,
+      groups: clientGroups
+    });
+  }, [clientGroupsLoading, clientGroupsError, clientGroups, effectiveProgram, effectiveCorporateClient]);
 
   // Fetch drivers based on current hierarchy level
   const { data: drivers = [] } = useQuery({

@@ -15,7 +15,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 export interface FrequentLocationFilters {
   corporate_client_id?: string;
-  program_id?: string;
+  program_id?: string | string[]; // Support single program ID or array of program IDs
   location_id?: string;
   location_type?: string;
   tag?: string;
@@ -68,7 +68,14 @@ export async function getFrequentLocations(filters: FrequentLocationFilters = {}
       query = query.eq('corporate_client_id', filters.corporate_client_id);
     }
     if (filters.program_id) {
-      query = query.eq('program_id', filters.program_id);
+      // Support both single program ID and array of program IDs
+      if (Array.isArray(filters.program_id)) {
+        if (filters.program_id.length > 0) {
+          query = query.in('program_id', filters.program_id);
+        }
+      } else {
+        query = query.eq('program_id', filters.program_id);
+      }
     }
     if (filters.location_id) {
       query = query.eq('location_id', filters.location_id);

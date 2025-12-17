@@ -76,10 +76,10 @@ const navigationItems: NavigationItem[] = [
     levels: ['corporate', 'client', 'program']
   },
           {
-            id: 'calendar-experiment',
-            label: 'Experiment',
+            id: 'bentobox',
+            label: 'BENTOBOX',
             icon: Calendar,
-            href: '/calendar-experiment',
+            href: '/bentobox',
             permissions: ['view_calendar'],
             levels: ['corporate', 'client', 'program']
           },

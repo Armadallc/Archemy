@@ -3,6 +3,7 @@ import { MapPin, Clock } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import Widget from "./Widget";
+import { cn } from "../../lib/utils";
 import { useLiveTrips, useLiveDrivers } from "../../hooks/useRealtimeData";
 import { useWebSocket } from "../../hooks/useWebSocket";
 import { useRealtimeService } from "../../services/realtimeService";
@@ -215,8 +216,8 @@ export default function LiveOperationsWidget({ className, trips: propTrips, driv
     switch (status) {
       case 'in_progress': return 'bg-yellow-500';
       case 'scheduled': return '';
-      case 'completed': return 'bg-green-500';
-      case 'active': return 'bg-green-500';
+      case 'completed': return '';
+      case 'active': return '';
       case 'break': return 'bg-orange-500';
       default: return '';
     }
@@ -225,6 +226,8 @@ export default function LiveOperationsWidget({ className, trips: propTrips, driv
   const getStatusColorStyle = (status: string): React.CSSProperties => {
     switch (status) {
       case 'scheduled': return { backgroundColor: 'var(--blue-9)' };
+      case 'completed': return { backgroundColor: 'var(--completed)' };
+      case 'active': return { backgroundColor: 'var(--completed)' };
       default: return {};
     }
   };
@@ -247,17 +250,11 @@ export default function LiveOperationsWidget({ className, trips: propTrips, driv
     <Widget
       title="Operations"
       size="large"
-      className={className}
+      className={cn("max-h-full overflow-hidden", className)}
       loading={isLoading}
       error={hasError ? 'Failed to load live data' : undefined}
       actions={
         <div className="flex items-center space-x-2">
-          {/* Real-time connection status */}
-          <div className="flex items-center space-x-1">
-            <span className="text-xs text-muted-foreground">
-              {connectionStatus === 'connected' ? 'Live' : 'Offline'}
-            </span>
-          </div>
           <Button variant="outline" size="sm">
             <MapPin className="h-4 w-4 mr-1" />
             View Map
@@ -265,7 +262,7 @@ export default function LiveOperationsWidget({ className, trips: propTrips, driv
         </div>
       }
     >
-      <div className="space-y-6">
+      <div className="space-y-2 overflow-y-auto" style={{ maxHeight: 'calc(375px - 80px)', height: 'auto' }}>
         {/* Section 1: Today's Trips */}
         <div>
           <h4 className="text-sm font-medium text-muted-foreground mb-3">Today's Trips</h4>
@@ -274,7 +271,7 @@ export default function LiveOperationsWidget({ className, trips: propTrips, driv
               todaysTrips.map((trip: any) => (
                 <div key={trip.id} className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--gray-1)' }}>
                   <div className="flex items-center space-x-3">
-                    <div className={`w-3 h-3 rounded-full ${getStatusColor(trip.status)}`} style={getStatusColorStyle(trip.status)} />
+                    <div className={`w-3 h-3 rounded-full ${getStatusColor(trip.status)}`} style={trip.status === 'completed' ? { backgroundColor: 'var(--completed)' } : getStatusColorStyle(trip.status)} />
                     <div>
                       <p className="font-medium text-sm text-gray-900 dark:text-gray-100">{trip.client}</p>
                       <div className="flex items-center space-x-2 text-xs text-muted-foreground">
@@ -309,10 +306,10 @@ export default function LiveOperationsWidget({ className, trips: propTrips, driv
                 <div key={activity.id} className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--gray-1)' }}>
                   <div className="flex items-center space-x-3">
                     <div className={`w-3 h-3 rounded-full ${
-                      activity.type === 'trip_created' ? 'bg-green-500' :
+                      activity.type === 'trip_created' ? '' :
                       activity.type === 'trip_cancelled' ? 'bg-red-500' :
                       'bg-yellow-500'
-                    }`} />
+                    }`} style={activity.type === 'trip_created' ? { backgroundColor: 'var(--completed)' } : {}} />
                     <div>
                       <p className="font-medium text-sm text-gray-900 dark:text-gray-100">{activity.message}</p>
                       <p className="text-xs text-muted-foreground">
