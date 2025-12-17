@@ -386,3 +386,4 @@ async syncTenantUsersToContacts(ownerUserId: string) {
 - **External vs App Users**: Use `is_app_user` flag and `user_id` foreign key to distinguish.
 - **Categories**: Predefined list, no user-created categories for now.
 - **Filtering**: All filters should work together (AND logic).
+

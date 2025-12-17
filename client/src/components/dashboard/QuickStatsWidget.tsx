@@ -1,5 +1,6 @@
 import React from "react";
 import Widget from "./Widget";
+import { cn } from "../../lib/utils";
 
 interface QuickStatsWidgetProps {
   className?: string;
@@ -15,28 +16,28 @@ export default function QuickStatsWidget({ className, trips = [], shadow }: Quic
   return (
     <Widget
       title="Quick Stats"
-      size="medium"
+      size="small"
       className={className}
       shadow={shadow}
     >
-      <div className="grid grid-cols-3 gap-4">
-        <div className="text-center shadow-xl flex flex-col justify-center items-center" style={{ height: '75px' }}>
+      <div className="grid grid-cols-3 gap-3">
+        <div className="text-center shadow-xl flex flex-col justify-center items-center p-3 rounded-lg" style={{ minHeight: '75px', backgroundColor: 'var(--card)' }}>
           <div className="text-2xl font-bold text-foreground">
             {completedCount}
           </div>
-          <div className="text-xs text-foreground-secondary flex flex-col justify-center items-center">Completed</div>
+          <div className="text-xs text-foreground-secondary">Completed</div>
         </div>
-        <div className="text-center shadow-xl flex flex-col justify-center items-center" style={{ height: '75px' }}>
+        <div className="text-center shadow-xl flex flex-col justify-center items-center p-3 rounded-lg" style={{ minHeight: '75px', backgroundColor: 'var(--card)' }}>
           <div className="text-2xl font-bold text-foreground">
             {inProgressCount}
           </div>
-          <div className="text-xs text-foreground-secondary flex flex-col justify-center items-center">In Progress</div>
+          <div className="text-xs text-foreground-secondary">In Progress</div>
         </div>
-        <div className="text-center shadow-xl flex flex-col justify-center items-center" style={{ height: '75px' }}>
+        <div className="text-center shadow-xl flex flex-col justify-center items-center p-3 rounded-lg" style={{ minHeight: '75px', backgroundColor: 'var(--card)' }}>
           <div className="text-2xl font-bold text-foreground">
             {scheduledCount}
           </div>
-          <div className="text-xs text-foreground-secondary flex flex-col justify-center items-center">Scheduled</div>
+          <div className="text-xs text-foreground-secondary">Scheduled</div>
         </div>
       </div>
     </Widget>

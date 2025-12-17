@@ -80,7 +80,7 @@ export default function FleetStatusWidget({ className, drivers, trips, shadow }:
     <Widget
       title="Fleet Status"
       icon={<MapPin className="h-5 w-5" />}
-      size="large"
+      size="full"
       className={className}
       shadow={shadow}
       actions={

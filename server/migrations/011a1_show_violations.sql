@@ -72,3 +72,4 @@ WHERE code IS NULL
    OR code = ''
    OR code !~ '^[A-Z]{2,5}$'
 ORDER BY issue_type, name;
+

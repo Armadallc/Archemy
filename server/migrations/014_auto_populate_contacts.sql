@@ -127,3 +127,4 @@ GRANT EXECUTE ON FUNCTION sync_tenant_users_to_contacts(VARCHAR) TO service_role
 
 COMMENT ON FUNCTION auto_populate_tenant_contacts() IS 'Trigger function to auto-populate contacts when a new user is created (currently not used - manual sync preferred)';
 COMMENT ON FUNCTION sync_tenant_users_to_contacts(VARCHAR) IS 'Manually sync all tenant users to a specific user''s contacts. Returns count of contacts created/updated.';
+

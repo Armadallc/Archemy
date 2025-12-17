@@ -102,3 +102,4 @@ SELECT
     COUNT(*) FILTER (WHERE code !~ '^[A-Z]{2,5}$') as format_violations,
     COUNT(*) FILTER (WHERE code ~ '^[A-Z]{2,5}$') as valid_codes
 FROM locations;
+

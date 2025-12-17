@@ -234,3 +234,4 @@ UNION ALL
 SELECT 'locations' as table_name, id, name, code 
 FROM locations 
 WHERE code !~ '^[A-Z]{2,5}$';
+

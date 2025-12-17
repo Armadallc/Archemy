@@ -28,3 +28,4 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Add comment to table
 COMMENT ON TABLE contact_categories IS 'Predefined categories for contacts. The "other" category allows custom text input.';
+

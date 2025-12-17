@@ -57,3 +57,4 @@ COMMENT ON COLUMN contacts.owner_user_id IS 'User who owns this contact (persona
 COMMENT ON COLUMN contacts.user_id IS 'Link to users table if this contact is an app user';
 COMMENT ON COLUMN contacts.is_app_user IS 'True if this contact is linked to an app user, false if external contact';
 COMMENT ON COLUMN contacts.category_custom_text IS 'Custom text for "Other" category (only used when category_id is "other")';
+

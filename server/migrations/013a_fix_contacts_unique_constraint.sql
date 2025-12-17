@@ -27,3 +27,4 @@ UNIQUE (owner_user_id, user_id);
 
 COMMENT ON CONSTRAINT uq_contacts_owner_app_user ON contacts IS 
 'Ensures each owner can only have one contact per app user. External contacts (user_id IS NULL) can have duplicates since NULL != NULL in unique constraints.';
+

@@ -304,7 +304,7 @@ export default function ShadcnDashboardMigrated() {
           <div className="flex-1 overflow-auto">
           <div className="space-y-6">
             {/* Stats Cards - Shadcn Style */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" style={{ marginTop: '24px' }}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" style={{ marginTop: '16px' }}>
               <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Total Trips</CardTitle>
@@ -355,27 +355,20 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
 
-            {/* Side-by-side layout: Widgets (50%) | Activity Log (50%) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-              {/* Left Side: Widgets Section (50%) */}
-              <div className="space-y-6 flex flex-col">
-                {/* Live Operations Widget */}
-                <div className="shadow-xl">
-                  <LiveOperationsWidget trips={realTimeTrips} drivers={realTimeDrivers} />
-                </div>
-
-                {/* Quick Stats Widget */}
-                <QuickStatsWidget trips={realTimeTrips} shadow="xl" />
-
-                {/* Fleet Status Widget */}
-                <div style={{ width: '761px' }}>
-                  <FleetStatusWidget drivers={realTimeDrivers} trips={realTimeTrips} shadow="xl" />
+            {/* Operations and Activity Log - Single Row, Reduced Size (40-50% smaller) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" style={{ height: '375px', position: 'relative', zIndex: 10, overflow: 'hidden' }}>
+              {/* Left Side: Live Operations Widget */}
+              <div className="overflow-hidden" style={{ position: 'relative', zIndex: 10, height: '375px', maxHeight: '375px' }}>
+                <div className="shadow-xl" style={{ height: '375px', maxHeight: '375px', overflow: 'hidden' }}>
+                  <div style={{ height: '375px', maxHeight: '375px', overflow: 'hidden' }}>
+                    <LiveOperationsWidget trips={realTimeTrips} drivers={realTimeDrivers} className="max-h-[375px]" />
+                  </div>
                 </div>
               </div>
 
-              {/* Right Side: Activity Log (50%) - Scrollable, matching left column height */}
-              <div className="flex flex-col">
-                <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl flex flex-col w-full" style={{ height: '895px', paddingTop: '12px', paddingBottom: '24px', borderWidth: '1px', borderStyle: 'solid', borderColor: 'var(--color-aqua)', width: '761px' }}>
+              {/* Right Side: Activity Log */}
+              <div className="flex flex-col overflow-hidden" style={{ position: 'relative', zIndex: 10, height: '375px', maxHeight: '375px' }}>
+                <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl flex flex-col w-full h-full" style={{ height: '375px', maxHeight: '375px', paddingTop: '12px', paddingBottom: '16px', borderWidth: '1px', borderStyle: 'solid', borderColor: 'var(--color-aqua)' }}>
                   <CardContent className="p-0 flex-1 overflow-hidden flex flex-col min-h-0">
                     <ActivityFeed />
                   </CardContent>
@@ -383,13 +376,23 @@ export default function ShadcnDashboardMigrated() {
               </div>
             </div>
 
+            {/* Quick Stats - Full Width Row Below */}
+            <div className="mt-4" style={{ position: 'relative', zIndex: 20 }}>
+              <QuickStatsWidget trips={realTimeTrips} shadow="xl" />
+            </div>
+
+            {/* Fleet Status Widget - Full Width */}
+            <div className="mt-4" style={{ position: 'relative', zIndex: 30 }}>
+              <FleetStatusWidget drivers={realTimeDrivers} trips={realTimeTrips} shadow="xl" />
+            </div>
+
             {/* Interactive Map - Preserved */}
-            <div className="mt-6">
+            <div className="mt-4">
               <InteractiveMapWidget shadow="xl" />
             </div>
 
             {/* Analytics & Management - Preserved */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <EnhancedAnalyticsWidget shadow="xl" />
               <TaskManagementWidget shadow="xl" />
               <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
@@ -443,7 +446,7 @@ export default function ShadcnDashboardMigrated() {
           <div className="flex-1 overflow-auto">
           <div className="space-y-6">
             {/* Stats Cards - Shadcn Style */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" style={{ marginTop: '24px' }}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" style={{ marginTop: '16px' }}>
               <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Today's Trips</CardTitle>
@@ -499,7 +502,7 @@ export default function ShadcnDashboardMigrated() {
 
 
             {/* Live Operations Widgets - Preserved */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="col-span-full">
                 <LiveOperationsWidget trips={realTimeTrips} drivers={realTimeDrivers} />
               </div>
@@ -509,12 +512,12 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
             {/* Interactive Map - Preserved */}
-            <div className="mt-6">
+            <div className="mt-4">
               <InteractiveMapWidget shadow="xl" />
             </div>
 
             {/* Analytics & Management - Preserved */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <EnhancedAnalyticsWidget shadow="xl" />
               <TaskManagementWidget shadow="xl" />
               <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
@@ -633,7 +636,7 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
             {/* Live Operations Widgets - Preserved */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="col-span-full">
                 <LiveOperationsWidget trips={realTimeTrips} drivers={realTimeDrivers} />
               </div>
@@ -643,12 +646,12 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
             {/* Interactive Map - Preserved */}
-            <div className="mt-6">
+            <div className="mt-4">
               <InteractiveMapWidget shadow="xl" />
             </div>
 
             {/* Analytics & Management - Preserved */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <EnhancedAnalyticsWidget shadow="xl" />
               <TaskManagementWidget shadow="xl" />
               <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
@@ -769,7 +772,7 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
             {/* Live Operations Widgets - Preserved */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="col-span-full">
                 <LiveOperationsWidget trips={realTimeTrips} drivers={realTimeDrivers} />
               </div>
@@ -779,12 +782,12 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
             {/* Interactive Map - Preserved */}
-            <div className="mt-6">
+            <div className="mt-4">
               <InteractiveMapWidget shadow="xl" />
             </div>
 
             {/* Analytics & Management - Preserved */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <EnhancedAnalyticsWidget shadow="xl" />
               <TaskManagementWidget shadow="xl" />
               <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
@@ -900,7 +903,7 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
             {/* Live Operations Widgets - Preserved */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="col-span-full">
                 <LiveOperationsWidget trips={realTimeTrips} drivers={realTimeDrivers} />
               </div>
@@ -910,12 +913,12 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
             {/* Interactive Map - Preserved */}
-            <div className="mt-6">
+            <div className="mt-4">
               <InteractiveMapWidget shadow="xl" />
             </div>
 
             {/* Analytics & Management - Preserved */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <EnhancedAnalyticsWidget shadow="xl" />
               <TaskManagementWidget shadow="xl" />
               <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>

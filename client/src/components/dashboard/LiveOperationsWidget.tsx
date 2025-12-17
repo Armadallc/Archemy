@@ -3,6 +3,7 @@ import { MapPin, Clock } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import Widget from "./Widget";
+import { cn } from "../../lib/utils";
 import { useLiveTrips, useLiveDrivers } from "../../hooks/useRealtimeData";
 import { useWebSocket } from "../../hooks/useWebSocket";
 import { useRealtimeService } from "../../services/realtimeService";
@@ -249,7 +250,7 @@ export default function LiveOperationsWidget({ className, trips: propTrips, driv
     <Widget
       title="Operations"
       size="large"
-      className={className}
+      className={cn("max-h-full overflow-hidden", className)}
       loading={isLoading}
       error={hasError ? 'Failed to load live data' : undefined}
       actions={
@@ -261,7 +262,7 @@ export default function LiveOperationsWidget({ className, trips: propTrips, driv
         </div>
       }
     >
-      <div className="space-y-6">
+      <div className="space-y-2 overflow-y-auto" style={{ maxHeight: 'calc(375px - 80px)', height: 'auto' }}>
         {/* Section 1: Today's Trips */}
         <div>
           <h4 className="text-sm font-medium text-muted-foreground mb-3">Today's Trips</h4>

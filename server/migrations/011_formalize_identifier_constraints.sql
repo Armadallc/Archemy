@@ -337,3 +337,4 @@ ORDER BY table_name;
 -- 2. Add validation in frontend forms to prevent invalid codes
 -- 3. Consider creating a helper function for hierarchical display:
 --    [Tenant]-[Program]-[Location]-[SCID] → MON-MC-LOW-MC-0157
+

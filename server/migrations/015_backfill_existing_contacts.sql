@@ -45,3 +45,4 @@ SELECT
     COUNT(*) FILTER (WHERE is_app_user = true) as app_user_contacts,
     COUNT(*) FILTER (WHERE is_app_user = false) as external_contacts
 FROM contacts;
+

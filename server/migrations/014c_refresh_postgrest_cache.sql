@@ -47,3 +47,4 @@ ORDER BY p.proname;
 -- 1. Restart your Supabase instance (if self-hosted)
 -- 2. Wait a few minutes for auto-refresh
 -- 3. Contact Supabase support if using hosted Supabase
+

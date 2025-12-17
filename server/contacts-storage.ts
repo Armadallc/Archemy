@@ -376,3 +376,4 @@ export const contactsStorage = {
     return data || [];
   },
 };
+
