@@ -381,6 +381,7 @@ function CreateLocationForm({
   const [formData, setFormData] = useState({
     name: '',
     address: '',
+    description: '',
     program_id: '',
     is_active: true,
   });
@@ -395,6 +396,7 @@ function CreateLocationForm({
     setFormData({
       name: '',
       address: '',
+      description: '',
       program_id: '',
       is_active: true,
     });
@@ -464,6 +466,16 @@ function CreateLocationForm({
             placeholder="Enter location address"
             rows={3}
             required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="loc-description">Description</Label>
+          <Textarea
+            id="loc-description"
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            placeholder="Enter a short description of the location"
+            rows={3}
           />
         </div>
       </div>

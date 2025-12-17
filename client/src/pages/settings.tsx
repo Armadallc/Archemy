@@ -44,6 +44,8 @@ import { ThemeSelector } from "../components/ThemeSelector";
 import { ThemePicker } from "../components/design-system/ThemePicker";
 import { IntegratedThemeEditor } from "../components/design-system/IntegratedThemeEditor";
 import { Flag, Palette } from "lucide-react";
+import { UserAvatar } from "../components/users/UserAvatar";
+import ContactsTab from "../components/settings/ContactsTab";
 
 interface CorporateClientSettings {
   id: string;
@@ -74,16 +76,7 @@ interface SystemSettings {
   language: string;
 }
 
-interface ContactUser {
-  id: string;
-  user_name: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone?: string;
-  role: string;
-  is_active: boolean;
-}
+// ContactUser interface moved to ContactsTab component
 
 // Define which tabs are visible for each role
 function getVisibleTabs(userRole?: string) {
@@ -237,24 +230,7 @@ export default function Settings() {
     refetchOnMount: true,
   });
 
-  // Fetch contacts for the current hierarchy level
-  const { data: contacts = [] } = useQuery<ContactUser[]>({
-    queryKey: ["/api/contacts", level, selectedCorporateClient, selectedProgram],
-    queryFn: async () => {
-      let endpoint = "/api/contacts";
-      
-      if (level === 'program' && selectedProgram) {
-        endpoint = `/api/contacts/program/${selectedProgram}`;
-      } else if (level === 'client' && selectedCorporateClient) {
-        endpoint = `/api/contacts/corporate-client/${selectedCorporateClient}`;
-      }
-      
-      const response = await apiRequest("GET", endpoint);
-      const data = await response.json();
-      return data;
-    },
-    enabled: true,
-  });
+  // Contacts are now handled by ContactsTab component
 
   // Update active tab if current tab is not visible
   useEffect(() => {
@@ -609,49 +585,7 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="contacts" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Contacts Directory</CardTitle>
-              <CardDescription>
-                Directory of all users in your {level} with their contact information.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {contacts.length > 0 ? (
-                  <div className="grid gap-4">
-                    {contacts.map((contact) => (
-                      <div key={contact.id} className="flex items-center space-x-4 p-4 border rounded-lg">
-                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                          <User className="w-5 h-5 text-gray-600" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-medium">{contact.first_name} {contact.last_name}</h3>
-                          <p className="text-sm text-gray-600">{contact.email}</p>
-                          {contact.phone && (
-                            <p className="text-sm text-gray-600">{contact.phone}</p>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant={contact.is_active ? "default" : "secondary"}>
-                            {contact.is_active ? "Active" : "Inactive"}
-                          </Badge>
-                          <Badge variant="outline">
-                            {contact.role.replace('_', ' ').toUpperCase()}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p>No contacts found for the current {level} level.</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <ContactsTab />
         </TabsContent>
 
         <TabsContent value="feature-flags" className="space-y-6">

@@ -221,6 +221,94 @@ After migrations are complete:
 3. Create lookup endpoint: `GET /api/clients/lookup?scid=MC-0158`
 4. Update UI to display human-readable IDs (SCID) instead of UUIDs
 
+### 012_create_contact_categories.sql
+**Purpose**: Create table for predefined contact categories
+
+**What it does**:
+1. Creates `contact_categories` table with 8 predefined categories
+2. Categories: Recovery, Comp/Rest, Liaison, Case Management, Referrals, Clinical, CMA, Other
+3. The "Other" category allows custom text input (`allows_custom_text = true`)
+
+**When to run**: 
+- **Run this first** before migration 013 (contacts table depends on categories)
+- Part of Contacts Tab feature implementation
+
+### 013_create_contacts_table.sql
+**Purpose**: Create table for user contacts (personal phone book)
+
+**What it does**:
+1. Creates `contacts` table for user-created and auto-populated contacts
+2. Supports both app users (linked via `user_id`) and external contacts
+3. Includes fields for: name, email, phone, organization, role, category, program, location
+4. Includes `category_custom_text` for "Other" category custom descriptions
+5. Creates indexes for performance
+6. Creates unique constraint to prevent duplicate app user contacts per owner
+
+**When to run**: 
+- **Run this after migration 012** (depends on contact_categories table)
+- Part of Contacts Tab feature implementation
+
+**Important**: After running 013, you should also run `013a_fix_contacts_unique_constraint.sql` to fix the unique constraint for ON CONFLICT support.
+
+### 013a_fix_contacts_unique_constraint.sql
+**Purpose**: Fix unique constraint to work with ON CONFLICT in sync functions
+
+**What it does**:
+1. Drops the partial unique index from migration 013
+2. Cleans up any duplicate app user contacts
+3. Creates a proper unique constraint that works with ON CONFLICT
+4. Allows external contacts (user_id IS NULL) to have duplicates
+
+**When to run**: 
+- **Run this immediately after migration 013**
+- Required for the sync functions in migration 014 to work properly
+- Safe to run if you already ran 013 (cleans up duplicates first)
+
+### 014_auto_populate_contacts.sql
+**Purpose**: Functions to auto-populate contacts from tenant users
+
+**What it does**:
+1. Creates `auto_populate_tenant_contacts()` trigger function (not enabled by default)
+2. Creates `sync_tenant_users_to_contacts(user_id)` function for manual sync
+3. Sync function adds all users from same tenant as contacts
+4. Updates existing contacts if user info changed
+5. Adds SECURITY DEFINER and GRANT EXECUTE permissions for RPC access
+
+**When to run**: 
+- **Run this after migration 013** (depends on contacts table)
+- Part of Contacts Tab feature implementation
+- Note: Trigger is commented out - manual sync via API is preferred
+
+**If you get RPC errors**: If you already ran migration 014 before it included the GRANT statements, run `014a_fix_contacts_rpc_permissions.sql` to add the missing permissions.
+
+### 014a_fix_contacts_rpc_permissions.sql
+**Purpose**: Fix missing RPC permissions for sync_tenant_users_to_contacts function
+
+**What it does**:
+1. Adds SECURITY DEFINER to the function (if not already present)
+2. Grants EXECUTE permission to authenticated and service_role
+3. Verifies the function exists before applying changes
+
+**When to run**: 
+- **Only needed if you ran migration 014 before it included GRANT statements**
+- Run this if you get "Could not find the function" errors when syncing contacts
+- Safe to run multiple times (idempotent)
+
+### 015_backfill_existing_contacts.sql
+**Purpose**: Initial sync of tenant users to contacts for all existing users
+
+**What it does**:
+1. Loops through all active users with corporate_client_id
+2. Calls `sync_tenant_users_to_contacts()` for each user
+3. Populates contacts table with tenant users automatically
+4. Provides summary statistics of contacts created
+
+**When to run**: 
+- **Run this after migrations 012, 013, and 014** to populate contacts for existing users
+- This is optional - users can also sync manually via the UI "Sync Tenant Users" button
+- Provides a one-time backfill for all existing users
+- After running, check the output for total contacts synced
+
 ## Rollback (if needed)
 
 If you need to rollback:

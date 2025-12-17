@@ -75,6 +75,7 @@ interface Location {
   id: string;
   name?: string;
   address: string;
+  description?: string;
   phone?: string;
   contact_person?: string;
   program_id: string;
@@ -1188,6 +1189,21 @@ export default function CorporateClientCards() {
                                                         placeholder="Enter contact person name"
                                                       />
                                                     </div>
+                                                    <div className="space-y-2 md:col-span-2">
+                                                      <Label htmlFor={`loc-description-${location.id}`}>Description</Label>
+                                                      <Textarea
+                                                        id={`loc-description-${location.id}`}
+                                                        value={editingLocation.description || ''}
+                                                        onChange={(e) =>
+                                                          setEditingLocations({
+                                                            ...editingLocations,
+                                                            [location.id]: { ...editingLocation, description: e.target.value },
+                                                          })
+                                                        }
+                                                        placeholder="Enter a short description of the location"
+                                                        rows={3}
+                                                      />
+                                                    </div>
                                                   </div>
                                                   <div className="flex justify-end gap-2">
                                                     <Button
@@ -1218,6 +1234,11 @@ export default function CorporateClientCards() {
                                                       <div className="text-sm text-muted-foreground truncate">
                                                         {location.address || 'No address provided'}
                                                       </div>
+                                                      {location.description && (
+                                                        <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                                          {location.description}
+                                                        </div>
+                                                      )}
                                                     </div>
                                                   </div>
                                                   <div className="flex items-center gap-2">
