@@ -8,16 +8,17 @@ title = "HALCYON Gitleaks Configuration"
 [allowlist]
 description = "Allowlist for known false positives"
 
-# Allowlist specific paths if needed (uncomment and add as needed)
-# Note: Gitleaks uses glob patterns, but some versions may require escaping
+# Allowlist specific paths if needed
+# Note: Gitleaks v7 uses regex patterns, not glob patterns
+# Use .* for "any characters" and \. for literal dots
 paths = [
-  "**/test/**",
-  "**/*.md",
-  "**/*.woff2",
-  "**/*.woff",
-  "**/*.ttf",
-  "**/*.otf",
-  "client/public/fonts/**",
+  '''.*/test/.*''',           # Any path containing /test/
+  '''.*\.md$''',              # Any .md file
+  '''.*\.woff2$''',           # Font files (binary, can trigger false positives)
+  '''.*\.woff$''',            # Font files
+  '''.*\.ttf$''',             # Font files
+  '''.*\.otf$''',             # Font files
+  '''client/public/fonts/.*''', # Font directory
 ]
 
 # Allowlist specific commits (if needed)
