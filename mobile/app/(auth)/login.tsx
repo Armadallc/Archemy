@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -19,6 +19,26 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const { theme } = useTheme();
+  const navigation = useNavigation();
+
+  // Configure header with charcoal background
+  useLayoutEffect(() => {
+    const charcoalColor = 'rgba(52, 52, 52, 1)'; // Charcoal color
+    const cloudColor = '#f4f4f4'; // Cloud color from palette
+    navigation.setOptions({
+      headerShown: true,
+      title: '', // Remove "(auth)/login" text
+      headerStyle: {
+        backgroundColor: charcoalColor,
+        borderBottomColor: charcoalColor,
+        borderBottomWidth: 1,
+      },
+      headerTintColor: cloudColor, // Cloud text for contrast on charcoal
+      headerTitleStyle: {
+        color: cloudColor,
+      },
+    });
+  }, [navigation]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -49,6 +69,7 @@ export default function LoginScreen() {
   const styles = StyleSheet.create({
     container: {
       flex: 1,
+      ...(Platform.OS === 'web' && { height: 714 }),
       backgroundColor: theme.colors.background,
     },
     content: {
@@ -107,14 +128,6 @@ export default function LoginScreen() {
       color: theme.colors.primaryForeground,
       fontWeight: '600',
     },
-    footer: {
-      alignItems: 'center',
-    },
-    footerText: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.mutedForeground,
-      textAlign: 'center',
-    },
   });
 
   return (
@@ -124,7 +137,7 @@ export default function LoginScreen() {
     >
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>MONARCH DRIVER</Text>
+          <Text style={styles.title}>HALCYON DRIVE</Text>
           <Text style={styles.subtitle}>Sign in to your account</Text>
         </View>
 
@@ -164,12 +177,6 @@ export default function LoginScreen() {
               {isLoading ? 'Signing In...' : 'Sign In'}
             </Text>
           </TouchableOpacity>
-        </View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            For demo purposes, use any email/password
-          </Text>
         </View>
       </View>
     </KeyboardAvoidingView>

@@ -13,12 +13,12 @@ if (Platform.OS !== 'web') {
 }
 
 // Use environment variable if available
-// For physical devices, use your Mac's IP address (e.g., http://192.168.12.215:8081)
-// For simulator, localhost works fine
-// Backend API runs on port 8081, Expo dev server runs on port 8082
+// Production: Use Render backend URL (e.g., https://halcyon-backend.onrender.com)
+// Development: Use localhost or local IP for physical devices
+// Backend API runs on port 8081 locally, Render uses port 443 (HTTPS)
 const API_BASE_URL = Platform.OS === 'web' 
-  ? 'http://localhost:8081' 
-  : (process.env.EXPO_PUBLIC_API_URL || (__DEV__ ? 'http://localhost:8081' : 'http://192.168.12.215:8081'));
+  ? (process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8081')
+  : (process.env.EXPO_PUBLIC_API_URL || (__DEV__ ? 'http://localhost:8081' : 'https://halcyon-backend.onrender.com'));
 
 interface Trip {
   id: string;
