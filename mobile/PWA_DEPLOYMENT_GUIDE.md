@@ -171,13 +171,47 @@ After running `npm run build:web:prod`, the PWA will be in:
 2. **Check backend**: Verify WebSocket server is running on Render
 3. **Check firewall**: Ensure WebSocket connections aren't blocked
 
+## PWA vs Native Apps - Important Clarification
+
+### ✅ You Can Have Both!
+
+**PWA and native apps are completely independent:**
+- **PWA**: Web build (`expo export:web`) → Static site on Render
+- **Native iOS**: Native build (`eas build --platform ios`) → App Store
+- **Native Android**: Native build (`eas build --platform android`) → Play Store
+
+**Same codebase, different build outputs.**
+
+### Your app.json Already Supports All Three:
+
+```json
+{
+  "ios": { ... },      // Native iOS app config
+  "android": { ... },  // Native Android app config  
+  "web": { ... }       // PWA config (just added)
+}
+```
+
+### Deployment Strategy:
+
+1. **Now**: Deploy PWA for testing (fast, no app store wait)
+2. **Later**: Build native apps when ready (same codebase, different build)
+3. **Both**: Can run simultaneously - users choose their preferred method
+
+### No Conflicts:
+
+- ✅ PWA doesn't affect native app builds
+- ✅ Native app configs are separate from web config
+- ✅ Can build native apps anytime using `eas build`
+- ✅ Same codebase works for all platforms
+
 ## Next Steps
 
 Once the PWA is working:
 1. ✅ Test with real users
 2. ✅ Gather feedback
 3. ✅ Fix any issues
-4. ✅ When ready, build native apps for app stores
+4. ✅ When ready, build native apps for app stores (using same codebase!)
 
 ## Advantages of PWA First
 
@@ -185,3 +219,4 @@ Once the PWA is working:
 - **Broader testing**: Easy to share URL with testers
 - **Lower barrier**: No app store accounts needed initially
 - **Same codebase**: Can build native apps later from same code
+- **No conflicts**: PWA and native apps are completely independent
