@@ -28,9 +28,14 @@ class WebSocketService {
   private heartbeatInterval: NodeJS.Timeout | null = null;
 
   constructor() {
-    // Use local IP for mobile, localhost for web
-    const baseUrl = Platform.OS === 'web' ? 'localhost' : '192.168.12.215';
-    this.url = `ws://${baseUrl}:8081/ws`;
+    // Use environment variable or default to Render backend
+    // Production: Use Render WebSocket URL (wss:// for secure WebSocket)
+    // Development: Use localhost or local IP
+    const wsBaseUrl = process.env.EXPO_PUBLIC_WS_URL || 
+      (__DEV__ 
+        ? (Platform.OS === 'web' ? 'ws://localhost:8081' : 'ws://192.168.12.215:8081')
+        : 'wss://halcyon-backend.onrender.com');
+    this.url = `${wsBaseUrl}/ws`;
   }
 
   private async getAuthToken(): Promise<string | null> {
