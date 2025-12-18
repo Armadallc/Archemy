@@ -63,17 +63,28 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist"),
     emptyOutDir: true,
+    // Ensure proper module format for production
+    target: 'esnext',
+    minify: 'esbuild',
     commonjsOptions: {
       include: [/node_modules/],
       transformMixedEsModules: true,
     },
     rollupOptions: {
       output: {
+        // Ensure proper chunk ordering - React must load first
+        chunkFileNames: (chunkInfo) => {
+          // Ensure React chunk loads first by giving it a name that sorts first
+          if (chunkInfo.name === 'react-vendor') {
+            return 'assets/react-vendor-[hash].js';
+          }
+          return 'assets/[name]-[hash].js';
+        },
         manualChunks: (id) => {
           // Vendor chunks - separate large dependencies
           if (id.includes('node_modules')) {
             // CRITICAL: Force React into a single chunk to prevent multiple instances
-            // This is especially important for Cursor's browser which seems to load multiple React versions
+            // React must be in its own chunk and load first
             if (id.includes('/react/') || 
                 id.includes('/react-dom/') || 
                 id.includes('/react/jsx-runtime') || 
@@ -115,7 +126,6 @@ export default defineConfig({
             return 'vendor-other';
           }
         },
-        chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]',
       },
