@@ -36,24 +36,25 @@ export default function MenuScreen() {
     loadNavPreference();
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (Platform.OS === 'web') {
-      Alert.alert('Logout', 'Are you sure you want to logout?', [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await logout();
-              router.replace('/(auth)/login');
-            } catch (error) {
-              console.error('Logout error:', error);
-              Alert.alert('Error', 'Logout failed. Please try again.');
-            }
-          },
-        },
-      ]);
+      // Use window.confirm for web as Alert.alert may not work properly
+      const confirmed = typeof window !== 'undefined' && window.confirm('Are you sure you want to logout?');
+      if (!confirmed) return;
+      
+      try {
+        await logout();
+        // Use full page reload on web to ensure all state is cleared
+        if (typeof window !== 'undefined') {
+          window.location.href = '/';
+        }
+      } catch (error) {
+        console.error('Logout error:', error);
+        // Even if logout fails, try to navigate
+        if (typeof window !== 'undefined') {
+          window.location.href = '/';
+        }
+      }
     } else {
       Alert.alert(
         'Logout',
@@ -69,7 +70,8 @@ export default function MenuScreen() {
                 router.replace('/(auth)/login');
               } catch (error) {
                 console.error('Logout error:', error);
-                Alert.alert('Error', 'Logout failed. Please try again.');
+                // Even if logout fails, try to navigate
+                router.replace('/(auth)/login');
               }
             },
           },
