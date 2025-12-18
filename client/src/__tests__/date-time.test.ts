@@ -1,12 +1,20 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { format, parseISO, addHours, subHours } from 'date-fns';
-// Use dynamic import to avoid ESM/CJS issues in test environment
-import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
 
 // MDT is UTC-6 (Mountain Daylight Time)
 const MDT_TIMEZONE = 'America/Denver';
 
+// Use dynamic import to avoid ESM/CJS issues in test environment
+let utcToZonedTime: any;
+let zonedTimeToUtc: any;
+
 describe('Date/Time Handling (MDT UTC-6)', () => {
+  beforeAll(async () => {
+    const dateFnsTz = await import('date-fns-tz');
+    utcToZonedTime = dateFnsTz.utcToZonedTime;
+    zonedTimeToUtc = dateFnsTz.zonedTimeToUtc;
+  });
+
   it('should correctly convert UTC to MDT', () => {
     const utcDate = new Date('2025-01-20T18:00:00Z'); // 6 PM UTC
     const mdtDate = utcToZonedTime(utcDate, MDT_TIMEZONE);
