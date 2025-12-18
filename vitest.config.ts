@@ -8,6 +8,10 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./client/src/tests/setup.ts'],
     globals: true,
+    // Ensure date-fns-tz is properly handled
+    deps: {
+      inline: ['date-fns-tz'],
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -28,6 +32,8 @@ export default defineConfig({
       '@shared': path.resolve(__dirname, 'shared'),
       '@assets': path.resolve(__dirname, 'assets'),
     },
+    // Ensure proper module resolution for date-fns-tz
+    dedupe: ['date-fns', 'date-fns-tz'],
   },
 });
 
