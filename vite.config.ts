@@ -63,6 +63,9 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist"),
     emptyOutDir: true,
+    // Ensure proper module format for production
+    target: 'esnext',
+    minify: 'esbuild',
     commonjsOptions: {
       include: [/node_modules/],
       transformMixedEsModules: true,
@@ -72,18 +75,19 @@ export default defineConfig({
         manualChunks: (id) => {
           // Vendor chunks - separate large dependencies
           if (id.includes('node_modules')) {
-            // CRITICAL: Force React into a single chunk to prevent multiple instances
-            // This is especially important for Cursor's browser which seems to load multiple React versions
+            // CRITICAL: Keep React in main bundle to ensure it loads synchronously
+            // Don't split React - it must be available immediately when other chunks load
+            // This prevents "React.Children is undefined" errors
             if (id.includes('/react/') || 
                 id.includes('/react-dom/') || 
                 id.includes('/react/jsx-runtime') || 
                 id.includes('/react-is/') || 
                 id.includes('/scheduler/') ||
-                id.includes('next-themes') || // Include next-themes to ensure it uses the same React instance
+                id.includes('next-themes') ||
                 id === 'react' ||
                 id === 'react-dom') {
-              // Force all React-related code into a single 'react-vendor' chunk
-              return 'react-vendor';
+              // Return undefined to keep React in the main bundle
+              return undefined;
             }
             // React Query
             if (id.includes('@tanstack/react-query')) {
@@ -115,7 +119,6 @@ export default defineConfig({
             return 'vendor-other';
           }
         },
-        chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]',
       },
