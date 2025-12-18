@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { format, parseISO, addHours, subHours } from 'date-fns';
+// Use dynamic import to avoid ESM/CJS issues in test environment
 import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
 
 // MDT is UTC-6 (Mountain Daylight Time)
