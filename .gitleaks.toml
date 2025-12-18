@@ -9,10 +9,15 @@ title = "HALCYON Gitleaks Configuration"
 description = "Allowlist for known false positives"
 
 # Allowlist specific paths if needed (uncomment and add as needed)
-# paths = [
-#   "**/test/**",
-#   "**/*.md",
-# ]
+paths = [
+  "**/test/**",
+  "**/*.md",
+  "**/*.woff2",  # Font files (binary, can trigger false positives)
+  "**/*.woff",   # Font files (binary, can trigger false positives)
+  "**/*.ttf",    # Font files (binary, can trigger false positives)
+  "**/*.otf",    # Font files (binary, can trigger false positives)
+  "client/public/fonts/**",  # Font directory
+]
 
 # Allowlist specific commits (if needed)
 commits = []
