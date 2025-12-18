@@ -1,15 +1,16 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { format, parseISO, addHours, subHours } from 'date-fns';
 
-// MDT is UTC-6 (Mountain Daylight Time)
-const MDT_TIMEZONE = 'America/Denver';
+// Mountain Time (America/Denver) - automatically handles MST (UTC-7) and MDT (UTC-6)
+// In January, Denver is in MST (UTC-7), not MDT (UTC-6)
+const MOUNTAIN_TIMEZONE = 'America/Denver';
 
 // Use dynamic import to avoid ESM/CJS issues in test environment
 // date-fns-tz v3 uses toZonedTime and fromZonedTime instead of utcToZonedTime/zonedTimeToUtc
 let toZonedTime: any;
 let fromZonedTime: any;
 
-describe('Date/Time Handling (MDT UTC-6)', () => {
+describe('Date/Time Handling (Mountain Time - America/Denver)', () => {
   beforeAll(async () => {
     const dateFnsTz = await import('date-fns-tz');
     // date-fns-tz v3 API: toZonedTime (UTC -> zoned) and fromZonedTime (zoned -> UTC)
@@ -21,29 +22,29 @@ describe('Date/Time Handling (MDT UTC-6)', () => {
     }
   });
 
-  it('should correctly convert UTC to MDT', () => {
+  it('should correctly convert UTC to Mountain Time', () => {
     const utcDate = new Date('2025-01-20T18:00:00Z'); // 6 PM UTC
-    const mdtDate = toZonedTime(utcDate, MDT_TIMEZONE);
+    const mountainDate = toZonedTime(utcDate, MOUNTAIN_TIMEZONE);
     
-    // 6 PM UTC = 12 PM MDT (UTC-6)
-    expect(format(mdtDate, 'HH:mm')).toBe('12:00');
+    // 6 PM UTC = 11 AM MST (UTC-7) in January (standard time, not daylight time)
+    expect(format(mountainDate, 'HH:mm')).toBe('11:00');
   });
 
-  it('should correctly convert MDT to UTC', () => {
-    const mdtDate = new Date('2025-01-20T12:00:00'); // 12 PM MDT
-    const utcDate = fromZonedTime(mdtDate, MDT_TIMEZONE);
+  it('should correctly convert Mountain Time to UTC', () => {
+    const mountainDate = new Date('2025-01-20T12:00:00'); // 12 PM Mountain Time
+    const utcDate = fromZonedTime(mountainDate, MOUNTAIN_TIMEZONE);
     
-    // 12 PM MDT = 6 PM UTC (UTC-6)
-    expect(format(utcDate, 'HH:mm')).toBe('18:00');
+    // 12 PM MST = 7 PM UTC (UTC-7) in January
+    expect(format(utcDate, 'HH:mm')).toBe('19:00');
   });
 
-  it('should handle scheduled pickup time in MDT', () => {
-    const scheduledTime = '2025-01-20T14:00:00'; // 2 PM local (MDT)
+  it('should handle scheduled pickup time in Mountain Time', () => {
+    const scheduledTime = '2025-01-20T14:00:00'; // 2 PM local (MST in January)
     const parsed = parseISO(scheduledTime);
-    const utc = fromZonedTime(parsed, MDT_TIMEZONE);
+    const utc = fromZonedTime(parsed, MOUNTAIN_TIMEZONE);
     
-    // Should be 8 PM UTC (2 PM + 6 hours)
-    expect(format(utc, 'HH:mm')).toBe('20:00');
+    // Should be 9 PM UTC (2 PM + 7 hours for MST)
+    expect(format(utc, 'HH:mm')).toBe('21:00');
   });
 
   it('should format time for display correctly', () => {
