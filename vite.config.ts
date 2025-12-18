@@ -41,6 +41,8 @@ export default defineConfig({
     esbuildOptions: {
       // Ensure React is properly resolved
       jsx: 'automatic',
+      // Ensure proper dependency resolution to avoid circular dependencies
+      resolveExtensions: ['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json'],
     },
   },
   resolve: {
@@ -87,7 +89,8 @@ export default defineConfig({
             if (id.includes('@tanstack/react-query')) {
               return 'vendor-react-query';
             }
-            // UI Libraries (Radix UI)
+            // UI Libraries (Radix UI) - Keep together to avoid circular dependencies
+            // All Radix UI packages share common dependencies and should be bundled together
             if (id.includes('@radix-ui')) {
               return 'vendor-ui';
             }
