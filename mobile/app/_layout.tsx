@@ -12,16 +12,155 @@ import '../services/networkInspector'; // Initialize network inspector
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
-  // TEMPORARILY: Skip font loading entirely to test if this is causing the 500 error
-  // On web, always return empty config
-  // On native, we'll re-enable font loading once web is working
+  // Load fonts for native platforms only
+  // For web, fonts are loaded via CSS @font-face in assets/fonts.css
   const fontConfig = useMemo(() => {
-    // For now, skip fonts on all platforms to isolate the bundler error
-    return {};
+    if (Platform.OS === 'web') {
+      // Web fonts loaded via CSS, not expo-font
+      return {};
+    }
+    // Native platforms: load TTF fonts via expo-font
+    return {
+      'Nohemi-Thin': require('../assets/fonts/Nohemi-Thin.ttf'),
+      'Nohemi-ExtraLight': require('../assets/fonts/Nohemi-ExtraLight.ttf'),
+      'Nohemi-Light': require('../assets/fonts/Nohemi-Light.ttf'),
+      'Nohemi-Regular': require('../assets/fonts/Nohemi-Regular.ttf'),
+      'Nohemi-Medium': require('../assets/fonts/Nohemi-Medium.ttf'),
+      'Nohemi-SemiBold': require('../assets/fonts/Nohemi-SemiBold.ttf'),
+      'Nohemi-Bold': require('../assets/fonts/Nohemi-Bold.ttf'),
+      'Nohemi-ExtraBold': require('../assets/fonts/Nohemi-ExtraBold.ttf'),
+      'Nohemi-Black': require('../assets/fonts/Nohemi-Black.ttf'),
+    };
   }, []);
 
-  // Always call useFonts hook (React rules), but pass empty config
+  // Always call useFonts hook (React rules)
   const [fontsLoaded, fontError] = useFonts(fontConfig);
+
+  // Inject font CSS for web platform
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      // Check if font styles are already injected
+      const existingStyle = document.getElementById('halcyon-fonts');
+      if (existingStyle) return;
+
+      // Inject @font-face declarations directly as inline styles
+      const style = document.createElement('style');
+      style.id = 'halcyon-fonts';
+      // Use absolute paths from root for PWA builds
+      const fontBasePath = '/assets/fonts';
+      style.textContent = `
+        /* Nohemi Font Family */
+        @font-face {
+          font-family: 'Nohemi';
+          src: url('${fontBasePath}/Nohemi-Thin.woff2') format('woff2');
+          font-weight: 100;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'Nohemi';
+          src: url('${fontBasePath}/Nohemi-ExtraLight.woff2') format('woff2');
+          font-weight: 200;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'Nohemi';
+          src: url('${fontBasePath}/Nohemi-Light.woff2') format('woff2');
+          font-weight: 300;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'Nohemi';
+          src: url('${fontBasePath}/Nohemi-Regular.woff2') format('woff2');
+          font-weight: 400;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'Nohemi';
+          src: url('${fontBasePath}/Nohemi-Medium.woff2') format('woff2');
+          font-weight: 500;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'Nohemi';
+          src: url('${fontBasePath}/Nohemi-SemiBold.woff2') format('woff2');
+          font-weight: 600;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'Nohemi';
+          src: url('${fontBasePath}/Nohemi-Bold.woff2') format('woff2');
+          font-weight: 700;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'Nohemi';
+          src: url('${fontBasePath}/Nohemi-ExtraBold.woff2') format('woff2');
+          font-weight: 800;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'Nohemi';
+          src: url('${fontBasePath}/Nohemi-Black.woff2') format('woff2');
+          font-weight: 900;
+          font-style: normal;
+          font-display: swap;
+        }
+        /* Space Grotesk Font Family */
+        @font-face {
+          font-family: 'Space Grotesk';
+          src: url('${fontBasePath}/SpaceGrotesk-Light.woff2') format('woff2');
+          font-weight: 300;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'Space Grotesk';
+          src: url('${fontBasePath}/SpaceGrotesk-Regular.woff2') format('woff2');
+          font-weight: 400;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'Space Grotesk';
+          src: url('${fontBasePath}/SpaceGrotesk-Medium.woff2') format('woff2');
+          font-weight: 500;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'Space Grotesk';
+          src: url('${fontBasePath}/SpaceGrotesk-SemiBold.woff2') format('woff2');
+          font-weight: 600;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'Space Grotesk';
+          src: url('${fontBasePath}/SpaceGrotesk-Bold.woff2') format('woff2');
+          font-weight: 700;
+          font-style: normal;
+          font-display: swap;
+        }
+      `;
+      document.head.appendChild(style);
+
+      return () => {
+        // Cleanup: remove style when component unmounts
+        const styleToRemove = document.getElementById('halcyon-fonts');
+        if (styleToRemove) {
+          styleToRemove.remove();
+        }
+      };
+    }
+  }, []);
 
   useEffect(() => {
     if (fontError) {
