@@ -111,6 +111,8 @@ CREATE TABLE IF NOT EXISTS client_groups (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     program_id VARCHAR(50) NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
+    -- Telematics Phase 1: Default trip purpose for group (remains constant even if clients change)
+    trip_purpose VARCHAR(20) CHECK (trip_purpose IN ('Legal', 'Groceries', 'Community', 'Program (adjacent)', 'Medical', 'Non-Medical')),
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -254,9 +256,50 @@ CREATE TABLE IF NOT EXISTS trips (
     recurring_end_date DATE,
     client_group_id VARCHAR(50) REFERENCES client_groups(id) ON DELETE SET NULL,
     is_group_trip BOOLEAN DEFAULT false,
+    -- Telematics Phase 1: Trip Purpose & Billing
+    trip_purpose VARCHAR(20) CHECK (trip_purpose IN ('Legal', 'Groceries', 'Community', 'Program (adjacent)', 'Medical', 'Non-Medical')),
+    trip_code VARCHAR(20), -- CPT/HCPCS code (A0120, T2001, T2004, etc.) - optional
+    trip_modifier VARCHAR(2), -- 2 uppercase letters (e.g., 'HA') - optional, only if trip_code selected
+    -- Telematics Phase 1: Appointment & Timing
+    appointment_time TIMESTAMP WITH TIME ZONE, -- When client needs to be at appointment
+    -- Telematics Phase 1: Wait Time Tracking
+    wait_time_minutes INTEGER DEFAULT 0,
+    wait_time_started_at TIMESTAMP WITH TIME ZONE,
+    wait_time_stopped_at TIMESTAMP WITH TIME ZONE,
+    -- Telematics Phase 1: HCBS Waiver
+    hcbs_waiver_verified BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- ============================================================================
+-- TRIP LEGS TABLE (Telematics Phase 1)
+-- ============================================================================
+-- Supports multi-leg trips: Leg A (initial pickup to dropoff), Leg B (return or additional legs), etc.
+CREATE TABLE IF NOT EXISTS trip_legs (
+    id VARCHAR(50) PRIMARY KEY,
+    trip_id VARCHAR(50) NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+    leg_number VARCHAR(10) NOT NULL, -- 'A', 'B', 'C', etc.
+    leg_type VARCHAR(50) NOT NULL CHECK (leg_type IN ('pickup_to_dropoff', 'return', 'additional_pickup', 'additional_dropoff')),
+    from_address TEXT NOT NULL,
+    to_address TEXT NOT NULL,
+    from_latitude DECIMAL(10, 8),
+    from_longitude DECIMAL(11, 8),
+    to_latitude DECIMAL(10, 8),
+    to_longitude DECIMAL(11, 8),
+    distance_miles DECIMAL(10, 2), -- Calculated distance between from and to addresses
+    estimated_time_minutes INTEGER, -- Estimated travel time using maps API, traffic, time of day
+    actual_time_minutes INTEGER, -- Actual time taken for this leg
+    started_at TIMESTAMP WITH TIME ZONE, -- When driver started this leg
+    completed_at TIMESTAMP WITH TIME ZONE, -- When driver completed this leg
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(trip_id, leg_number)
+);
+
+-- Create indexes for trip_legs
+CREATE INDEX IF NOT EXISTS idx_trip_legs_trip_id ON trip_legs(trip_id);
+CREATE INDEX IF NOT EXISTS idx_trip_legs_leg_number ON trip_legs(trip_id, leg_number);
 
 -- ============================================================================
 -- DRIVER SCHEDULES TABLE

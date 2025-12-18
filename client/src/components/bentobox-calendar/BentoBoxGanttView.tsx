@@ -364,17 +364,24 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
       )}>
         {/* Time column - sticky */}
         <div className="w-16 md:w-20 bg-muted/50 border-r flex-shrink-0 sticky left-0 z-10">
-          {timeSlots.map((hour, index) => (
-            <div
-              key={hour}
-              ref={index === 0 ? timeSlotRef : undefined}
-              className="h-12 md:h-14 border-b border-border flex items-start justify-end pr-2 md:pr-3 pt-1"
-            >
-              <span className="text-xs text-muted-foreground">
-                {hour === 12 ? "12 PM" : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
-              </span>
-            </div>
-          ))}
+          {timeSlots.map((hour, index) => {
+            const isLastSlot = index === timeSlots.length - 1;
+            return (
+              <div
+                key={hour}
+                ref={index === 0 ? timeSlotRef : undefined}
+                className={cn(
+                  "h-12 md:h-14 flex items-start justify-end pr-2 md:pr-3 pt-1",
+                  !isLastSlot && "border-b border-border"
+                )}
+                style={!isLastSlot ? { borderBottomWidth: '1px' } : undefined}
+              >
+                <span className="text-xs text-muted-foreground">
+                  {hour === 12 ? "12 PM" : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
+                </span>
+              </div>
+            );
+          })}
         </div>
         
         {/* Days grid - flex for week, scrollable for month */}
@@ -402,20 +409,23 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
                   )}
                 >
                   {/* Time slots */}
-                  {timeSlots.map((hour) => {
+                  {timeSlots.map((hour, slotIndex) => {
                     const isDraggedOver = draggedOverSlot?.day && 
                       isSameDay(draggedOverSlot.day, day) && 
                       draggedOverSlot.hour === hour;
+                    const isLastSlot = slotIndex === timeSlots.length - 1;
                     
                     return (
                       <div
                         key={hour}
                         className={cn(
-                          "h-12 md:h-14 border-b border-border transition-colors flex-shrink-0",
+                          "h-12 md:h-14 transition-colors flex-shrink-0",
+                          !isLastSlot && "border-b border-border",
                           isDraggedOver
                             ? "bg-primary/20 border-primary border-2"
                             : "hover:bg-muted/30 cursor-pointer"
                         )}
+                        style={!isLastSlot && !isDraggedOver ? { borderBottomWidth: '1px' } : undefined}
                         onClick={() => handleTimeSlotClick(day, hour)}
                         onDragOver={(e) => handleTimeSlotDragOver(e, day, hour)}
                         onDrop={(e) => handleTimeSlotDrop(e, day, hour)}

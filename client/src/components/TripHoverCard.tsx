@@ -21,7 +21,8 @@ import {
   Square,
   Navigation,
   AlertTriangle,
-  Loader2
+  Loader2,
+  Tag
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useLocation } from "wouter";
@@ -84,6 +85,11 @@ interface Trip {
   driver?: {
     user_id: string;
   };
+  // Telematics Phase 1 fields
+  appointment_time?: string | null;
+  trip_purpose?: string | null;
+  trip_code?: string | null;
+  trip_modifier?: string | null;
 }
 
 interface TripHoverCardProps {
@@ -436,6 +442,31 @@ export function TripHoverCard({ trip, children }: TripHoverCardProps) {
               {trip.scheduled_pickup_time && format(parseISO(trip.scheduled_pickup_time), 'EEEE, MMMM d, yyyy')}
             </span>
           </div>
+
+          {/* Appointment Time - Telematics Phase 1 */}
+          {trip.appointment_time && (
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4" style={{ color: 'var(--color-coral)' }} />
+              <span className="text-sm" style={{ color: 'var(--foreground)' }}>
+                <span className="font-medium">Appointment:</span>{' '}
+                <span style={{ color: 'var(--color-coral)' }}>
+                  {format(parseISO(trip.appointment_time), 'h:mm a')}
+                </span>
+                <span className="text-xs text-muted-foreground ml-1">(Must arrive at DO by this time)</span>
+              </span>
+            </div>
+          )}
+
+          {/* Trip Purpose - Telematics Phase 1 */}
+          {trip.trip_purpose && (
+            <div className="flex items-center gap-2">
+              <Tag className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">
+                <span className="font-medium">Purpose:</span>{' '}
+                <span className="text-muted-foreground">{trip.trip_purpose}</span>
+              </span>
+            </div>
+          )}
 
           {/* Client Contact - updated for hierarchy system */}
           {trip.client_phone && (

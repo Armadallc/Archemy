@@ -425,7 +425,7 @@ export default function AdaptiveSidebar({
           roles: ["super_admin", "corporate_admin"]
         },
         { 
-          path: "/analytics", 
+          path: "/telematics", 
           label: "Telematics", 
           icon: Activity, 
           permissions: "view_telematics",

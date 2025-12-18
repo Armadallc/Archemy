@@ -97,6 +97,7 @@ const navigationItemPermissions: Record<string, string | string[]> = {
   "/users": "view_users",
   "/billing": "view_reports", // Placeholder - billing might need its own permission
   "/analytics": "manage_users", // Super admin only
+  "/telematics": "manage_users", // Super admin only
   "/role-templates": "manage_users", // Super admin only
   "/prophet": "manage_users", // Super admin only - PROPHET Calculator
   "/design-system": "manage_users", // Super admin only
@@ -155,7 +156,7 @@ const navigationCategories = [
     icon: BarChart3,
     roles: ["super_admin"],
     items: [
-      { path: "/analytics", label: "Telematics", icon: BarChart3, roles: ["super_admin"], status: "in-progress" as PageStatus },
+      { path: "/telematics", label: "Telematics", icon: BarChart3, roles: ["super_admin"], status: "in-progress" as PageStatus },
       { path: "/prophet", label: "Prophet", icon: Calculator, roles: ["super_admin"], status: "completed" as PageStatus }
     ]
   },

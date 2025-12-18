@@ -242,3 +242,4 @@ eas update --branch production --message "Update to latest version"
 - Use `wss://` for production (secure WebSocket)
 - Verify Render supports WebSocket (it does)
 - Check firewall/network settings
+

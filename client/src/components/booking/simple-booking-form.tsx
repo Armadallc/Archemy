@@ -16,6 +16,7 @@ import { useHierarchy } from "../../hooks/useHierarchy";
 import { apiRequest } from "../../lib/queryClient";
 import { useFeatureFlag } from "../../hooks/use-permissions";
 import QuickAddLocation from "./quick-add-location";
+import { TripPurposeBillingSelector } from "../telematics/TripPurposeBillingSelector";
 
 function SimpleBookingForm() {
   const [, setLocation] = useLocation();
@@ -82,7 +83,13 @@ function SimpleBookingForm() {
     tripNickname: "",
     specialRequirementIds: [] as string[],
     specialRequirementOther: "",
-    notes: ""
+    notes: "",
+    // Telematics Phase 1 fields
+    tripPurpose: "",
+    tripCode: "",
+    tripModifier: "",
+    appointmentTime: "",
+    hasAppointmentTime: false // Checkbox state for appointment time
   });
 
   // Local state for program selection (for super admins)
@@ -403,6 +410,13 @@ function SimpleBookingForm() {
           apiData.client_group_id = tripData.clientGroupId;
         }
         
+        // Telematics Phase 1 fields
+        apiData.trip_purpose = tripData.tripPurpose || null;
+        apiData.trip_code = tripData.tripCode || null;
+        apiData.trip_modifier = tripData.tripModifier || null;
+        // Only set appointment_time if checkbox is checked
+        apiData.appointment_time = tripData.hasAppointmentTime && tripData.appointmentTime ? tripData.appointmentTime : null;
+        
         // Debug: Log what we're sending
         console.log('🔍 [Frontend] Sending recurring trip request:', {
           selectionType: tripData.selectionType,
@@ -437,6 +451,12 @@ function SimpleBookingForm() {
               status: "scheduled",
               special_requirements: formatSpecialRequirements(tripData.specialRequirementIds, tripData.specialRequirementOther),
               notes: tripData.notes || null,
+              // Telematics Phase 1 fields
+              trip_purpose: tripData.tripPurpose || null,
+              trip_code: tripData.tripCode || null,
+              trip_modifier: tripData.tripModifier || null,
+              // Only set appointment_time if checkbox is checked
+              appointment_time: tripData.hasAppointmentTime && tripData.appointmentTime ? tripData.appointmentTime : null,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             };
@@ -463,6 +483,12 @@ function SimpleBookingForm() {
             status: "scheduled",
             special_requirements: formatSpecialRequirements(tripData.specialRequirementIds, tripData.specialRequirementOther),
             notes: tripData.notes || null,
+            // Telematics Phase 1 fields
+            trip_purpose: tripData.tripPurpose || null,
+            trip_code: tripData.tripCode || null,
+            trip_modifier: tripData.tripModifier || null,
+            // Only set appointment_time if checkbox is checked
+            appointment_time: tripData.hasAppointmentTime && tripData.appointmentTime ? tripData.appointmentTime : null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };
@@ -503,7 +529,13 @@ function SimpleBookingForm() {
         tripNickname: "",
         specialRequirementIds: [] as string[],
         specialRequirementOther: "",
-        notes: ""
+        notes: "",
+        // Telematics Phase 1 fields
+        tripPurpose: "",
+        tripCode: "",
+        tripModifier: "",
+        appointmentTime: "",
+        hasAppointmentTime: false
       });
       queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
       if (formData.isRecurring) {
@@ -954,7 +986,7 @@ function SimpleBookingForm() {
             onChange={(value) => setFormData({ ...formData, pickupAddress: value })}
             placeholder="Enter pickup address"
             locationType="pickup"
-            label="Pickup Address"
+            label="PU Address"
             required
           />
 
@@ -963,7 +995,7 @@ function SimpleBookingForm() {
             onChange={(value) => setFormData({ ...formData, dropoffAddress: value })}
             placeholder="Enter drop-off address"
             locationType="dropoff"
-            label="Drop-off Address"
+            label="DO Address"
             required
           />
 
@@ -977,13 +1009,59 @@ function SimpleBookingForm() {
               />
             </div>
             <div>
-              <Label htmlFor="scheduledTime">Time</Label>
+              <Label htmlFor="scheduledTime">Pickup Time</Label>
               <Input
                 type="time"
                 value={formData.scheduledTime}
                 onChange={(e) => setFormData({ ...formData, scheduledTime: e.target.value })}
               />
             </div>
+          </div>
+
+          {/* Appointment Time - right after pickup time */}
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="hasAppointmentTime"
+                checked={formData.hasAppointmentTime}
+                onCheckedChange={(checked) => {
+                  setFormData({ 
+                    ...formData, 
+                    hasAppointmentTime: checked as boolean,
+                    appointmentTime: checked ? formData.appointmentTime : ""
+                  });
+                }}
+              />
+              <Label htmlFor="hasAppointmentTime" className="cursor-pointer">
+                Client has appointment - must arrive at DO by appointment time
+              </Label>
+            </div>
+            {formData.hasAppointmentTime && (
+              <div>
+                <Label htmlFor="appointmentTime">Appointment Time</Label>
+                <Input
+                  id="appointmentTime"
+                  type="time"
+                  value={
+                    formData.appointmentTime 
+                      ? (formData.appointmentTime.includes('T') 
+                          ? new Date(formData.appointmentTime).toTimeString().slice(0, 5)
+                          : formData.appointmentTime.slice(0, 5))
+                      : ""
+                  }
+                  onChange={(e) => {
+                    if (e.target.value && formData.scheduledDate) {
+                      // Combine date and time for appointment_time (store as ISO string)
+                      const appointmentDateTime = `${formData.scheduledDate}T${e.target.value}:00`;
+                      setFormData({ ...formData, appointmentTime: appointmentDateTime });
+                    } else {
+                      setFormData({ ...formData, appointmentTime: "" });
+                    }
+                  }}
+                  placeholder="When client needs to be at appointment"
+                />
+              </div>
+            )}
           </div>
 
           <div>
@@ -1024,6 +1102,21 @@ function SimpleBookingForm() {
               />
             </div>
           )}
+
+          {/* Telematics Phase 1: Trip Purpose & Billing */}
+          <div className="border-t pt-4 mt-4">
+            <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--foreground)' }}>
+              Trip Purpose & Billing Information
+            </h3>
+            <TripPurposeBillingSelector
+              tripPurpose={formData.tripPurpose}
+              tripCode={formData.tripCode}
+              tripModifier={formData.tripModifier}
+              onTripPurposeChange={(value) => setFormData({ ...formData, tripPurpose: value })}
+              onTripCodeChange={(value) => setFormData({ ...formData, tripCode: value })}
+              onTripModifierChange={(value) => setFormData({ ...formData, tripModifier: value })}
+            />
+          </div>
 
           {/* Recurring Trip Toggle - Only show if feature flag is enabled */}
           {recurringTripsEnabled && (

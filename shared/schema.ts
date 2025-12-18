@@ -192,6 +192,8 @@ export const clientGroups = pgTable("client_groups", {
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   program_id: varchar("program_id", { length: 50 }).notNull().references(() => programs.id, { onDelete: 'cascade' }),
+  // Telematics Phase 1: Default trip purpose for group (remains constant even if clients change)
+  trip_purpose: varchar("trip_purpose", { length: 20 }), // Legal, Groceries, Community, Program (adjacent), Medical, Non-Medical
   is_active: boolean("is_active").default(true),
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
@@ -359,6 +361,40 @@ export const trips = pgTable("trips", {
   status: tripStatusEnum("status").default('scheduled'),
   special_requirements: text("special_requirements"),
   notes: text("notes"),
+  // Telematics Phase 1: Trip Purpose & Billing
+  trip_purpose: varchar("trip_purpose", { length: 20 }), // Legal, Groceries, Community, Program (adjacent), Medical, Non-Medical
+  trip_code: varchar("trip_code", { length: 20 }), // CPT/HCPCS code (A0120, T2001, T2004, etc.) - optional
+  trip_modifier: varchar("trip_modifier", { length: 2 }), // 2 uppercase letters (e.g., 'HA') - optional, only if trip_code selected
+  // Telematics Phase 1: Appointment & Timing
+  appointment_time: timestamp("appointment_time"), // When client needs to be at appointment
+  // Telematics Phase 1: Wait Time Tracking
+  wait_time_minutes: integer("wait_time_minutes").default(0),
+  wait_time_started_at: timestamp("wait_time_started_at"),
+  wait_time_stopped_at: timestamp("wait_time_stopped_at"),
+  // Telematics Phase 1: HCBS Waiver
+  hcbs_waiver_verified: boolean("hcbs_waiver_verified").default(false),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+// Trip Legs Table (Telematics Phase 1)
+// Supports multi-leg trips: Leg A (initial pickup to dropoff), Leg B (return or additional legs), etc.
+export const tripLegs = pgTable("trip_legs", {
+  id: varchar("id", { length: 50 }).primaryKey(),
+  trip_id: varchar("trip_id", { length: 50 }).notNull().references(() => trips.id, { onDelete: 'cascade' }),
+  leg_number: varchar("leg_number", { length: 10 }).notNull(), // 'A', 'B', 'C', etc.
+  leg_type: varchar("leg_type", { length: 50 }).notNull(), // 'pickup_to_dropoff', 'return', 'additional_pickup', 'additional_dropoff'
+  from_address: text("from_address").notNull(),
+  to_address: text("to_address").notNull(),
+  from_latitude: decimal("from_latitude", { precision: 10, scale: 8 }),
+  from_longitude: decimal("from_longitude", { precision: 11, scale: 8 }),
+  to_latitude: decimal("to_latitude", { precision: 10, scale: 8 }),
+  to_longitude: decimal("to_longitude", { precision: 11, scale: 8 }),
+  distance_miles: decimal("distance_miles", { precision: 10, scale: 2 }), // Calculated distance between from and to addresses
+  estimated_time_minutes: integer("estimated_time_minutes"), // Estimated travel time using maps API, traffic, time of day
+  actual_time_minutes: integer("actual_time_minutes"), // Actual time taken for this leg
+  started_at: timestamp("started_at"), // When driver started this leg
+  completed_at: timestamp("completed_at"), // When driver completed this leg
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
 });

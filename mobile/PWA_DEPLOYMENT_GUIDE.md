@@ -220,3 +220,4 @@ Once the PWA is working:
 - **Lower barrier**: No app store accounts needed initially
 - **Same codebase**: Can build native apps later from same code
 - **No conflicts**: PWA and native apps are completely independent
+

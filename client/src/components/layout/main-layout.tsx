@@ -44,7 +44,9 @@ const RoleTemplatesPage = lazy(() => import("../../pages/role-templates"));
 // Temporarily remove lazy loading to fix React hook error with usePageAccess
 import CalendarPageComponent from "../../pages/calendar";
 const CalendarPage = CalendarPageComponent;
-const CalendarExperiment = lazy(() => import("../../pages/calendar-experiment"));
+// Temporarily remove lazy loading to fix React hook errors
+import CalendarExperimentComponent from "../../pages/calendar-experiment";
+const CalendarExperiment = CalendarExperimentComponent;
 const ShadcnDashboard = lazy(() => import("../../pages/shadcn-dashboard"));
 // Temporarily remove lazy loading to fix React hook error
 import ShadcnDashboardMigratedComponent from "../../pages/shadcn-dashboard-migrated";
@@ -61,6 +63,7 @@ import DesignSystem from "../../pages/design-system";
 const ScratchPage = lazy(() => import("../../pages/scratch"));
 const TypographyTest = lazy(() => import("../../pages/typography-test"));
 const Analytics = lazy(() => import("../../pages/analytics"));
+const Telematics = lazy(() => import("../../pages/telematics"));
 const ProphetPage = lazy(() => import("../../pages/prophet"));
 const ActivityFeedPage = lazy(() => import("../../pages/activity-feed"));
 const KanbanPage = lazy(() => import("../../pages/kanban"));
@@ -417,6 +420,9 @@ export default function MainLayout({
               </Route>
               <Route path="/analytics">
                 <Analytics />
+              </Route>
+              <Route path="/telematics">
+                <Telematics />
               </Route>
               <Route path="/prophet">
                 <ProphetPage />

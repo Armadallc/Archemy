@@ -78,3 +78,4 @@ This is the safest approach:
 4. ✅ Can be rolled back if issues are found
 
 **Do NOT** directly push to main or create a PR from main - always merge feature branches into main.
+

@@ -36,6 +36,32 @@ export default function RootLayout() {
   // Always call useFonts hook (React rules)
   const [fontsLoaded, fontError] = useFonts(fontConfig);
 
+  // Also load fonts.css file for PWA (as backup/fallback)
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      // Check if fonts.css link is already added
+      const existingLink = document.getElementById('halcyon-fonts-css');
+      if (existingLink) return;
+
+      // Add link to fonts.css file
+      const link = document.createElement('link');
+      link.id = 'halcyon-fonts-css';
+      link.rel = 'stylesheet';
+      link.href = '/assets/fonts.css';
+      link.onerror = () => {
+        console.warn('fonts.css file not found, using injected styles only');
+      };
+      document.head.appendChild(link);
+
+      return () => {
+        const linkToRemove = document.getElementById('halcyon-fonts-css');
+        if (linkToRemove) {
+          linkToRemove.remove();
+        }
+      };
+    }
+  }, []);
+
   // Inject font CSS for web platform
   useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {

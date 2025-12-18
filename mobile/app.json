@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Monarch Driver",
+    "name": "HALCYON DRIVE",
     "slug": "monarch-driver-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -10,7 +10,8 @@
       "backgroundColor": "#3B82F6"
     },
     "assetBundlePatterns": [
-      "**/*"
+      "**/*",
+      "assets/**/*"
     ],
     "ios": {
       "supportsTablet": true
@@ -21,9 +22,9 @@
       }
     },
     "web": {
-      "name": "Monarch Driver",
-      "shortName": "Monarch Driver",
-      "description": "Monarch Driver Mobile App - Transportation Management",
+      "name": "HALCYON DRIVE",
+      "shortName": "HALCYON DRIVE",
+      "description": "HALCYON DRIVE Mobile App - Transportation Management",
       "lang": "en",
       "scope": "/",
       "themeColor": "#3B82F6",
