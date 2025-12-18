@@ -21,6 +21,23 @@
       }
     },
     "web": {
+      "name": "Monarch Driver",
+      "shortName": "Monarch Driver",
+      "description": "Monarch Driver Mobile App - Transportation Management",
+      "lang": "en",
+      "scope": "/",
+      "themeColor": "#3B82F6",
+      "backgroundColor": "#3B82F6",
+      "display": "standalone",
+      "orientation": "portrait",
+      "startUrl": "/",
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png",
+      "splash": {
+        "image": "./assets/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#3B82F6"
+      }
     },
     "scheme": "monarch-driver",
     "plugins": [
