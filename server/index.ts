@@ -63,6 +63,17 @@ app.options('*', (req, res) => {
       return res.sendStatus(200);
     }
     
+    // Always allow localhost origins (for development, even in production deployments)
+    if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.startsWith('http://192.168.') || origin.startsWith('exp://'))) {
+      console.log('✅ Allowing localhost/development origin:', origin);
+      res.header('Access-Control-Allow-Origin', origin);
+      res.header('Access-Control-Allow-Credentials', 'true');
+      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+      res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control');
+      res.header('Vary', 'Origin');
+      return res.sendStatus(200);
+    }
+    
     const allowedOrigins = isProduction 
       ? [
           `https://${host}`, // Current domain
@@ -109,6 +120,14 @@ app.use((req, res, next) => {
   
   // Always allow Render domains
   if (origin && origin.includes('.onrender.com')) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+    return next();
+  }
+  
+  // Always allow localhost origins (for development, even in production deployments)
+  if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.startsWith('http://192.168.') || origin.startsWith('exp://'))) {
+    console.log('✅ Allowing localhost/development origin:', origin);
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Credentials', 'true');
     return next();

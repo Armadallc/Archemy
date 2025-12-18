@@ -39,6 +39,11 @@ interface Trip {
   is_group_trip?: boolean;
   client_group_id?: string;
   client_group_name?: string;
+  // Telematics Phase 1 fields
+  appointment_time?: string | null;
+  trip_purpose?: string | null;
+  trip_code?: string | null;
+  trip_modifier?: string | null;
   programs?: {
     name: string;
     corporate_clients?: {

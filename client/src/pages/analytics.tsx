@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { BarChart3, DollarSign, TrendingUp, Users, Car, MapPin, Calendar, AlertCircle, Calculator, ChevronRight } from "lucide-react";
+import { BarChart3, DollarSign, TrendingUp, Users, AlertCircle, Calculator, ChevronRight } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useDashboardData } from "../hooks/useDashboardData";
 import RevenueWidget from "../components/dashboard/RevenueWidget";
@@ -118,68 +118,6 @@ export default function Analytics() {
                   </CardContent>
                 </Card>
               </Link>
-            </div>
-          </div>
-
-          {/* Operations Telematics Section */}
-          <div className="space-y-4">
-            <h2 className="text-2xl font-semibold" style={{ color: 'var(--foreground)' }}>Operations Telematics</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Trips Metric */}
-              <Card style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px', borderStyle: 'solid' }}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Total Trips</CardTitle>
-                  <Calendar className="h-4 w-4" style={{ color: 'var(--muted-foreground)' }} />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>
-                    {realTimeTrips?.length || 0}
-                  </div>
-                  <p className="text-xs text-muted-foreground">All time</p>
-                </CardContent>
-              </Card>
-
-              {/* Miles Metric */}
-              <Card style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px', borderStyle: 'solid' }}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Total Miles</CardTitle>
-                  <MapPin className="h-4 w-4" style={{ color: 'var(--muted-foreground)' }} />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>
-                    {realTimeTrips?.reduce((sum: number, trip: any) => sum + (trip.distance_miles || 0), 0).toFixed(0) || 0}
-                  </div>
-                  <p className="text-xs text-muted-foreground">All time</p>
-                </CardContent>
-              </Card>
-
-              {/* Drivers Metric */}
-              <Card style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px', borderStyle: 'solid' }}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Active Drivers</CardTitle>
-                  <Users className="h-4 w-4" style={{ color: 'var(--muted-foreground)' }} />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>
-                    {realTimeDrivers?.filter((d: any) => d.is_active).length || 0}
-                  </div>
-                  <p className="text-xs text-muted-foreground">Currently active</p>
-                </CardContent>
-              </Card>
-
-              {/* Clients Metric */}
-              <Card style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px', borderStyle: 'solid' }}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Total Clients</CardTitle>
-                  <Users className="h-4 w-4" style={{ color: 'var(--muted-foreground)' }} />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>
-                    {realTimeClients?.length || 0}
-                  </div>
-                  <p className="text-xs text-muted-foreground">All clients</p>
-                </CardContent>
-              </Card>
             </div>
           </div>
 

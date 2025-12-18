@@ -13,6 +13,7 @@ import { useToast } from "../hooks/use-toast";
 import { useAuth } from "../hooks/useAuth";
 import { useHierarchy } from "../hooks/useHierarchy";
 import QuickAddLocation from "../components/booking/quick-add-location";
+import { TripPurposeBillingSelector } from "../components/telematics/TripPurposeBillingSelector";
 import { Clock, X, ArrowLeft } from "lucide-react";
 
 interface Trip {
@@ -29,6 +30,11 @@ interface Trip {
   special_requirements?: string;
   notes?: string;
   status: string;
+  // Telematics Phase 1 fields
+  trip_purpose?: string | null;
+  trip_code?: string | null;
+  trip_modifier?: string | null;
+  appointment_time?: string | null;
   client?: {
     first_name: string;
     last_name: string;
@@ -153,6 +159,12 @@ export default function EditTrip() {
     specialRequirementIds: [] as string[],
     specialRequirementOther: "",
     notes: "",
+    // Telematics Phase 1 fields
+    tripPurpose: "",
+    tripCode: "",
+    tripModifier: "",
+    appointmentTime: "",
+    hasAppointmentTime: false, // Checkbox state for appointment time
   });
 
   // Initialize form data when trip loads
@@ -181,6 +193,13 @@ export default function EditTrip() {
         }
       }
 
+      // Parse appointment time if it exists
+      let appointmentTimeValue = "";
+      if (trip.appointment_time) {
+        const appointmentDate = new Date(trip.appointment_time);
+        appointmentTimeValue = appointmentDate.toTimeString().slice(0, 5);
+      }
+
       setFormData({
         selectionType: trip.client_group_id ? "group" : "individual",
         clientId: trip.client_id || "",
@@ -195,6 +214,12 @@ export default function EditTrip() {
         specialRequirementIds: specialReqIds,
         specialRequirementOther: specialReqOther,
         notes: trip.notes || "",
+        // Telematics Phase 1 fields
+        tripPurpose: trip.trip_purpose || "",
+        tripCode: trip.trip_code || "",
+        tripModifier: trip.trip_modifier || "",
+        appointmentTime: trip.appointment_time || "", // Store full datetime for API
+        hasAppointmentTime: !!trip.appointment_time, // Set checkbox based on whether appointment_time exists
       });
     }
   }, [trip]);
@@ -252,6 +277,12 @@ export default function EditTrip() {
         scheduled_return_time: scheduledReturnTime,
         special_requirements: specialRequirementsValue,
         notes: tripData.notes || null,
+        // Telematics Phase 1 fields
+        trip_purpose: tripData.tripPurpose || null,
+        trip_code: tripData.tripCode || null,
+        trip_modifier: tripData.tripModifier || null,
+        // Only set appointment_time if checkbox is checked
+        appointment_time: tripData.hasAppointmentTime && tripData.appointmentTime ? tripData.appointmentTime : null,
       };
 
       const response = await apiRequest("PATCH", `/api/trips/${tripId}`, apiData);
@@ -632,7 +663,7 @@ export default function EditTrip() {
             onChange={(value) => setFormData({ ...formData, pickupAddress: value })}
             placeholder="Enter pickup address"
             locationType="pickup"
-            label="Pickup Address"
+            label="PU Address"
             required
           />
 
@@ -641,7 +672,7 @@ export default function EditTrip() {
             onChange={(value) => setFormData({ ...formData, dropoffAddress: value })}
             placeholder="Enter drop-off address"
             locationType="dropoff"
-            label="Drop-off Address"
+            label="DO Address"
             required
           />
 
@@ -655,13 +686,61 @@ export default function EditTrip() {
               />
             </div>
             <div>
-              <Label>Time</Label>
+              <Label>Pickup Time</Label>
               <Input
                 type="time"
                 value={formData.scheduledTime}
                 onChange={(e) => setFormData({ ...formData, scheduledTime: e.target.value })}
               />
             </div>
+          </div>
+
+          {/* Appointment Time - right after pickup time */}
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="hasAppointmentTime"
+                checked={formData.hasAppointmentTime}
+                onCheckedChange={(checked) => {
+                  setFormData({ 
+                    ...formData, 
+                    hasAppointmentTime: checked as boolean,
+                    appointmentTime: checked ? formData.appointmentTime : ""
+                  });
+                }}
+              />
+              <Label htmlFor="hasAppointmentTime" className="cursor-pointer">
+                Client has appointment - must arrive at DO by appointment time
+              </Label>
+            </div>
+            {formData.hasAppointmentTime && (
+              <div>
+                <Label htmlFor="appointmentTime">Appointment Time</Label>
+                <Input
+                  id="appointmentTime"
+                  type="time"
+                  value={
+                    formData.appointmentTime 
+                      ? (formData.appointmentTime.includes('T') 
+                          ? new Date(formData.appointmentTime).toTimeString().slice(0, 5)
+                          : formData.appointmentTime.length >= 5
+                            ? formData.appointmentTime.slice(0, 5)
+                            : formData.appointmentTime)
+                      : ""
+                  }
+                  onChange={(e) => {
+                    if (e.target.value && formData.scheduledDate) {
+                      // Combine date and time for appointment_time
+                      const appointmentDateTime = `${formData.scheduledDate}T${e.target.value}:00`;
+                      setFormData({ ...formData, appointmentTime: appointmentDateTime });
+                    } else {
+                      setFormData({ ...formData, appointmentTime: "" });
+                    }
+                  }}
+                  placeholder="When client needs to be at appointment"
+                />
+              </div>
+            )}
           </div>
 
           <div>
@@ -679,6 +758,16 @@ export default function EditTrip() {
               </SelectContent>
             </Select>
           </div>
+
+          {/* Telematics Phase 1: Trip Purpose & Billing */}
+          <TripPurposeBillingSelector
+            tripPurpose={formData.tripPurpose}
+            tripCode={formData.tripCode}
+            tripModifier={formData.tripModifier}
+            onTripPurposeChange={(value) => setFormData({ ...formData, tripPurpose: value })}
+            onTripCodeChange={(value) => setFormData({ ...formData, tripCode: value })}
+            onTripModifierChange={(value) => setFormData({ ...formData, tripModifier: value })}
+          />
 
           {formData.tripType === "round_trip" && (
             <div>

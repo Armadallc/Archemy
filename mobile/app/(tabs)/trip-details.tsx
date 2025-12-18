@@ -43,6 +43,11 @@ interface Trip {
   is_group_trip?: boolean;
   client_group_id?: string;
   client_group_name?: string;
+  // Telematics Phase 1 fields
+  appointment_time?: string | null;
+  trip_purpose?: string | null;
+  trip_code?: string | null;
+  trip_modifier?: string | null;
   programs?: {
     name: string;
     corporate_clients?: {
@@ -584,6 +589,41 @@ export default function TripDetailsScreen() {
                 <Text style={styles.infoValue}>{(trip.trip_type || (trip.scheduled_return_time ? 'round_trip' : 'one_way')).replace('_', ' ')}</Text>
               </View>
             </View>
+            {/* Appointment Time - Telematics Phase 1 */}
+            {trip.appointment_time && (
+              <View style={styles.infoRow}>
+                <Ionicons name="time-outline" size={20} color={theme.colors.error || '#ef4444'} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Appointment Time</Text>
+                  <Text style={[styles.infoValue, { color: theme.colors.error || '#ef4444' }]}>
+                    {formatTime(trip.appointment_time)}
+                  </Text>
+                  <Text style={styles.infoSubtext}>Must arrive at DO by this time</Text>
+                </View>
+              </View>
+            )}
+            {/* Trip Purpose - Telematics Phase 1 */}
+            {trip.trip_purpose && (
+              <View style={styles.infoRow}>
+                <Ionicons name="pricetag" size={20} color={theme.colors.mutedForeground} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Trip Purpose</Text>
+                  <Text style={styles.infoValue}>{trip.trip_purpose}</Text>
+                </View>
+              </View>
+            )}
+            {/* Trip Code & Modifier - Telematics Phase 1 */}
+            {trip.trip_code && (
+              <View style={styles.infoRow}>
+                <Ionicons name="document-text" size={20} color={theme.colors.mutedForeground} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Billing Code</Text>
+                  <Text style={styles.infoValue}>
+                    {trip.trip_code}{trip.trip_modifier ? `-${trip.trip_modifier}` : ''}
+                  </Text>
+                </View>
+              </View>
+            )}
           </View>
         </View>
 
