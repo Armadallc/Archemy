@@ -89,11 +89,12 @@ export default defineConfig({
             if (id.includes('@tanstack/react-query')) {
               return 'vendor-react-query';
             }
-            // UI Libraries (Radix UI) - Keep together to avoid circular dependencies
-            // All Radix UI packages share common dependencies and should be bundled together
-            if (id.includes('@radix-ui')) {
-              return 'vendor-ui';
-            }
+            // UI Libraries (Radix UI) - Let Vite handle automatically to avoid circular deps
+            // Don't manually chunk Radix UI - let Vite's automatic chunking handle it
+            // This allows Vite to properly detect and resolve circular dependencies
+            // if (id.includes('@radix-ui')) {
+            //   return 'vendor-ui';
+            // }
             // Icons (Lucide)
             if (id.includes('lucide-react')) {
               return 'vendor-icons';
