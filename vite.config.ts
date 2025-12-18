@@ -72,29 +72,22 @@ export default defineConfig({
     },
     rollupOptions: {
       output: {
-        // Ensure proper chunk ordering - React must load first
-        chunkFileNames: (chunkInfo) => {
-          // Ensure React chunk loads first by giving it a name that sorts first
-          if (chunkInfo.name === 'react-vendor') {
-            return 'assets/react-vendor-[hash].js';
-          }
-          return 'assets/[name]-[hash].js';
-        },
         manualChunks: (id) => {
           // Vendor chunks - separate large dependencies
           if (id.includes('node_modules')) {
-            // CRITICAL: Force React into a single chunk to prevent multiple instances
-            // React must be in its own chunk and load first
+            // CRITICAL: Keep React in main bundle to ensure it loads synchronously
+            // Don't split React - it must be available immediately when other chunks load
+            // This prevents "React.Children is undefined" errors
             if (id.includes('/react/') || 
                 id.includes('/react-dom/') || 
                 id.includes('/react/jsx-runtime') || 
                 id.includes('/react-is/') || 
                 id.includes('/scheduler/') ||
-                id.includes('next-themes') || // Include next-themes to ensure it uses the same React instance
+                id.includes('next-themes') ||
                 id === 'react' ||
                 id === 'react-dom') {
-              // Force all React-related code into a single 'react-vendor' chunk
-              return 'react-vendor';
+              // Return undefined to keep React in the main bundle
+              return undefined;
             }
             // React Query
             if (id.includes('@tanstack/react-query')) {
