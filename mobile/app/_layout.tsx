@@ -149,6 +149,20 @@ export default function RootLayout() {
                 }
               } else {
                 console.log('[Fonts] ✅ All fonts loaded successfully!');
+                // Store success in localStorage for debugging
+                if (typeof localStorage !== 'undefined') {
+                  localStorage.setItem('halcyon_fonts_loaded', 'true');
+                  localStorage.setItem('halcyon_fonts_check_time', new Date().toISOString());
+                }
+              }
+              
+              // Store font loading status for debugging (even if failed)
+              if (typeof localStorage !== 'undefined') {
+                localStorage.setItem('halcyon_fonts_status', JSON.stringify({
+                  nohemi: nohemiLoaded,
+                  spaceGrotesk: spaceGroteskLoaded,
+                  timestamp: new Date().toISOString(),
+                }));
               }
             }
           } catch (error) {
