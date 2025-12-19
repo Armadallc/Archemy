@@ -100,23 +100,44 @@ export default function TripDetailsScreen() {
       apiClient.updateTripStatus(tripId, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['driver-trips'] });
+      // Show success feedback
+      if (Platform.OS === 'web') {
+        // For web/PWA, use a simple alert or notification
+        console.log('Trip status updated successfully');
+      }
+    },
+    onError: (error) => {
+      console.error('Failed to update trip status:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update trip status';
+      Alert.alert('Error', errorMessage);
     },
   });
 
   const handleStatusUpdate = (newStatus: string) => {
-    Alert.alert(
-      'Update Trip Status',
-      `Are you sure you want to mark this trip as ${newStatus.replace('_', ' ')}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Confirm',
-          onPress: () => {
-            updateTripMutation.mutate({ tripId: tripId as string, status: newStatus });
+    // For web/PWA, use window.confirm as fallback if Alert.alert doesn't work
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const confirmed = window.confirm(
+        `Are you sure you want to mark this trip as ${newStatus.replace('_', ' ')}?`
+      );
+      if (confirmed) {
+        updateTripMutation.mutate({ tripId: tripId as string, status: newStatus });
+      }
+    } else {
+      // For native, use Alert.alert
+      Alert.alert(
+        'Update Trip Status',
+        `Are you sure you want to mark this trip as ${newStatus.replace('_', ' ')}?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Confirm',
+            onPress: () => {
+              updateTripMutation.mutate({ tripId: tripId as string, status: newStatus });
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const handleCallClient = () => {

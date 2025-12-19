@@ -43,11 +43,38 @@ export default function RootLayout() {
       const existingLink = document.getElementById('halcyon-fonts-css');
       if (existingLink) return;
 
+      // Detect base path for PWA (works for both web browser and installed PWA)
+      const getBasePath = () => {
+        if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+          // Check for base tag first
+          const baseTag = document.querySelector('base');
+          if (baseTag && baseTag.getAttribute('href')) {
+            const baseHref = baseTag.getAttribute('href') || '';
+            return baseHref.replace(/\/$/, ''); // Remove trailing slash
+          }
+          
+          // Get base path from current location
+          const path = window.location.pathname;
+          // Remove the last segment (usually the page name)
+          const segments = path.split('/').filter(Boolean);
+          // If we're at root or have minimal path, use empty string (absolute path)
+          if (segments.length <= 1) {
+            return '';
+          }
+          // Otherwise, use relative path
+          return '/' + segments.slice(0, -1).join('/');
+        }
+        return '';
+      };
+
+      const basePath = getBasePath();
+      const fontsCssPath = `${basePath}/assets/fonts.css`.replace(/\/\//g, '/'); // Fix double slashes
+
       // Add link to fonts.css file
       const link = document.createElement('link');
       link.id = 'halcyon-fonts-css';
       link.rel = 'stylesheet';
-      link.href = '/assets/fonts.css';
+      link.href = fontsCssPath;
       link.onerror = () => {
         console.warn('fonts.css file not found, using injected styles only');
       };
@@ -69,72 +96,108 @@ export default function RootLayout() {
       const existingStyle = document.getElementById('halcyon-fonts');
       if (existingStyle) return;
 
+      // Detect base path for PWA (works for both web browser and installed PWA)
+      const getBasePath = () => {
+        if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+          // Check for base tag first
+          const baseTag = document.querySelector('base');
+          if (baseTag && baseTag.getAttribute('href')) {
+            const baseHref = baseTag.getAttribute('href') || '';
+            return baseHref.replace(/\/$/, ''); // Remove trailing slash
+          }
+          
+          // Get base path from current location
+          const path = window.location.pathname;
+          // Remove the last segment (usually the page name)
+          const segments = path.split('/').filter(Boolean);
+          // If we're at root or have minimal path, use empty string (absolute path)
+          if (segments.length <= 1) {
+            return '';
+          }
+          // Otherwise, use relative path
+          return '/' + segments.slice(0, -1).join('/');
+        }
+        return '';
+      };
+
       // Inject @font-face declarations directly as inline styles
       const style = document.createElement('style');
       style.id = 'halcyon-fonts';
-      // Use absolute paths from root for PWA builds
-      const fontBasePath = '/assets/fonts';
+      // Use dynamic base path for PWA builds (works on mobile devices)
+      const basePath = getBasePath();
+      const fontBasePath = `${basePath}/assets/fonts`.replace(/\/\//g, '/'); // Fix double slashes
+      
+      // Helper to create font src with fallback paths for PWA compatibility
+      const createFontSrc = (fontName: string) => {
+        // Try absolute path first (works in web browser)
+        const absolutePath = `${fontBasePath}/${fontName}`;
+        // Try relative path as fallback (works in installed PWA)
+        const relativePath = `./assets/fonts/${fontName}`;
+        // Use both paths - browser will try first, then fallback
+        return `src: url('${absolutePath}') format('woff2'), url('${relativePath}') format('woff2');`;
+      };
+      
       style.textContent = `
         /* Nohemi Font Family */
         @font-face {
           font-family: 'Nohemi';
-          src: url('${fontBasePath}/Nohemi-Thin.woff2') format('woff2');
+          ${createFontSrc('Nohemi-Thin.woff2')}
           font-weight: 100;
           font-style: normal;
           font-display: swap;
         }
         @font-face {
           font-family: 'Nohemi';
-          src: url('${fontBasePath}/Nohemi-ExtraLight.woff2') format('woff2');
+          ${createFontSrc('Nohemi-ExtraLight.woff2')}
           font-weight: 200;
           font-style: normal;
           font-display: swap;
         }
         @font-face {
           font-family: 'Nohemi';
-          src: url('${fontBasePath}/Nohemi-Light.woff2') format('woff2');
+          ${createFontSrc('Nohemi-Light.woff2')}
           font-weight: 300;
           font-style: normal;
           font-display: swap;
         }
         @font-face {
           font-family: 'Nohemi';
-          src: url('${fontBasePath}/Nohemi-Regular.woff2') format('woff2');
+          ${createFontSrc('Nohemi-Regular.woff2')}
           font-weight: 400;
           font-style: normal;
           font-display: swap;
         }
         @font-face {
           font-family: 'Nohemi';
-          src: url('${fontBasePath}/Nohemi-Medium.woff2') format('woff2');
+          ${createFontSrc('Nohemi-Medium.woff2')}
           font-weight: 500;
           font-style: normal;
           font-display: swap;
         }
         @font-face {
           font-family: 'Nohemi';
-          src: url('${fontBasePath}/Nohemi-SemiBold.woff2') format('woff2');
+          ${createFontSrc('Nohemi-SemiBold.woff2')}
           font-weight: 600;
           font-style: normal;
           font-display: swap;
         }
         @font-face {
           font-family: 'Nohemi';
-          src: url('${fontBasePath}/Nohemi-Bold.woff2') format('woff2');
+          ${createFontSrc('Nohemi-Bold.woff2')}
           font-weight: 700;
           font-style: normal;
           font-display: swap;
         }
         @font-face {
           font-family: 'Nohemi';
-          src: url('${fontBasePath}/Nohemi-ExtraBold.woff2') format('woff2');
+          ${createFontSrc('Nohemi-ExtraBold.woff2')}
           font-weight: 800;
           font-style: normal;
           font-display: swap;
         }
         @font-face {
           font-family: 'Nohemi';
-          src: url('${fontBasePath}/Nohemi-Black.woff2') format('woff2');
+          ${createFontSrc('Nohemi-Black.woff2')}
           font-weight: 900;
           font-style: normal;
           font-display: swap;
@@ -142,35 +205,35 @@ export default function RootLayout() {
         /* Space Grotesk Font Family */
         @font-face {
           font-family: 'Space Grotesk';
-          src: url('${fontBasePath}/SpaceGrotesk-Light.woff2') format('woff2');
+          ${createFontSrc('SpaceGrotesk-Light.woff2')}
           font-weight: 300;
           font-style: normal;
           font-display: swap;
         }
         @font-face {
           font-family: 'Space Grotesk';
-          src: url('${fontBasePath}/SpaceGrotesk-Regular.woff2') format('woff2');
+          ${createFontSrc('SpaceGrotesk-Regular.woff2')}
           font-weight: 400;
           font-style: normal;
           font-display: swap;
         }
         @font-face {
           font-family: 'Space Grotesk';
-          src: url('${fontBasePath}/SpaceGrotesk-Medium.woff2') format('woff2');
+          ${createFontSrc('SpaceGrotesk-Medium.woff2')}
           font-weight: 500;
           font-style: normal;
           font-display: swap;
         }
         @font-face {
           font-family: 'Space Grotesk';
-          src: url('${fontBasePath}/SpaceGrotesk-SemiBold.woff2') format('woff2');
+          ${createFontSrc('SpaceGrotesk-SemiBold.woff2')}
           font-weight: 600;
           font-style: normal;
           font-display: swap;
         }
         @font-face {
           font-family: 'Space Grotesk';
-          src: url('${fontBasePath}/SpaceGrotesk-Bold.woff2') format('woff2');
+          ${createFontSrc('SpaceGrotesk-Bold.woff2')}
           font-weight: 700;
           font-style: normal;
           font-display: swap;
