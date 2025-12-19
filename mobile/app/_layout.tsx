@@ -43,38 +43,22 @@ export default function RootLayout() {
       const existingLink = document.getElementById('halcyon-fonts-css');
       if (existingLink) return;
 
-      // Detect base path for PWA (works for both web browser and installed PWA)
-      const getBasePath = () => {
-        if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-          // Check for base tag first
-          const baseTag = document.querySelector('base');
-          if (baseTag && baseTag.getAttribute('href')) {
-            const baseHref = baseTag.getAttribute('href') || '';
-            return baseHref.replace(/\/$/, ''); // Remove trailing slash
-          }
-          
-          // Get base path from current location
-          const path = window.location.pathname;
-          // Remove the last segment (usually the page name)
-          const segments = path.split('/').filter(Boolean);
-          // If we're at root or have minimal path, use empty string (absolute path)
-          if (segments.length <= 1) {
-            return '';
-          }
-          // Otherwise, use relative path
-          return '/' + segments.slice(0, -1).join('/');
+      // Use absolute URL with origin for fonts.css (works on all devices)
+      const getFontsCssUrl = () => {
+        if (typeof window !== 'undefined') {
+          // Use origin + absolute path - this works on both desktop and mobile
+          return `${window.location.origin}/assets/fonts.css`;
         }
-        return '';
+        return '/assets/fonts.css';
       };
 
-      const basePath = getBasePath();
-      const fontsCssPath = `${basePath}/assets/fonts.css`.replace(/\/\//g, '/'); // Fix double slashes
+      const fontsCssUrl = getFontsCssUrl();
 
       // Add link to fonts.css file
       const link = document.createElement('link');
       link.id = 'halcyon-fonts-css';
       link.rel = 'stylesheet';
-      link.href = fontsCssPath;
+      link.href = fontsCssUrl;
       link.onerror = () => {
         console.warn('fonts.css file not found, using injected styles only');
       };
@@ -96,45 +80,29 @@ export default function RootLayout() {
       const existingStyle = document.getElementById('halcyon-fonts');
       if (existingStyle) return;
 
-      // Detect base path for PWA (works for both web browser and installed PWA)
-      const getBasePath = () => {
-        if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-          // Check for base tag first
-          const baseTag = document.querySelector('base');
-          if (baseTag && baseTag.getAttribute('href')) {
-            const baseHref = baseTag.getAttribute('href') || '';
-            return baseHref.replace(/\/$/, ''); // Remove trailing slash
-          }
-          
-          // Get base path from current location
-          const path = window.location.pathname;
-          // Remove the last segment (usually the page name)
-          const segments = path.split('/').filter(Boolean);
-          // If we're at root or have minimal path, use empty string (absolute path)
-          if (segments.length <= 1) {
-            return '';
-          }
-          // Otherwise, use relative path
-          return '/' + segments.slice(0, -1).join('/');
-        }
-        return '';
-      };
-
       // Inject @font-face declarations directly as inline styles
       const style = document.createElement('style');
       style.id = 'halcyon-fonts';
-      // Use dynamic base path for PWA builds (works on mobile devices)
-      const basePath = getBasePath();
-      const fontBasePath = `${basePath}/assets/fonts`.replace(/\/\//g, '/'); // Fix double slashes
       
-      // Helper to create font src with fallback paths for PWA compatibility
+      // Use absolute URLs with origin for fonts (works on all devices including mobile)
+      const getFontUrl = (fontName: string) => {
+        if (typeof window !== 'undefined') {
+          // Use full absolute URL with origin - most reliable for PWA on mobile
+          return `${window.location.origin}/assets/fonts/${fontName}`;
+        }
+        return `/assets/fonts/${fontName}`;
+      };
+      
+      // Helper to create font src with multiple fallback paths
       const createFontSrc = (fontName: string) => {
-        // Try absolute path first (works in web browser)
-        const absolutePath = `${fontBasePath}/${fontName}`;
-        // Try relative path as fallback (works in installed PWA)
+        // Primary: Full absolute URL with origin (works everywhere)
+        const absoluteUrl = getFontUrl(fontName);
+        // Fallback 1: Absolute path from root (works in most cases)
+        const absolutePath = `/assets/fonts/${fontName}`;
+        // Fallback 2: Relative path (works if CSS is in same directory structure)
         const relativePath = `./assets/fonts/${fontName}`;
-        // Use both paths - browser will try first, then fallback
-        return `src: url('${absolutePath}') format('woff2'), url('${relativePath}') format('woff2');`;
+        // Use all three - browser will try each until one works
+        return `src: url('${absoluteUrl}') format('woff2'), url('${absolutePath}') format('woff2'), url('${relativePath}') format('woff2');`;
       };
       
       style.textContent = `

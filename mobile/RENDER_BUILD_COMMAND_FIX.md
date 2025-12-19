@@ -30,3 +30,5 @@ cd mobile && npm install && npm run build:web:prod
 
 By explicitly using `cd mobile` in the build command, we ensure the build runs from the correct directory regardless of Render's Root Directory setting. This is more reliable than relying on the Root Directory setting alone.
 
+
+

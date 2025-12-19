@@ -698,3 +698,5 @@ ALTER TABLE driver_locations ADD COLUMN IF NOT EXISTS trip_id VARCHAR(50) REFERE
 
 **Ready to proceed with Phase 1 implementation?**
 
+
+

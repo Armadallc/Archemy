@@ -54,3 +54,5 @@ npm run web
 - **Deployed PWA**: No port - uses Render's HTTPS URL directly
 - **Backend API**: `https://halcyon-backend.onrender.com` (no port)
 
+
+
