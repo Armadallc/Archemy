@@ -36,7 +36,31 @@ export default function RootLayout() {
   // Always call useFonts hook (React rules)
   const [fontsLoaded, fontError] = useFonts(fontConfig);
 
-  // Also load fonts.css file for PWA (as backup/fallback)
+  // Load Google Fonts (Space Grotesk) from CDN - more reliable on mobile
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      // Check if Google Fonts link is already added
+      const existingLink = document.getElementById('google-fonts-space-grotesk');
+      if (existingLink) return;
+
+      // Load Space Grotesk from Google Fonts CDN
+      const link = document.createElement('link');
+      link.id = 'google-fonts-space-grotesk';
+      link.rel = 'stylesheet';
+      link.href = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap';
+      link.crossOrigin = 'anonymous';
+      document.head.appendChild(link);
+
+      return () => {
+        const linkToRemove = document.getElementById('google-fonts-space-grotesk');
+        if (linkToRemove) {
+          linkToRemove.remove();
+        }
+      };
+    }
+  }, []);
+
+  // Also load fonts.css file for PWA (as backup/fallback for Nohemi)
   useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
       // Check if fonts.css link is already added
@@ -54,7 +78,7 @@ export default function RootLayout() {
 
       const fontsCssUrl = getFontsCssUrl();
 
-      // Add link to fonts.css file
+      // Add link to fonts.css file (for Nohemi only)
       const link = document.createElement('link');
       link.id = 'halcyon-fonts-css';
       link.rel = 'stylesheet';
@@ -98,14 +122,6 @@ export default function RootLayout() {
             { weight: '900', file: 'Nohemi-Black.woff2' },
           ];
           
-          const spaceGroteskWeights = [
-            { weight: '300', file: 'SpaceGrotesk-Light.woff2' },
-            { weight: '400', file: 'SpaceGrotesk-Regular.woff2' },
-            { weight: '500', file: 'SpaceGrotesk-Medium.woff2' },
-            { weight: '600', file: 'SpaceGrotesk-SemiBold.woff2' },
-            { weight: '700', file: 'SpaceGrotesk-Bold.woff2' },
-          ];
-          
           const loadFont = async (family: string, source: string, weight: string) => {
             try {
               const font = new FontFace(family, `url(${source})`, {
@@ -138,10 +154,10 @@ export default function RootLayout() {
             return false;
           };
           
-          // Load all fonts
+          // Load Nohemi fonts (local files)
+          // Space Grotesk is loaded from Google Fonts CDN, so we don't need to load it here
           const results = await Promise.all([
             ...nohemiWeights.map(w => tryLoadFont('Nohemi', w.file, w.weight)),
-            ...spaceGroteskWeights.map(w => tryLoadFont('Space Grotesk', w.file, w.weight)),
           ]);
           
           const successCount = results.filter(r => r).length;
@@ -306,42 +322,7 @@ export default function RootLayout() {
           font-style: normal;
           font-display: swap;
         }
-        /* Space Grotesk Font Family */
-        @font-face {
-          font-family: 'Space Grotesk';
-          ${createFontSrc('SpaceGrotesk-Light.woff2')}
-          font-weight: 300;
-          font-style: normal;
-          font-display: swap;
-        }
-        @font-face {
-          font-family: 'Space Grotesk';
-          ${createFontSrc('SpaceGrotesk-Regular.woff2')}
-          font-weight: 400;
-          font-style: normal;
-          font-display: swap;
-        }
-        @font-face {
-          font-family: 'Space Grotesk';
-          ${createFontSrc('SpaceGrotesk-Medium.woff2')}
-          font-weight: 500;
-          font-style: normal;
-          font-display: swap;
-        }
-        @font-face {
-          font-family: 'Space Grotesk';
-          ${createFontSrc('SpaceGrotesk-SemiBold.woff2')}
-          font-weight: 600;
-          font-style: normal;
-          font-display: swap;
-        }
-        @font-face {
-          font-family: 'Space Grotesk';
-          ${createFontSrc('SpaceGrotesk-Bold.woff2')}
-          font-weight: 700;
-          font-style: normal;
-          font-display: swap;
-        }
+        /* Space Grotesk is loaded from Google Fonts CDN - no need for @font-face here */
       `;
       document.head.appendChild(style);
 
