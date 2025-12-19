@@ -80,24 +80,92 @@ export default function RootLayout() {
       const existingStyle = document.getElementById('halcyon-fonts');
       if (existingStyle) return;
 
-      // Inject @font-face declarations directly as inline styles
+      // For mobile browsers, use FontFace API (more reliable than CSS @font-face)
+      // Mobile browsers are stricter about font loading and CORS
+      if (typeof window !== 'undefined' && 'FontFace' in window) {
+        const loadFontsViaAPI = async () => {
+          const fontBaseUrl = `${window.location.origin}/assets/fonts/`;
+          
+          const nohemiWeights = [
+            { weight: '100', file: 'Nohemi-Thin.woff2' },
+            { weight: '200', file: 'Nohemi-ExtraLight.woff2' },
+            { weight: '300', file: 'Nohemi-Light.woff2' },
+            { weight: '400', file: 'Nohemi-Regular.woff2' },
+            { weight: '500', file: 'Nohemi-Medium.woff2' },
+            { weight: '600', file: 'Nohemi-SemiBold.woff2' },
+            { weight: '700', file: 'Nohemi-Bold.woff2' },
+            { weight: '800', file: 'Nohemi-ExtraBold.woff2' },
+            { weight: '900', file: 'Nohemi-Black.woff2' },
+          ];
+          
+          const spaceGroteskWeights = [
+            { weight: '300', file: 'SpaceGrotesk-Light.woff2' },
+            { weight: '400', file: 'SpaceGrotesk-Regular.woff2' },
+            { weight: '500', file: 'SpaceGrotesk-Medium.woff2' },
+            { weight: '600', file: 'SpaceGrotesk-SemiBold.woff2' },
+            { weight: '700', file: 'SpaceGrotesk-Bold.woff2' },
+          ];
+          
+          const loadFont = async (family: string, source: string, weight: string) => {
+            try {
+              const font = new FontFace(family, `url(${source})`, {
+                weight,
+                style: 'normal',
+                display: 'swap',
+              });
+              await font.load();
+              document.fonts.add(font);
+              console.log(`[Fonts] ✅ Loaded ${family} ${weight} via FontFace API`);
+              return true;
+            } catch (error) {
+              console.warn(`[Fonts] ❌ Failed to load ${family} ${weight}:`, error);
+              return false;
+            }
+          };
+          
+          // Try multiple paths for each font
+          const tryLoadFont = async (family: string, fileName: string, weight: string) => {
+            const paths = [
+              `${fontBaseUrl}${fileName}`,
+              `/_expo/static/assets/fonts/${fileName}`,
+              `/assets/fonts/${fileName}`,
+            ];
+            
+            for (const path of paths) {
+              const success = await loadFont(family, path, weight);
+              if (success) return true;
+            }
+            return false;
+          };
+          
+          // Load all fonts
+          const results = await Promise.all([
+            ...nohemiWeights.map(w => tryLoadFont('Nohemi', w.file, w.weight)),
+            ...spaceGroteskWeights.map(w => tryLoadFont('Space Grotesk', w.file, w.weight)),
+          ]);
+          
+          const successCount = results.filter(r => r).length;
+          console.log(`[Fonts] FontFace API: ${successCount}/${results.length} fonts loaded`);
+          
+          return successCount > 0;
+        };
+        
+        // Load fonts via FontFace API (better for mobile)
+        loadFontsViaAPI();
+      }
+      
+      // Also inject @font-face declarations as fallback
       const style = document.createElement('style');
       style.id = 'halcyon-fonts';
       
       // Detect where Expo actually puts assets in the build
-      // Expo web builds may put assets in _expo/static/ or similar
       const getFontPaths = (fontName: string) => {
         const origin = typeof window !== 'undefined' ? window.location.origin : '';
         const paths = [
-          // Try Expo's typical asset location
-          `${origin}/_expo/static/assets/fonts/${fontName}`,
-          // Try standard assets location
           `${origin}/assets/fonts/${fontName}`,
-          // Try absolute paths
+          `/_expo/static/assets/fonts/${fontName}`,
           `/assets/fonts/${fontName}`,
           `./assets/fonts/${fontName}`,
-          // Try _expo without origin
-          `/_expo/static/assets/fonts/${fontName}`,
         ];
         return paths;
       };
@@ -105,7 +173,6 @@ export default function RootLayout() {
       // Helper to create font src with multiple fallback paths
       const createFontSrc = (fontName: string) => {
         const paths = getFontPaths(fontName);
-        // Create src with all possible paths
         const srcUrls = paths.map(path => `url('${path}') format('woff2')`).join(', ');
         return `src: ${srcUrls};`;
       };

@@ -42,7 +42,14 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 const THEME_STORAGE_KEY = 'halcyon_theme_mode';
 
 // Helper function to get font family name based on weight
+// On web, use 'Nohemi' with font-weight; on native, use specific font family names
 const getFontFamilyByWeight = (weight: string): string => {
+  if (Platform.OS === 'web') {
+    // On web, use the base font family name from @font-face declarations
+    // The browser will automatically select the right weight variant
+    return 'Nohemi';
+  }
+  // On native platforms, use specific font family names
   const weightMap: Record<string, string> = {
     '100': 'Nohemi-Thin',
     '200': 'Nohemi-ExtraLight',
@@ -60,7 +67,7 @@ const getFontFamilyByWeight = (weight: string): string => {
 // Helper to get mobile typography styles
 const getMobileTypography = () => {
   return {
-    fontFamily: 'Nohemi-Regular',
+    fontFamily: Platform.OS === 'web' ? 'Nohemi' : 'Nohemi-Regular',
     h1: {
       fontFamily: getFontFamilyByWeight(typography.presets.h1.fontWeight),
       fontSize: typography.presets.h1.fontSize.mobile,
