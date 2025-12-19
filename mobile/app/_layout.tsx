@@ -84,26 +84,95 @@ export default function RootLayout() {
       const style = document.createElement('style');
       style.id = 'halcyon-fonts';
       
-      // Use absolute URLs with origin for fonts (works on all devices including mobile)
-      const getFontUrl = (fontName: string) => {
-        if (typeof window !== 'undefined') {
-          // Use full absolute URL with origin - most reliable for PWA on mobile
-          return `${window.location.origin}/assets/fonts/${fontName}`;
-        }
-        return `/assets/fonts/${fontName}`;
+      // Detect where Expo actually puts assets in the build
+      // Expo web builds may put assets in _expo/static/ or similar
+      const getFontPaths = (fontName: string) => {
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        const paths = [
+          // Try Expo's typical asset location
+          `${origin}/_expo/static/assets/fonts/${fontName}`,
+          // Try standard assets location
+          `${origin}/assets/fonts/${fontName}`,
+          // Try absolute paths
+          `/assets/fonts/${fontName}`,
+          `./assets/fonts/${fontName}`,
+          // Try _expo without origin
+          `/_expo/static/assets/fonts/${fontName}`,
+        ];
+        return paths;
       };
       
       // Helper to create font src with multiple fallback paths
       const createFontSrc = (fontName: string) => {
-        // Primary: Full absolute URL with origin (works everywhere)
-        const absoluteUrl = getFontUrl(fontName);
-        // Fallback 1: Absolute path from root (works in most cases)
-        const absolutePath = `/assets/fonts/${fontName}`;
-        // Fallback 2: Relative path (works if CSS is in same directory structure)
-        const relativePath = `./assets/fonts/${fontName}`;
-        // Use all three - browser will try each until one works
-        return `src: url('${absoluteUrl}') format('woff2'), url('${absolutePath}') format('woff2'), url('${relativePath}') format('woff2');`;
+        const paths = getFontPaths(fontName);
+        // Create src with all possible paths
+        const srcUrls = paths.map(path => `url('${path}') format('woff2')`).join(', ');
+        return `src: ${srcUrls};`;
       };
+      
+      // Test font loading and verify fonts are accessible
+      if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+        // Use Font Loading API to check if fonts actually loaded
+        const checkFontLoaded = async () => {
+          try {
+            // Wait a bit for fonts to load
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Check if Nohemi font is available
+            if (document.fonts && document.fonts.check) {
+              const nohemiLoaded = document.fonts.check('1em Nohemi');
+              const spaceGroteskLoaded = document.fonts.check('1em "Space Grotesk"');
+              
+              console.log('[Fonts] Nohemi loaded:', nohemiLoaded);
+              console.log('[Fonts] Space Grotesk loaded:', spaceGroteskLoaded);
+              
+              if (!nohemiLoaded || !spaceGroteskLoaded) {
+                console.warn('[Fonts] ⚠️ Some fonts failed to load. Available fonts:', 
+                  Array.from(document.fonts).map(f => f.family).join(', '));
+                
+                // Try to find fonts in common Expo locations
+                const testFont = 'Nohemi-Regular.woff2';
+                const testPaths = getFontPaths(testFont);
+                console.log('[Fonts] Testing font accessibility at paths:', testPaths);
+                
+                // Test each path
+                for (const path of testPaths) {
+                  try {
+                    const response = await fetch(path, { method: 'HEAD' });
+                    if (response.ok) {
+                      console.log(`[Fonts] ✅ Font accessible at: ${path}`);
+                      break;
+                    }
+                  } catch (e) {
+                    console.log(`[Fonts] ❌ Font not accessible at: ${path}`);
+                  }
+                }
+              } else {
+                console.log('[Fonts] ✅ All fonts loaded successfully!');
+                // Store success in localStorage for debugging
+                if (typeof localStorage !== 'undefined') {
+                  localStorage.setItem('halcyon_fonts_loaded', 'true');
+                  localStorage.setItem('halcyon_fonts_check_time', new Date().toISOString());
+                }
+              }
+              
+              // Store font loading status for debugging (even if failed)
+              if (typeof localStorage !== 'undefined') {
+                localStorage.setItem('halcyon_fonts_status', JSON.stringify({
+                  nohemi: nohemiLoaded,
+                  spaceGrotesk: spaceGroteskLoaded,
+                  timestamp: new Date().toISOString(),
+                }));
+              }
+            }
+          } catch (error) {
+            console.error('[Fonts] Error checking font loading:', error);
+          }
+        };
+        
+        // Check fonts after a delay
+        setTimeout(checkFontLoaded, 2000);
+      }
       
       style.textContent = `
         /* Nohemi Font Family */
