@@ -11,9 +11,11 @@ import { useProphetStore } from '../hooks/useProphetStore';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { TreatmentFacility } from '../types';
 import { Building2, Users, FileCheck, Car, DollarSign, TrendingUp } from 'lucide-react';
+import { useFeatureFlag } from '../../../hooks/use-permissions';
 
 export function TreatmentFacilitiesManager() {
   const { facilities, addFacility, updateFacility, deleteFacility, calculateFacilityRevenue } = useProphetStore();
+  const { isEnabled: isContractAnalysisEnabled } = useFeatureFlag('contract_analysis');
   const [formOpen, setFormOpen] = useState(false);
   const [editingFacility, setEditingFacility] = useState<TreatmentFacility | undefined>();
   const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
@@ -166,7 +168,7 @@ export function TreatmentFacilitiesManager() {
       />
 
       {/* Contract Analysis Modal */}
-      {analyzingFacility && (
+      {isContractAnalysisEnabled && analyzingFacility && (
         <ContractAnalysisModal
           open={analysisModalOpen}
           onOpenChange={(open) => {

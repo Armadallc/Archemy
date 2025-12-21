@@ -20,6 +20,7 @@ import {
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
 import { TreatmentFacility, FACILITY_TYPE_LABELS, WAIVER_TYPE_LABELS } from '../types';
+import { useFeatureFlag } from '../../../hooks/use-permissions';
 
 interface FacilityCardProps {
   facility?: TreatmentFacility;
@@ -31,6 +32,8 @@ interface FacilityCardProps {
 }
 
 export function FacilityCard({ facility, slot, onEdit, onDelete, onAdd, onAnalyze }: FacilityCardProps) {
+  const { isEnabled: isContractAnalysisEnabled } = useFeatureFlag('contract_analysis');
+  
   // Empty slot
   if (!facility) {
     return (
@@ -176,15 +179,17 @@ export function FacilityCard({ facility, slot, onEdit, onDelete, onAdd, onAnalyz
         </div>
 
         {/* Actions */}
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full mt-2"
-          onClick={onAnalyze}
-        >
-          <BarChart3 className="h-4 w-4 mr-2" />
-          Analyze Contract
-        </Button>
+        {isContractAnalysisEnabled && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full mt-2"
+            onClick={onAnalyze}
+          >
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Analyze Contract
+          </Button>
+        )}
       </CardContent>
     </Card>
   );
