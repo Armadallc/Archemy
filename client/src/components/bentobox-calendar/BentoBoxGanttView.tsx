@@ -39,6 +39,30 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
   const timeSlots = Array.from({ length: 17 }, (_, i) => i + 6);
   const minutesPerSlot = 60;
 
+  // Uniform grid constants - ensures consistent alignment across all blocks
+  const GRID_CONSTANTS = {
+    // Spacing
+    GUTTER: 8, // 8px gutter between columns (0.5rem)
+    BLOCK_PADDING: 8, // 8px padding inside encounter blocks (0.5rem)
+    BLOCK_MARGIN: 8, // 8px margin on left/right of encounter blocks (0.5rem)
+    
+    // Dimensions
+    TIME_COLUMN_WIDTH: { base: 64, md: 80 }, // w-16 md:w-20
+    DAY_COLUMN_WIDTH: { 
+      week: 'flex-1', // Equal distribution for week view
+      month: { base: 120, md: 150, lg: 180 } // Fixed widths for month view
+    },
+    TIME_SLOT_HEIGHT: { base: 48, md: 56 }, // h-12 md:h-14
+    
+    // Borders
+    BORDER_WIDTH: 1, // 1px borders
+    BORDER_COLOR: 'border-border',
+    
+    // Header padding
+    HEADER_PADDING: 8, // 8px padding in day headers (p-2)
+    TIME_COLUMN_PADDING: { right: 8, top: 4 }, // pr-2 md:pr-3 pt-1
+  };
+
   // Sync horizontal scroll between header and calendar
   useEffect(() => {
     const headerEl = headerScrollRef.current;
@@ -316,9 +340,17 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
     <>
       <div className="flex flex-col h-full bg-background overflow-hidden">
       {/* Days Header */}
-      <div className="flex border-b sticky top-0 bg-background z-10 flex-shrink-0">
+      <div className="flex border-b sticky top-0 bg-background z-10 flex-shrink-0" style={{ borderBottomWidth: `${GRID_CONSTANTS.BORDER_WIDTH}px` }}>
         {/* Time column header */}
-        <div className="w-16 md:w-20 bg-muted/50 border-r flex-shrink-0"></div>
+        <div 
+          className="bg-muted/50 border-r flex-shrink-0" 
+          style={{ 
+            width: `${GRID_CONSTANTS.TIME_COLUMN_WIDTH.base}px`,
+            borderRightWidth: `${GRID_CONSTANTS.BORDER_WIDTH}px`
+          }}
+        >
+          <div className="hidden md:block" style={{ width: `${GRID_CONSTANTS.TIME_COLUMN_WIDTH.md}px` }}></div>
+        </div>
         
         {/* Days header - flex for week, scrollable for month */}
         <div 
@@ -330,17 +362,21 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
         >
           <div className={cn(
             "flex h-full",
-            isWeekView ? "w-full" : "min-w-max",
-            !isWeekView && "pr-4"
+            isWeekView ? "w-full" : "min-w-max"
           )}>
             {days.map((day) => (
               <div
                   key={day.toISOString()}
                   className={cn(
-                    "p-2 text-center border-r border-b flex-shrink-0",
-                    isWeekView ? "flex-1" : "min-w-[120px] md:min-w-[150px] lg:min-w-[180px]",
-                    isSameDay(day, new Date()) && "bg-primary/10"
+                    "text-center border-r border-b flex-shrink-0",
+                    isSameDay(day, new Date()) && "bg-primary/10",
+                    isWeekView ? "flex-1" : "min-w-[120px] md:min-w-[150px] lg:min-w-[180px]"
                   )}
+                  style={{
+                    padding: `${GRID_CONSTANTS.HEADER_PADDING}px`,
+                    borderRightWidth: `${GRID_CONSTANTS.BORDER_WIDTH}px`,
+                    borderBottomWidth: `${GRID_CONSTANTS.BORDER_WIDTH}px`
+                  }}
                 >
                 <div className="text-xs font-medium text-muted-foreground">
                   {format(day, "EEE")}
@@ -363,23 +399,31 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
         isWeekView ? "overflow-x-hidden" : "overflow-x-auto"
       )}>
         {/* Time column - sticky */}
-        <div className="w-16 md:w-20 bg-muted/50 border-r flex-shrink-0 sticky left-0 z-10">
+        <div 
+          className="bg-muted/50 border-r flex-shrink-0 sticky left-0 z-10" 
+          style={{ 
+            width: `${GRID_CONSTANTS.TIME_COLUMN_WIDTH.base}px`,
+            borderRightWidth: `${GRID_CONSTANTS.BORDER_WIDTH}px`
+          }}
+        >
           {timeSlots.map((hour, index) => {
             const isLastSlot = index === timeSlots.length - 1;
             return (
-              <div
-                key={hour}
-                ref={index === 0 ? timeSlotRef : undefined}
-                className={cn(
-                  "h-12 md:h-14 flex items-start justify-end pr-2 md:pr-3 pt-1",
-                  !isLastSlot && "border-b border-border"
-                )}
-                style={!isLastSlot ? { borderBottomWidth: '1px' } : undefined}
-              >
-                <span className="text-xs text-muted-foreground">
-                  {hour === 12 ? "12 PM" : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
-                </span>
-              </div>
+                <div
+                  key={hour}
+                  ref={index === 0 ? timeSlotRef : undefined}
+                  className="flex items-start justify-end h-12 md:h-14"
+                  style={{
+                    paddingRight: `${GRID_CONSTANTS.TIME_COLUMN_PADDING.right}px`,
+                    paddingTop: `${GRID_CONSTANTS.TIME_COLUMN_PADDING.top}px`,
+                    borderBottomWidth: !isLastSlot ? `${GRID_CONSTANTS.BORDER_WIDTH}px` : '0',
+                    borderBottomColor: !isLastSlot ? 'var(--border)' : 'transparent'
+                  }}
+                >
+                  <span className="text-xs text-muted-foreground">
+                    {hour === 12 ? "12 PM" : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
+                  </span>
+                </div>
             );
           })}
         </div>
@@ -404,11 +448,14 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
                 <div
                   key={day.toISOString()}
                   className={cn(
-                    "border-r relative bg-background",
+                    "border-r relative bg-background flex-shrink-0",
                     isWeekView ? "flex-1" : "min-w-[120px] md:min-w-[150px] lg:min-w-[180px]"
                   )}
+                  style={{
+                    borderRightWidth: `${GRID_CONSTANTS.BORDER_WIDTH}px`
+                  }}
                 >
-                  {/* Time slots */}
+                  {/* Time slots - uniform height ensures horizontal alignment */}
                   {timeSlots.map((hour, slotIndex) => {
                     const isDraggedOver = draggedOverSlot?.day && 
                       isSameDay(draggedOverSlot.day, day) && 
@@ -419,13 +466,15 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
                       <div
                         key={hour}
                         className={cn(
-                          "h-12 md:h-14 transition-colors flex-shrink-0",
-                          !isLastSlot && "border-b border-border",
+                          "transition-colors flex-shrink-0 h-12 md:h-14",
                           isDraggedOver
-                            ? "bg-primary/20 border-primary border-2"
+                            ? "bg-primary/20 border-primary"
                             : "hover:bg-muted/30 cursor-pointer"
                         )}
-                        style={!isLastSlot && !isDraggedOver ? { borderBottomWidth: '1px' } : undefined}
+                        style={{
+                          borderBottomWidth: !isLastSlot && !isDraggedOver ? `${GRID_CONSTANTS.BORDER_WIDTH}px` : isDraggedOver ? '2px' : '0',
+                          borderBottomColor: !isLastSlot && !isDraggedOver ? 'var(--border)' : isDraggedOver ? 'var(--primary)' : 'transparent'
+                        }}
                         onClick={() => handleTimeSlotClick(day, hour)}
                         onDragOver={(e) => handleTimeSlotDragOver(e, day, hour)}
                         onDrop={(e) => handleTimeSlotDrop(e, day, hour)}
@@ -447,11 +496,17 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
                         <HoverCardTrigger asChild>
                           <div
                             className={cn(
-                              "absolute left-1 right-1 rounded-md p-2 cursor-move border text-xs shadow-sm",
+                              "absolute rounded-md cursor-move border text-xs shadow-sm",
                               getColorClasses(encounter.color as FireColor),
                               isDragging && "opacity-50"
                             )}
-                            style={position}
+                            style={{
+                              ...position,
+                              left: `${GRID_CONSTANTS.BLOCK_MARGIN}px`,
+                              right: `${GRID_CONSTANTS.BLOCK_MARGIN}px`,
+                              padding: `${GRID_CONSTANTS.BLOCK_PADDING}px`,
+                              borderWidth: `${GRID_CONSTANTS.BORDER_WIDTH}px`
+                            }}
                             draggable
                             onDragStart={(e) => {
                               e.dataTransfer.setData('application/json', JSON.stringify({
