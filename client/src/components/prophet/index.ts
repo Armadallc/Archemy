@@ -5,7 +5,6 @@
 
 // Main Component
 export { ProphetCalculator } from './ProphetCalculator';
-export { default } from './ProphetCalculator';
 
 // Sub-modules
 export { CostStructureManager, FixedCosts, VariableCosts, StaffingCosts } from './CostStructureManager';

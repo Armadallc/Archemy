@@ -3,6 +3,9 @@
  * With localStorage persistence and Supabase sync
  */
 
+// Ensure React is loaded before Zustand (Zustand uses React hooks internally)
+import 'react';
+
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { supabase } from '../../../lib/supabase';
@@ -1073,6 +1076,4 @@ export const useProphetStore = create<ProphetState & ProphetActions>()(
     }
   )
 );
-
-export default useProphetStore;
 

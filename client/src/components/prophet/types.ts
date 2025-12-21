@@ -135,15 +135,6 @@ export interface FacilityBillingCode {
   estimatedVolume: number;
 }
 
-export interface ContractAnalysis {
-  proposedMonthlyFee: number;
-  estimatedRevenue: number;
-  overheadCosts: number;
-  mutualBenefit: boolean;
-  margin: number;
-  marginPercentage: number;
-}
-
 export interface TreatmentFacility {
   id: string;
   slot: 1 | 2 | 3;
@@ -161,7 +152,6 @@ export interface TreatmentFacility {
   
   transport: FacilityTransport;
   billingCodes: FacilityBillingCode[];
-  contractAnalysis?: ContractAnalysis;
   
   createdAt: string;
   updatedAt: string;

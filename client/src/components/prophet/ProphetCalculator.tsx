@@ -225,5 +225,4 @@ export function ProphetCalculator() {
   );
 }
 
-export default ProphetCalculator;
 

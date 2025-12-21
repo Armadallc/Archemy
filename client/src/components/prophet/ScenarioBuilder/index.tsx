@@ -463,23 +463,23 @@ export function ScenarioBuilder() {
       <div className="flex items-center gap-4">
         <div className="flex gap-2 flex-wrap">
           {scenarios.map((scenario) => (
-            <Button
-              key={scenario.id}
-              variant={activeScenarioId === scenario.id ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveScenario(scenario.id)}
-              className="relative"
-              style={activeScenarioId === scenario.id ? {
-                backgroundColor: 'var(--primary)',
-                color: 'var(--primary-foreground)',
-              } : {}}
-            >
-              <FileText className="h-3 w-3 mr-1" />
-              {scenario.name}
+            <div key={scenario.id} className="relative inline-flex items-center gap-1">
+              <Button
+                variant={activeScenarioId === scenario.id ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveScenario(scenario.id)}
+                style={activeScenarioId === scenario.id ? {
+                  backgroundColor: 'var(--primary)',
+                  color: 'var(--primary-foreground)',
+                } : {}}
+              >
+                <FileText className="h-3 w-3 mr-1" />
+                {scenario.name}
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                className="ml-2 h-4 w-4 p-0 hover:bg-status-error/20"
+                className="h-7 w-7 p-0 hover:bg-status-error/20 text-status-error"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (confirm('Delete this scenario?')) {
@@ -489,7 +489,7 @@ export function ScenarioBuilder() {
               >
                 <Trash2 className="h-3 w-3" />
               </Button>
-            </Button>
+            </div>
           ))}
         </div>
         <div className="flex gap-2">
