@@ -180,15 +180,24 @@ export function FacilityCard({ facility, slot, onEdit, onDelete, onAdd, onAnalyz
 
         {/* Actions */}
         {isContractAnalysisEnabled && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full mt-2"
-            onClick={onAnalyze}
-          >
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Analyze Contract
-          </Button>
+          <div className="mt-2 space-y-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={onAnalyze}
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              {facility.contractAnalysis ? 'View Analysis' : 'Analyze Contract'}
+            </Button>
+            {facility.contractAnalysis && (
+              <div className="text-xs text-center" style={{ color: 'var(--muted-foreground)' }}>
+                Analysis saved {facility.contractAnalysis.updatedAt 
+                  ? new Date(facility.contractAnalysis.updatedAt).toLocaleDateString()
+                  : ''}
+              </div>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>

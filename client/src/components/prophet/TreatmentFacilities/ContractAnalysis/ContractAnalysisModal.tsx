@@ -39,9 +39,15 @@ export function ContractAnalysisModal({
   // Load or initialize analysis
   useEffect(() => {
     if (open && facility) {
+      // Always get the latest facility data from store
       const currentFacility = facilities.find((f) => f.id === facility.id);
       if (currentFacility?.contractAnalysis) {
+        // Load existing saved analysis
         setAnalysis(currentFacility.contractAnalysis);
+        // Restore selected comparison if it exists
+        if (currentFacility.contractAnalysis.selectedComparisonId) {
+          // Comparison will be recalculated when tab is viewed
+        }
       } else {
         // Initialize new analysis
         const newAnalysis: ContractAnalysis = {
@@ -134,7 +140,7 @@ export function ContractAnalysisModal({
         setAnalysis(newAnalysis);
       }
     }
-  }, [open, facility, facilities]);
+  }, [open, facility, facilities]); // Include facilities in dependencies to reload when data changes, [open, facility, facilities]);
 
   const handleSave = () => {
     if (analysis) {
