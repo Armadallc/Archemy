@@ -714,8 +714,7 @@ export default function FrequentLocationsPage() {
               {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
                 <HeaderScopeSelector />
               )}
-            </div>
-            <div className="flex gap-2">
+              <div className="flex gap-2">
           <Button 
             variant="outline" 
             onClick={handleSyncServiceLocations}
