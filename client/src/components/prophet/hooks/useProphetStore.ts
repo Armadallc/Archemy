@@ -899,19 +899,21 @@ export const useProphetStore = create<ProphetState & ProphetActions>()(
         let totalRevenue = 0;
         
         for (const trip of scenario.trips) {
-          const multiplier = trip.roundTrip ? 2 : 1;
+          const multiplier = trip.multiplier !== undefined ? trip.multiplier : (trip.roundTrip ? 2 : 1);
           
           if (trip.billingMethod === 'contract' && trip.contractFee) {
             totalRevenue += trip.contractFee;
           } else if (trip.billingMethod === 'medicaid' || trip.billingMethod === 'nmt') {
+            const clients = trip.clients || 1; // Default to 1 if not set
             const effectiveTrips = trip.requiresWaiver
-              ? trip.tripsPerMonth * (trip.percentWithWaiver / 100)
-              : trip.tripsPerMonth;
+              ? trip.tripsPerMonth * clients * (trip.percentWithWaiver / 100)
+              : trip.tripsPerMonth * clients;
             
             const tripRevenue = trip.baseRatePerTrip + (trip.avgMiles * trip.mileageRate);
             totalRevenue += effectiveTrips * tripRevenue * multiplier;
           } else if (trip.billingMethod === 'mileage') {
-            totalRevenue += trip.tripsPerMonth * trip.avgMiles * 0.49 * multiplier;
+            const clients = trip.clients || 1; // Default to 1 if not set
+            totalRevenue += trip.tripsPerMonth * clients * trip.avgMiles * 0.49 * multiplier;
           }
         }
         
@@ -930,7 +932,7 @@ export const useProphetStore = create<ProphetState & ProphetActions>()(
         
         // Calculate total trips for per-trip variable costs
         const totalTrips = scenario.trips.reduce((sum, trip) => {
-          const multiplier = trip.roundTrip ? 2 : 1;
+          const multiplier = trip.multiplier !== undefined ? trip.multiplier : (trip.roundTrip ? 2 : 1);
           return sum + (trip.tripsPerMonth * multiplier);
         }, 0);
         
@@ -954,7 +956,7 @@ export const useProphetStore = create<ProphetState & ProphetActions>()(
         if (!scenario) return { breakEvenTrips: 0, tripsGap: 0 };
         
         const totalTrips = scenario.trips.reduce((sum, trip) => {
-          const multiplier = trip.roundTrip ? 2 : 1;
+          const multiplier = trip.multiplier !== undefined ? trip.multiplier : (trip.roundTrip ? 2 : 1);
           return sum + (trip.tripsPerMonth * multiplier);
         }, 0);
         

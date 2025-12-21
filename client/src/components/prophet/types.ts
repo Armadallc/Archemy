@@ -368,13 +368,19 @@ export interface TripScenario {
   name: string;
   serviceType: TripServiceType;
   
+  // Category and billing code selection
+  category?: ServiceCategory; // BHST, NEMT, NMT, Behavioral, Other
+  selectedCodeId?: string; // Selected billing code ID
+  selectedModifier?: string; // Selected modifier (for reference only)
+  
   tripsPerMonth: number;
-  roundTrip: boolean;
+  clients: number; // Number of clients (multiplies trips)
+  roundTrip: boolean; // Keep for backward compatibility
+  multiplier?: number; // Custom multiplier (defaults to 1 if roundTrip false, 2 if roundTrip true)
   avgMiles: number;
   
   // Billing
   billingMethod: BillingMethod;
-  selectedCodeId?: string;
   baseRatePerTrip: number;
   mileageRate: number;
   contractFee?: number;
