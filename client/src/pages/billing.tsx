@@ -25,6 +25,7 @@ import { useToast } from '../hooks/use-toast';
 import BillingPinSetup from '../components/BillingPinSetup';
 import CMS1500Form from '../components/CMS1500Form';
 import { RollbackManager } from '../utils/rollback-manager';
+import { HeaderScopeSelector } from '../components/HeaderScopeSelector';
 
 export default function BillingPage() {
   const { user } = useAuth();

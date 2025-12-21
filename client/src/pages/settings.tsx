@@ -46,6 +46,8 @@ import { IntegratedThemeEditor } from "../components/design-system/IntegratedThe
 import { Flag, Palette } from "lucide-react";
 import { UserAvatar } from "../components/users/UserAvatar";
 import ContactsTab from "../components/settings/ContactsTab";
+import { HeaderScopeSelector } from "../components/HeaderScopeSelector";
+import { RollbackManager } from "../utils/rollback-manager";
 
 interface CorporateClientSettings {
   id: string;
@@ -373,39 +375,46 @@ export default function Settings() {
     saveSystemMutation.mutate(systemSettings);
   };
 
+  const ENABLE_UNIFIED_HEADER = RollbackManager.isUnifiedHeaderEnabled();
+
   return (
     <div className="container mx-auto space-y-6 p-6">
-      {/* Header */}
-      <div>
-        <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
-          <div>
-            <h1 
-              className="font-bold text-foreground" 
-              style={{ 
-                fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
-                fontSize: '110px'
-              }}
-            >
-              settings.
-            </h1>
-          </div>
-          <div className="flex items-center space-x-2">
-          <Badge variant="outline">
-            {level?.toUpperCase() || 'CORPORATE'} Level
-          </Badge>
-          {selectedCorporateClient && (
-            <Badge variant="secondary">
-              {selectedCorporateClient}
-            </Badge>
-          )}
-          {selectedProgram && (
-            <Badge variant="secondary">
-              {selectedProgram}
-            </Badge>
-          )}
+      {/* Header - Only show if unified header is disabled (fallback) */}
+      {!ENABLE_UNIFIED_HEADER && (
+        <div>
+          <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between mb-6" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+            <div>
+              <h1 
+                className="font-bold text-foreground" 
+                style={{ 
+                  fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+                  fontSize: '110px'
+                }}
+              >
+                settings.
+              </h1>
+            </div>
+            <div className="flex items-center gap-3">
+              {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
+                <HeaderScopeSelector />
+              )}
+              <Badge variant="outline">
+                {level?.toUpperCase() || 'CORPORATE'} Level
+              </Badge>
+              {selectedCorporateClient && (
+                <Badge variant="secondary">
+                  {selectedCorporateClient}
+                </Badge>
+              )}
+              {selectedProgram && (
+                <Badge variant="secondary">
+                  {selectedProgram}
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-10 h-auto p-1 gap-1">
