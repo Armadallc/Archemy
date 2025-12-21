@@ -226,24 +226,26 @@ export default function CalendarExperiment() {
               <button
                 onClick={() => setActiveTab('stage')}
                 className={cn(
-                  "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all flex-1",
+                  "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 font-medium transition-all flex-1",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                   activeTab === 'stage'
                     ? "bg-background text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 )}
+                style={{ fontSize: '23px' }}
               >
                 STAGE & CALENDAR
               </button>
               <button
                 onClick={() => setActiveTab('builder')}
                 className={cn(
-                  "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all flex-1",
+                  "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 font-medium transition-all flex-1",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                   activeTab === 'builder'
                     ? "bg-background text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 )}
+                style={{ fontSize: '23px' }}
               >
                 LIBRARY & BUILDER
               </button>
