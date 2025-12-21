@@ -23,9 +23,10 @@ const Switch = React.forwardRef<
   // Update background color based on checked state and theme
   React.useEffect(() => {
     if (switchRef.current) {
-      switchRef.current.style.backgroundColor = checked
-        ? 'var(--primary)'
-        : 'var(--muted, #e5e5e5)';
+      // Always charcoal background
+      switchRef.current.style.backgroundColor = 'var(--color-charcoal, #1a1a1a)';
+      // Aqua border
+      switchRef.current.style.borderColor = 'var(--color-aqua, #3bfec9)';
     }
   }, [checked]);
 
@@ -36,8 +37,8 @@ const Switch = React.forwardRef<
         className
       )}
       style={{
-        backgroundColor: checked ? 'var(--primary)' : 'var(--muted, #e5e5e5)',
-        borderColor: 'var(--border)',
+        backgroundColor: checked ? 'var(--color-charcoal, #1a1a1a)' : 'var(--color-charcoal, #1a1a1a)', // Charcoal background always
+        borderColor: 'var(--color-aqua, #3bfec9)', // Aqua border
         ...style,
       }}
       checked={checked}

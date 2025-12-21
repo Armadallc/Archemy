@@ -120,7 +120,7 @@ export default function FeatureFlagsTab() {
 
   const handleToggleFeatureFlag = (flag: FeatureFlag) => {
     toggleFeatureFlagMutation.mutate({
-      flag_id: flag.id,
+      id: flag.id,  // API expects 'id', not 'flag_id'
       is_enabled: !flag.is_enabled
     });
   };
