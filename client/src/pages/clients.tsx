@@ -1117,18 +1117,7 @@ export default function Clients() {
               </CardTitle>
               <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button 
-                    className="text-white"
-                    style={{ backgroundColor: 'var(--primary)', color: 'var(--color-aqua)', borderWidth: '1px', borderColor: 'var(--border)' }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = 'var(--primary)';
-                      e.currentTarget.style.opacity = '0.9';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'var(--primary)';
-                      e.currentTarget.style.opacity = '1';
-                    }}
-                  >
+                  <Button>
                     <Plus className="w-4 h-4 mr-2" />
                     Add Client
                   </Button>
