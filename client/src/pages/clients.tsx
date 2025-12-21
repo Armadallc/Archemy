@@ -1013,7 +1013,6 @@ export default function Clients() {
               {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
                 <HeaderScopeSelector />
               )}
-            </div>
           <div className="flex space-x-2">
           <ExportButton
             data={filteredClients}

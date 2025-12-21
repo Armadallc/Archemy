@@ -1,13 +1,17 @@
 import React from 'react';
 import { Card, CardContent } from '../components/ui/card';
 import ChatWidget from '../components/chat/ChatWidget';
+import { useAuth } from '../hooks/useAuth';
+import { HeaderScopeSelector } from '../components/HeaderScopeSelector';
 
 export default function ChatPage() {
+  const { user } = useAuth();
+  
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-background-secondary to-background dark:from-background dark:to-background-secondary overflow-hidden">
       <div className="flex-shrink-0 pt-4 md:pt-6 px-4 md:px-6">
-        <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
-          <div className="container mx-auto">
+        <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+          <div>
             <h1 
               className="font-bold text-foreground" 
               style={{ 
@@ -17,6 +21,11 @@ export default function ChatPage() {
             >
               huddle.
             </h1>
+          </div>
+          <div className="flex items-center gap-3">
+            {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
+              <HeaderScopeSelector />
+            )}
           </div>
         </div>
       </div>

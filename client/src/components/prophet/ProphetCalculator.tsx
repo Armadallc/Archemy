@@ -27,8 +27,11 @@ import {
   Download,
 } from 'lucide-react';
 import { RollbackManager } from '../../utils/rollback-manager';
+import { useAuth } from '../../hooks/useAuth';
+import { HeaderScopeSelector } from '../HeaderScopeSelector';
 
 export function ProphetCalculator() {
+  const { user } = useAuth();
   const {
     activeTab,
     setActiveTab,
@@ -103,6 +106,9 @@ export function ProphetCalculator() {
           
           {/* Sync Status & Actions */}
         <div className="flex items-center gap-3">
+          {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
+            <HeaderScopeSelector />
+          )}
           <div className="flex items-center gap-2 text-sm">
             {pendingSync ? (
               <Badge variant="outline" className="gap-1" style={{ borderColor: 'var(--status-warning)' }}>

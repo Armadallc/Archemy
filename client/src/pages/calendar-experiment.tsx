@@ -134,12 +134,15 @@ export default function CalendarExperiment() {
               {getDateRangeLabel()}
             </div>
           </div>
+          
+          <div className="flex items-center gap-3">
+            {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
+              <HeaderScopeSelector />
+            )}
+          </div>
 
           {/* View Controls */}
         <div className="flex items-center gap-4">
-          {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
-            <HeaderScopeSelector />
-          )}
           {/* View Toggle */}
           <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
             <Button
