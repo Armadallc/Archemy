@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { BarChart3, DollarSign, TrendingUp, Users, AlertCircle, Calculator, ChevronRight } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useDashboardData } from "../hooks/useDashboardData";
+import { HeaderScopeSelector } from "../components/HeaderScopeSelector";
 import RevenueWidget from "../components/dashboard/RevenueWidget";
 import PerformanceMetricsWidget from "../components/dashboard/PerformanceMetricsWidget";
 import EIAGasolinePrices from "../components/dashboard/EIAGasolinePrices";
@@ -59,6 +60,9 @@ export default function Analytics() {
                   </h1>
                 </div>
                 <div className="flex items-center gap-3">
+                  {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
+                    <HeaderScopeSelector />
+                  )}
                 </div>
               </div>
             </div>

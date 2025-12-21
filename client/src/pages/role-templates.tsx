@@ -15,6 +15,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { RollbackManager } from '../utils/rollback-manager';
+import { HeaderScopeSelector } from '../components/HeaderScopeSelector';
 
 interface Permission {
   id: string;
@@ -878,6 +879,11 @@ export default function RoleTemplatesPage() {
             >
               roles.
             </h1>
+          </div>
+          <div className="flex items-center gap-3">
+            {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
+              <HeaderScopeSelector />
+            )}
           </div>
           {/* Empty div for action buttons on the right side */}
           <div className="flex items-center gap-3"></div>

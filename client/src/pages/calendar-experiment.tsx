@@ -22,6 +22,8 @@ import { Button } from "../components/ui/button";
 import { RollbackManager } from "../utils/rollback-manager";
 // Removed Radix Tabs - using custom implementation for better layout control
 import { cn } from "../lib/utils";
+import { useAuth } from "../hooks/useAuth";
+import { HeaderScopeSelector } from "../components/HeaderScopeSelector";
 
 export default function CalendarExperiment() {
   const {
@@ -135,6 +137,9 @@ export default function CalendarExperiment() {
 
           {/* View Controls */}
         <div className="flex items-center gap-4">
+          {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
+            <HeaderScopeSelector />
+          )}
           {/* View Toggle */}
           <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
             <Button

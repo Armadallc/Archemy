@@ -27,6 +27,7 @@ import { apiRequest } from "../lib/queryClient";
 import ExportButton from "../components/export/ExportButton";
 import { ComprehensiveClientForm } from "../components/forms/ComprehensiveClientForm";
 import { RollbackManager } from "../utils/rollback-manager";
+import { HeaderScopeSelector } from "../components/HeaderScopeSelector";
 
 // Zod schema for client validation
 const clientFormSchema = z.object({
@@ -1007,6 +1008,11 @@ export default function Clients() {
               >
                 clients.
               </h1>
+            </div>
+            <div className="flex items-center gap-3">
+              {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
+                <HeaderScopeSelector />
+              )}
             </div>
           <div className="flex space-x-2">
           <ExportButton
