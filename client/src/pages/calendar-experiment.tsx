@@ -110,7 +110,7 @@ export default function CalendarExperiment() {
       {/* Header - Only show if unified header is disabled (fallback) */}
       {!ENABLE_UNIFIED_HEADER && (
         <div className="flex-shrink-0 px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between mb-6" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
-          <div>
+          <div className="flex items-center gap-4">
             <h1 
               className="font-bold text-foreground" 
               style={{ 
@@ -120,6 +120,14 @@ export default function CalendarExperiment() {
             >
               bentobox.
             </h1>
+            <div 
+              className="font-medium text-foreground"
+              style={{ 
+                fontSize: '48px'
+              }}
+            >
+              {getDateRangeLabel()}
+            </div>
           </div>
 
           {/* View Controls */}
@@ -187,9 +195,6 @@ export default function CalendarExperiment() {
             >
               <ChevronRight className="w-4 h-4" />
             </Button>
-            <div className="text-sm font-medium min-w-[200px] text-center">
-              {getDateRangeLabel()}
-            </div>
           </div>
 
           {/* Stats */}
