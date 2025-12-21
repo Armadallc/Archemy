@@ -142,78 +142,37 @@ export default function CalendarExperiment() {
             )}
           </div>
 
-          {/* View Controls */}
-        <div className="flex items-center gap-4">
-          {/* View Toggle */}
-          <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setCurrentView("day")}
-              className={cn(
-                "h-8",
-                currentView === "day" && "bg-background shadow-sm"
-              )}
-            >
-              <Calendar className="w-4 h-4 mr-1" />
-              Day
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setCurrentView("week")}
-              className={cn(
-                "h-8",
-                currentView === "week" && "bg-background shadow-sm"
-              )}
-            >
-              <LayoutGrid className="w-4 h-4 mr-1" />
-              Week
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setCurrentView("month")}
-              className={cn(
-                "h-8",
-                currentView === "month" && "bg-background shadow-sm"
-              )}
-            >
-              <CalendarDays className="w-4 h-4 mr-1" />
-              Month
-            </Button>
-          </div>
-
           {/* Date Navigation */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handlePrevious}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleToday}
-            >
-              Today
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleNext}
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrevious}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleToday}
+              >
+                Today
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNext}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
 
-          {/* Stats */}
-          <div className="text-xs text-muted-foreground">
-            {scheduledEncounters.length} scheduled
+            {/* Stats */}
+            <div className="text-xs text-muted-foreground">
+              {scheduledEncounters.length} scheduled
+            </div>
           </div>
-        </div>
         </div>
       )}
 
@@ -222,33 +181,75 @@ export default function CalendarExperiment() {
         <div className="flex flex-1 flex-col overflow-hidden min-h-0 w-full h-full">
           {/* Custom Tab Navigation */}
           <div className="px-4 pt-2 pb-2 border-b flex-shrink-0 bg-background">
-            <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground w-full">
-              <button
-                onClick={() => setActiveTab('stage')}
-                className={cn(
-                  "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 font-medium transition-all flex-1",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                  activeTab === 'stage'
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                style={{ fontSize: '23px' }}
-              >
-                STAGE & CALENDAR
-              </button>
-              <button
-                onClick={() => setActiveTab('builder')}
-                className={cn(
-                  "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 font-medium transition-all flex-1",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                  activeTab === 'builder'
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                style={{ fontSize: '23px' }}
-              >
-                LIBRARY & BUILDER
-              </button>
+            <div className="flex items-center justify-between gap-4">
+              <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground flex-1">
+                <button
+                  onClick={() => setActiveTab('stage')}
+                  className={cn(
+                    "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 font-medium transition-all flex-1",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    activeTab === 'stage'
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  style={{ fontSize: '23px' }}
+                >
+                  STAGE & CALENDAR
+                </button>
+                <button
+                  onClick={() => setActiveTab('builder')}
+                  className={cn(
+                    "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 font-medium transition-all flex-1",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    activeTab === 'builder'
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  style={{ fontSize: '23px' }}
+                >
+                  LIBRARY & BUILDER
+                </button>
+              </div>
+              
+              {/* View Toggle */}
+              <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCurrentView("day")}
+                  className={cn(
+                    "h-8",
+                    currentView === "day" && "bg-background shadow-sm"
+                  )}
+                >
+                  <Calendar className="w-4 h-4 mr-1" />
+                  Day
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCurrentView("week")}
+                  className={cn(
+                    "h-8",
+                    currentView === "week" && "bg-background shadow-sm"
+                  )}
+                >
+                  <LayoutGrid className="w-4 h-4 mr-1" />
+                  Week
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCurrentView("month")}
+                  className={cn(
+                    "h-8",
+                    currentView === "month" && "bg-background shadow-sm"
+                  )}
+                >
+                  <CalendarDays className="w-4 h-4 mr-1" />
+                  Month
+                </Button>
+              </div>
             </div>
           </div>
 
