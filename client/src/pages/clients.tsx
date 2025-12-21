@@ -1013,25 +1013,26 @@ export default function Clients() {
               {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
                 <HeaderScopeSelector />
               )}
-          <div className="flex space-x-2">
-          <ExportButton
-            data={filteredClients}
-            columns={[
-              { key: 'id', label: 'Client ID' },
-              { key: 'name', label: 'Name', formatter: (client) => `${client.first_name} ${client.last_name}` },
-              { key: 'email', label: 'Email' },
-              { key: 'phone', label: 'Phone' },
-              { key: 'address', label: 'Address' },
-              { key: 'is_active', label: 'Status', formatter: (value) => value ? 'Active' : 'Inactive' },
-              { key: 'emergency_contact_name', label: 'Emergency Contact' },
-              { key: 'emergency_contact_phone', label: 'Emergency Phone' },
-              { key: 'created_at', label: 'Created', formatter: (value) => value ? format(new Date(value), 'MMM dd, yyyy') : '' }
-            ]}
-            filename={`clients-${format(new Date(), 'yyyy-MM-dd')}`}
-            onExportStart={() => console.log('Starting client export...')}
-            onExportComplete={() => console.log('Client export completed!')}
+              <div className="flex space-x-2">
+                <ExportButton
+                  data={filteredClients}
+                  columns={[
+                    { key: 'id', label: 'Client ID' },
+                    { key: 'name', label: 'Name', formatter: (client) => `${client.first_name} ${client.last_name}` },
+                    { key: 'email', label: 'Email' },
+                    { key: 'phone', label: 'Phone' },
+                    { key: 'address', label: 'Address' },
+                    { key: 'is_active', label: 'Status', formatter: (value) => value ? 'Active' : 'Inactive' },
+                    { key: 'emergency_contact_name', label: 'Emergency Contact' },
+                    { key: 'emergency_contact_phone', label: 'Emergency Phone' },
+                    { key: 'created_at', label: 'Created', formatter: (value) => value ? format(new Date(value), 'MMM dd, yyyy') : '' }
+                  ]}
+                  filename={`clients-${format(new Date(), 'yyyy-MM-dd')}`}
+                  onExportStart={() => console.log('Starting client export...')}
+                  onExportComplete={() => console.log('Client export completed!')}
             onExportError={(error) => console.error('Client export failed:', error)}
-          />
+                />
+              </div>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" className="text-red-600 hover:text-red-700">
