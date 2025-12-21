@@ -26,6 +26,7 @@ import { useAuth } from "../hooks/useAuth";
 import { HeaderScopeSelector } from "../components/HeaderScopeSelector";
 
 export default function CalendarExperiment() {
+  const { user } = useAuth();
   const {
     currentDate,
     currentView,
