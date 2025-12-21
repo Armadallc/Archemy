@@ -129,7 +129,7 @@ export default function CalendarExperiment() {
               style={{ 
                 fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
                 fontSize: '48px',
-                lineHeight: 1
+                lineHeight: 1.3
               }}
             >
               {getDateRangeLabel()}
