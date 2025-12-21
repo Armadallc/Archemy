@@ -135,21 +135,96 @@ export function ABComparisonTab({
       )}
 
       {comparison && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Mutual Benefit Score</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <Label className="text-xs text-muted-foreground">Score</Label>
-              <div className="text-2xl font-bold">{comparison.mutualBenefitScore.toFixed(0)}/100</div>
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">Recommendation</Label>
-              <div className="text-sm">{comparison.recommendation}</div>
-            </div>
-          </CardContent>
-        </Card>
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Mutual Benefit Score</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Score</Label>
+                <div className="text-2xl font-bold">{comparison.mutualBenefitScore.toFixed(0)}/100</div>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Recommendation</Label>
+                <div className="text-sm">{comparison.recommendation}</div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Pros and Cons */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Provider Pros/Cons */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Provider Perspective</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {comparison.providerPros.length > 0 && (
+                  <div>
+                    <Label className="text-xs font-semibold text-green-600">Pros</Label>
+                    <ul className="mt-2 space-y-1">
+                      {comparison.providerPros.map((pro, idx) => (
+                        <li key={idx} className="text-sm flex items-start gap-2">
+                          <span className="text-green-600 mt-0.5">✓</span>
+                          <span>{pro}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {comparison.providerCons.length > 0 && (
+                  <div>
+                    <Label className="text-xs font-semibold text-red-600">Cons</Label>
+                    <ul className="mt-2 space-y-1">
+                      {comparison.providerCons.map((con, idx) => (
+                        <li key={idx} className="text-sm flex items-start gap-2">
+                          <span className="text-red-600 mt-0.5">✗</span>
+                          <span>{con}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Facility Pros/Cons */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Facility Perspective</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {comparison.facilityPros.length > 0 && (
+                  <div>
+                    <Label className="text-xs font-semibold text-green-600">Pros</Label>
+                    <ul className="mt-2 space-y-1">
+                      {comparison.facilityPros.map((pro, idx) => (
+                        <li key={idx} className="text-sm flex items-start gap-2">
+                          <span className="text-green-600 mt-0.5">✓</span>
+                          <span>{pro}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {comparison.facilityCons.length > 0 && (
+                  <div>
+                    <Label className="text-xs font-semibold text-red-600">Cons</Label>
+                    <ul className="mt-2 space-y-1">
+                      {comparison.facilityCons.map((con, idx) => (
+                        <li key={idx} className="text-sm flex items-start gap-2">
+                          <span className="text-red-600 mt-0.5">✗</span>
+                          <span>{con}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </>
       )}
 
       {!selectedScenarioId && (
