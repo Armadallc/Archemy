@@ -110,12 +110,13 @@ export default function CalendarExperiment() {
       {/* Header - Only show if unified header is disabled (fallback) */}
       {!ENABLE_UNIFIED_HEADER && (
         <div className="flex-shrink-0 px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between mb-6" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
-          <div className="flex items-center gap-4">
+          <div className="flex items-end gap-4">
             <h1 
               className="font-bold text-foreground" 
               style={{ 
                 fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
-                fontSize: '110px'
+                fontSize: '110px',
+                lineHeight: 1
               }}
             >
               bentobox.
@@ -123,7 +124,9 @@ export default function CalendarExperiment() {
             <div 
               className="font-medium text-foreground"
               style={{ 
-                fontSize: '48px'
+                fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+                fontSize: '48px',
+                lineHeight: 1
               }}
             >
               {getDateRangeLabel()}
