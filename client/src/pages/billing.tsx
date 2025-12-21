@@ -194,35 +194,32 @@ export default function BillingPage() {
     <div className="space-y-6 p-6">
       {/* Header - Only show if unified header is disabled (fallback) */}
       {!ENABLE_UNIFIED_HEADER && (
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 
-              className="uppercase"
-              style={{
-                fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
-                fontWeight: 600,
-                fontSize: '68px',
-                lineHeight: 1.15,
-                letterSpacing: '-0.015em',
-              textTransform: 'uppercase',
-              color: 'var(--foreground)',
-            }}
-          >
-            BILLING MODULE
-          </h1>
-          <p className="text-gray-600 mt-2">
-            CMS-1500 Management & Medicaid Claims Processing
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          <Badge variant="secondary" className="bg-green-100 text-green-800">
-            <Shield className="h-3 w-3 mr-1" />
-            Secure Session Active
-          </Badge>
-          <Button variant="outline" onClick={() => setBillingAccess(false)}>
-            Lock Module
-          </Button>
-        </div>
+        <div>
+          <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between mb-6" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+            <div>
+              <h1 
+                className="font-bold text-foreground" 
+                style={{ 
+                  fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+                  fontSize: '110px'
+                }}
+              >
+                billing.
+              </h1>
+            </div>
+            <div className="flex items-center gap-3">
+              {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
+                <HeaderScopeSelector />
+              )}
+              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                <Shield className="h-3 w-3 mr-1" />
+                Secure Session Active
+              </Badge>
+              <Button variant="outline" onClick={() => setBillingAccess(false)}>
+                Lock Module
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 
