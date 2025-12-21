@@ -1117,7 +1117,7 @@ export default function Clients() {
               </CardTitle>
               <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button variant="outline">
                     <Plus className="w-4 h-4 mr-2" />
                     Add Client
                   </Button>
