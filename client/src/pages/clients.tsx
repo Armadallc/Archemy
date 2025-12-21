@@ -1166,12 +1166,6 @@ export default function Clients() {
               <Users className="w-4 h-4 mr-1" />
               {filteredClients.length} clients
             </span>
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm">
-                <Filter className="w-4 h-4 mr-1" />
-                Filters
-              </Button>
-            </div>
           </div>
         </CardHeader>
         
