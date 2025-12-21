@@ -142,37 +142,6 @@ export default function CalendarExperiment() {
             )}
           </div>
 
-          {/* Date Navigation */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePrevious}
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleToday}
-              >
-                Today
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleNext}
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-
-            {/* Stats */}
-            <div className="text-xs text-muted-foreground">
-              {scheduledEncounters.length} scheduled
-            </div>
-          </div>
         </div>
       )}
 
@@ -211,44 +180,71 @@ export default function CalendarExperiment() {
                 </button>
               </div>
               
-              {/* View Toggle */}
-              <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCurrentView("day")}
-                  className={cn(
-                    "h-8",
-                    currentView === "day" && "bg-background shadow-sm"
-                  )}
-                >
-                  <Calendar className="w-4 h-4 mr-1" />
-                  Day
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCurrentView("week")}
-                  className={cn(
-                    "h-8",
-                    currentView === "week" && "bg-background shadow-sm"
-                  )}
-                >
-                  <LayoutGrid className="w-4 h-4 mr-1" />
-                  Week
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCurrentView("month")}
-                  className={cn(
-                    "h-8",
-                    currentView === "month" && "bg-background shadow-sm"
-                  )}
-                >
-                  <CalendarDays className="w-4 h-4 mr-1" />
-                  Month
-                </Button>
+              <div className="flex items-center gap-4">
+                {/* Date Navigation */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePrevious}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleToday}
+                  >
+                    Today
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleNext}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+                
+                {/* View Toggle */}
+                <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCurrentView("day")}
+                    className={cn(
+                      "h-8",
+                      currentView === "day" && "bg-background shadow-sm"
+                    )}
+                  >
+                    <Calendar className="w-4 h-4 mr-1" />
+                    Day
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCurrentView("week")}
+                    className={cn(
+                      "h-8",
+                      currentView === "week" && "bg-background shadow-sm"
+                    )}
+                  >
+                    <LayoutGrid className="w-4 h-4 mr-1" />
+                    Week
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCurrentView("month")}
+                    className={cn(
+                      "h-8",
+                      currentView === "month" && "bg-background shadow-sm"
+                    )}
+                  >
+                    <CalendarDays className="w-4 h-4 mr-1" />
+                    Month
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
