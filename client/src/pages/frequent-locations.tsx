@@ -715,24 +715,25 @@ export default function FrequentLocationsPage() {
                 <HeaderScopeSelector />
               )}
               <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={handleSyncServiceLocations}
-            disabled={syncMutation.isPending}
-          >
-            {syncMutation.isPending ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 mr-2" style={{ borderColor: 'var(--blue-9)' }}></div>
-            ) : (
-              <RefreshCw className="h-4 w-4 mr-2" />
-            )}
-            Sync Service Locations
-          </Button>
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Location
-          </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleSyncServiceLocations}
+                  disabled={syncMutation.isPending}
+                >
+                  {syncMutation.isPending ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 mr-2" style={{ borderColor: 'var(--blue-9)' }}></div>
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                  )}
+                  Sync Service Locations
+                </Button>
+                <Button onClick={() => setIsCreateDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Location
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
         </div>
       )}
 
