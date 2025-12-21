@@ -359,9 +359,6 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
             isWeekView ? "overflow-hidden" : "overflow-x-auto"
           )} 
           ref={headerScrollRef}
-          style={{
-            scrollbarGutter: 'stable'
-          }}
         >
           <div className={cn(
             "flex h-full",
@@ -438,13 +435,11 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
             isWeekView ? "overflow-hidden" : "overflow-x-auto"
           )}
           ref={calendarScrollRef}
-          style={{
-            scrollbarGutter: 'stable'
-          }}
         >
           <div className={cn(
             "flex h-full",
-            isWeekView ? "w-full" : "min-w-max"
+            isWeekView ? "w-full" : "min-w-max",
+            !isWeekView && "pr-4"
           )}>
             {days.map((day) => {
               const dayEvents = getEventsForDay(day);
