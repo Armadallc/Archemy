@@ -32,7 +32,7 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
   const calendarScrollRef = useRef<HTMLDivElement>(null);
   const timeSlotRef = useRef<HTMLDivElement>(null);
   const [scrollPosition, setScrollPosition] = useState(0);
-  const [draggedOverSlot, setDraggedOverSlot] = useState<{ day: Date; hour: number } | null>(null);
+  const [draggedOverSlot, setDraggedOverSlot] = useState<{ day: Date; hour: number; minutes?: number } | null>(null);
   const [draggedEncounter, setDraggedEncounter] = useState<ScheduledEncounter | null>(null);
   // Fixed pixels per minute: 96px per hour = 1.6px per minute
   const pixelsPerMinute = 96 / 60; // 1.6px per minute (matches full-calendar reference)
@@ -320,14 +320,51 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
     };
   }, [resizingEncounter, handleResizeMove, handleResizeEnd]);
 
+  // Helper function to calculate precise time from mouse position
+  const calculateTimeFromPosition = (e: React.DragEvent, hour: number): number => {
+    const target = e.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const hourHeight = rect.height; // Height of the hour slot (96px)
+    
+    // Calculate fractional hour (0.0 to 1.0)
+    const fractionalHour = Math.max(0, Math.min(1, y / hourHeight));
+    
+    // Snap to 15-minute intervals (0, 15, 30, 45)
+    let minutes = 0;
+    if (fractionalHour < 0.125) minutes = 0;
+    else if (fractionalHour < 0.375) minutes = 15;
+    else if (fractionalHour < 0.625) minutes = 30;
+    else if (fractionalHour < 0.875) minutes = 45;
+    else minutes = 60; // Top of next hour
+    
+    return minutes;
+  };
+
   const handleTimeSlotDragOver = (e: React.DragEvent, day: Date, hour: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    setDraggedOverSlot({ day, hour });
+    
+    // Calculate precise minutes from mouse position
+    const minutes = calculateTimeFromPosition(e, hour);
+    
+    setDraggedOverSlot({ day, hour, minutes });
   };
 
   const handleTimeSlotDrop = (e: React.DragEvent, day: Date, hour: number) => {
     e.preventDefault();
+    
+    // Calculate precise minutes from mouse position
+    const minutes = calculateTimeFromPosition(e, hour);
+    
+    // Handle hour overflow (if minutes = 60, move to next hour)
+    let finalHour = hour;
+    let finalMinutes = minutes;
+    if (minutes >= 60) {
+      finalHour = (hour + 1) % 24;
+      finalMinutes = 0;
+    }
+    
     setDraggedOverSlot(null);
 
     const data = e.dataTransfer.getData('application/json');
@@ -344,8 +381,8 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
           return;
         }
 
-        // Calculate start and end times
-        const startTime = setMinutes(setHours(day, hour), 0);
+        // Calculate start and end times with precise minutes
+        const startTime = setMinutes(setHours(day, finalHour), finalMinutes);
         const endTime = new Date(startTime);
         
         // Get duration - ensure we're reading the correct value
@@ -385,12 +422,12 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
           return;
         }
 
-        // Calculate new start and end times
+        // Calculate new start and end times with precise minutes
         const oldStart = new Date(encounter.start);
         const oldEnd = new Date(encounter.end);
         const duration = oldEnd.getTime() - oldStart.getTime();
 
-        const newStart = setMinutes(setHours(day, hour), oldStart.getMinutes());
+        const newStart = setMinutes(setHours(day, finalHour), finalMinutes);
         const newEnd = new Date(newStart.getTime() + duration);
 
         // Update the encounter
