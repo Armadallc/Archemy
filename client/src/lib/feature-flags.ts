@@ -10,7 +10,8 @@
 export const FEATURE_FLAGS = {
   // Full Calendar Integration
   FULL_CALENDAR_VIEWS: import.meta.env.VITE_ENABLE_FULL_CALENDAR_VIEWS === 'true',
-  FULL_CALENDAR_RESIZE: import.meta.env.VITE_ENABLE_EVENT_RESIZE === 'true',
+  // Event resize is enabled by default - can be disabled with VITE_DISABLE_EVENT_RESIZE=true
+  FULL_CALENDAR_RESIZE: import.meta.env.VITE_DISABLE_EVENT_RESIZE !== 'true',
   FULL_CALENDAR_AGENDA_VIEW: import.meta.env.VITE_ENABLE_AGENDA_VIEW === 'true',
   FULL_CALENDAR_TIME_FORMAT: import.meta.env.VITE_ENABLE_TIME_FORMAT === 'true',
   FULL_CALENDAR_STAFF_FILTER: import.meta.env.VITE_ENABLE_STAFF_FILTER === 'true',

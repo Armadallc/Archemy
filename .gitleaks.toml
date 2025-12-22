@@ -19,10 +19,16 @@ paths = [
   '''.*\.ttf$''',             # Font files
   '''.*\.otf$''',             # Font files
   '''client/public/fonts/.*''', # Font directory
+  '''.*\.env\.local$''',      # Local env files (feature flags only, no secrets)
+  '''\.env\.local$''',        # Root .env.local
+  '''client/\.env\.local$''', # Client .env.local
 ]
 
 # Allowlist specific commits (if needed)
-commits = []
+# Commit acc61525 contains .env.local files with feature flags only (no secrets)
+commits = [
+  "acc61525",  # Commit that added .env.local files (feature flags only)
+]
 
 # Allowlist specific regex patterns (if needed)
 # regexes = [
