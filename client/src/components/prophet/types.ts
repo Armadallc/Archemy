@@ -135,15 +135,6 @@ export interface FacilityBillingCode {
   estimatedVolume: number;
 }
 
-export interface ContractAnalysis {
-  proposedMonthlyFee: number;
-  estimatedRevenue: number;
-  overheadCosts: number;
-  mutualBenefit: boolean;
-  margin: number;
-  marginPercentage: number;
-}
-
 export interface TreatmentFacility {
   id: string;
   slot: 1 | 2 | 3;
@@ -161,6 +152,8 @@ export interface TreatmentFacility {
   
   transport: FacilityTransport;
   billingCodes: FacilityBillingCode[];
+  
+  // Contract Analysis (optional)
   contractAnalysis?: ContractAnalysis;
   
   createdAt: string;
@@ -368,13 +361,19 @@ export interface TripScenario {
   name: string;
   serviceType: TripServiceType;
   
+  // Category and billing code selection
+  category?: ServiceCategory; // BHST, NEMT, NMT, Behavioral, Other
+  selectedCodeId?: string; // Selected billing code ID
+  selectedModifier?: string; // Selected modifier (for reference only)
+  
   tripsPerMonth: number;
-  roundTrip: boolean;
+  clients: number; // Number of clients (multiplies trips)
+  roundTrip: boolean; // Keep for backward compatibility
+  multiplier?: number; // Custom multiplier (defaults to 1 if roundTrip false, 2 if roundTrip true)
   avgMiles: number;
   
   // Billing
   billingMethod: BillingMethod;
-  selectedCodeId?: string;
   baseRatePerTrip: number;
   mileageRate: number;
   contractFee?: number;
@@ -483,4 +482,173 @@ export const SERVICE_CATEGORY_LABELS: Record<ServiceCategory, string> = {
   Behavioral: 'Behavioral Services',
   Other: 'Other',
 };
+
+// ============================================================================
+// CONTRACT ANALYSIS
+// ============================================================================
+
+/**
+ * Facility Overhead Costs
+ * Breakdown of all facility overhead costs across 9 main categories
+ */
+export interface FacilityOverheadCosts {
+  // 1. Personnel Costs (55-65% of overhead)
+  personnel: {
+    directCareStaff: number;
+    indirectCareStaff: number;
+    clinicalSupervision: number;
+    payrollTaxesBenefits: number; // 15.9% standard rate
+    benefitsPackage: number;
+    trainingCredentialing: number;
+    recruitmentRetention: number;
+  };
+  
+  // 2. Facility Expenses (15-25% of overhead)
+  facility: {
+    leaseMortgage: number;
+    propertyInsurance: number;
+    utilities: number;
+    repairMaintenance: number;
+    janitorialHousekeeping: number;
+    securitySystems: number;
+    adaCompliance: number;
+  };
+  
+  // 3. Administrative Expenses (8-12% of overhead)
+  administrative: {
+    officeEquipment: number;
+    softwareLicensing: number;
+    officeSupplies: number;
+    technologyInfrastructure: number;
+    legalAccounting: number;
+    licensingAccreditation: number;
+  };
+  
+  // 4. Clinical Operations (5-10% of overhead)
+  clinical: {
+    medicalEquipment: number;
+    clinicalSupplies: number;
+    labTestingServices: number;
+    credentialingCosts: number;
+  };
+  
+  // 5. Transportation Costs (Current Burden) ⭐ KEY FOCUS
+  transportation: {
+    staffTimeAllocation: number;
+    vehicleExpenses: number;
+    liabilityCoverage: number;
+    opportunityCost: number;
+    schedulingInefficiencies: number;
+    complianceRisk: number;
+  };
+  
+  // 6. Insurance & Risk (5-8% of overhead)
+  insurance: {
+    generalLiability: number;
+    professionalLiability: number;
+    autoLiability: number;
+    workersCompensation: number;
+    cyberLiability: number;
+    directorOfficerInsurance: number;
+  };
+  
+  // 7. Regulatory Compliance (3-5% of overhead)
+  compliance: {
+    bhaLicensing: number;
+    qualityAssurance: number;
+    backgroundChecks: number;
+    hipaaCompliance: number;
+    medicaidAudits: number;
+  };
+  
+  // 8. Program-Specific Costs (Variable)
+  programSpecific: {
+    clientSupplies: number;
+    foodServices: number;
+    activitiesProgramming: number;
+    communityIntegration: number;
+  };
+  
+  // 9. Capital Overhead (2-5% amortized)
+  capital: {
+    itEquipment: number;
+    furnitureFixtures: number;
+    specializedEquipment: number;
+    buildingImprovements: number;
+  };
+}
+
+/**
+ * Provider Contract Terms
+ * Defines the proposed contract structure between provider and facility
+ */
+export interface ProviderContractTerms {
+  billingMethod: 'monthly_fee' | 'per_trip' | 'hybrid';
+  monthlyFee?: number;              // For monthly_fee or hybrid
+  perTripRate?: number;             // For per_trip or hybrid
+  includedTrips?: number;          // For hybrid only
+  additionalTripRate?: number;      // For hybrid only
+  contractTerm: number;              // Months (e.g., 12, 24)
+}
+
+/**
+ * Contract Comparison
+ * Comparison of a specific scenario against facility costs
+ */
+export interface ContractComparison {
+  scenarioId: string;
+  scenarioName: string;
+  
+  // Provider Side
+  providerRevenue: number;
+  providerCosts: number;
+  providerMargin: number;
+  providerMarginPercentage: number;
+  providerBenefitLevel: 'high' | 'medium' | 'low';
+  providerPros: string[];
+  providerCons: string[];
+  
+  // Facility Side
+  facilityCurrentCosts: number;
+  facilityProposedCosts: number;
+  facilitySavings: number;
+  facilitySavingsPercentage: number;
+  facilityBenefitLevel: 'high' | 'medium' | 'low';
+  facilityPros: string[];
+  facilityCons: string[];
+  
+  // Combined
+  mutualBenefitScore: number;        // 0-100
+  recommendation: string;           // Generated based on score
+}
+
+/**
+ * Contract Analysis
+ * Complete analysis for a treatment facility
+ */
+export interface ContractAnalysis {
+  facilityId: string;
+  facilityName: string;
+  
+  // Facility overhead breakdown
+  overheadCosts: FacilityOverheadCosts;
+  
+  // Contract terms being proposed
+  contractTerms: ProviderContractTerms;
+  
+  // Comparison with scenarios
+  comparisons: ContractComparison[];
+  selectedComparisonId: string | null;
+  
+  // Summary metrics
+  totalFacilityOverhead: number;
+  transportationBurdenPercentage: number;
+  potentialSavings: number;
+  providerProfitability: number;
+  
+  // Metadata
+  createdAt: string;
+  updatedAt: string;
+  notes: string;
+}
 

@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
+// Force Vite to re-process this file
 import { Input } from '../../ui/input';
 import { cn } from '../../../lib/utils';
 import { Check, X, Pencil } from 'lucide-react';
@@ -153,20 +154,3 @@ export function EditableField({
     </button>
   );
 }
-
-export default EditableField;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

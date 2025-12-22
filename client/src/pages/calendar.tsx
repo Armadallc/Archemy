@@ -46,8 +46,11 @@ import { Maximize2, Minimize2 } from "lucide-react";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useRealtimeService } from "../services/realtimeService";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "../hooks/useAuth";
+import { HeaderScopeSelector } from "../components/HeaderScopeSelector";
 
 export default function CalendarPage() {
+  const { user } = useAuth();
   const { level, selectedProgram, selectedCorporateClient } = useHierarchy();
   const layout = useLayout();
   const queryClient = useQueryClient();
@@ -335,6 +338,9 @@ export default function CalendarPage() {
                     </h1>
                   </div>
                 <div className="flex items-center space-x-2">
+                  {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
+                    <HeaderScopeSelector />
+                  )}
                   {/* View Mode Toggle */}
                   <div className="flex items-center border rounded-lg">
                     <Button

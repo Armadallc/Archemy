@@ -31,6 +31,7 @@ import { useFeatureFlag } from "../hooks/use-permissions";
 import AdvancedFilters from "./filters/AdvancedFilters";
 import { useBulkOperations } from "../hooks/useBulkOperations";
 import { RollbackManager } from "../utils/rollback-manager";
+import { HeaderScopeSelector } from "./HeaderScopeSelector";
 
 interface Trip {
   id: string;
@@ -330,6 +331,9 @@ export default function HierarchicalTripsPage() {
               </h1>
             </div>
             <div className="flex items-center gap-3">
+              {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
+                <HeaderScopeSelector />
+              )}
           {/* View Toggle (only shown if compact view feature flag is enabled) */}
           {compactViewEnabled && (
             <div className="flex items-center gap-1 border rounded-md p-1">

@@ -698,7 +698,7 @@ export default function EnhancedTripCalendar() {
             <div className="flex-1 grid grid-cols-7 gap-px rounded-lg overflow-hidden" style={{ backgroundColor: 'var(--border)', display: 'grid', height: '100%' }}>
               {/* Header row */}
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="p-2 text-center text-sm font-medium" style={{ backgroundColor: 'var(--secondary)', color: 'var(--foreground)', border: '1px solid var(--border)' }}>
+                <div key={day} className="p-2 text-center text-sm font-medium" style={{ backgroundColor: 'var(--color-charcoal)', color: 'var(--foreground)', border: '1px solid var(--border)' }}>
                   {day}
                 </div>
               ))}
@@ -715,12 +715,12 @@ export default function EnhancedTripCalendar() {
                   className="p-2 relative flex-1"
                   style={isDayToday && isCurrentMonth ? {
                     border: '1px solid var(--border)',
-                    backgroundColor: 'var(--card)',
+                    backgroundColor: 'var(--background)',
                     color: 'var(--color-coral)',
                     minHeight: '100px',
                   } : {
                     border: '1px solid var(--border)',
-                    backgroundColor: isCurrentMonth ? 'var(--card)' : 'var(--secondary)',
+                    backgroundColor: 'var(--background)',
                     color: isCurrentMonth ? 'var(--foreground)' : 'var(--muted-foreground)',
                     minHeight: '100px',
                   }}

@@ -310,6 +310,9 @@ export default function Users() {
             </h1>
           </div>
           <div className="flex items-center gap-3">
+            {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
+              <HeaderScopeSelector />
+            )}
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-primary hover:bg-primary-hover">

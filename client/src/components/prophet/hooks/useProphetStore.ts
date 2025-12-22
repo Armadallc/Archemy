@@ -3,6 +3,9 @@
  * With localStorage persistence and Supabase sync
  */
 
+// Ensure React is loaded before Zustand (Zustand uses React hooks internally)
+import 'react';
+
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { supabase } from '../../../lib/supabase';
@@ -26,6 +29,10 @@ import {
   VehicleSpecificVariableCosts,
   HybridSpecificVariableCosts,
   SeasonalVariableCosts,
+  ContractAnalysis,
+  FacilityOverheadCosts,
+  ProviderContractTerms,
+  ContractComparison,
 } from '../types';
 import { allServiceCodes } from '../data/coloradoMedicaidCodes';
 
@@ -317,6 +324,18 @@ interface ProphetActions {
   calculateScenarioRevenue: (scenarioId: string) => number;
   calculateScenarioCosts: (scenarioId: string, totalMiles: number) => number;
   calculateBreakEven: (scenarioId: string) => { breakEvenTrips: number; tripsGap: number };
+  
+  // Contract Analysis
+  updateFacilityContractAnalysis: (facilityId: string, analysis: Partial<ContractAnalysis>) => void;
+  calculateTotalFacilityOverhead: (overheadCosts: FacilityOverheadCosts) => number;
+  calculateTransportationBurden: (overheadCosts: FacilityOverheadCosts) => number;
+  calculateTransportationBurdenPercentage: (overheadCosts: FacilityOverheadCosts) => number;
+  calculateProviderRevenue: (contractTerms: ProviderContractTerms, monthlyTrips: number) => number;
+  calculateProviderMargin: (revenue: number, scenarioCosts: number) => { margin: number; marginPercentage: number };
+  calculateFacilitySavings: (currentCosts: number, proposedFee: number) => { savings: number; savingsPercentage: number };
+  calculateMutualBenefitScore: (providerMarginPercentage: number, facilitySavingsPercentage: number) => { score: number; recommendation: string };
+  generateProsCons: (marginPercentage: number, savingsPercentage: number) => { providerPros: string[]; providerCons: string[]; facilityPros: string[]; facilityCons: string[] };
+  calculateContractComparison: (facilityId: string, scenarioId: string) => ContractComparison | null;
 }
 
 // ============================================================================
@@ -899,19 +918,21 @@ export const useProphetStore = create<ProphetState & ProphetActions>()(
         let totalRevenue = 0;
         
         for (const trip of scenario.trips) {
-          const multiplier = trip.roundTrip ? 2 : 1;
+          const multiplier = trip.multiplier !== undefined ? trip.multiplier : (trip.roundTrip ? 2 : 1);
           
           if (trip.billingMethod === 'contract' && trip.contractFee) {
             totalRevenue += trip.contractFee;
           } else if (trip.billingMethod === 'medicaid' || trip.billingMethod === 'nmt') {
+            const clients = trip.clients || 1; // Default to 1 if not set
             const effectiveTrips = trip.requiresWaiver
-              ? trip.tripsPerMonth * (trip.percentWithWaiver / 100)
-              : trip.tripsPerMonth;
+              ? trip.tripsPerMonth * clients * (trip.percentWithWaiver / 100)
+              : trip.tripsPerMonth * clients;
             
             const tripRevenue = trip.baseRatePerTrip + (trip.avgMiles * trip.mileageRate);
             totalRevenue += effectiveTrips * tripRevenue * multiplier;
           } else if (trip.billingMethod === 'mileage') {
-            totalRevenue += trip.tripsPerMonth * trip.avgMiles * 0.49 * multiplier;
+            const clients = trip.clients || 1; // Default to 1 if not set
+            totalRevenue += trip.tripsPerMonth * clients * trip.avgMiles * 0.49 * multiplier;
           }
         }
         
@@ -930,7 +951,7 @@ export const useProphetStore = create<ProphetState & ProphetActions>()(
         
         // Calculate total trips for per-trip variable costs
         const totalTrips = scenario.trips.reduce((sum, trip) => {
-          const multiplier = trip.roundTrip ? 2 : 1;
+          const multiplier = trip.multiplier !== undefined ? trip.multiplier : (trip.roundTrip ? 2 : 1);
           return sum + (trip.tripsPerMonth * multiplier);
         }, 0);
         
@@ -954,7 +975,7 @@ export const useProphetStore = create<ProphetState & ProphetActions>()(
         if (!scenario) return { breakEvenTrips: 0, tripsGap: 0 };
         
         const totalTrips = scenario.trips.reduce((sum, trip) => {
-          const multiplier = trip.roundTrip ? 2 : 1;
+          const multiplier = trip.multiplier !== undefined ? trip.multiplier : (trip.roundTrip ? 2 : 1);
           return sum + (trip.tripsPerMonth * multiplier);
         }, 0);
         
@@ -1037,6 +1058,361 @@ export const useProphetStore = create<ProphetState & ProphetActions>()(
         
         return { breakEvenTrips, tripsGap };
       },
+
+      // ========== CONTRACT ANALYSIS ==========
+
+      updateFacilityContractAnalysis: (facilityId, analysis) => {
+        set((state) => ({
+          facilities: state.facilities.map((facility) => {
+            if (facility.id !== facilityId) return facility;
+            
+            const existingAnalysis = facility.contractAnalysis;
+            
+            // Merge with existing analysis, ensuring all required fields are present
+            const defaultOverheadCosts: FacilityOverheadCosts = {
+              personnel: {
+                directCareStaff: 0,
+                indirectCareStaff: 0,
+                clinicalSupervision: 0,
+                payrollTaxesBenefits: 0,
+                benefitsPackage: 0,
+                trainingCredentialing: 0,
+                recruitmentRetention: 0,
+              },
+              facility: {
+                leaseMortgage: 0,
+                propertyInsurance: 0,
+                utilities: 0,
+                repairMaintenance: 0,
+                janitorialHousekeeping: 0,
+                securitySystems: 0,
+                adaCompliance: 0,
+              },
+              administrative: {
+                officeEquipment: 0,
+                softwareLicensing: 0,
+                officeSupplies: 0,
+                technologyInfrastructure: 0,
+                legalAccounting: 0,
+                licensingAccreditation: 0,
+              },
+              clinical: {
+                medicalEquipment: 0,
+                clinicalSupplies: 0,
+                labTestingServices: 0,
+                credentialingCosts: 0,
+              },
+              transportation: {
+                staffTimeAllocation: 0,
+                vehicleExpenses: 0,
+                liabilityCoverage: 0,
+                opportunityCost: 0,
+                schedulingInefficiencies: 0,
+                complianceRisk: 0,
+              },
+              insurance: {
+                generalLiability: 0,
+                professionalLiability: 0,
+                autoLiability: 0,
+                workersCompensation: 0,
+                cyberLiability: 0,
+                directorOfficerInsurance: 0,
+              },
+              compliance: {
+                bhaLicensing: 0,
+                qualityAssurance: 0,
+                backgroundChecks: 0,
+                hipaaCompliance: 0,
+                medicaidAudits: 0,
+              },
+              programSpecific: {
+                clientSupplies: 0,
+                foodServices: 0,
+                activitiesProgramming: 0,
+                communityIntegration: 0,
+              },
+              capital: {
+                itEquipment: 0,
+                furnitureFixtures: 0,
+                specializedEquipment: 0,
+                buildingImprovements: 0,
+              },
+            };
+
+            const defaultContractTerms: ProviderContractTerms = {
+              billingMethod: 'monthly_fee',
+              monthlyFee: 0,
+              contractTerm: 12,
+            };
+
+            const updatedAnalysis: ContractAnalysis = {
+              facilityId: facility.id,
+              facilityName: facility.name,
+              overheadCosts: analysis.overheadCosts ?? existingAnalysis?.overheadCosts ?? defaultOverheadCosts,
+              contractTerms: analysis.contractTerms ?? existingAnalysis?.contractTerms ?? defaultContractTerms,
+              comparisons: analysis.comparisons || existingAnalysis?.comparisons || [],
+              selectedComparisonId: analysis.selectedComparisonId !== undefined 
+                ? analysis.selectedComparisonId 
+                : (existingAnalysis?.selectedComparisonId || null),
+              totalFacilityOverhead: analysis.totalFacilityOverhead !== undefined
+                ? analysis.totalFacilityOverhead
+                : (existingAnalysis?.totalFacilityOverhead || 0),
+              transportationBurdenPercentage: analysis.transportationBurdenPercentage !== undefined
+                ? analysis.transportationBurdenPercentage
+                : (existingAnalysis?.transportationBurdenPercentage || 0),
+              potentialSavings: analysis.potentialSavings !== undefined
+                ? analysis.potentialSavings
+                : (existingAnalysis?.potentialSavings || 0),
+              providerProfitability: analysis.providerProfitability !== undefined
+                ? analysis.providerProfitability
+                : (existingAnalysis?.providerProfitability || 0),
+              createdAt: existingAnalysis?.createdAt || new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              notes: analysis.notes !== undefined ? analysis.notes : (existingAnalysis?.notes || ''),
+            };
+            
+            return {
+              ...facility,
+              contractAnalysis: updatedAnalysis,
+              updatedAt: new Date().toISOString(),
+            };
+          }),
+          pendingSync: true,
+        }));
+      },
+
+      calculateTotalFacilityOverhead: (overheadCosts) => {
+        const personnel = Object.values(overheadCosts.personnel).reduce((sum, val) => sum + (val || 0), 0);
+        const facility = Object.values(overheadCosts.facility).reduce((sum, val) => sum + (val || 0), 0);
+        const administrative = Object.values(overheadCosts.administrative).reduce((sum, val) => sum + (val || 0), 0);
+        const clinical = Object.values(overheadCosts.clinical).reduce((sum, val) => sum + (val || 0), 0);
+        const transportation = Object.values(overheadCosts.transportation).reduce((sum, val) => sum + (val || 0), 0);
+        const insurance = Object.values(overheadCosts.insurance).reduce((sum, val) => sum + (val || 0), 0);
+        const compliance = Object.values(overheadCosts.compliance).reduce((sum, val) => sum + (val || 0), 0);
+        const programSpecific = Object.values(overheadCosts.programSpecific).reduce((sum, val) => sum + (val || 0), 0);
+        const capital = Object.values(overheadCosts.capital).reduce((sum, val) => sum + (val || 0), 0);
+        
+        return personnel + facility + administrative + clinical + transportation + insurance + compliance + programSpecific + capital;
+      },
+
+      calculateTransportationBurden: (overheadCosts) => {
+        return Object.values(overheadCosts.transportation).reduce((sum, val) => sum + (val || 0), 0);
+      },
+
+      calculateTransportationBurdenPercentage: (overheadCosts) => {
+        const totalOverhead = get().calculateTotalFacilityOverhead(overheadCosts);
+        if (totalOverhead === 0) return 0;
+        const transportationBurden = get().calculateTransportationBurden(overheadCosts);
+        return (transportationBurden / totalOverhead) * 100;
+      },
+
+      calculateProviderRevenue: (contractTerms, monthlyTrips) => {
+        switch (contractTerms.billingMethod) {
+          case 'monthly_fee':
+            return contractTerms.monthlyFee || 0;
+          
+          case 'per_trip':
+            return (contractTerms.perTripRate || 0) * monthlyTrips;
+          
+          case 'hybrid':
+            const baseFee = contractTerms.monthlyFee || 0;
+            const includedTrips = contractTerms.includedTrips || 0;
+            const additionalTrips = Math.max(0, monthlyTrips - includedTrips);
+            const additionalRevenue = (contractTerms.additionalTripRate || 0) * additionalTrips;
+            return baseFee + additionalRevenue;
+          
+          default:
+            return 0;
+        }
+      },
+
+      calculateProviderMargin: (revenue, scenarioCosts) => {
+        if (revenue === 0) return { margin: 0, marginPercentage: 0 };
+        const margin = revenue - scenarioCosts;
+        const marginPercentage = (margin / revenue) * 100;
+        return { margin, marginPercentage };
+      },
+
+      calculateFacilitySavings: (currentCosts, proposedFee) => {
+        if (currentCosts === 0) return { savings: 0, savingsPercentage: 0 };
+        const savings = currentCosts - proposedFee;
+        const savingsPercentage = (savings / currentCosts) * 100;
+        return { savings, savingsPercentage };
+      },
+
+      calculateMutualBenefitScore: (providerMarginPercentage, facilitySavingsPercentage) => {
+        // Provider Benefit Score
+        let providerScore = 0;
+        if (providerMarginPercentage > 20) {
+          providerScore = 100;
+        } else if (providerMarginPercentage > 10) {
+          providerScore = 70;
+        } else if (providerMarginPercentage > 0) {
+          providerScore = 40;
+        }
+
+        // Facility Benefit Score
+        let facilityScore = 0;
+        if (facilitySavingsPercentage > 30) {
+          facilityScore = 100;
+        } else if (facilitySavingsPercentage > 15) {
+          facilityScore = 70;
+        } else if (facilitySavingsPercentage > 0) {
+          facilityScore = 40;
+        }
+
+        const mutualBenefitScore = (providerScore + facilityScore) / 2;
+
+        // Generate recommendation
+        let recommendation = '';
+        if (mutualBenefitScore >= 70) {
+          recommendation = 'Strong mutual benefit - Recommended contract';
+        } else if (mutualBenefitScore >= 50) {
+          recommendation = 'Moderate benefit - Consider negotiation';
+        } else {
+          recommendation = 'Limited benefit - Needs adjustment';
+        }
+
+        return { score: mutualBenefitScore, recommendation };
+      },
+
+      generateProsCons: (marginPercentage, savingsPercentage) => {
+        const providerPros: string[] = [];
+        const providerCons: string[] = [];
+        const facilityPros: string[] = [];
+        const facilityCons: string[] = [];
+
+        // Provider pros/cons based on margin
+        if (marginPercentage > 20) {
+          providerPros.push('Excellent profit margin');
+          providerPros.push('Strong financial viability');
+        } else if (marginPercentage > 10) {
+          providerPros.push('Healthy profit margin');
+          providerPros.push('Sustainable business model');
+        } else if (marginPercentage > 0) {
+          providerPros.push('Positive margin');
+          providerCons.push('Low margin may limit growth');
+        } else {
+          providerCons.push('Negative margin - not profitable');
+          providerCons.push('Requires cost reduction or fee increase');
+        }
+
+        // Facility pros/cons based on savings
+        if (savingsPercentage > 30) {
+          facilityPros.push('Significant cost savings');
+          facilityPros.push('Major reduction in transportation burden');
+        } else if (savingsPercentage > 15) {
+          facilityPros.push('Meaningful cost savings');
+          facilityPros.push('Reduced administrative burden');
+        } else if (savingsPercentage > 0) {
+          facilityPros.push('Some cost savings');
+          facilityCons.push('Limited savings may not justify change');
+        } else {
+          facilityCons.push('No cost savings');
+          facilityCons.push('Contract fee exceeds current costs');
+        }
+
+        // Additional considerations
+        if (marginPercentage > 0 && savingsPercentage > 0) {
+          providerPros.push('Mutually beneficial arrangement');
+          facilityPros.push('Win-win partnership opportunity');
+        }
+
+        if (marginPercentage < 5) {
+          providerCons.push('Thin margins increase risk');
+        }
+
+        if (savingsPercentage < 10) {
+          facilityCons.push('Minimal savings may not offset transition costs');
+        }
+
+        return { providerPros, providerCons, facilityPros, facilityCons };
+      },
+
+      calculateContractComparison: (facilityId, scenarioId) => {
+        const state = get();
+        const facility = state.facilities.find((f) => f.id === facilityId);
+        const scenario = state.scenarios.find((s) => s.id === scenarioId);
+
+        if (!facility || !scenario || !facility.contractAnalysis) {
+          return null;
+        }
+
+        const analysis = facility.contractAnalysis;
+        const contractTerms = analysis.contractTerms;
+        const overheadCosts = analysis.overheadCosts;
+
+        // Calculate monthly trips from facility transport data
+        const monthlyTrips = facility.transport.scheduledTripsPerWeek * 4; // Approximate monthly
+
+        // Calculate provider revenue
+        const providerRevenue = get().calculateProviderRevenue(contractTerms, monthlyTrips);
+
+        // Calculate provider costs from scenario
+        const totalMiles = scenario.projectedMiles || 0;
+        const providerCosts = get().calculateScenarioCosts(scenarioId, totalMiles);
+
+        // Calculate provider margin
+        const { margin: providerMargin, marginPercentage: providerMarginPercentage } = 
+          get().calculateProviderMargin(providerRevenue, providerCosts);
+
+        // Determine provider benefit level
+        let providerBenefitLevel: 'high' | 'medium' | 'low' = 'low';
+        if (providerMarginPercentage > 20) {
+          providerBenefitLevel = 'high';
+        } else if (providerMarginPercentage > 10) {
+          providerBenefitLevel = 'medium';
+        }
+
+        // Calculate facility current costs (transportation burden)
+        const facilityCurrentCosts = get().calculateTransportationBurden(overheadCosts);
+
+        // Calculate facility proposed costs (contract fee)
+        const facilityProposedCosts = providerRevenue;
+
+        // Calculate facility savings
+        const { savings: facilitySavings, savingsPercentage: facilitySavingsPercentage } = 
+          get().calculateFacilitySavings(facilityCurrentCosts, facilityProposedCosts);
+
+        // Determine facility benefit level
+        let facilityBenefitLevel: 'high' | 'medium' | 'low' = 'low';
+        if (facilitySavingsPercentage > 30) {
+          facilityBenefitLevel = 'high';
+        } else if (facilitySavingsPercentage > 15) {
+          facilityBenefitLevel = 'medium';
+        }
+
+        // Calculate mutual benefit score
+        const { score: mutualBenefitScore, recommendation } = 
+          get().calculateMutualBenefitScore(providerMarginPercentage, facilitySavingsPercentage);
+
+        // Generate pros/cons
+        const { providerPros, providerCons, facilityPros, facilityCons } = 
+          get().generateProsCons(providerMarginPercentage, facilitySavingsPercentage);
+
+        const comparison: ContractComparison = {
+          scenarioId: scenario.id,
+          scenarioName: scenario.name,
+          providerRevenue,
+          providerCosts,
+          providerMargin,
+          providerMarginPercentage,
+          providerBenefitLevel,
+          providerPros,
+          providerCons,
+          facilityCurrentCosts,
+          facilityProposedCosts,
+          facilitySavings,
+          facilitySavingsPercentage,
+          facilityBenefitLevel,
+          facilityPros,
+          facilityCons,
+          mutualBenefitScore,
+          recommendation,
+        };
+
+        return comparison;
+      },
     }),
     {
       name: 'prophet-calculator',
@@ -1071,6 +1447,4 @@ export const useProphetStore = create<ProphetState & ProphetActions>()(
     }
   )
 );
-
-export default useProphetStore;
 

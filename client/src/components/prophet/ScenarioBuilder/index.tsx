@@ -25,29 +25,56 @@ import {
   FileText,
   Copy,
 } from 'lucide-react';
-import { BusinessScenario, TripScenario, BillingMethod, TripServiceType } from '../types';
+import { BusinessScenario, TripScenario, BillingMethod, TripServiceType, ServiceCategory, ServiceCode } from '../types';
 
 interface TripRowProps {
   trip: TripScenario;
   onUpdate: (updates: Partial<TripScenario>) => void;
   onDelete: () => void;
-  serviceCodes: { id: string; code: string; baseRate: number; mileageRate?: number }[];
+  serviceCodes: ServiceCode[];
 }
 
 function TripRow({ trip, onUpdate, onDelete, serviceCodes }: TripRowProps) {
+  // Filter service codes by selected category
+  const categoryCodes = trip.category 
+    ? serviceCodes.filter(code => code.category === trip.category && !code.isBlocked)
+    : [];
+  
+  // Get selected service code
+  const selectedCode = trip.selectedCodeId 
+    ? serviceCodes.find(code => code.id === trip.selectedCodeId)
+    : null;
+  
   // Calculate revenue for this trip
-  const multiplier = trip.roundTrip ? 2 : 1;
+  // Formula: Service/Month × Clients × Multiplier × (Base Rate + Avg Miles × Mileage Rate)
+  const multiplier = trip.multiplier !== undefined ? trip.multiplier : (trip.roundTrip ? 2 : 1);
+  const clients = trip.clients || 1; // Default to 1 if not set
   let revenue = 0;
   
   if (trip.billingMethod === 'contract' && trip.contractFee) {
     revenue = trip.contractFee;
   } else if (trip.billingMethod === 'medicaid' || trip.billingMethod === 'nmt') {
     const effectiveTrips = trip.requiresWaiver
-      ? trip.tripsPerMonth * (trip.percentWithWaiver / 100)
-      : trip.tripsPerMonth;
+      ? trip.tripsPerMonth * clients * (trip.percentWithWaiver / 100)
+      : trip.tripsPerMonth * clients;
     revenue = effectiveTrips * (trip.baseRatePerTrip + (trip.avgMiles * trip.mileageRate)) * multiplier;
   } else if (trip.billingMethod === 'mileage') {
-    revenue = trip.tripsPerMonth * trip.avgMiles * 0.49 * multiplier;
+    revenue = trip.tripsPerMonth * clients * trip.avgMiles * 0.49 * multiplier;
+  }
+  
+  // Handle billing code selection - auto-load rates
+  const handleCodeSelect = (codeId: string) => {
+    const code = serviceCodes.find(c => c.id === codeId);
+    if (code) {
+      onUpdate({
+        selectedCodeId: codeId,
+        selectedModifier: code.modifier || undefined, // Set modifier from code
+        baseRatePerTrip: code.baseRate || 0,
+        mileageRate: code.mileageRate || 0,
+        // Update billing method based on category
+        billingMethod: code.category === 'NMT' ? 'nmt' : 'medicaid',
+      });
+    }
   }
 
   return (
@@ -55,39 +82,126 @@ function TripRow({ trip, onUpdate, onDelete, serviceCodes }: TripRowProps) {
       className="p-4 rounded-lg border"
       style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
     >
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Car className="h-4 w-4" style={{ color: 'var(--primary)' }} />
-          <Input
-            value={trip.name}
-            onChange={(e) => onUpdate({ name: e.target.value })}
-            className="h-7 w-48 text-sm font-medium"
-            placeholder="Trip name..."
-            style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}
-          />
-          <Badge variant="outline" className="text-xs">{trip.serviceType}</Badge>
-          {trip.isBlocked && (
-            <Badge variant="destructive" className="text-xs">
-              <AlertTriangle className="h-3 w-3 mr-1" />
-              Blocked
-            </Badge>
-          )}
+      <div className="grid grid-cols-7 gap-4 mb-4">
+        {/* Trip Name */}
+        <div className="space-y-1">
+          <Label className="text-xs">Trip Name</Label>
+          <div className="flex items-center gap-2">
+            <Car className="h-4 w-4" style={{ color: 'var(--primary)' }} />
+            <Input
+              value={trip.name}
+              onChange={(e) => onUpdate({ name: e.target.value })}
+              className="h-7 text-sm font-medium flex-1"
+              placeholder="Trip name..."
+              style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}
+            />
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-bold" style={{ color: 'var(--color-lime)' }}>
-            ${revenue.toFixed(2)}
-          </span>
-          <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>/mo</span>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-status-error" onClick={onDelete}>
-            <Trash2 className="h-3 w-3" />
-          </Button>
+        
+        {/* Category Selector */}
+        <div className="space-y-1">
+          <Label className="text-xs">Category</Label>
+          <select
+            value={trip.category || ''}
+            onChange={(e) => {
+              const category = e.target.value ? e.target.value as ServiceCategory : undefined;
+              onUpdate({ 
+                category,
+                selectedCodeId: undefined, // Clear code when category changes
+                selectedModifier: undefined, // Clear modifier when category changes
+              });
+            }}
+            className="w-full h-7 text-xs rounded border px-2"
+            style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
+            title="Select trip category"
+          >
+            <option value="">Select Category</option>
+            <option value="BHST">BHST</option>
+            <option value="NEMT">NEMT</option>
+            <option value="NMT">NMT</option>
+            <option value="Behavioral">Behavioral</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        
+        {/* Billing Code Selector - only show if category is selected */}
+        {trip.category ? (
+          <div className="space-y-1">
+            <Label className="text-xs">Billing Code</Label>
+            <select
+              value={trip.selectedCodeId || ''}
+              onChange={(e) => {
+                if (e.target.value) {
+                  handleCodeSelect(e.target.value);
+                } else {
+                  onUpdate({ selectedCodeId: undefined, selectedModifier: undefined });
+                }
+              }}
+              className="w-full h-7 text-xs rounded border px-2"
+              style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
+              title="Select billing code"
+            >
+              <option value="">Select Code</option>
+              {categoryCodes.map((code) => (
+                <option key={code.id} value={code.id}>
+                  {code.code}{code.modifier ? `-${code.modifier}` : ''} - {code.description}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <div></div>
+        )}
+        
+        {/* Modifier Selector - only show if billing code is selected */}
+        {trip.selectedCodeId && selectedCode ? (
+          <div className="space-y-1">
+            <Label className="text-xs">Modifier</Label>
+            <select
+              value={trip.selectedModifier || selectedCode.modifier || ''}
+              onChange={(e) => onUpdate({ selectedModifier: e.target.value || undefined })}
+              className="w-full h-7 text-xs rounded border px-2"
+              style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
+              title="Modifier (for reference only)"
+            >
+              <option value="">{selectedCode.modifier || 'None'}</option>
+              {selectedCode.modifier && (
+                <option value={selectedCode.modifier}>{selectedCode.modifier}</option>
+              )}
+            </select>
+          </div>
+        ) : (
+          <div></div>
+        )}
+        
+        {/* Empty space */}
+        <div></div>
+        <div></div>
+        
+        {/* Revenue and Delete - Far Right */}
+        <div className="space-y-1 flex items-end justify-end">
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-bold" style={{ color: 'var(--color-lime)' }}>
+              ${revenue.toFixed(2)}
+            </span>
+            <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>/mo</span>
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-status-error" onClick={onDelete}>
+              <Trash2 className="h-3 w-3" />
+            </Button>
+            {trip.isBlocked && (
+              <Badge variant="destructive" className="text-xs">
+                <AlertTriangle className="h-3 w-3 mr-1" />
+                Blocked
+              </Badge>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-6 gap-4">
-        {/* Trips/Month */}
+      <div className="grid grid-cols-7 gap-4">
+        {/* Service/Month */}
         <div className="space-y-1">
-          <Label className="text-xs">Trips/Month</Label>
+          <Label className="text-xs">Service/Month</Label>
           <EditableField
             value={trip.tripsPerMonth}
             onChange={(v) => onUpdate({ tripsPerMonth: Number(v) })}
@@ -95,22 +209,36 @@ function TripRow({ trip, onUpdate, onDelete, serviceCodes }: TripRowProps) {
             min={0}
           />
         </div>
-
-        {/* Round Trip Toggle */}
+        
+        {/* Clients */}
         <div className="space-y-1">
-          <Label className="text-xs">Round Trip</Label>
-          <Button
-            variant={trip.roundTrip ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => onUpdate({ roundTrip: !trip.roundTrip })}
-            className="w-full text-xs"
-            style={trip.roundTrip ? {
-              backgroundColor: 'var(--color-lime)',
-              color: 'var(--color-charcoal)',
-            } : {}}
-          >
-            {trip.roundTrip ? '×2' : '×1'}
-          </Button>
+          <Label className="text-xs">Clients</Label>
+          <EditableField
+            value={trip.clients || 1}
+            onChange={(v) => onUpdate({ clients: Number(v) || 1 })}
+            type="number"
+            min={1}
+          />
+        </div>
+
+        {/* Multiplier */}
+        <div className="space-y-1">
+          <Label className="text-xs">Multiplier</Label>
+          <EditableField
+            value={trip.multiplier !== undefined ? trip.multiplier : (trip.roundTrip ? 2 : 1)}
+            onChange={(v) => {
+              const multiplier = Number(v) || 1;
+              onUpdate({ 
+                multiplier,
+                roundTrip: multiplier > 1, // Keep roundTrip for backward compatibility
+              });
+            }}
+            type="number"
+            min={0.5}
+            max={10}
+            step={0.5}
+            suffix="×"
+          />
         </div>
 
         {/* Avg Miles */}
@@ -133,6 +261,7 @@ function TripRow({ trip, onUpdate, onDelete, serviceCodes }: TripRowProps) {
             onChange={(e) => onUpdate({ billingMethod: e.target.value as BillingMethod })}
             className="w-full h-7 text-xs rounded border px-2"
             style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
+            title="Select billing method"
           >
             <option value="medicaid">Medicaid</option>
             <option value="nmt">NMT (Waiver)</option>
@@ -163,6 +292,25 @@ function TripRow({ trip, onUpdate, onDelete, serviceCodes }: TripRowProps) {
         </div>
       </div>
 
+      {/* Selected Code Info */}
+      {selectedCode && (
+        <div className="mt-3 p-2 rounded text-xs" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}>
+          <div className="flex items-center gap-4 flex-wrap">
+            <span style={{ color: 'var(--primary)' }}>
+              <strong>Code:</strong> {selectedCode.code}{selectedCode.modifier ? `-${selectedCode.modifier}` : ''}
+            </span>
+            <span style={{ color: 'var(--muted-foreground)' }}>
+              <strong>Rate:</strong> ${selectedCode.baseRate.toFixed(2)}/{selectedCode.unit}
+            </span>
+            {selectedCode.mileageRate && (
+              <span style={{ color: 'var(--muted-foreground)' }}>
+                <strong>Mileage:</strong> ${selectedCode.mileageRate.toFixed(2)}/mi
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+      
       {/* Waiver requirement for NMT */}
       {trip.billingMethod === 'nmt' && (
         <div className="mt-3 p-2 rounded text-xs" style={{ backgroundColor: 'rgba(232, 255, 254, 0.1)' }}>
@@ -177,7 +325,7 @@ function TripRow({ trip, onUpdate, onDelete, serviceCodes }: TripRowProps) {
               suffix="%"
             />
             <span style={{ color: 'var(--muted-foreground)' }}>
-              (Only {Math.round(trip.tripsPerMonth * (trip.percentWithWaiver / 100))} trips billable)
+              (Only {Math.round((trip.tripsPerMonth * (trip.clients || 1)) * (trip.percentWithWaiver / 100))} trips billable)
             </span>
           </div>
         </div>
@@ -247,13 +395,18 @@ export function ScenarioBuilder() {
     const newTrip: TripScenario = {
       id: `trip-${Date.now()}`,
       name: 'New Trip',
-      serviceType: 'BHST',
+      serviceType: 'BHST', // Keep for backward compatibility
+      category: undefined, // No default category - user must select
+      selectedCodeId: undefined, // No default code - user must select
+      selectedModifier: undefined, // No default modifier
       tripsPerMonth: 10,
-      roundTrip: true,
+      clients: 1, // Default to 1 client
+      roundTrip: true, // Keep for backward compatibility
+      multiplier: 2, // Default multiplier
       avgMiles: 15,
       billingMethod: 'medicaid',
-      baseRatePerTrip: 267.91,
-      mileageRate: 6.51,
+      baseRatePerTrip: 0, // Will be set when code is selected
+      mileageRate: 0, // Will be set when code is selected
       requiresWaiver: false,
       percentWithWaiver: 0,
       estimatedRevenue: 0,
@@ -283,7 +436,11 @@ export function ScenarioBuilder() {
   // Calculate totals for active scenario
   const totalRevenue = activeScenario ? calculateScenarioRevenue(activeScenario.id) : 0;
   const totalMiles = activeScenario
-    ? activeScenario.trips.reduce((sum, t) => sum + (t.tripsPerMonth * t.avgMiles * (t.roundTrip ? 2 : 1)), 0)
+    ? activeScenario.trips.reduce((sum, t) => {
+        const clients = t.clients || 1;
+        const multiplier = t.multiplier !== undefined ? t.multiplier : (t.roundTrip ? 2 : 1);
+        return sum + (t.tripsPerMonth * clients * t.avgMiles * multiplier);
+      }, 0)
     : 0;
   
   // Calculate costs
@@ -306,23 +463,23 @@ export function ScenarioBuilder() {
       <div className="flex items-center gap-4">
         <div className="flex gap-2 flex-wrap">
           {scenarios.map((scenario) => (
-            <Button
-              key={scenario.id}
-              variant={activeScenarioId === scenario.id ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveScenario(scenario.id)}
-              className="relative"
-              style={activeScenarioId === scenario.id ? {
-                backgroundColor: 'var(--primary)',
-                color: 'var(--primary-foreground)',
-              } : {}}
-            >
-              <FileText className="h-3 w-3 mr-1" />
-              {scenario.name}
+            <div key={scenario.id} className="relative inline-flex items-center gap-1">
+              <Button
+                variant={activeScenarioId === scenario.id ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveScenario(scenario.id)}
+                style={activeScenarioId === scenario.id ? {
+                  backgroundColor: 'var(--primary)',
+                  color: 'var(--primary-foreground)',
+                } : {}}
+              >
+                <FileText className="h-3 w-3 mr-1" />
+                {scenario.name}
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                className="ml-2 h-4 w-4 p-0 hover:bg-status-error/20"
+                className="h-7 w-7 p-0 hover:bg-status-error/20 text-status-error"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (confirm('Delete this scenario?')) {
@@ -332,7 +489,7 @@ export function ScenarioBuilder() {
               >
                 <Trash2 className="h-3 w-3" />
               </Button>
-            </Button>
+            </div>
           ))}
         </div>
         <div className="flex gap-2">
@@ -361,8 +518,7 @@ export function ScenarioBuilder() {
           <Card style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
-                  <Calculator className="h-5 w-5" style={{ color: 'var(--primary)' }} />
+                <CardTitle className="text-lg" style={{ color: 'var(--foreground)' }}>
                   {activeScenario.name} - Analysis
                 </CardTitle>
                 <Button variant="outline" size="sm">
@@ -469,7 +625,11 @@ export function ScenarioBuilder() {
                   <div className="flex justify-between font-bold">
                     <span style={{ color: 'var(--muted-foreground)' }}>Total Trips:</span>
                     <span style={{ color: 'var(--foreground)' }}>
-                      {activeScenario.trips.reduce((sum, t) => sum + t.tripsPerMonth * (t.roundTrip ? 2 : 1), 0)}
+                      {activeScenario.trips.reduce((sum, t) => {
+                        const clients = t.clients || 1;
+                        const multiplier = t.multiplier !== undefined ? t.multiplier : (t.roundTrip ? 2 : 1);
+                        return sum + t.tripsPerMonth * clients * multiplier;
+                      }, 0)}
                     </span>
                   </div>
                 </div>
@@ -482,7 +642,6 @@ export function ScenarioBuilder() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
-                  <Car className="h-4 w-4" style={{ color: 'var(--primary)' }} />
                   Trip Scenarios
                   <Badge variant="secondary">{activeScenario.trips.length} trips</Badge>
                 </CardTitle>
@@ -505,12 +664,7 @@ export function ScenarioBuilder() {
                     trip={trip}
                     onUpdate={(updates) => handleUpdateTrip(trip.id, updates)}
                     onDelete={() => handleDeleteTrip(trip.id)}
-                    serviceCodes={serviceCodes.map((c) => ({
-                      id: c.id,
-                      code: c.code,
-                      baseRate: c.baseRate,
-                      mileageRate: c.mileageRate,
-                    }))}
+                    serviceCodes={serviceCodes}
                   />
                 ))
               )}

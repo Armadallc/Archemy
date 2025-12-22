@@ -13,6 +13,7 @@ import { useToast } from "../hooks/use-toast";
 import { apiRequest } from "../lib/queryClient";
 import { useHierarchy } from "../hooks/useHierarchy";
 import { useAuth } from "../hooks/useAuth";
+import { HeaderScopeSelector } from "../components/HeaderScopeSelector";
 import { Alert, AlertDescription } from "../components/ui/alert";
 
 interface Program {
@@ -299,6 +300,9 @@ export default function Programs() {
             </h1>
           </div>
           <div className="flex items-center gap-3">
+            {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
+              <HeaderScopeSelector />
+            )}
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => {

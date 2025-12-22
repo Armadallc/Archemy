@@ -111,7 +111,6 @@ const ShadcnHeader = ({ title, subtitle }: { title: string; subtitle?: string })
         </div>
       </div>
       <div className="flex items-center space-x-4">
-        <HeaderScopeSelector />
         <Button
           variant="outline"
           size="sm"
@@ -121,6 +120,9 @@ const ShadcnHeader = ({ title, subtitle }: { title: string; subtitle?: string })
           <Search className="w-4 h-4" />
           <span>Search</span>
         </Button>
+        {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
+          <HeaderScopeSelector />
+        )}
         <EnhancedNotificationCenter />
         
         {/* Role Toggle for Development Testing - Disabled: MockAuthProvider not set up */}

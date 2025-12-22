@@ -210,12 +210,22 @@ interface BentoBoxActions {
       setSelectedTemplate: (template?: EncounterTemplate) => void;
       setSelectedEncounter: (encounter?: ScheduledEncounter) => void;
       setBuilderTemplate: (template?: Partial<EncounterTemplate>) => void;
-      setCurrentView: (view: "day" | "week" | "month") => void;
+      setCurrentView: (view: "day" | "week" | "month" | "agenda") => void;
       setCurrentDate: (date: Date) => void;
       setActiveTab: (tab: "stage" | "builder") => void;
       setEditingTemplateId: (id: string | null) => void;
       getTemplateById: (id: string) => EncounterTemplate | undefined;
       updatePoolTemplate: (poolTemplateId: string, updates: Partial<PoolTemplate>) => void;
+      
+      // Display Preferences
+      setTimeFormat: (format: "12h" | "24h") => void;
+      setShowConfirmationDialog: (show: boolean) => void;
+      setAgendaGroupBy: (groupBy: "date" | "color" | "staff" | "category") => void;
+      
+      // Staff Filtering
+      setStaffFilters: (staffIds: string[]) => void;
+      toggleStaffFilter: (staffId: string) => void;
+      clearStaffFilters: () => void;
       
       // Sync (for future Supabase integration)
       syncToSupabase: () => Promise<void>;
@@ -237,10 +247,18 @@ interface BentoBoxState {
   selectedTemplate?: EncounterTemplate;
   selectedEncounter?: ScheduledEncounter;
   builderTemplate?: Partial<EncounterTemplate>;
-  currentView: "day" | "week" | "month";
+  currentView: "day" | "week" | "month" | "agenda";
   currentDate: Date;
   activeTab: "stage" | "builder";
   editingTemplateId: string | null;
+  
+  // Display Preferences
+  timeFormat: "12h" | "24h";
+  showConfirmationDialog: boolean;
+  agendaGroupBy: "date" | "color" | "staff" | "category";
+  
+  // Staff Filtering
+  selectedStaffFilters: string[]; // Array of staff IDs to filter by
 }
 
 // ============================================================
@@ -259,6 +277,10 @@ export const useBentoBoxStore = create<BentoBoxState & BentoBoxActions>()(
       currentDate: new Date(),
       activeTab: "stage",
       editingTemplateId: null,
+      timeFormat: "12h", // Default to 12-hour format
+      showConfirmationDialog: false, // Default to no confirmation dialog
+      agendaGroupBy: "date", // Default to grouping by date
+      selectedStaffFilters: [], // No filters by default (show all)
       
       // ========== TEMPLATE LIBRARY ==========
       
@@ -592,6 +614,42 @@ export const useBentoBoxStore = create<BentoBoxState & BentoBoxActions>()(
         }));
       },
       
+      // ========== DISPLAY PREFERENCES ==========
+      
+      setTimeFormat: (format) => {
+        set({ timeFormat: format });
+      },
+      
+      setShowConfirmationDialog: (show: boolean) => {
+        set({ showConfirmationDialog: show });
+      },
+      
+      setAgendaGroupBy: (groupBy: "date" | "color" | "staff" | "category") => {
+        set({ agendaGroupBy: groupBy });
+      },
+      
+      // ========== STAFF FILTERING ==========
+      
+      setStaffFilters: (staffIds) => {
+        set({ selectedStaffFilters: staffIds });
+      },
+      
+      toggleStaffFilter: (staffId) => {
+        set((state) => {
+          const currentFilters = state.selectedStaffFilters;
+          const isSelected = currentFilters.includes(staffId);
+          return {
+            selectedStaffFilters: isSelected
+              ? currentFilters.filter(id => id !== staffId)
+              : [...currentFilters, staffId]
+          };
+        });
+      },
+      
+      clearStaffFilters: () => {
+        set({ selectedStaffFilters: [] });
+      },
+      
       // ========== SYNC (Placeholder) ==========
       
       syncToSupabase: async () => {
@@ -607,11 +665,14 @@ export const useBentoBoxStore = create<BentoBoxState & BentoBoxActions>()(
     {
       name: 'bentobox-calendar-storage',
       storage: createJSONStorage(() => localStorage),
-      // Only persist library, pool, and scheduled encounters
+      // Only persist library, pool, scheduled encounters, and preferences
       partialize: (state) => ({
         library: state.library,
         pool: state.pool,
         scheduledEncounters: state.scheduledEncounters,
+        timeFormat: state.timeFormat,
+        showConfirmationDialog: state.showConfirmationDialog,
+        agendaGroupBy: state.agendaGroupBy,
       }),
       // Reviver to convert date strings back to Date objects
       deserialize: (str) => {

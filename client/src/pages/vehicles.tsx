@@ -13,6 +13,7 @@ import { apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "../hooks/use-toast";
 import { useHierarchy } from "../hooks/useHierarchy";
 import { useAuth } from "../hooks/useAuth";
+import { HeaderScopeSelector } from "../components/HeaderScopeSelector";
 
 interface Vehicle {
   id: string;
@@ -283,6 +284,9 @@ export default function Vehicles() {
             </h1>
           </div>
           <div className="flex items-center gap-3">
+            {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
+              <HeaderScopeSelector />
+            )}
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button 

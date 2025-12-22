@@ -17,6 +17,7 @@ import { useToast } from "../hooks/use-toast";
 import { useAuth } from "../hooks/useAuth";
 import { useHierarchy } from "../hooks/useHierarchy";
 import { format } from "date-fns";
+import { HeaderScopeSelector } from "../components/HeaderScopeSelector";
 
 interface Location {
   id: string;
@@ -292,6 +293,9 @@ export default function Locations() {
             </h1>
           </div>
           <div className="flex items-center gap-3">
+            {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
+              <HeaderScopeSelector />
+            )}
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-blue-600 hover:bg-blue-700">

@@ -23,6 +23,7 @@ import { getUserDisplayName } from "../lib/displayNames";
 import ExportButton from "../components/export/ExportButton";
 import { format } from "date-fns";
 import { RollbackManager } from "../utils/rollback-manager";
+import { HeaderScopeSelector } from "../components/HeaderScopeSelector";
 
 interface Driver {
   id: string;
@@ -306,6 +307,9 @@ export default function Drivers() {
               </h1>
             </div>
           <div className="flex items-center gap-3">
+            {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
+              <HeaderScopeSelector />
+            )}
           <ExportButton
             data={filteredDrivers}
             columns={[

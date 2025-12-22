@@ -5,6 +5,14 @@ import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import { serviceWorkerPlugin } from "./vite-plugin-service-worker";
 
 export default defineConfig({
+  // Disable source maps in dev mode to prevent duplicate file entries in DevTools
+  // This ensures each file only appears once in the Sources panel
+  css: {
+    devSourcemap: false,
+  },
+  esbuild: {
+    sourcemap: false,
+  },
   plugins: [
     react({
       // Ensure proper JSX runtime and Fast Refresh
@@ -37,7 +45,7 @@ export default defineConfig({
       'react-chartjs-2'
     ],
     exclude: [],
-    force: true, // Force re-optimization on every start
+    force: false, // Don't force - use cached if available (faster startup)
     esbuildOptions: {
       // Ensure React is properly resolved
       jsx: 'automatic',
@@ -57,6 +65,10 @@ export default defineConfig({
       "react-is": path.resolve(import.meta.dirname, "node_modules/react-is"),
     },
     dedupe: ['react', 'react-dom'],
+    // Ensure consistent module resolution to prevent duplicate file entries
+    preserveSymlinks: false,
+    // Force consistent module IDs to prevent duplicate file entries in DevTools
+    conditions: ['import', 'module', 'browser', 'default'],
   },
   root: path.resolve(import.meta.dirname, "client"),
   envDir: path.resolve(import.meta.dirname), // Look for .env in project root
@@ -75,18 +87,19 @@ export default defineConfig({
         manualChunks: (id) => {
           // Vendor chunks - separate large dependencies
           if (id.includes('node_modules')) {
-            // CRITICAL: Keep React in main bundle to ensure it loads synchronously
+            // CRITICAL: Keep React and Zustand in main bundle to ensure they load synchronously
             // Don't split React - it must be available immediately when other chunks load
-            // This prevents "React.Children is undefined" errors
+            // This prevents "React.Children is undefined" errors and hook call errors
             if (id.includes('/react/') || 
                 id.includes('/react-dom/') || 
                 id.includes('/react/jsx-runtime') || 
                 id.includes('/react-is/') || 
                 id.includes('/scheduler/') ||
                 id.includes('next-themes') ||
+                id.includes('zustand') ||
                 id === 'react' ||
                 id === 'react-dom') {
-              // Return undefined to keep React in the main bundle
+              // Return undefined to keep React and Zustand in the main bundle
               return undefined;
             }
             // React Query
@@ -142,6 +155,8 @@ export default defineConfig({
     headers: {
       'Cache-Control': 'public, max-age=31536000',
     },
+    // Disable source maps in dev to prevent duplicate file entries
+    sourcemapIgnoreList: false,
   },
   publicDir: path.resolve(import.meta.dirname, "client", "public"),
   // Configure MIME types for font files

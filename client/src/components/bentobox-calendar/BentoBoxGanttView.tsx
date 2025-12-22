@@ -8,7 +8,7 @@
  * - Drag-and-drop support
  */
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addDays, addWeeks, setHours, setMinutes } from 'date-fns';
 import { useBentoBoxStore } from './store';
 import { ScheduledEncounter, FireColor, ClientGroupAtom } from './types';
@@ -16,6 +16,9 @@ import { EncounterActions } from './EncounterActions';
 import { ClientGroupMergeDialog } from './ClientGroupMergeDialog';
 import { cn } from '../../lib/utils';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '../ui/hover-card';
+import { FEATURE_FLAGS } from '../../lib/feature-flags';
+import { matchesStaffFilter } from './utils/staff-filter';
+import { BentoBoxWeekGrid } from './layouts/BentoBoxWeekGrid';
 
 interface BentoBoxGanttViewProps {
   currentDate: Date;
@@ -24,20 +27,55 @@ interface BentoBoxGanttViewProps {
 }
 
 export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBoxGanttViewProps) {
-  const { scheduledEncounters, currentView, setCurrentDate, library, scheduleEncounter, updateScheduledEncounter } = useBentoBoxStore();
+  const { scheduledEncounters, currentView, setCurrentDate, library, scheduleEncounter, updateScheduledEncounter, timeFormat, selectedStaffFilters } = useBentoBoxStore();
   const headerScrollRef = useRef<HTMLDivElement>(null);
   const calendarScrollRef = useRef<HTMLDivElement>(null);
   const timeSlotRef = useRef<HTMLDivElement>(null);
   const [scrollPosition, setScrollPosition] = useState(0);
   const [draggedOverSlot, setDraggedOverSlot] = useState<{ day: Date; hour: number } | null>(null);
   const [draggedEncounter, setDraggedEncounter] = useState<ScheduledEncounter | null>(null);
-  const [pixelsPerMinute, setPixelsPerMinute] = useState(0.8);
+  // Fixed pixels per minute: 96px per hour = 1.6px per minute
+  const pixelsPerMinute = 96 / 60; // 1.6px per minute (matches full-calendar reference)
   const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
   const [pendingClientGroup, setPendingClientGroup] = useState<{ group: ClientGroupAtom; encounter: ScheduledEncounter } | null>(null);
+  
+  // Resize state (only when feature flag is enabled)
+  const [resizingEncounter, setResizingEncounter] = useState<{
+    encounter: ScheduledEncounter;
+    edge: 'top' | 'bottom';
+    initialY: number;
+    initialStart: Date;
+    initialEnd: Date;
+  } | null>(null);
 
   // Generate time slots (6 AM to 10 PM)
-  const timeSlots = Array.from({ length: 17 }, (_, i) => i + 6);
+  // Full 24-hour range (0-23) to match full-calendar reference
+  const timeSlots = Array.from({ length: 24 }, (_, i) => i);
   const minutesPerSlot = 60;
+
+  // Uniform grid constants - ensures consistent alignment across all blocks
+  const GRID_CONSTANTS = {
+    // Spacing
+    GUTTER: 8, // 8px gutter between columns (0.5rem)
+    BLOCK_PADDING: 8, // 8px padding inside encounter blocks (0.5rem)
+    BLOCK_MARGIN: 8, // 8px margin on left/right of encounter blocks (0.5rem)
+    
+    // Dimensions
+    TIME_COLUMN_WIDTH: { base: 64, md: 80 }, // w-16 md:w-20
+    DAY_COLUMN_WIDTH: { 
+      week: 'flex-1', // Equal distribution for week view
+      month: { base: 120, md: 150, lg: 180 } // Fixed widths for month view
+    },
+    TIME_SLOT_HEIGHT: { base: 48, md: 56 }, // h-12 md:h-14
+    
+    // Borders
+    BORDER_WIDTH: 1, // 1px borders
+    BORDER_COLOR: 'border-border',
+    
+    // Header padding
+    HEADER_PADDING: 8, // 8px padding in day headers (p-2)
+    TIME_COLUMN_PADDING: { right: 8, top: 4 }, // pr-2 md:pr-3 pt-1
+  };
 
   // Sync horizontal scroll between header and calendar
   useEffect(() => {
@@ -67,38 +105,8 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
     };
   }, [currentView]);
 
-  // Calculate pixels per minute based on actual rendered time slot height
-  useEffect(() => {
-    const calculatePixelsPerMinute = () => {
-      if (timeSlotRef.current) {
-        const slotHeight = timeSlotRef.current.offsetHeight;
-        if (slotHeight > 0) {
-          const calculatedPixelsPerMinute = slotHeight / minutesPerSlot;
-          setPixelsPerMinute(calculatedPixelsPerMinute);
-        }
-      }
-    };
-
-    // Calculate on mount and view change
-    calculatePixelsPerMinute();
-
-    // Recalculate on window resize (for responsive height changes)
-    window.addEventListener('resize', calculatePixelsPerMinute);
-    
-    // Use ResizeObserver for more accurate detection
-    let resizeObserver: ResizeObserver | null = null;
-    if (timeSlotRef.current && window.ResizeObserver) {
-      resizeObserver = new ResizeObserver(calculatePixelsPerMinute);
-      resizeObserver.observe(timeSlotRef.current);
-    }
-
-    return () => {
-      window.removeEventListener('resize', calculatePixelsPerMinute);
-      if (resizeObserver && timeSlotRef.current) {
-        resizeObserver.unobserve(timeSlotRef.current);
-      }
-    };
-  }, [currentView, minutesPerSlot]);
+  // No longer needed - using fixed 96px per hour (1.6px per minute)
+  // This matches the full-calendar reference styling
 
   // Calculate date range based on view
   const getDateRange = () => {
@@ -126,9 +134,20 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
   const isMonthView = currentView === 'month' && days.length > 7;
 
   const getEventsForDay = (day: Date) => {
-    return scheduledEncounters.filter((encounter) => 
-      isSameDay(new Date(encounter.start), day)
-    );
+    return scheduledEncounters.filter((encounter) => {
+      // Filter by day
+      if (!isSameDay(new Date(encounter.start), day)) {
+        return false;
+      }
+      
+      // Filter by staff if feature flag is enabled and filters are selected
+      if (FEATURE_FLAGS.FULL_CALENDAR_STAFF_FILTER && selectedStaffFilters.length > 0) {
+        const template = library.templates.find(t => t.id === encounter.templateId);
+        return matchesStaffFilter(encounter, selectedStaffFilters, template);
+      }
+      
+      return true;
+    });
   };
 
   const getColorClasses = (color: FireColor) => {
@@ -141,6 +160,31 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
     };
     return colorMap[color] || colorMap.silver;
   };
+
+  // Format time based on user preference
+  const formatTime = React.useCallback((hour: number): string => {
+    // Use timeFormat from store if feature flag is enabled
+    if (FEATURE_FLAGS.FULL_CALENDAR_TIME_FORMAT) {
+      if (timeFormat === '24h') {
+        return `${hour.toString().padStart(2, '0')}:00`;
+      } else {
+        // 12-hour format (timeFormat === '12h')
+        return hour === 12 ? "12 PM" : hour > 12 ? `${hour - 12} PM` : `${hour} AM`;
+      }
+    }
+    // Default 12-hour format (fallback if feature flag disabled)
+    return hour === 12 ? "12 PM" : hour > 12 ? `${hour - 12} PM` : `${hour} AM`;
+  }, [timeFormat]);
+
+  // Force re-render when timeFormat changes by using a key
+  const timeColumnKey = `time-column-${timeFormat}`;
+  
+  // Debug: Log timeFormat changes (can be removed in production)
+  useEffect(() => {
+    if (FEATURE_FLAGS.FULL_CALENDAR_TIME_FORMAT && import.meta.env.DEV) {
+      console.log('🕐 Time format changed to', timeFormat);
+    }
+  }, [timeFormat]);
 
   const getEventPosition = (encounter: ScheduledEncounter) => {
     const start = new Date(encounter.start);
@@ -156,13 +200,15 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
     const endHour = end.getHours();
     const endMinute = end.getMinutes();
     
-    // Calculate total minutes from 6 AM (start of calendar)
-    const startMinutesFrom6AM = (startHour - 6) * 60 + startMinute;
-    const endMinutesFrom6AM = (endHour - 6) * 60 + endMinute;
+    // Calculate total minutes from midnight (0:00) - full 24-hour range
+    const startMinutesFromMidnight = startHour * 60 + startMinute;
+    const endMinutesFromMidnight = endHour * 60 + endMinute;
     
     // Calculate position and height in pixels
-    const top = startMinutesFrom6AM * pixelsPerMinute;
-    const height = (endMinutesFrom6AM - startMinutesFrom6AM) * pixelsPerMinute;
+    // Using 96px per hour = 1.6px per minute
+    const pixelsPerMinute = 96 / 60; // 1.6px per minute
+    const top = startMinutesFromMidnight * pixelsPerMinute;
+    const height = (endMinutesFromMidnight - startMinutesFromMidnight) * pixelsPerMinute;
     
     // Ensure minimum height for visibility
     const minHeight = Math.max(height, 24);
@@ -178,6 +224,101 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
     // Could trigger template selection or quick add
     console.log('Time slot clicked:', startTime);
   };
+
+  // Resize handlers (only when feature flag is enabled)
+  const handleResizeStart = (e: React.MouseEvent, encounter: ScheduledEncounter, edge: 'top' | 'bottom') => {
+    if (!FEATURE_FLAGS.FULL_CALENDAR_RESIZE) return;
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setResizingEncounter({
+      encounter,
+      edge,
+      initialY: e.clientY,
+      initialStart: new Date(encounter.start),
+      initialEnd: new Date(encounter.end),
+    });
+  };
+
+  const handleResizeMove = useCallback((e: MouseEvent) => {
+    if (!resizingEncounter || !FEATURE_FLAGS.FULL_CALENDAR_RESIZE) return;
+    
+    const deltaY = e.clientY - resizingEncounter.initialY;
+    const deltaMinutes = Math.round(deltaY / pixelsPerMinute);
+    
+    if (deltaMinutes === 0) return;
+    
+    const { encounter, edge, initialStart, initialEnd } = resizingEncounter;
+    
+    let newStart: Date;
+    let newEnd: Date;
+    
+    if (edge === 'top') {
+      // Resizing start time
+      newStart = new Date(initialStart.getTime() + deltaMinutes * 60 * 1000);
+      newEnd = initialEnd;
+      
+      // Ensure start doesn't go past end (minimum 15 minutes)
+      const minDuration = 15 * 60 * 1000;
+      if (newStart.getTime() >= newEnd.getTime() - minDuration) {
+        newStart = new Date(newEnd.getTime() - minDuration);
+      }
+      
+      // Ensure start is within calendar bounds (full 24-hour range: 0-23)
+      const dayStart = setHours(new Date(initialStart), 0);
+      const dayEnd = setHours(new Date(initialStart), 23);
+      if (newStart < dayStart) newStart = dayStart;
+      if (newStart > dayEnd) newStart = dayEnd;
+    } else {
+      // Resizing end time
+      newStart = initialStart;
+      newEnd = new Date(initialEnd.getTime() + deltaMinutes * 60 * 1000);
+      
+      // Ensure end doesn't go before start (minimum 15 minutes)
+      const minDuration = 15 * 60 * 1000;
+      if (newEnd.getTime() <= newStart.getTime() + minDuration) {
+        newEnd = new Date(newStart.getTime() + minDuration);
+      }
+      
+      // Ensure end is within calendar bounds (6 AM - 10 PM)
+      // Ensure end is within calendar bounds (full 24-hour range: 0-23)
+      const dayStart = setHours(new Date(initialEnd), 0);
+      const dayEnd = setHours(new Date(initialEnd), 23);
+      if (newEnd < dayStart) newEnd = dayStart;
+      if (newEnd > dayEnd) newEnd = dayEnd;
+    }
+    
+    // Update encounter temporarily for visual feedback
+    updateScheduledEncounter(encounter.id, {
+      start: newStart,
+      end: newEnd,
+    });
+  }, [resizingEncounter, pixelsPerMinute, updateScheduledEncounter]);
+
+  const handleResizeEnd = useCallback(() => {
+    if (!resizingEncounter || !FEATURE_FLAGS.FULL_CALENDAR_RESIZE) return;
+    
+    // The encounter is already updated in handleResizeMove
+    // Just clean up the resize state
+    setResizingEncounter(null);
+  }, [resizingEncounter]);
+
+  // Set up global mouse event listeners for resize
+  useEffect(() => {
+    if (!resizingEncounter || !FEATURE_FLAGS.FULL_CALENDAR_RESIZE) return;
+    
+    const handleMouseMove = (e: MouseEvent) => handleResizeMove(e);
+    const handleMouseUp = () => handleResizeEnd();
+    
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [resizingEncounter, handleResizeMove, handleResizeEnd]);
 
   const handleTimeSlotDragOver = (e: React.DragEvent, day: Date, hour: number) => {
     e.preventDefault();
@@ -312,13 +453,299 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
     setPendingClientGroup(null);
   };
 
+  // Calculate hour height for new grid layout
+  // Use 96px per hour to match full-calendar reference
+  const hourHeight = useMemo(() => {
+    return 96; // Fixed 96px per hour to match full-calendar reference
+  }, []);
+
+  // Use new grid layout for week view when feature flag is enabled
+  const useNewGridLayout = FEATURE_FLAGS.FULL_CALENDAR_LAYOUT && isWeekView;
+
   return (
     <>
-      <div className="flex flex-col h-full bg-background overflow-hidden">
+      {useNewGridLayout ? (
+        // New responsive grid layout (full-calendar style)
+        <BentoBoxWeekGrid
+          days={days}
+          timeSlots={timeSlots}
+          timeColumnWidth={GRID_CONSTANTS.TIME_COLUMN_WIDTH.base}
+          hourHeight={hourHeight}
+          renderTimeColumn={(hour, index) => {
+            const formattedTime = formatTime(hour);
+            return (
+              <div
+                key={`time-${hour}-${timeFormat}`}
+                ref={index === 0 ? timeSlotRef : undefined}
+                className="absolute -top-3 right-2 flex h-6 items-center"
+              >
+                {index !== 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    {formattedTime}
+                  </span>
+                )}
+              </div>
+            );
+          }}
+          renderDayColumn={(day, dayIndex) => {
+            const dayEvents = getEventsForDay(day);
+            return (
+              <>
+                {/* Time slots for DnD - positioned absolutely within the day column */}
+                {timeSlots.map((hour, slotIndex) => {
+                  const isDraggedOver = draggedOverSlot?.day && 
+                    isSameDay(draggedOverSlot.day, day) && 
+                    draggedOverSlot.hour === hour;
+                  
+                  return (
+                    <div
+                      key={hour}
+                      className={cn(
+                        "absolute left-0 right-0 pointer-events-none",
+                        slotIndex === 0 && "border-t border-border"
+                      )}
+                      style={{
+                        top: `${slotIndex * hourHeight}px`,
+                        height: `${hourHeight}px`,
+                      }}
+                    >
+                      {/* Solid border at hour boundary */}
+                      {slotIndex !== 0 && (
+                        <div className="absolute inset-x-0 top-0 border-b border-border/50 pointer-events-none" />
+                      )}
+                      {/* Dotted line at half-hour mark (middle of hour) */}
+                      <div className="absolute inset-x-0 top-1/2 border-b border-dashed border-border/30 pointer-events-none" />
+                      
+                      <div
+                        className={cn(
+                          "absolute inset-0 transition-colors cursor-pointer",
+                          isDraggedOver
+                            ? "bg-primary/20 border-primary border-2 z-10"
+                            : "hover:bg-muted/30"
+                        )}
+                        onClick={() => handleTimeSlotClick(day, hour)}
+                        onDragOver={(e) => handleTimeSlotDragOver(e, day, hour)}
+                        onDrop={(e) => handleTimeSlotDrop(e, day, hour)}
+                        onDragLeave={handleTimeSlotDragLeave}
+                        style={{ pointerEvents: 'auto' }}
+                      />
+                    </div>
+                  );
+                })}
+                
+                {/* Scheduled Encounters */}
+                {dayEvents.map((encounter) => {
+                  const position = getEventPosition(encounter);
+                  const template = library.templates.find(
+                    (t) => t.id === encounter.templateId
+                  );
+                  const isDragging = draggedEncounter?.id === encounter.id;
+                  const isResizing = resizingEncounter?.encounter.id === encounter.id;
+                  
+                  return (
+                    <HoverCard key={encounter.id}>
+                      <HoverCardTrigger asChild>
+                        <div
+                          className={cn(
+                            "absolute rounded-md border text-xs shadow-sm group",
+                            getColorClasses(encounter.color as FireColor),
+                            isDragging && "opacity-50",
+                            isResizing && "ring-2 ring-primary ring-offset-1"
+                          )}
+                          style={{
+                            ...position,
+                            left: `${GRID_CONSTANTS.BLOCK_MARGIN}px`,
+                            right: `${GRID_CONSTANTS.BLOCK_MARGIN}px`,
+                            padding: `${GRID_CONSTANTS.BLOCK_PADDING}px`,
+                            borderWidth: `${GRID_CONSTANTS.BORDER_WIDTH}px`
+                          }}
+                          draggable={!isResizing}
+                          onDragStart={(e) => {
+                            if (isResizing) {
+                              e.preventDefault();
+                              return;
+                            }
+                            e.dataTransfer.setData('application/json', JSON.stringify({
+                              type: 'scheduled-encounter',
+                              encounterId: encounter.id,
+                            }));
+                            e.dataTransfer.effectAllowed = 'move';
+                            setDraggedEncounter(encounter);
+                          }}
+                          onDragEnd={() => {
+                            setDraggedEncounter(null);
+                          }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            const data = e.dataTransfer.getData('application/json');
+                            if (!data) return;
+                            
+                            try {
+                              const payload = JSON.parse(data);
+                              
+                              if (payload.type === 'client-group') {
+                                const clientGroupId = payload.clientGroupId || payload.id;
+                                const clientGroup = library.atoms.clientGroups.find(
+                                  (g) => g.id === clientGroupId
+                                );
+                                
+                                if (clientGroup) {
+                                  const template = library.templates.find(
+                                    (t) => t.id === encounter.templateId
+                                  );
+                                  
+                                  if (template) {
+                                    const existingClients = encounter.overrides?.clients || template.clients || [];
+                                    const existingCount = existingClients.reduce((count, c) => {
+                                      if (c.type === 'client') return count + 1;
+                                      if (c.type === 'client-group') return count + (c.clientIds?.length || 0);
+                                      return count;
+                                    }, 0);
+                                    
+                                    setPendingClientGroup({ group: clientGroup, encounter });
+                                    setMergeDialogOpen(true);
+                                  }
+                                }
+                              }
+                            } catch (error) {
+                              console.error('Error handling drop on encounter:', error);
+                            }
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            console.log('Encounter clicked:', encounter);
+                          }}
+                        >
+                          {/* Top resize handle */}
+                          {FEATURE_FLAGS.FULL_CALENDAR_RESIZE && (
+                            <div
+                              className={cn(
+                                "absolute top-0 left-0 right-0 h-2 cursor-ns-resize z-10",
+                                "opacity-0 group-hover:opacity-100 transition-opacity",
+                                "hover:bg-primary/20 rounded-t-md"
+                              )}
+                              onMouseDown={(e) => handleResizeStart(e, encounter, 'top')}
+                              title="Drag to resize start time"
+                            />
+                          )}
+                          
+                          {/* Content */}
+                          <div className="cursor-move">
+                            <div className="font-medium truncate">{encounter.title}</div>
+                            <div className="text-xs opacity-75 mt-0.5">
+                              {format(new Date(encounter.start), "h:mm a")} - {format(new Date(encounter.end), "h:mm a")}
+                            </div>
+                            {template && (
+                              <div className="text-xs opacity-60 mt-1">
+                                {template.staff.map(s => s.name).join(', ')}
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Bottom resize handle */}
+                          {FEATURE_FLAGS.FULL_CALENDAR_RESIZE && (
+                            <div
+                              className={cn(
+                                "absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize z-10",
+                                "opacity-0 group-hover:opacity-100 transition-opacity",
+                                "hover:bg-primary/20 rounded-b-md"
+                              )}
+                              onMouseDown={(e) => handleResizeStart(e, encounter, 'bottom')}
+                              title="Drag to resize end time"
+                            />
+                          )}
+                        </div>
+                      </HoverCardTrigger>
+                      <HoverCardContent className="w-80">
+                        <div className="space-y-2">
+                          <div>
+                            <h4 className="font-semibold">{encounter.title}</h4>
+                            {encounter.description && (
+                              <p className="text-sm text-muted-foreground">{encounter.description}</p>
+                            )}
+                          </div>
+                          {template && (
+                            <>
+                              <div>
+                                <div className="text-xs font-medium text-muted-foreground">Staff</div>
+                                <div className="text-sm">
+                                  {template.staff.map(s => s.name).join(', ')}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-xs font-medium text-muted-foreground">Activity</div>
+                                <div className="text-sm">{template.activity.name}</div>
+                              </div>
+                              <div>
+                                <div className="text-xs font-medium text-muted-foreground">Clients</div>
+                                <div className="text-sm">
+                                  {template.clients.length} {template.clients.length === 1 ? 'client' : 'clients'}
+                                </div>
+                              </div>
+                              {template.location && (
+                                <div>
+                                  <div className="text-xs font-medium text-muted-foreground">Location</div>
+                                  <div className="text-sm">{template.location.name}</div>
+                                </div>
+                              )}
+                              <div>
+                                <div className="text-xs font-medium text-muted-foreground">Duration</div>
+                                <div className="text-sm">{template.duration.label}</div>
+                              </div>
+                            </>
+                          )}
+                          <EncounterActions 
+                            encounter={encounter} 
+                            onEdit={() => onEdit && onEdit(encounter.templateId)}
+                          />
+                        </div>
+                      </HoverCardContent>
+                    </HoverCard>
+                  );
+                })}
+              </>
+            );
+          }}
+          renderTimeSlot={(day, hour, dayIndex, slotIndex) => {
+            // Time slot container - provides structure for the grid
+            // Actual interactive slots are rendered in renderDayColumn
+            return (
+              <div
+                key={hour}
+                className="relative"
+                style={{ height: `${hourHeight}px` }}
+              >
+                {/* Solid border at hour boundary */}
+                {slotIndex !== 0 && (
+                  <div className="absolute inset-x-0 top-0 border-b border-border/50 pointer-events-none" />
+                )}
+                {/* Dotted line at half-hour mark (middle of hour) */}
+                <div className="absolute inset-x-0 top-1/2 border-b border-dashed border-border/30 pointer-events-none" />
+              </div>
+            );
+          }}
+        />
+      ) : (
+        // Original layout (fallback)
+        <div className="flex flex-col flex-1 min-h-0 bg-background rounded-lg">
       {/* Days Header */}
-      <div className="flex border-b sticky top-0 bg-background z-10 flex-shrink-0">
+      <div className="flex border-b border-r sticky top-0 bg-background z-10 flex-shrink-0 rounded-t-lg" style={{ borderBottomWidth: `${GRID_CONSTANTS.BORDER_WIDTH}px` }}>
         {/* Time column header */}
-        <div className="w-16 md:w-20 bg-muted/50 border-r flex-shrink-0"></div>
+        <div 
+          className="bg-muted/50 border-r flex-shrink-0" 
+          style={{ 
+            width: `${GRID_CONSTANTS.TIME_COLUMN_WIDTH.base}px`,
+            borderRightWidth: `${GRID_CONSTANTS.BORDER_WIDTH}px`
+          }}
+        >
+          <div className="hidden md:block" style={{ width: `${GRID_CONSTANTS.TIME_COLUMN_WIDTH.md}px` }}></div>
+        </div>
         
         {/* Days header - flex for week, scrollable for month */}
         <div 
@@ -330,17 +757,21 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
         >
           <div className={cn(
             "flex h-full",
-            isWeekView ? "w-full" : "min-w-max",
-            !isWeekView && "pr-4"
+            isWeekView ? "w-full" : "min-w-max"
           )}>
             {days.map((day) => (
               <div
                   key={day.toISOString()}
                   className={cn(
-                    "p-2 text-center border-r border-b flex-shrink-0",
-                    isWeekView ? "flex-1" : "min-w-[120px] md:min-w-[150px] lg:min-w-[180px]",
-                    isSameDay(day, new Date()) && "bg-primary/10"
+                    "text-center border-r border-b flex-shrink-0",
+                    isSameDay(day, new Date()) && "bg-primary/10",
+                    isWeekView ? "flex-1" : "min-w-[120px] md:min-w-[150px] lg:min-w-[180px]"
                   )}
+                  style={{
+                    padding: `${GRID_CONSTANTS.HEADER_PADDING}px`,
+                    borderRightWidth: `${GRID_CONSTANTS.BORDER_WIDTH}px`,
+                    borderBottomWidth: `${GRID_CONSTANTS.BORDER_WIDTH}px`
+                  }}
                 >
                 <div className="text-xs font-medium text-muted-foreground">
                   {format(day, "EEE")}
@@ -357,29 +788,42 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
         </div>
       </div>
       
-      {/* Time Grid - Scrollable */}
+      {/* Time Grid */}
       <div className={cn(
-        "flex flex-1 overflow-y-auto min-h-0",
-        isWeekView ? "overflow-x-hidden" : "overflow-x-auto"
+        "flex flex-1 min-h-0 overflow-hidden",
+        isWeekView ? "" : "overflow-x-auto"
       )}>
         {/* Time column - sticky */}
-        <div className="w-16 md:w-20 bg-muted/50 border-r flex-shrink-0 sticky left-0 z-10">
+        <div 
+          key={timeColumnKey}
+          className="bg-muted/50 border-r flex-shrink-0 sticky left-0 z-10 flex flex-col min-h-0 self-stretch" 
+          style={{ 
+            width: `${GRID_CONSTANTS.TIME_COLUMN_WIDTH.base}px`,
+            borderRightWidth: `${GRID_CONSTANTS.BORDER_WIDTH}px`
+          }}
+        >
           {timeSlots.map((hour, index) => {
             const isLastSlot = index === timeSlots.length - 1;
+            const formattedTime = formatTime(hour);
             return (
-              <div
-                key={hour}
-                ref={index === 0 ? timeSlotRef : undefined}
-                className={cn(
-                  "h-12 md:h-14 flex items-start justify-end pr-2 md:pr-3 pt-1",
-                  !isLastSlot && "border-b border-border"
-                )}
-                style={!isLastSlot ? { borderBottomWidth: '1px' } : undefined}
-              >
-                <span className="text-xs text-muted-foreground">
-                  {hour === 12 ? "12 PM" : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
-                </span>
-              </div>
+                <div
+                  key={`time-${hour}-${timeFormat}`}
+                  ref={index === 0 ? timeSlotRef : undefined}
+                  className="flex items-start justify-end flex-1 min-h-12 md:min-h-14"
+                  style={{
+                    paddingRight: `${GRID_CONSTANTS.TIME_COLUMN_PADDING.right}px`,
+                    paddingTop: `${GRID_CONSTANTS.TIME_COLUMN_PADDING.top}px`,
+                    borderBottomWidth: `${GRID_CONSTANTS.BORDER_WIDTH}px`,
+                    borderBottomColor: 'var(--border)'
+                  }}
+                >
+                  <span 
+                    key={`time-text-${hour}-${timeFormat}`}
+                    className="text-xs text-muted-foreground"
+                  >
+                    {formattedTime}
+                  </span>
+                </div>
             );
           })}
         </div>
@@ -387,13 +831,13 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
         {/* Days grid - flex for week, scrollable for month */}
         <div 
           className={cn(
-            "flex-1",
-            isWeekView ? "overflow-hidden" : "overflow-x-auto"
+            "flex-1 min-h-0 flex flex-col self-stretch border-r",
+            isWeekView ? "" : "overflow-x-auto"
           )}
           ref={calendarScrollRef}
         >
           <div className={cn(
-            "flex h-full",
+            "flex flex-1 min-h-0",
             isWeekView ? "w-full" : "min-w-max",
             !isWeekView && "pr-4"
           )}>
@@ -404,11 +848,14 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
                 <div
                   key={day.toISOString()}
                   className={cn(
-                    "border-r relative bg-background",
-                    isWeekView ? "flex-1" : "min-w-[120px] md:min-w-[150px] lg:min-w-[180px]"
+                    "border-r relative bg-background flex flex-col flex-1 min-h-0",
+                    isWeekView ? "flex-shrink-0" : "flex-shrink-0 min-w-[120px] md:min-w-[150px] lg:min-w-[180px]"
                   )}
+                  style={{
+                    borderRightWidth: `${GRID_CONSTANTS.BORDER_WIDTH}px`
+                  }}
                 >
-                  {/* Time slots */}
+                  {/* Time slots - uniform height ensures horizontal alignment */}
                   {timeSlots.map((hour, slotIndex) => {
                     const isDraggedOver = draggedOverSlot?.day && 
                       isSameDay(draggedOverSlot.day, day) && 
@@ -419,13 +866,15 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
                       <div
                         key={hour}
                         className={cn(
-                          "h-12 md:h-14 transition-colors flex-shrink-0",
-                          !isLastSlot && "border-b border-border",
+                          "transition-colors flex-1 min-h-12 md:min-h-14",
                           isDraggedOver
-                            ? "bg-primary/20 border-primary border-2"
+                            ? "bg-primary/20 border-primary"
                             : "hover:bg-muted/30 cursor-pointer"
                         )}
-                        style={!isLastSlot && !isDraggedOver ? { borderBottomWidth: '1px' } : undefined}
+                        style={{
+                          borderBottomWidth: !isDraggedOver ? `${GRID_CONSTANTS.BORDER_WIDTH}px` : '2px',
+                          borderBottomColor: !isDraggedOver ? 'var(--border)' : 'var(--primary)'
+                        }}
                         onClick={() => handleTimeSlotClick(day, hour)}
                         onDragOver={(e) => handleTimeSlotDragOver(e, day, hour)}
                         onDrop={(e) => handleTimeSlotDrop(e, day, hour)}
@@ -442,18 +891,31 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
                     );
                     const isDragging = draggedEncounter?.id === encounter.id;
                     
+                    const isResizing = resizingEncounter?.encounter.id === encounter.id;
+                    
                     return (
                       <HoverCard key={encounter.id}>
                         <HoverCardTrigger asChild>
                           <div
                             className={cn(
-                              "absolute left-1 right-1 rounded-md p-2 cursor-move border text-xs shadow-sm",
+                              "absolute rounded-md border text-xs shadow-sm group",
                               getColorClasses(encounter.color as FireColor),
-                              isDragging && "opacity-50"
+                              isDragging && "opacity-50",
+                              isResizing && "ring-2 ring-primary ring-offset-1"
                             )}
-                            style={position}
-                            draggable
+                            style={{
+                              ...position,
+                              left: `${GRID_CONSTANTS.BLOCK_MARGIN}px`,
+                              right: `${GRID_CONSTANTS.BLOCK_MARGIN}px`,
+                              padding: `${GRID_CONSTANTS.BLOCK_PADDING}px`,
+                              borderWidth: `${GRID_CONSTANTS.BORDER_WIDTH}px`
+                            }}
+                            draggable={!isResizing}
                             onDragStart={(e) => {
+                              if (isResizing) {
+                                e.preventDefault();
+                                return;
+                              }
                               e.dataTransfer.setData('application/json', JSON.stringify({
                                 type: 'scheduled-encounter',
                                 encounterId: encounter.id,
@@ -516,14 +978,43 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
                               console.log('Encounter clicked:', encounter);
                             }}
                           >
-                            <div className="font-medium truncate">{encounter.title}</div>
-                            <div className="text-xs opacity-75 mt-0.5">
-                              {format(new Date(encounter.start), "h:mm a")} - {format(new Date(encounter.end), "h:mm a")}
-                            </div>
-                            {template && (
-                              <div className="text-xs opacity-60 mt-1">
-                                {template.staff.map(s => s.name).join(', ')}
+                            {/* Top resize handle */}
+                            {FEATURE_FLAGS.FULL_CALENDAR_RESIZE && (
+                              <div
+                                className={cn(
+                                  "absolute top-0 left-0 right-0 h-2 cursor-ns-resize z-10",
+                                  "opacity-0 group-hover:opacity-100 transition-opacity",
+                                  "hover:bg-primary/20 rounded-t-md"
+                                )}
+                                onMouseDown={(e) => handleResizeStart(e, encounter, 'top')}
+                                title="Drag to resize start time"
+                              />
+                            )}
+                            
+                            {/* Content */}
+                            <div className="cursor-move">
+                              <div className="font-medium truncate">{encounter.title}</div>
+                              <div className="text-xs opacity-75 mt-0.5">
+                                {format(new Date(encounter.start), "h:mm a")} - {format(new Date(encounter.end), "h:mm a")}
                               </div>
+                              {template && (
+                                <div className="text-xs opacity-60 mt-1">
+                                  {template.staff.map(s => s.name).join(', ')}
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Bottom resize handle */}
+                            {FEATURE_FLAGS.FULL_CALENDAR_RESIZE && (
+                              <div
+                                className={cn(
+                                  "absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize z-10",
+                                  "opacity-0 group-hover:opacity-100 transition-opacity",
+                                  "hover:bg-primary/20 rounded-b-md"
+                                )}
+                                onMouseDown={(e) => handleResizeStart(e, encounter, 'bottom')}
+                                title="Drag to resize end time"
+                              />
                             )}
                           </div>
                         </HoverCardTrigger>
@@ -580,8 +1071,10 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
           </div>
         </div>
       </div>
+        </div>
+      )}
       
-      {/* Client Group Merge Dialog */}
+      {/* Client Group Merge Dialog - Outside conditional layout */}
       {pendingClientGroup && (
         <ClientGroupMergeDialog
           open={mergeDialogOpen}
@@ -603,7 +1096,6 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
           onCancel={handleCancelMerge}
         />
       )}
-      </div>
     </>
   );
 }

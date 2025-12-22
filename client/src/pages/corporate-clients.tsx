@@ -11,6 +11,8 @@ import { Textarea } from "../components/ui/textarea";
 import { PhoneInput } from "../components/ui/phone-input";
 import { useToast } from "../hooks/use-toast";
 import { apiRequest } from "../lib/queryClient";
+import { useAuth } from "../hooks/useAuth";
+import { HeaderScopeSelector } from "../components/HeaderScopeSelector";
 
 interface CorporateClient {
   id: string;
@@ -29,6 +31,7 @@ interface CorporateClient {
 }
 
 export default function CorporateClients() {
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
@@ -185,6 +188,9 @@ export default function CorporateClients() {
             </h1>
           </div>
           <div className="flex items-center gap-3">
+            {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
+              <HeaderScopeSelector />
+            )}
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => {

@@ -137,7 +137,7 @@ export function StaffingCosts() {
     <Card style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg" style={{ color: 'var(--foreground)' }}>
-          <Users className="h-5 w-5" style={{ color: 'var(--primary)' }} />
+          <Users className="h-6 w-6" style={{ color: 'var(--primary)' }} />
           Staffing Costs
         </CardTitle>
       </CardHeader>

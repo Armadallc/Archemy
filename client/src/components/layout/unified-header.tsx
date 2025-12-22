@@ -250,7 +250,6 @@ function UnifiedHeaderComponent({
       </div>
       
       <div className="flex items-center space-x-4">
-        <HeaderScopeSelector />
         {showSearch && (
           <Button
             variant="outline"
@@ -266,6 +265,9 @@ function UnifiedHeaderComponent({
             <Search className="w-4 h-4" />
             <span>Search</span>
           </Button>
+        )}
+        {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
+          <HeaderScopeSelector />
         )}
         <EnhancedNotificationCenter />
       </div>

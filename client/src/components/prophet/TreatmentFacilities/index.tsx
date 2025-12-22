@@ -6,15 +6,20 @@
 import React, { useState } from 'react';
 import { FacilityCard } from './FacilityCard';
 import { FacilityForm } from './FacilityForm';
+import { ContractAnalysisModal } from './ContractAnalysis/ContractAnalysisModal';
 import { useProphetStore } from '../hooks/useProphetStore';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { TreatmentFacility } from '../types';
 import { Building2, Users, FileCheck, Car, DollarSign, TrendingUp } from 'lucide-react';
+import { useFeatureFlag } from '../../../hooks/use-permissions';
 
 export function TreatmentFacilitiesManager() {
   const { facilities, addFacility, updateFacility, deleteFacility, calculateFacilityRevenue } = useProphetStore();
+  const { isEnabled: isContractAnalysisEnabled } = useFeatureFlag('contract_analysis');
   const [formOpen, setFormOpen] = useState(false);
   const [editingFacility, setEditingFacility] = useState<TreatmentFacility | undefined>();
+  const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
+  const [analyzingFacility, setAnalyzingFacility] = useState<TreatmentFacility | undefined>();
 
   const handleAdd = () => {
     setEditingFacility(undefined);
@@ -41,8 +46,8 @@ export function TreatmentFacilitiesManager() {
   };
 
   const handleAnalyze = (facility: TreatmentFacility) => {
-    // TODO: Open analysis modal
-    console.log('Analyze facility:', facility.name);
+    setAnalyzingFacility(facility);
+    setAnalysisModalOpen(true);
   };
 
   // Get facilities by slot
@@ -161,6 +166,20 @@ export function TreatmentFacilitiesManager() {
         onSave={handleSave}
         initialData={editingFacility}
       />
+
+      {/* Contract Analysis Modal */}
+      {isContractAnalysisEnabled && analyzingFacility && (
+        <ContractAnalysisModal
+          open={analysisModalOpen}
+          onOpenChange={(open) => {
+            setAnalysisModalOpen(open);
+            if (!open) {
+              setAnalyzingFacility(undefined);
+            }
+          }}
+          facility={analyzingFacility}
+        />
+      )}
     </div>
   );
 }

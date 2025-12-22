@@ -5,6 +5,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useDashboardData } from "../hooks/useDashboardData";
 import { usePageAccess } from "../hooks/use-page-access";
 import { RollbackManager } from "../utils/rollback-manager";
+import { HeaderScopeSelector } from "../components/HeaderScopeSelector";
 
 export default function Telematics() {
   // Check page access - super_admin only
@@ -54,6 +55,9 @@ export default function Telematics() {
                   </h1>
                 </div>
                 <div className="flex items-center gap-3">
+                  {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
+                    <HeaderScopeSelector />
+                  )}
                 </div>
               </div>
             </div>

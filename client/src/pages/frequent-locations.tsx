@@ -35,6 +35,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Checkbox } from '../components/ui/checkbox';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/accordion';
 import { RollbackManager } from '../utils/rollback-manager';
+import { HeaderScopeSelector } from '../components/HeaderScopeSelector';
 
 interface FrequentLocation {
   id: string;
@@ -709,25 +710,30 @@ export default function FrequentLocationsPage() {
                 quick locations.
               </h1>
             </div>
-            <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={handleSyncServiceLocations}
-            disabled={syncMutation.isPending}
-          >
-            {syncMutation.isPending ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 mr-2" style={{ borderColor: 'var(--blue-9)' }}></div>
-            ) : (
-              <RefreshCw className="h-4 w-4 mr-2" />
-            )}
-            Sync Service Locations
-          </Button>
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Location
-          </Button>
+            <div className="flex items-center gap-3">
+              {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
+                <HeaderScopeSelector />
+              )}
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={handleSyncServiceLocations}
+                  disabled={syncMutation.isPending}
+                >
+                  {syncMutation.isPending ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 mr-2" style={{ borderColor: 'var(--blue-9)' }}></div>
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                  )}
+                  Sync Service Locations
+                </Button>
+                <Button onClick={() => setIsCreateDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Location
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
         </div>
       )}
 
