@@ -227,10 +227,21 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
 
   // Resize handlers (only when feature flag is enabled)
   const handleResizeStart = (e: React.MouseEvent, encounter: ScheduledEncounter, edge: 'top' | 'bottom') => {
-    if (!FEATURE_FLAGS.FULL_CALENDAR_RESIZE) return;
+    if (!FEATURE_FLAGS.FULL_CALENDAR_RESIZE) {
+      console.log('⚠️ Resize disabled - feature flag FULL_CALENDAR_RESIZE is false');
+      return;
+    }
     
     e.preventDefault();
     e.stopPropagation();
+    
+    console.log('🔧 Starting resize:', {
+      encounterId: encounter.id,
+      edge,
+      currentStart: encounter.start,
+      currentEnd: encounter.end,
+      mouseY: e.clientY
+    });
     
     setResizingEncounter({
       encounter,
@@ -300,6 +311,11 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
     if (!resizingEncounter || !FEATURE_FLAGS.FULL_CALENDAR_RESIZE) return;
     
     // The encounter is already updated in handleResizeMove
+    console.log('✅ Resize complete:', {
+      encounterId: resizingEncounter.encounter.id,
+      edge: resizingEncounter.edge
+    });
+    
     // Just clean up the resize state
     setResizingEncounter(null);
   }, [resizingEncounter]);
