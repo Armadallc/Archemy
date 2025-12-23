@@ -25,7 +25,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ProfileScreen() {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, initializeLocationTracking } = useAuth();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
@@ -376,6 +376,20 @@ export default function ProfileScreen() {
       marginLeft: 12,
       flex: 1,
     },
+    button: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      marginTop: 8,
+    },
+    buttonText: {
+      ...theme.typography.body,
+      color: '#fff',
+      fontWeight: '600',
+    },
   });
 
   return (
@@ -495,6 +509,30 @@ export default function ProfileScreen() {
             </View>
           )}
         </View>
+
+        {/* Location Tracking Section (for drivers only) */}
+        {user?.role === 'driver' && (
+          <View style={styles.infoCard}>
+            <Text style={styles.cardTitle}>Location Tracking</Text>
+            <Text style={[styles.infoValue, { marginBottom: 12, fontSize: 14 }]}>
+              Enable location sharing to allow fleet managers to see your position on the map.
+            </Text>
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: theme.colors.primary }]}
+              onPress={async () => {
+                const success = await initializeLocationTracking();
+                if (success) {
+                  Alert.alert('Success', 'Location tracking has been started. Your position will be shared with fleet managers.');
+                } else {
+                  Alert.alert('Error', 'Failed to start location tracking. Please check your location permissions in device settings.');
+                }
+              }}
+            >
+              <Ionicons name="location" size={20} color="#fff" style={{ marginRight: 8 }} />
+              <Text style={styles.buttonText}>Start Location Tracking</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
 
       </View>

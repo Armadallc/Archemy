@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
 interface WebSocketMessage {
-  type: 'trip_update' | 'new_trip' | 'trip_created' | 'emergency' | 'system' | 'ping' | 'pong';
+  type: 'trip_update' | 'new_trip' | 'trip_created' | 'emergency' | 'system' | 'ping' | 'pong' | 'driver_update';
   data: any;
   timestamp: string;
 }
@@ -33,7 +33,7 @@ class WebSocketService {
     // Development: Use localhost or local IP
     const wsBaseUrl = process.env.EXPO_PUBLIC_WS_URL || 
       (__DEV__ 
-        ? (Platform.OS === 'web' ? 'ws://localhost:8081' : 'ws://192.168.12.215:8081')
+        ? (Platform.OS === 'web' ? 'ws://localhost:8081' : 'ws://192.168.12.227:8081')
         : 'wss://halcyon-backend.onrender.com');
     this.url = `${wsBaseUrl}/ws`;
   }
@@ -146,6 +146,11 @@ class WebSocketService {
       case 'connection':
         // Connection confirmation message - just acknowledge
         console.log('✅ WebSocket connection confirmed');
+        break;
+      case 'driver_update':
+        // Driver location update - sent to admins, drivers don't need to handle this
+        // But we acknowledge it to avoid "unknown message" warnings
+        // The location is already being sent via API, this is just for real-time dashboard updates
         break;
       case 'pong':
         // Heartbeat response

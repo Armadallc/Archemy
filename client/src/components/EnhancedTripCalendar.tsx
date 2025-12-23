@@ -11,6 +11,7 @@ import {
   Calendar, 
   ChevronLeft, 
   ChevronRight, 
+  ChevronDown,
   Clock, 
   User, 
   Car,
@@ -738,8 +739,15 @@ export default function EnhancedTripCalendar() {
                     {format(day, 'd')}
                   </div>
                   
-                  <div className="space-y-1">
-                    {dayTrips.slice(0, 3).map((trip: Trip) => (
+                  <div 
+                    className="space-y-1 overflow-y-auto relative"
+                    style={{ 
+                      maxHeight: '120px',
+                      scrollbarWidth: 'thin',
+                      scrollbarColor: 'var(--muted-foreground) transparent'
+                    }}
+                  >
+                    {dayTrips.map((trip: Trip) => (
                       <TripHoverCard key={trip.id} trip={trip}>
                         <div
                           className={`text-xs p-1 rounded truncate cursor-pointer hover:opacity-80 transition-opacity ${
@@ -755,8 +763,13 @@ export default function EnhancedTripCalendar() {
                       </TripHoverCard>
                     ))}
                     {dayTrips.length > 3 && (
-                      <div className="text-xs px-1" style={{ color: 'var(--muted-foreground)' }}>
-                        +{dayTrips.length - 3} more
+                      <div 
+                        className="text-xs px-1 py-0.5 flex items-center gap-1" 
+                        style={{ color: 'var(--muted-foreground)' }}
+                        title="Scroll down to see more trips"
+                      >
+                        <span>See More</span>
+                        <ChevronDown size={12} />
                       </div>
                     )}
                   </div>

@@ -113,28 +113,51 @@ export const mobileApi = {
   // Driver authentication and profile
   async getDriverProfile(driverId: string): Promise<DriverProfile> {
     try {
-      const { data: driver, error } = await supabase
+      // First get the driver record
+      const { data: driver, error: driverError } = await supabase
         .from('drivers')
-        .select(`
-          *,
-          users:user_id (
-            user_name,
-            email,
-            avatar_url
-          ),
-          vehicles:current_vehicle_id (
-            id,
-            make,
-            model,
-            year,
-            license_plate,
-            color
-          )
-        `)
+        .select('*')
         .eq('id', driverId)
         .single();
 
-      if (error) throw error;
+      if (driverError) {
+        console.error('❌ [Mobile API] Error fetching driver:', driverError);
+        throw driverError;
+      }
+
+      if (!driver) {
+        throw new Error(`Driver not found: ${driverId}`);
+      }
+
+      // Then get user data separately (more reliable than join)
+      let userData: { user_name?: string; email?: string; avatar_url?: string } = {};
+      if (driver.user_id) {
+        const { data: user, error: userError } = await supabase
+          .from('users')
+          .select('user_name, email, avatar_url')
+          .eq('user_id', driver.user_id)
+          .single();
+        
+        if (!userError && user) {
+          userData = user;
+        } else {
+          console.warn('⚠️ [Mobile API] Could not fetch user data:', userError);
+        }
+      }
+
+      // Get vehicle data if assigned
+      let vehicleData: any = null;
+      if (driver.current_vehicle_id) {
+        const { data: vehicle, error: vehicleError } = await supabase
+          .from('vehicles')
+          .select('id, make, model, year, license_plate, color')
+          .eq('id', driver.current_vehicle_id)
+          .single();
+        
+        if (!vehicleError && vehicle) {
+          vehicleData = vehicle;
+        }
+      }
 
       const currentStatus = await driverSchedulesStorage.getCurrentDutyStatus(driverId);
       // Call method - executes at runtime, so circular reference is fine
@@ -143,20 +166,20 @@ export const mobileApi = {
       return {
         id: driver.id,
         user_id: driver.user_id,
-        user_name: driver.users?.user_name || 'Unknown',
-        email: driver.users?.email || '',
+        user_name: userData.user_name || 'Unknown',
+        email: userData.email || '',
         phone: driver.phone,
-        avatar_url: driver.users?.avatar_url,
+        avatar_url: userData.avatar_url,
         license_number: driver.license_number,
         license_expiry: driver.license_expiry,
         emergency_contact: driver.emergency_contact,
-        vehicle_assignment: driver.vehicles ? {
-          id: driver.vehicles.id,
-          make: driver.vehicles.make,
-          model: driver.vehicles.model,
-          year: driver.vehicles.year,
-          license_plate: driver.vehicles.license_plate,
-          color: driver.vehicles.color
+        vehicle_assignment: vehicleData ? {
+          id: vehicleData.id,
+          make: vehicleData.make,
+          model: vehicleData.model,
+          year: vehicleData.year,
+          license_plate: vehicleData.license_plate,
+          color: vehicleData.color
         } : undefined,
         current_status: currentStatus?.status || 'off_duty',
         last_location: lastLocation || undefined
@@ -440,8 +463,46 @@ export const mobileApi = {
     heading?: number;
     speed?: number;
     address?: string;
+    tripId?: string;
   }) {
     try {
+      // If tripId is provided, verify the driver is assigned to that trip
+      let tripId = location.tripId;
+      if (tripId) {
+        const { data: trip, error: tripError } = await supabase
+          .from('trips')
+          .select('id, driver_id, status')
+          .eq('id', tripId)
+          .eq('driver_id', driverId)
+          .single();
+        
+        if (tripError || !trip) {
+          console.warn('⚠️ Trip ID provided but driver not assigned to trip, ignoring trip_id');
+          tripId = undefined;
+        } else if (trip.status !== 'in_progress') {
+          // Only link location to trip if trip is in progress
+          console.warn('⚠️ Trip is not in_progress, not linking location to trip');
+          tripId = undefined;
+        }
+      }
+      
+      // If no tripId provided but driver has an active trip, try to find it
+      if (!tripId) {
+        const { data: activeTrip } = await supabase
+          .from('trips')
+          .select('id')
+          .eq('driver_id', driverId)
+          .eq('status', 'in_progress')
+          .order('scheduled_pickup_time', { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (activeTrip) {
+          tripId = activeTrip.id;
+          console.log('🔗 Auto-linked location update to active trip:', tripId);
+        }
+      }
+      
       const { data, error } = await supabase
         .from('driver_locations')
         .insert({
@@ -453,6 +514,7 @@ export const mobileApi = {
           heading: location.heading,
           speed: location.speed,
           address: location.address,
+          trip_id: tripId || null,
           timestamp: new Date().toISOString(),
           is_active: true,
           created_at: new Date().toISOString()

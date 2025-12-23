@@ -18,6 +18,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { apiClient } from '../../services/api';
 import { useFeatureFlag } from '../../hooks/useFeatureFlag';
+import { locationTrackingService } from '../../services/locationTracking';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { navigationPreferences } from '../../services/navigationPreferences';
 import { openNavigation } from '../../utils/navigation';
@@ -114,6 +115,15 @@ export default function TripDetailsScreen() {
   });
 
   const handleStatusUpdate = (newStatus: string) => {
+    // Link/unlink location tracking based on trip status
+    if (newStatus === 'in_progress') {
+      // Link location tracking to this trip when trip starts
+      locationTrackingService.setActiveTrip(tripId as string);
+    } else if (newStatus === 'completed' || newStatus === 'cancelled') {
+      // Unlink location tracking when trip ends
+      locationTrackingService.setActiveTrip(null);
+    }
+    
     // For web/PWA, use window.confirm as fallback if Alert.alert doesn't work
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       const confirmed = window.confirm(

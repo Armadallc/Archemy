@@ -4,9 +4,10 @@ import Widget from "./Widget";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "../../lib/queryClient";
 import { useHierarchy } from "../../hooks/useHierarchy";
+import { useRealtimeSubscription } from "../../hooks/useWebSocket";
 
 // Import Leaflet directly
 import L from 'leaflet';
@@ -55,8 +56,20 @@ export default function InteractiveMapWidget({ className, shadow }: InteractiveM
   const [mapError, setMapError] = useState<string | null>(null);
   const [mapContainer, setMapContainer] = useState<HTMLDivElement | null>(null);
   const { level, selectedProgram, selectedCorporateClient, getFilterParams } = useHierarchy();
+  const queryClient = useQueryClient();
 
-  // Fetch real data
+  // Subscribe to real-time driver location updates via WebSocket
+  useRealtimeSubscription('drivers', {
+    enabled: true,
+    onMessage: (message) => {
+      if (message.type === 'driver_update' && message.data) {
+        // Invalidate drivers query to trigger refetch with latest location
+        queryClient.invalidateQueries({ queryKey: ['drivers'] });
+      }
+    }
+  });
+
+  // Fetch real data with automatic refresh for location updates
   const { data: drivers, isLoading: driversLoading } = useQuery({
     queryKey: ['drivers', getFilterParams()],
     queryFn: async () => {
@@ -65,6 +78,8 @@ export default function InteractiveMapWidget({ className, shadow }: InteractiveM
       return data || [];
     },
     enabled: true,
+    refetchInterval: 5000, // Refresh every 5 seconds for real-time location updates
+    staleTime: 4000, // Consider data stale after 4 seconds
   });
 
   const { data: trips, isLoading: tripsLoading } = useQuery({
@@ -249,15 +264,37 @@ export default function InteractiveMapWidget({ className, shadow }: InteractiveM
   };
 
   const getDriverIcon = (status: string) => {
-    const iconColorStyle = getStatusColor(status);
-    const bgColor = iconColorStyle.backgroundColor;
+    // For now, always use the "available" color for better visibility
+    // TODO: Update to use actual driver status when status tracking is implemented
+    const availableColor = getCSSVariable('--scheduled') || 'hsl(45, 100%, 51%)'; // Yellow/amber for available
+    const bgColor = availableColor;
+    
+    // Create a larger, more visible icon with high contrast
     return L.divIcon({
       className: 'custom-div-icon',
-      html: `<div class="w-6 h-6 rounded-full border-2 border-white shadow-lg flex items-center justify-center" style="background-color: ${bgColor};">
-        <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/><path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/></svg>
+      html: `<div style="
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: ${bgColor};
+        border: 3px solid white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      ">
+        <div style="
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          background-color: white;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        "></div>
       </div>`,
-      iconSize: [24, 24],
-      iconAnchor: [12, 12],
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
+      popupAnchor: [0, -16],
     });
   };
 
