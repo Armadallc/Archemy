@@ -36,6 +36,10 @@ interface QuickAddLocationProps {
   locationType?: 'service_location' | 'legal' | 'healthcare' | 'dmv' | 'grocery' | 'other';
   label?: string;
   required?: boolean;
+  // Optional props to override hierarchy context (useful when used in trip forms)
+  programId?: string;
+  corporateClientId?: string;
+  locationId?: string;
 }
 
 type LocationType = 'service_location' | 'legal' | 'healthcare' | 'dmv' | 'grocery' | 'other';
@@ -113,7 +117,10 @@ export default function QuickAddLocation({
   placeholder = "Enter address or select from frequent locations",
   locationType,
   label = "Address",
-  required = false
+  required = false,
+  programId: propProgramId,
+  corporateClientId: propCorporateClientId,
+  locationId: propLocationId
 }: QuickAddLocationProps) {
   const { user } = useAuth();
   const { selectedProgram, selectedCorporateClient } = useHierarchy();
@@ -125,30 +132,40 @@ export default function QuickAddLocation({
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   // Determine effective filter values based on user role (similar to frequent-locations page)
+  // Props override hierarchy context (useful when used in trip forms with selected program)
   const effectiveCorporateClient = useMemo(() => {
+    // Use prop if provided, otherwise use hierarchy
+    if (propCorporateClientId) return propCorporateClientId;
+    
     if (user?.role === 'super_admin') {
       return selectedCorporateClient;
     } else if (user?.role === 'corporate_admin') {
       return (user as any).corporate_client_id || selectedCorporateClient;
     }
     return undefined;
-  }, [user?.role, selectedCorporateClient]);
+  }, [propCorporateClientId, user?.role, selectedCorporateClient]);
 
   const effectiveProgram = useMemo(() => {
+    // Use prop if provided, otherwise use hierarchy
+    if (propProgramId) return propProgramId;
+    
     if (user?.role === 'super_admin' || user?.role === 'corporate_admin') {
       return selectedProgram;
     } else if (user?.role === 'program_admin') {
       return selectedProgram || (user as any).primary_program_id;
     }
     return undefined;
-  }, [user?.role, selectedProgram]);
+  }, [propProgramId, user?.role, selectedProgram]);
 
   const effectiveLocation = useMemo(() => {
+    // Use prop if provided, otherwise use hierarchy
+    if (propLocationId) return propLocationId;
+    
     if (user?.role === 'program_user') {
       return (user as any).location_id;
     }
     return undefined;
-  }, [user?.role]);
+  }, [propLocationId, user?.role]);
 
   // Fetch frequent locations using the new by-tag endpoint
   const { data: frequentLocationsByTag = {}, isLoading, error: queryError } = useQuery({
@@ -430,6 +447,21 @@ function CreateLocationDialog({
   locationId?: string;
   onClose: () => void;
 }) {
+  // Fetch program name if programId is provided
+  // Try to get it from the programs list if available, otherwise fetch individually
+  const { data: programs } = useQuery({
+    queryKey: ['/api/programs'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/programs');
+      return await response.json();
+    },
+    enabled: !!programId,
+  });
+  
+  const program = useMemo(() => {
+    if (!programId || !programs) return null;
+    return Array.isArray(programs) ? programs.find((p: any) => p.id === programId || p.program_id === programId) : null;
+  }, [programId, programs]);
   // Parse address if provided
   const parseAddress = (address: string) => {
     if (!address) return { street_address: '', city: '', state: '', zip_code: '' };
@@ -496,6 +528,11 @@ function CreateLocationDialog({
         <DialogTitle>Add to Frequent Locations</DialogTitle>
         <DialogDescription>
           Add this location to your frequent locations for quick access in future trip creation.
+          {programId && (
+            <div className="mt-2 text-sm font-medium text-muted-foreground">
+              This location will be saved to: <span className="text-foreground">{program?.name || programId}</span>
+            </div>
+          )}
         </DialogDescription>
       </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-4">

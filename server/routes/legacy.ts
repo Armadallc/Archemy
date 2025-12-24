@@ -157,9 +157,34 @@ router.get("/frequent-locations", requireSupabaseAuth, async (req: SupabaseAuthe
   res.redirect(307, '/api/locations/frequent');
 });
 
+router.post("/frequent-locations", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin', 'program_user']), async (req: SupabaseAuthenticatedRequest, res) => {
+  // Forward POST request to new locations route
+  // We can't use redirect for POST, so we need to proxy the request
+  try {
+    const { createFrequentLocation } = await import("../frequent-locations-storage");
+    const frequentLocation = await createFrequentLocation(req.body);
+    res.status(201).json(frequentLocation);
+  } catch (error) {
+    console.error("Error creating frequent location:", error);
+    res.status(500).json({ message: "Failed to create frequent location" });
+  }
+});
+
 router.get("/frequent-locations/:id", requireSupabaseAuth, async (req: SupabaseAuthenticatedRequest, res) => {
   // Redirect to new locations routes
   res.redirect(307, `/api/locations/frequent/${req.params.id}`);
+});
+
+router.post("/frequent-locations/:id/increment-usage", requireSupabaseAuth, async (req: SupabaseAuthenticatedRequest, res) => {
+  // Forward POST request to increment usage
+  try {
+    const { incrementUsageCount } = await import("../frequent-locations-storage");
+    const result = await incrementUsageCount(req.params.id);
+    res.json(result);
+  } catch (error) {
+    console.error("Error incrementing usage count:", error);
+    res.status(500).json({ message: "Failed to increment usage count" });
+  }
 });
 
 // Legacy notification routes (redirect to new notifications routes)

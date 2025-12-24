@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { apiClient } from '../services/api';
+import { locationTrackingService } from '../services/locationTracking';
 
 // Conditionally import SecureStore only on native to prevent web bundler issues
 let SecureStore: typeof import('expo-secure-store') | null = null;
@@ -28,6 +29,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  initializeLocationTracking: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -66,6 +68,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
         
         setUser(userData);
+        
+        // Initialize location tracking if user is a driver
+        console.log('🔍 Checking user role for location tracking:', userData.role);
+        if (userData.role === 'driver') {
+          console.log('✅ User is a driver, initializing location tracking...');
+          const initialized = await locationTrackingService.initialize(userData.id);
+          if (initialized) {
+            console.log('✅ Location tracking initialized, starting...');
+            locationTrackingService.startTracking();
+          } else {
+            console.warn('⚠️ Location tracking initialization failed');
+          }
+        } else {
+          console.log('ℹ️ User is not a driver (role:', userData.role, '), skipping location tracking');
+        }
       }
     } catch (error) {
       console.log('Auth check failed:', error);
@@ -101,6 +118,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('✅ AuthContext: User set successfully');
       
       // Token is already stored by the API client
+      
+      // Initialize location tracking if user is a driver
+      console.log('🔍 Checking user role for location tracking:', userData.role);
+      if (userData.role === 'driver') {
+        console.log('✅ User is a driver, initializing location tracking...');
+        const initialized = await locationTrackingService.initialize(userData.id);
+        if (initialized) {
+          console.log('✅ Location tracking initialized, starting...');
+          locationTrackingService.startTracking();
+        } else {
+          // If location permission denied, still allow login but warn user
+          console.warn('⚠️ Location tracking not started - permission denied or driver ID not found');
+        }
+      } else {
+        console.log('ℹ️ User is not a driver (role:', userData.role, '), skipping location tracking');
+      }
     } catch (error) {
       console.log('❌ AuthContext: Login failed:', error);
       throw error;
@@ -111,9 +144,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await checkAuthStatus();
   };
 
+  // Function to manually initialize location tracking (useful if driver record was just created)
+  const initializeLocationTracking = async () => {
+    if (!user || user.role !== 'driver') {
+      console.log('ℹ️ User is not a driver, cannot initialize location tracking');
+      return false;
+    }
+
+    console.log('🔄 Manually initializing location tracking for driver:', user.id);
+    const initialized = await locationTrackingService.initialize(user.id);
+    if (initialized) {
+      console.log('✅ Location tracking initialized, starting...');
+      locationTrackingService.startTracking();
+      return true;
+    } else {
+      console.warn('⚠️ Location tracking initialization failed');
+      return false;
+    }
+  };
+
   const logout = async () => {
     try {
       console.log('🔍 [AuthContext] Starting logout...');
+      
+      // Stop location tracking before logout
+      locationTrackingService.cleanup();
       
       // Clear user state first
       setUser(null);
@@ -163,7 +218,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, refreshUser, initializeLocationTracking }}>
       {children}
     </AuthContext.Provider>
   );

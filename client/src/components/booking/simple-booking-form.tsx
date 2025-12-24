@@ -988,6 +988,8 @@ function SimpleBookingForm() {
             locationType="pickup"
             label="PU Address"
             required
+            programId={effectiveProgram}
+            corporateClientId={effectiveCorporateClient}
           />
 
           <QuickAddLocation
@@ -997,6 +999,8 @@ function SimpleBookingForm() {
             locationType="dropoff"
             label="DO Address"
             required
+            programId={effectiveProgram}
+            corporateClientId={effectiveCorporateClient}
           />
 
           <div className="grid grid-cols-2 gap-4">

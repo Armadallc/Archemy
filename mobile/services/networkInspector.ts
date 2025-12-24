@@ -19,7 +19,9 @@ class NetworkInspector {
   private isEnabled = __DEV__; // Only enable in development
 
   constructor() {
-    if (this.isEnabled) {
+    // Temporarily disabled to fix "Already read" error
+    // TODO: Re-enable once Response handling is fixed for React Native
+    if (false && this.isEnabled) {
       this.setupNetworkInterception();
     }
   }
@@ -53,22 +55,10 @@ class NetworkInspector {
         const response = await originalFetch(...args);
         const responseTime = Date.now() - startTime;
         
-        // Clone response to read body without consuming it
-        const responseClone = response.clone();
-        let responseBody;
-        let responseText: string | undefined;
-        
-        try {
-          responseText = await responseClone.text();
-          try {
-            responseBody = JSON.parse(responseText);
-          } catch {
-            responseBody = responseText;
-          }
-        } catch {
-          // If we can't read the body, that's okay - just log what we can
-          responseBody = null;
-        }
+        // Skip reading response body to avoid "Already read" errors in React Native
+        // The Response.clone() method doesn't work reliably in React Native/Expo
+        // We'll log status and timing, but not the body to prevent consuming the response stream
+        const responseBody = '[Body not logged to prevent "Already read" errors]';
 
         // Update request with response data
         this.updateRequest(requestId, {
@@ -80,16 +70,7 @@ class NetworkInspector {
         // Log the response
         logger.logApiResponse(method, url.toString(), response.status, responseTime, responseBody);
 
-        // Return a new Response with the same data so the original stream isn't consumed
-        // This prevents "Already read" errors
-        if (responseText !== undefined) {
-          return new Response(responseText, {
-            status: response.status,
-            statusText: response.statusText,
-            headers: response.headers,
-          });
-        }
-
+        // Return the original response untouched - it can still be read by the API client
         return response;
       } catch (error) {
         const responseTime = Date.now() - startTime;

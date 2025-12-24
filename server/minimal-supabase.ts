@@ -945,7 +945,29 @@ export const driversStorage = {
       `)
       .eq('is_active', true);
     if (error) throw error;
-    return data || [];
+    
+    // Get latest location for each driver
+    const driversWithLocations = await Promise.all(
+      (data || []).map(async (driver) => {
+        const { data: locationData } = await supabase
+          .from('driver_locations')
+          .select('latitude, longitude, timestamp')
+          .eq('driver_id', driver.id)
+          .eq('is_active', true)
+          .order('timestamp', { ascending: false })
+          .limit(1)
+          .single();
+        
+        return {
+          ...driver,
+          latitude: locationData?.latitude || null,
+          longitude: locationData?.longitude || null,
+          last_location_update: locationData?.timestamp || null,
+        };
+      })
+    );
+    
+    return driversWithLocations;
   },
 
   async getDriver(id: string) {

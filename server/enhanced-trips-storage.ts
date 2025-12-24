@@ -683,10 +683,10 @@ export const enhancedTripsStorage = {
   ) {
     console.log('🔍 updateTripStatus called:', { id, status, actualTimes, options });
     
-    // First, get the current trip to validate transition
+    // First, get the current trip to validate transition and get trip details
     const { data: currentTrip, error: fetchError } = await supabase
       .from('trips')
-      .select('status, trip_type')
+      .select('status, trip_type, pickup_address, dropoff_address, driver_id, estimated_distance_miles, actual_pickup_time, actual_dropoff_time, actual_return_time')
       .eq('id', id)
       .single();
     
@@ -754,6 +754,57 @@ export const enhancedTripsStorage = {
     if (actualTimes?.pickup) updates.actual_pickup_time = actualTimes.pickup;
     if (actualTimes?.dropoff) updates.actual_dropoff_time = actualTimes.dropoff;
     if (actualTimes?.return) updates.actual_return_time = actualTimes.return;
+    
+    // Handle mileage calculation
+    const { estimateTripMileage, calculateRoundTripMileage, calculateActualTripMileage } = await import('./services/mileage-service');
+    
+    // When trip starts (in_progress), calculate estimated mileage if not already set
+    if (status === 'in_progress' && !currentTrip.estimated_distance_miles && currentTrip.pickup_address && currentTrip.dropoff_address) {
+      try {
+        const estimatedMileage = currentTrip.trip_type === 'round_trip'
+          ? await calculateRoundTripMileage(currentTrip.pickup_address, currentTrip.dropoff_address)
+          : await estimateTripMileage(currentTrip.pickup_address, currentTrip.dropoff_address);
+        
+        if (estimatedMileage !== null) {
+          updates.estimated_distance_miles = estimatedMileage;
+          console.log('📏 Estimated mileage calculated:', estimatedMileage, 'miles');
+        }
+      } catch (error) {
+        console.warn('⚠️ Could not calculate estimated mileage:', error);
+        // Don't fail the trip status update if mileage calculation fails
+      }
+    }
+    
+    // When trip completes, calculate actual mileage from location tracking
+    if (status === 'completed' && currentTrip.driver_id) {
+      try {
+        const tripStartTime = actualTimes?.pickup || currentTrip.actual_pickup_time || updates.actual_pickup_time;
+        const tripEndTime = currentTrip.trip_type === 'round_trip' 
+          ? (actualTimes?.return || currentTrip.actual_return_time || updates.actual_return_time)
+          : (actualTimes?.dropoff || currentTrip.actual_dropoff_time || updates.actual_dropoff_time);
+        
+        if (tripStartTime && tripEndTime) {
+          const actualMileage = await calculateActualTripMileage(
+            id,
+            currentTrip.driver_id,
+            tripStartTime,
+            tripEndTime
+          );
+          
+          if (actualMileage !== null) {
+            updates.actual_distance_miles = actualMileage;
+            console.log('📏 Actual mileage calculated:', actualMileage, 'miles');
+          } else {
+            console.warn('⚠️ Could not calculate actual mileage - insufficient location data');
+          }
+        } else {
+          console.warn('⚠️ Could not calculate actual mileage - missing trip start/end times');
+        }
+      } catch (error) {
+        console.warn('⚠️ Could not calculate actual mileage:', error);
+        // Don't fail the trip status update if mileage calculation fails
+      }
+    }
     
     // Update the trip
     console.log('🔍 Updating trip with:', updates);

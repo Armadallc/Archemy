@@ -14,11 +14,11 @@ if (Platform.OS !== 'web') {
 
 // Use environment variable if available
 // Production: Use Render backend URL (e.g., https://halcyon-backend.onrender.com)
-// Development: Use localhost or local IP for physical devices
+// Development: Use localhost for web, local IP for physical devices/simulators
 // Backend API runs on port 8081 locally, Render uses port 443 (HTTPS)
 const API_BASE_URL = Platform.OS === 'web' 
   ? (process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8081')
-  : (process.env.EXPO_PUBLIC_API_URL || (__DEV__ ? 'http://localhost:8081' : 'https://halcyon-backend.onrender.com'));
+  : (process.env.EXPO_PUBLIC_API_URL || (__DEV__ ? 'http://192.168.12.227:8081' : 'https://halcyon-backend.onrender.com'));
 
 interface Trip {
   id: string;
@@ -101,19 +101,38 @@ class ApiClient {
         throw new Error('Authentication required');
       }
 
+      // Clone response before reading to allow multiple reads if needed
+      const responseClone = response.clone();
+
       if (!response.ok) {
-        const errorText = await response.text();
+        const errorText = await responseClone.text();
         throw new Error(`API request failed: ${response.statusText} - ${errorText}`);
       }
 
+      // Check content-type before parsing
+      const contentType = response.headers.get('content-type') || '';
+      const isJson = contentType.includes('application/json');
+      
       let data;
+      if (!isJson) {
+        // Not JSON - read as text to see what we got
+        const responseText = await responseClone.text();
+        console.error('❌ Server returned non-JSON response:', {
+          status: response.status,
+          contentType,
+          url: url,
+          preview: responseText.substring(0, 300)
+        });
+        throw new Error(`Server returned HTML instead of JSON. This usually means the API endpoint doesn't exist or the backend isn't running. URL: ${url}, Status: ${response.status}`);
+      }
+
       try {
         data = await response.json();
       } catch (jsonError) {
-        // If JSON parsing fails, try to get text
-        const text = await response.text();
-        console.error('Failed to parse JSON response:', text);
-        throw new Error(`Failed to parse response: ${text}`);
+        // If JSON parsing still fails, try to read text from clone
+        const responseText = await responseClone.text();
+        console.error('❌ Failed to parse JSON response. Got:', responseText.substring(0, 300));
+        throw new Error(`Failed to parse JSON response: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}. Response preview: ${responseText.substring(0, 200)}`);
       }
       
       // Log successful responses in development
@@ -291,6 +310,28 @@ class ApiClient {
     return this.request('/api/mobile/driver/profile', {
       method: 'PATCH',
       body: JSON.stringify(updates),
+    });
+  }
+
+  // Driver Location Methods
+  async updateDriverLocation(driverId: string, location: {
+    latitude: number;
+    longitude: number;
+    accuracy: number;
+    heading?: number;
+    speed?: number;
+    tripId?: string;
+  }): Promise<any> {
+    return this.request(`/api/mobile/driver/${driverId}/location`, {
+      method: 'POST',
+      body: JSON.stringify({
+        latitude: location.latitude,
+        longitude: location.longitude,
+        accuracy: location.accuracy,
+        heading: location.heading,
+        speed: location.speed,
+        tripId: location.tripId,
+      }),
     });
   }
 

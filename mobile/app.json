@@ -14,12 +14,21 @@
       "assets/**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "HALCYON DRIVE needs your location to track your position for fleet management and trip coordination.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "HALCYON DRIVE needs your location to track your position even when the app is in the background, ensuring accurate trip tracking and safety."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#3B82F6"
-      }
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION"
+      ]
     },
     "web": {
       "name": "HALCYON DRIVE",
@@ -42,7 +51,15 @@
     },
     "scheme": "monarch-driver",
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "HALCYON DRIVE needs your location to track your position even when the app is in the background, ensuring accurate trip tracking and safety.",
+          "locationAlwaysPermission": "HALCYON DRIVE needs your location to track your position even when the app is in the background, ensuring accurate trip tracking and safety.",
+          "locationWhenInUsePermission": "HALCYON DRIVE needs your location to track your position for fleet management and trip coordination."
+        }
+      ]
     ]
   }
 }
