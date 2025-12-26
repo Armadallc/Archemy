@@ -136,11 +136,11 @@ function HeaderScopeSelectorComponent() {
       onOpenChange={setIsOpen}
     >
       <SelectTrigger
-        className="w-[240px] sm:w-[200px] h-9 sm:h-10 text-sm"
+        className="w-[240px] sm:w-[200px] h-9 sm:h-10 text-sm card-neu-flat hover:card-neu"
         style={{
-          backgroundColor: 'var(--surface)',
-          borderColor: 'var(--border)',
+          backgroundColor: 'var(--background)',
           color: 'var(--foreground)',
+          border: 'none',
         }}
       >
         <SelectValue>

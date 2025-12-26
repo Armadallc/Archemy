@@ -586,9 +586,9 @@ export default function AdaptiveSidebar({
   };
 
   return (
-    <div className={`transition-all duration-300 ${actualCollapsed ? 'w-16' : 'w-64'} flex flex-col overflow-hidden rounded-lg`} style={{ color: 'var(--color-aqua)', backgroundColor: 'var(--gray-1)', paddingBottom: '24px', borderTop: '1px solid var(--border)', borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', height: 'calc(100vh - 48px)' }}>
+    <div className={`transition-all duration-300 ${actualCollapsed ? 'w-16' : 'w-64'} flex flex-col overflow-hidden rounded-lg card-neu`} style={{ color: 'var(--color-aqua)', backgroundColor: 'var(--background)', paddingBottom: '24px', height: 'calc(100vh - 48px)' }}>
       {/* Header */}
-      <div className="px-4 pt-6 pb-4 border-b flex-shrink-0 flex items-center justify-center relative" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--gray-1)', height: '150px' }}>
+      <div className="px-4 pt-6 pb-4 flex-shrink-0 flex items-center justify-center relative" style={{ borderBottom: '1px solid var(--border)', backgroundColor: 'var(--background)', height: '150px' }}>
         {shouldShowLogo() && (
           <img 
             src={getDisplayLogo()!} 
@@ -621,10 +621,10 @@ export default function AdaptiveSidebar({
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-4 overflow-y-auto" style={{ backgroundColor: 'var(--gray-1)' }}>
+      <nav className="flex-1 p-4 space-y-4 overflow-y-auto" style={{ backgroundColor: 'var(--background)' }}>
         {/* Mini Calendar */}
         {!actualCollapsed && (
-          <div className="mb-4" style={{ backgroundColor: 'var(--gray-1)' }}>
+          <div className="mb-4" style={{ backgroundColor: 'var(--background)' }}>
             <MiniCalendar />
           </div>
         )}
@@ -660,10 +660,22 @@ export default function AdaptiveSidebar({
                       toggleCategory(section.id);
                     }
                   }}
-                  className="flex items-center justify-between w-full px-2 py-1 rounded transition-colors group focus:outline-none focus:ring-2 focus:ring-inset"
-                  style={{ '--hover-bg': 'var(--gray-2)', '--focus-ring': 'var(--blue-9)' } as React.CSSProperties & { '--hover-bg': string; '--focus-ring': string }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gray-2)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  className="flex items-center justify-between w-full px-2 py-1 rounded transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-inset"
+                  style={{ '--hover-bg': 'var(--gray-2)', '--focus-ring': 'var(--blue-9)', backgroundColor: 'var(--background)' } as React.CSSProperties & { '--hover-bg': string; '--focus-ring': string }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--gray-2)';
+                    const textElement = e.currentTarget.querySelector('span');
+                    if (textElement) {
+                      textElement.style.textShadow = '0 0 6px rgba(122, 255, 254, 0.3), 0 0 10px rgba(122, 255, 254, 0.15)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--background)';
+                    const textElement = e.currentTarget.querySelector('span');
+                    if (textElement) {
+                      textElement.style.textShadow = 'none';
+                    }
+                  }}
                   onFocus={(e) => e.currentTarget.style.boxShadow = '0 0 0 2px var(--blue-9) inset'}
                   onBlur={(e) => e.currentTarget.style.boxShadow = ''}
                   aria-expanded={isExpanded ? "true" : "false"}
@@ -672,7 +684,7 @@ export default function AdaptiveSidebar({
                 >
                   <div className="flex items-center space-x-2">
                     {!actualCollapsed && (
-                      <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--gray-9)', fontFamily: "'Nohemi', sans-serif" }}>
+                      <span className="text-xs font-semibold uppercase tracking-wider transition-all duration-200" style={{ color: 'var(--gray-9)', fontFamily: "'Nohemi', sans-serif" }}>
                         {section.label}
                       </span>
                     )}
@@ -729,14 +741,30 @@ export default function AdaptiveSidebar({
                             navigateToCorporate();
                           }
                         }}
-                        className="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors"
-                        style={isActive ? { backgroundColor: 'var(--blue-9)', color: 'var(--gray-12)' } : { color: 'var(--gray-11)' }}
-                        onMouseEnter={(e) => !isActive && (e.currentTarget.style.backgroundColor = 'var(--gray-3)')}
-                        onMouseLeave={(e) => !isActive && (e.currentTarget.style.backgroundColor = 'transparent')}
+                        className="flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200"
+                        style={isActive ? { backgroundColor: 'var(--blue-9)', color: 'var(--gray-12)' } : { color: 'var(--gray-11)', backgroundColor: 'var(--background)' }}
+                        onMouseEnter={(e) => {
+                          if (!isActive) {
+                            e.currentTarget.style.backgroundColor = 'var(--gray-3)';
+                            const textElement = e.currentTarget.querySelector('span');
+                            if (textElement) {
+                              textElement.style.textShadow = '0 0 8px rgba(122, 255, 254, 0.4), 0 0 12px rgba(122, 255, 254, 0.2)';
+                            }
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isActive) {
+                            e.currentTarget.style.backgroundColor = 'var(--background)';
+                            const textElement = e.currentTarget.querySelector('span');
+                            if (textElement) {
+                              textElement.style.textShadow = 'none';
+                            }
+                          }
+                        }}
                       >
                         {!actualCollapsed && (
                           <div className="flex items-start space-x-2 flex-1" style={{ justifyContent: 'flex-start', alignItems: 'flex-start' }}>
-                            <span className="text-sm font-medium" style={{ fontFamily: "'Nohemi', sans-serif" }}>{item.label}</span>
+                            <span className="text-sm font-medium transition-all duration-200" style={{ fontFamily: "'Nohemi', sans-serif" }}>{item.label}</span>
                           </div>
                         )}
                       </Link>
@@ -758,14 +786,30 @@ export default function AdaptiveSidebar({
                     <Link
                       key={`${section.id}-${item.path}-${item.label}`}
                       to={href}
-                      className="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors"
-                      style={isActive ? { backgroundColor: 'var(--blue-9)', color: 'var(--gray-12)' } : { color: 'var(--gray-11)' }}
-                      onMouseEnter={(e) => !isActive && (e.currentTarget.style.backgroundColor = 'var(--gray-3)')}
-                      onMouseLeave={(e) => !isActive && (e.currentTarget.style.backgroundColor = 'transparent')}
+                      className="flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200"
+                      style={isActive ? { backgroundColor: 'var(--blue-9)', color: 'var(--gray-12)' } : { color: 'var(--gray-11)', backgroundColor: 'var(--background)' }}
+                      onMouseEnter={(e) => {
+                        if (!isActive) {
+                          e.currentTarget.style.backgroundColor = 'var(--gray-3)';
+                          const textElement = e.currentTarget.querySelector('span');
+                          if (textElement) {
+                            textElement.style.textShadow = '0 0 8px rgba(122, 255, 254, 0.4), 0 0 12px rgba(122, 255, 254, 0.2)';
+                          }
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActive) {
+                          e.currentTarget.style.backgroundColor = 'var(--background)';
+                          const textElement = e.currentTarget.querySelector('span');
+                          if (textElement) {
+                            textElement.style.textShadow = 'none';
+                          }
+                        }
+                      }}
                     >
                       {!actualCollapsed && (
                         <div className="flex items-center space-x-2 flex-1">
-                          <span className="text-sm font-medium" style={{ fontFamily: "'Nohemi', sans-serif" }}>{item.label}</span>
+                          <span className="text-sm font-medium transition-all duration-200" style={{ fontFamily: "'Nohemi', sans-serif" }}>{item.label}</span>
                         </div>
                       )}
                     </Link>
@@ -778,14 +822,27 @@ export default function AdaptiveSidebar({
       </nav>
 
       {/* User Menu */}
-      <div className="p-4 border-t relative user-menu-container flex-shrink-0" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--gray-1)', height: '69px' }}>
+      <div className="p-4 relative user-menu-container flex-shrink-0" style={{ borderTop: '1px solid var(--border)', backgroundColor: 'var(--background)', height: '69px' }}>
         {!actualCollapsed && user && (
           <div className="flex items-center space-x-3">
             <button
               onClick={toggleUserMenu}
-              className="flex items-center space-x-3 w-full p-2 rounded-lg transition-colors"
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gray-3)'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              className="flex items-center space-x-3 w-full p-2 rounded-lg transition-all duration-200 card-neu-flat hover:card-neu"
+              style={{ backgroundColor: 'var(--background)' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--gray-3)';
+                const textElements = e.currentTarget.querySelectorAll('p');
+                textElements.forEach((el) => {
+                  (el as HTMLElement).style.textShadow = '0 0 8px rgba(122, 255, 254, 0.4), 0 0 12px rgba(122, 255, 254, 0.2)';
+                });
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--background)';
+                const textElements = e.currentTarget.querySelectorAll('p');
+                textElements.forEach((el) => {
+                  (el as HTMLElement).style.textShadow = 'none';
+                });
+              }}
             >
               <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--blue-9)' }}>
                 {user.avatar_url ? (

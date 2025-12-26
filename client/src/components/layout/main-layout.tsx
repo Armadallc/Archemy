@@ -54,6 +54,8 @@ const ShadcnDashboardMigrated = ShadcnDashboardMigratedComponent;
 // Temporarily remove lazy loading to fix React hook error with useLocation
 import SimpleBookingFormComponent from "../../components/booking/simple-booking-form";
 const SimpleBookingForm = SimpleBookingFormComponent;
+import NewTripPageComponent from "../../pages/new-trip";
+const NewTripPage = NewTripPageComponent;
 const EditTrip = lazy(() => import("../../pages/edit-trip"));
 const NotFound = lazy(() => import("../../pages/not-found"));
 // Design System Pages (lazy loaded - rarely used)
@@ -180,7 +182,7 @@ export default function MainLayout({
   return (
     <div className="flex h-screen bg-background" style={{ backgroundColor: 'rgba(255, 255, 255, 0)', background: 'unset' }}>
         {/* Desktop Sidebar - hidden on mobile */}
-        <div className="hidden md:block" style={{ marginTop: '24px', marginBottom: '24px', backgroundColor: 'var(--card)' }}>
+        <div className="hidden md:block" style={{ marginTop: '24px', marginBottom: '24px', marginLeft: '24px', backgroundColor: 'var(--background)' }}>
           <AdaptiveSidebar 
             currentProgram={currentProgramId}
             setCurrentProgram={setCurrentProgram}
@@ -399,11 +401,7 @@ export default function MainLayout({
                 <ShadcnDashboardMigrated />
               </Route>
               <Route path="/trips/new">
-                <div className="px-4 sm:px-6 py-6">
-                  <div className="max-w-2xl mx-auto">
-                    <SimpleBookingForm />
-                  </div>
-                </div>
+                <NewTripPage />
               </Route>
               <Route path="/trips/edit/:tripId">
                 <div className="px-4 sm:px-6 py-6">
