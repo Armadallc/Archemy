@@ -73,7 +73,7 @@ export function BentoBoxSidebar({ className }: BentoBoxSidebarProps) {
       coral: 'bg-[#ff8475]/20 text-[#ff8475] border-[#ff8475]/30',
       lime: 'bg-[#f1fec9]/40 text-[#26282b] border-[#f1fec9]/50',
       ice: 'bg-[#e8fffe]/40 text-[#26282b] border-[#e8fffe]/50',
-      charcoal: 'bg-[#26282b]/20 text-[#26282b] border-[#26282b]/30 dark:bg-[#26282b]/40 dark:text-[#eaeaea]',
+      charcoal: 'bg-[#1e2023]/20 text-[#1e2023] border-[#1e2023]/30 dark:bg-[#1e2023]/40 dark:text-[#eaeaea]',
       silver: 'bg-[#eaeaea]/40 text-[#26282b] border-[#eaeaea]/50',
     };
     return colorMap[color] || colorMap.silver;
@@ -129,7 +129,7 @@ export function BentoBoxSidebar({ className }: BentoBoxSidebarProps) {
                     <Card
                       key={template.id}
                       className={cn(
-                        "p-3 cursor-pointer hover:shadow-md transition-shadow",
+                        "p-3 cursor-pointer hover:card-neu transition-shadow",
                         getColorClasses(template.color),
                         isInPool && "ring-2 ring-primary"
                       )}
@@ -348,7 +348,7 @@ export function BentoBoxSidebar({ className }: BentoBoxSidebarProps) {
                   <Card
                     key={poolTemplate.id}
                     className={cn(
-                      "cursor-move hover:shadow-md transition-shadow",
+                      "cursor-move hover:card-neu transition-shadow",
                       getColorClasses(poolTemplate.color)
                     )}
                     draggable

@@ -3,13 +3,13 @@
    ============================================================
    
    PALETTE ("Fire" Colors):
-   - Dark:       #26282b (Charcoal)
+   - Dark:       #1e2023 (Charcoal - 20% darker)
    - Light Mint: #e8fffe (Ice)
    - Light Lime: #f1fec9 (Lime)
    - Accent:     #ff8475 (Coral)
    - Neutral:    #eaeaea (Silver)
    - Light:      #f4f4f4 (Cloud)
-   - Shadow:     #343434 (Shadow)
+   - Shadow:     #292929 (Shadow - 20% darker)
    - Aqua:       #a5c8ca (Aqua)
    
    FONTS:
@@ -126,15 +126,15 @@
 
 :root {
   /* ----------------------------------------------------------
-     COLOR PALETTE - Raw Values
+     COLOR PALETTE - Raw Values (20% darker for neumorphic contrast)
      ---------------------------------------------------------- */
-  --color-charcoal: #26282b;
+  --color-charcoal: #1e2023; /* Was #26282b → 20% darker */
   --color-ice: #e8fffe;
   --color-lime: #f1fec9;
   --color-coral: #ff8475;
   --color-silver: #eaeaea;
   --color-cloud: #f4f4f4;
-  --color-shadow: #343434;
+  --color-shadow: #292929; /* Was #343434 → 20% darker */
   --color-aqua: #a5c8ca;
   
   /* Extended palette */
@@ -514,9 +514,9 @@
   --sidebar-foreground-muted: var(--color-charcoal-muted); /* Use charcoal-muted for consistency */
   --sidebar-border: var(--color-charcoal-light); /* Slightly lighter than sidebar - keep for subtle border */
 
-  /* Neumorphic shadows (dark mode) */
+  /* Neumorphic shadows (dark mode) - using 20% darker charcoal */
   --neu-shadow-light: rgba(255, 255, 255, 0.05);
-  --neu-shadow-dark: rgba(0, 0, 0, 0.5);
+  --neu-shadow-dark: rgba(30, 32, 35, 0.6); /* 20% darker charcoal #1e2023 */
   
   --shadow-neu-flat: 
     5px 5px 10px var(--neu-shadow-dark),

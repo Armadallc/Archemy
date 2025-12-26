@@ -74,7 +74,7 @@ export function MiniCalendar({ className = "" }: MiniCalendarProps) {
   }, [sidebarDate]);
 
   return (
-    <div className={`w-full rounded-lg p-3 bg-card border ${className}`} style={{ borderColor: 'var(--border)', borderWidth: 'var(--border-weight, 1px)' }}>
+    <div className={`w-full rounded-lg p-3 bg-background card-neu-flat ${className}`} style={{ backgroundColor: 'var(--background)' }}>
       <div className="text-center">
         {/* Month Navigation */}
         <div className="flex items-center justify-between mb-2">
