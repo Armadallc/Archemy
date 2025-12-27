@@ -44,7 +44,7 @@ export function PoolSection({ onEdit, className }: PoolSectionProps) {
       coral: 'bg-[#ff8475]/20 text-[#ff8475] border-[#ff8475]/30',
       lime: 'bg-[#f1fec9]/40 text-[#26282b] border-[#f1fec9]/50',
       ice: 'bg-[#e8fffe]/40 text-[#26282b] border-[#e8fffe]/50',
-      charcoal: 'bg-[#26282b]/20 text-[#26282b] border-[#26282b]/30 dark:bg-[#26282b]/40 dark:text-[#eaeaea]',
+      charcoal: 'bg-[#1e2023]/20 text-[#1e2023] border-[#1e2023]/30 dark:bg-[#1e2023]/40 dark:text-[#eaeaea]',
       silver: 'bg-[#eaeaea]/40 text-[#26282b] border-[#eaeaea]/50',
     };
     return colorMap[color] || colorMap.silver;
@@ -109,7 +109,7 @@ export function PoolSection({ onEdit, className }: PoolSectionProps) {
                     className={cn(
                       "group relative p-1.5 rounded border cursor-move transition-all flex items-center gap-1.5",
                       getColorClasses(poolTemplate.color),
-                      "hover:shadow-sm"
+                      "hover:card-neu-flat"
                     )}
                   >
                     <GripVertical className="w-3 h-3 opacity-50 flex-shrink-0" />
@@ -177,7 +177,7 @@ export function PoolSection({ onEdit, className }: PoolSectionProps) {
                     className={cn(
                       "group relative p-1.5 rounded border cursor-move transition-all flex items-center gap-1.5",
                       getColorClasses(poolTemplate.color),
-                      "hover:shadow-sm"
+                      "hover:card-neu-flat"
                     )}
                   >
                     <GripVertical className="w-3 h-3 opacity-50 flex-shrink-0" />

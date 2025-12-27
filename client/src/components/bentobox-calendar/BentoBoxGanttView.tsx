@@ -153,10 +153,10 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
   const getColorClasses = (color: FireColor) => {
     const colorMap: Record<FireColor, string> = {
       coral: 'bg-[#ff8475]/20 text-[#ff8475] border-l-4 border-[#ff8475] hover:bg-[#ff8475]/30',
-      lime: 'bg-[#f1fec9]/60 text-[#26282b] border-l-4 border-[#d4e5a8] hover:bg-[#f1fec9]/80 dark:text-[#26282b]',
-      ice: 'bg-[#e8fffe]/60 text-[#26282b] border-l-4 border-[#b8e5e3] hover:bg-[#e8fffe]/80 dark:text-[#26282b]',
-      charcoal: 'bg-[#26282b]/20 text-[#26282b] border-l-4 border-[#26282b] hover:bg-[#26282b]/30 dark:bg-[#26282b]/40 dark:text-[#eaeaea]',
-      silver: 'bg-[#eaeaea]/60 text-[#26282b] border-l-4 border-[#d4d4d4] hover:bg-[#eaeaea]/80 dark:text-[#26282b]',
+      lime: 'bg-[#f1fec9]/60 text-[#1e2023] border-l-4 border-[#d4e5a8] hover:bg-[#f1fec9]/80 dark:text-[#1e2023]',
+      ice: 'bg-[#e8fffe]/60 text-[#1e2023] border-l-4 border-[#b8e5e3] hover:bg-[#e8fffe]/80 dark:text-[#1e2023]',
+      charcoal: 'bg-[#1e2023]/20 text-[#1e2023] border-l-4 border-[#1e2023] hover:bg-[#1e2023]/30 dark:bg-[#1e2023]/40 dark:text-[#eaeaea]',
+      silver: 'bg-[#eaeaea]/60 text-[#1e2023] border-l-4 border-[#d4d4d4] hover:bg-[#eaeaea]/80 dark:text-[#1e2023]',
     };
     return colorMap[color] || colorMap.silver;
   };
@@ -258,7 +258,11 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
     const deltaY = e.clientY - resizingEncounter.initialY;
     const deltaMinutes = Math.round(deltaY / pixelsPerMinute);
     
-    if (deltaMinutes === 0) return;
+    // Snap to 15-minute increments
+    const SNAP_INTERVAL = 15;
+    const snappedDeltaMinutes = Math.round(deltaMinutes / SNAP_INTERVAL) * SNAP_INTERVAL;
+    
+    if (snappedDeltaMinutes === 0) return;
     
     const { encounter, edge, initialStart, initialEnd } = resizingEncounter;
     
@@ -267,7 +271,7 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
     
     if (edge === 'top') {
       // Resizing start time
-      newStart = new Date(initialStart.getTime() + deltaMinutes * 60 * 1000);
+      newStart = new Date(initialStart.getTime() + snappedDeltaMinutes * 60 * 1000);
       newEnd = initialEnd;
       
       // Ensure start doesn't go past end (minimum 15 minutes)
@@ -275,6 +279,14 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
       if (newStart.getTime() >= newEnd.getTime() - minDuration) {
         newStart = new Date(newEnd.getTime() - minDuration);
       }
+      
+      // Snap to 15-minute increments
+      const startMinutes = newStart.getMinutes();
+      const snappedStartMinutes = Math.round(startMinutes / SNAP_INTERVAL) * SNAP_INTERVAL;
+      newStart = new Date(newStart);
+      newStart.setMinutes(snappedStartMinutes);
+      newStart.setSeconds(0);
+      newStart.setMilliseconds(0);
       
       // Ensure start is within calendar bounds (full 24-hour range: 0-23)
       const dayStart = setHours(new Date(initialStart), 0);
@@ -284,13 +296,21 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
     } else {
       // Resizing end time
       newStart = initialStart;
-      newEnd = new Date(initialEnd.getTime() + deltaMinutes * 60 * 1000);
+      newEnd = new Date(initialEnd.getTime() + snappedDeltaMinutes * 60 * 1000);
       
       // Ensure end doesn't go before start (minimum 15 minutes)
       const minDuration = 15 * 60 * 1000;
       if (newEnd.getTime() <= newStart.getTime() + minDuration) {
         newEnd = new Date(newStart.getTime() + minDuration);
       }
+      
+      // Snap to 15-minute increments
+      const endMinutes = newEnd.getMinutes();
+      const snappedEndMinutes = Math.round(endMinutes / SNAP_INTERVAL) * SNAP_INTERVAL;
+      newEnd = new Date(newEnd);
+      newEnd.setMinutes(snappedEndMinutes);
+      newEnd.setSeconds(0);
+      newEnd.setMilliseconds(0);
       
       // Ensure end is within calendar bounds (6 AM - 10 PM)
       // Ensure end is within calendar bounds (full 24-hour range: 0-23)
@@ -600,7 +620,7 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
                       <HoverCardTrigger asChild>
                         <div
                           className={cn(
-                            "absolute rounded-md border text-xs shadow-sm group",
+                            "absolute rounded-md text-xs card-neu group",
                             getColorClasses(encounter.color as FireColor),
                             isDragging && "opacity-50",
                             isResizing && "ring-2 ring-primary ring-offset-1"
@@ -951,7 +971,7 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
                         <HoverCardTrigger asChild>
                           <div
                             className={cn(
-                              "absolute rounded-md border text-xs shadow-sm group",
+                              "absolute rounded-md text-xs card-neu group",
                               getColorClasses(encounter.color as FireColor),
                               isDragging && "opacity-50",
                               isResizing && "ring-2 ring-primary ring-offset-1"
