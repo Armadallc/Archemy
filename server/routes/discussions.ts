@@ -376,16 +376,30 @@ router.patch("/:id/read", requireSupabaseAuth, async (req: SupabaseAuthenticated
  */
 router.delete("/:id/messages/:messageId", requireSupabaseAuth, async (req: SupabaseAuthenticatedRequest, res) => {
   try {
+    const deleteId = `BACKEND_${Date.now()}_${req.params.messageId.slice(0, 8)}`;
+    console.log(`🚨🚨🚨 [${deleteId}] BACKEND DELETE ENDPOINT CALLED 🚨🚨🚨`);
+    console.log(`🚨 [${deleteId}] DELETE /api/discussions/:id/messages/:messageId`);
+    console.log(`🚨 [${deleteId}] Discussion ID:`, req.params.id);
+    console.log(`🚨 [${deleteId}] Message ID:`, req.params.messageId);
+    
     if (!req.user) {
+      console.error('❌ [DISCUSSIONS] No user in request');
       return res.status(401).json({ message: "Authentication required" });
     }
 
+    console.log(`🔍 [${deleteId}] [DISCUSSIONS] User:`, req.user.userId);
     const { messageId } = req.params;
 
+    console.log(`🔍 [${deleteId}] [DISCUSSIONS] Attempting to delete message:`, messageId, 'for user:', req.user.userId);
     await deleteMessage(messageId, req.user.userId);
+    console.log(`✅ [${deleteId}] [DISCUSSIONS] Message deleted successfully`);
     res.status(200).json({ message: "Message deleted successfully" });
   } catch (error: any) {
-    console.error("❌ [DISCUSSIONS] Error deleting message:", error);
+    const deleteId = `ERROR_${Date.now()}_${req.params.messageId?.slice(0, 8) || 'unknown'}`;
+    console.error(`❌ [${deleteId}] [DISCUSSIONS] Error deleting message:`, error);
+    console.error(`❌ [${deleteId}] [DISCUSSIONS] Error message:`, error.message);
+    console.error(`❌ [${deleteId}] [DISCUSSIONS] Error stack:`, error.stack);
+    
     if (error.message === 'Message not found' || error.message === 'Message is already deleted') {
       return res.status(404).json({ 
         message: error.message,

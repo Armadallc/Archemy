@@ -87,6 +87,13 @@ class ApiClient {
     const headers = await this.getAuthHeaders();
     const requestMethod = options.method || 'GET'; // Store method in a local variable
 
+    // Log DELETE requests prominently
+    if (requestMethod === 'DELETE') {
+      console.log('API DELETE REQUEST:', url);
+      console.log('DELETE endpoint:', endpoint);
+      console.log('DELETE method:', requestMethod);
+    }
+
     try {
       const response = await fetch(url, {
         ...options,
@@ -96,6 +103,11 @@ class ApiClient {
         },
         credentials: 'include',
       });
+
+      // Log DELETE response
+      if (requestMethod === 'DELETE') {
+        console.log('API DELETE RESPONSE:', response.status, response.statusText);
+      }
 
       if (response.status === 401) {
         throw new Error('Authentication required');
