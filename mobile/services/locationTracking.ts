@@ -27,6 +27,7 @@ class LocationTrackingService {
   private lastSentLocation: LocationUpdate | null = null;
   private minUpdateInterval = 10000; // Send update every 10 seconds minimum
   private minDistanceChange = 10; // Send update if moved 10 meters
+  private isAvailable: boolean = true; // Track driver availability status
 
   /**
    * Initialize location tracking for a driver
@@ -92,6 +93,18 @@ class LocationTrackingService {
           console.warn('⚠️ Could not request background location permission (Expo Go limitation):', backgroundError);
           console.log('📍 Location tracking will work in foreground only');
         }
+      }
+
+      // Fetch driver profile to get availability status
+      try {
+        const profile = await apiClient.getDriverProfile();
+        const isAvailable = profile?.is_available ?? false; // Default to false - driver must explicitly enable
+        this.isAvailable = isAvailable;
+        console.log(`📍 Driver availability status loaded: ${isAvailable}`);
+      } catch (error) {
+        console.warn('⚠️ Could not fetch driver profile for availability status:', error);
+        // Default to false - driver must explicitly enable
+        this.isAvailable = false;
       }
 
       console.log('✅ Location tracking initialized for driver:', this.driverId);
@@ -230,10 +243,39 @@ class LocationTrackingService {
   }
 
   /**
+   * Update availability status
+   */
+  setAvailability(isAvailable: boolean) {
+    this.isAvailable = isAvailable;
+    console.log(`📍 Location tracking availability set to: ${isAvailable}`);
+    
+    // If availability is turned off and we're tracking, we should stop sending updates
+    // But keep tracking internally in case they have an active trip (which requires location)
+    if (!isAvailable && !this.activeTripId) {
+      console.log('📍 Location sharing disabled - updates will not be sent to backend');
+    }
+  }
+
+  /**
+   * Get current availability status
+   */
+  getAvailability(): boolean {
+    return this.isAvailable;
+  }
+
+  /**
    * Send location update to backend
    */
   private async sendLocationUpdate(location: LocationUpdate) {
     if (!this.driverId) return;
+
+    // Check if driver is available OR has an active trip (location sharing mandatory during trips)
+    const shouldShareLocation = this.isAvailable || this.activeTripId !== null;
+    
+    if (!shouldShareLocation) {
+      console.log('📍 Skipping location update - driver not available and no active trip');
+      return;
+    }
 
     try {
       await apiClient.updateDriverLocation(this.driverId, {

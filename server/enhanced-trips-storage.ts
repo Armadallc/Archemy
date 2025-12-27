@@ -15,6 +15,7 @@ export interface EnhancedTrip {
   trip_type: 'one_way' | 'round_trip';
   pickup_address: string;
   dropoff_address: string;
+  stops?: string[]; // Array of intermediate stop addresses (max 8)
   scheduled_pickup_time: string;
   scheduled_return_time?: string;
   actual_pickup_time?: string;
@@ -107,6 +108,7 @@ export const enhancedTripsStorage = {
         ),
         clients!client_id (
           id,
+          scid,
           first_name,
           last_name,
           phone,
@@ -127,6 +129,7 @@ export const enhancedTripsStorage = {
         ),
         client_groups:client_group_id (
           id,
+          reference_id,
           name,
           description
         )
@@ -163,6 +166,7 @@ export const enhancedTripsStorage = {
         ),
         clients!client_id (
           id,
+          scid,
           first_name,
           last_name,
           phone,
@@ -183,6 +187,7 @@ export const enhancedTripsStorage = {
         ),
         client_groups:client_group_id (
           id,
+          reference_id,
           name,
           description
         )
@@ -220,6 +225,7 @@ export const enhancedTripsStorage = {
         ),
         clients!client_id (
           id,
+          scid,
           first_name,
           last_name,
           phone,
@@ -240,6 +246,7 @@ export const enhancedTripsStorage = {
         ),
         client_groups:client_group_id (
           id,
+          reference_id,
           name,
           description
         )
@@ -277,6 +284,7 @@ export const enhancedTripsStorage = {
         ),
         clients!client_id (
           id,
+          scid,
           first_name,
           last_name,
           phone,
@@ -284,6 +292,7 @@ export const enhancedTripsStorage = {
         ),
         client_groups:client_group_id (
           id,
+          reference_id,
           name,
           description
         ),
@@ -334,6 +343,7 @@ export const enhancedTripsStorage = {
         ),
         clients!client_id (
           id,
+          scid,
           first_name,
           last_name,
           phone,
@@ -354,6 +364,7 @@ export const enhancedTripsStorage = {
         ),
         client_groups:client_group_id (
           id,
+          reference_id,
           name,
           description
         )
@@ -391,6 +402,7 @@ export const enhancedTripsStorage = {
         ),
         clients!client_id (
           id,
+          scid,
           first_name,
           last_name,
           phone,
@@ -411,6 +423,7 @@ export const enhancedTripsStorage = {
         ),
         client_groups:client_group_id (
           id,
+          reference_id,
           name,
           description
         )
@@ -449,6 +462,7 @@ export const enhancedTripsStorage = {
         ),
         clients!client_id (
           id,
+          scid,
           first_name,
           last_name,
           phone,
@@ -469,6 +483,7 @@ export const enhancedTripsStorage = {
         ),
         client_groups:client_group_id (
           id,
+          reference_id,
           name,
           description
         )

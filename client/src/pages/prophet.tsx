@@ -29,9 +29,11 @@ export default function ProphetPage() {
   }
 
   return (
-    <div className="flex-1 overflow-auto mobile-optimized pb-20 md:pb-0">
-      <div className="flex-1 overflow-auto p-6" style={{ backgroundColor: 'var(--background)' }}>
-        <ProphetCalculator />
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--page-background)' }}>
+      <div className="flex-1 flex flex-col overflow-hidden" style={{ padding: '24px' }}>
+        <div className="flex-1 overflow-auto min-h-0">
+          <ProphetCalculator />
+        </div>
       </div>
     </div>
   );

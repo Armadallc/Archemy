@@ -19,6 +19,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { apiClient } from '../../services/api';
 import { useFeatureFlag } from '../../hooks/useFeatureFlag';
 import { locationTrackingService } from '../../services/locationTracking';
+import AvailabilityPopup from '../../components/AvailabilityPopup';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { navigationPreferences } from '../../services/navigationPreferences';
 import { openNavigation } from '../../utils/navigation';
@@ -81,6 +82,8 @@ export default function TripDetailsScreen() {
   const { isEnabled: mobileCheckInEnabled } = useFeatureFlag('mobile_check_in_enabled');
 
   const [refreshing, setRefreshing] = useState(false);
+  const [showAvailabilityPopup, setShowAvailabilityPopup] = useState(false);
+  const [pendingTripStatus, setPendingTripStatus] = useState<string | null>(null);
 
   const { data: trips = [], refetch: refetchTrips } = useQuery({
     queryKey: ['driver-trips'],
@@ -114,9 +117,38 @@ export default function TripDetailsScreen() {
     },
   });
 
-  const handleStatusUpdate = (newStatus: string) => {
-    // Link/unlink location tracking based on trip status
+  // Fetch driver profile to check availability
+  const { data: driverProfile } = useQuery({
+    queryKey: ['driver-profile'],
+    queryFn: () => apiClient.getDriverProfile(),
+    enabled: user?.role === 'driver',
+  });
+
+  const handleStatusUpdate = async (newStatus: string) => {
+    // If trying to start a trip, check availability first
     if (newStatus === 'in_progress') {
+      try {
+        // Always fetch fresh profile to check availability
+        const profile = await apiClient.getDriverProfile();
+        console.log('🔍 Checking availability before trip start:', { is_available: profile?.is_available });
+        
+        if (!profile?.is_available) {
+          console.log('🚫 Availability is false - showing popup');
+          // Show popup to enable availability - this is required
+          setPendingTripStatus(newStatus);
+          setShowAvailabilityPopup(true);
+          return; // Don't proceed with trip start
+        }
+        
+        console.log('✅ Availability is true - proceeding with trip start');
+      } catch (error) {
+        console.error('❌ Error checking driver availability:', error);
+        // If we can't check, show popup to be safe
+        setPendingTripStatus(newStatus);
+        setShowAvailabilityPopup(true);
+        return;
+      }
+      
       // Link location tracking to this trip when trip starts
       locationTrackingService.setActiveTrip(tripId as string);
     } else if (newStatus === 'completed' || newStatus === 'cancelled') {
@@ -541,15 +573,46 @@ export default function TripDetailsScreen() {
     );
   }
 
+  const handleAvailabilityPopupClose = () => {
+    setShowAvailabilityPopup(false);
+    setPendingTripStatus(null);
+  };
+
+  const handleAvailabilityPopupBypass = () => {
+    setShowAvailabilityPopup(false);
+    setPendingTripStatus(null);
+  };
+
+  const handleAvailabilityEnabled = () => {
+    // If availability was enabled and we have a pending trip status, proceed with it
+    if (pendingTripStatus && tripId) {
+      // Link location tracking to this trip when trip starts
+      locationTrackingService.setActiveTrip(tripId as string);
+      updateTripMutation.mutate({ tripId: tripId as string, status: pendingTripStatus });
+      setPendingTripStatus(null);
+    }
+  };
+
   return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={
+    <>
+      <AvailabilityPopup
+        visible={showAvailabilityPopup}
+        onClose={handleAvailabilityPopupClose}
+        onBypass={handleAvailabilityPopupBypass}
+        driverProfileId={driverProfile?.id}
+        initialAvailability={driverProfile?.is_available ?? false}
+        message="You must enable location sharing before starting a trip. This allows fleet managers to track your position during the trip."
+        showBypass={false}
+        onAvailabilityEnabled={handleAvailabilityEnabled}
+      />
+      <ScrollView 
+        style={styles.container}
+        refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary || '#3B82F6'} />
       }
     >
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.push('/(tabs)/trips')}>
           <Ionicons name="arrow-back" size={24} color={theme.colors.foreground} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Trip Details</Text>
@@ -775,6 +838,7 @@ export default function TripDetailsScreen() {
         )}
       </View>
     </ScrollView>
+    </>
   );
 }
 

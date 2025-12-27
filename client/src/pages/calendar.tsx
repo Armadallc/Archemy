@@ -420,7 +420,7 @@ export default function CalendarPage() {
             
             {/* Full-Screen Toggle - Always visible when unified header is enabled */}
             {ENABLE_UNIFIED_HEADER && (
-              <div className="flex items-center justify-end mb-4">
+              <div className="flex items-center justify-end mb-6">
                 <Button
                   variant="outline"
                   size="sm"
@@ -445,7 +445,7 @@ export default function CalendarPage() {
             
             {/* View Mode Toggle - Show when unified header is enabled or in full-screen */}
             {(ENABLE_UNIFIED_HEADER || isFullScreen) && (
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center border rounded-lg">
                   <Button
                     variant={viewMode === 'calendar' ? 'default' : 'ghost'}
@@ -528,7 +528,7 @@ export default function CalendarPage() {
       {showFilters && (
         <Card>
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div>
                 <label className="text-sm font-medium text-foreground mb-2 block">
                   Search
@@ -611,7 +611,7 @@ export default function CalendarPage() {
           )}
           
           {viewMode === 'list' && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* List View Controls */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
@@ -661,7 +661,7 @@ export default function CalendarPage() {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-6">
                   {filteredAndSortedTrips.map((trip: any) => (
                     <div
                       key={trip.id}
@@ -689,7 +689,7 @@ export default function CalendarPage() {
                             {trip.client?.name || 'Unknown Client'}
                           </h4>
                           
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-muted-foreground">
                             <div className="flex items-center space-x-2">
                               <MapPin className="h-4 w-4" style={{ color: 'var(--completed)' }} />
                               <span className="font-medium">Pickup:</span>
@@ -748,7 +748,7 @@ export default function CalendarPage() {
           )}
           
           {viewMode === 'map' && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* Map View Controls */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
@@ -800,7 +800,7 @@ export default function CalendarPage() {
                       </p>
                       
                       {/* Mock Map Markers */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-2xl">
                         {mapView === 'trips' || mapView === 'all' ? (
                           mapData.trips.slice(0, 8).map((trip: any) => (
                             <div
@@ -903,7 +903,7 @@ export default function CalendarPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <h4 className="font-medium text-foreground mb-2">
                           {selectedMapTrip.client}
@@ -1077,7 +1077,7 @@ export default function CalendarPage() {
               </div>
 
               {/* Default Sort */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="text-sm font-medium text-foreground mb-2 block">
                     Default Sort By
@@ -1147,7 +1147,7 @@ export default function CalendarPage() {
       )}
 
       {/* Quick Stats - Fixed at bottom, aligned with sidebar */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-shrink-0" style={{ marginTop: 'auto', height: '93px', paddingTop: '24px', paddingBottom: '24px', marginBottom: '24px' }}>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 flex-shrink-0" style={{ marginTop: 'auto', height: '93px', paddingTop: '24px', paddingBottom: '24px', marginBottom: '24px' }}>
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">

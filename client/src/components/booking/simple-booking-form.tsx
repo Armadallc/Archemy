@@ -16,7 +16,87 @@ import { useHierarchy } from "../../hooks/useHierarchy";
 import { apiRequest } from "../../lib/queryClient";
 import { useFeatureFlag } from "../../hooks/use-permissions";
 import QuickAddLocation from "./quick-add-location";
+import { parseAddressString } from "../../lib/address-utils";
 import { TripPurposeBillingSelector } from "../telematics/TripPurposeBillingSelector";
+
+// Billing Calculation Display Component
+function BillingCalculationDisplay({ 
+  tripCode, 
+  legCalculations, 
+  serviceCodes 
+}: { 
+  tripCode: string; 
+  legCalculations: Array<{ estimatedMiles: number | null }>;
+  serviceCodes: any[];
+}) {
+  if (!tripCode || legCalculations.length === 0) return null;
+
+  const totalMiles = legCalculations.reduce((sum, leg) => sum + (leg.estimatedMiles || 0), 0);
+  const selectedCode = serviceCodes.find((code: any) => code.code === tripCode);
+  
+  if (!selectedCode) return null;
+
+  // Determine mileage band
+  const getMileageBand = (miles: number) => {
+    if (miles <= 10) return { band: 1, modifier: 'U1', rate: 22.28, range: '0-10' };
+    if (miles <= 25) return { band: 2, modifier: 'U2', rate: 33.42, range: '11-25' };
+    if (miles <= 50) return { band: 3, modifier: 'U3', rate: 55.70, range: '26-50' };
+    return { band: 4, modifier: 'U4', rate: 78.00, range: '51+' };
+  };
+
+  const mileageBand = getMileageBand(totalMiles);
+  const baseRate = selectedCode.baseRate || 0;
+  const mileageRate = selectedCode.mileageRate || 0;
+  const rateType = selectedCode.rateType || 'per_trip';
+
+  // Calculate billing
+  let totalBilling = 0;
+  const breakdown: Array<{ label: string; amount: number }> = [];
+
+  if (baseRate > 0 && rateType !== 'per_trip') {
+    breakdown.push({ label: 'Base Rate', amount: baseRate });
+    totalBilling += baseRate;
+  }
+
+  if (rateType === 'per_trip' && mileageBand) {
+    // For per_trip codes with mileage bands, use the band rate
+    breakdown.push({ 
+      label: `Mileage Band ${mileageBand.band} (${mileageBand.range} mi)`, 
+      amount: mileageBand.rate 
+    });
+    totalBilling = mileageBand.rate; // Band rate replaces base rate
+  } else if (mileageRate > 0) {
+    const mileageCharge = totalMiles * mileageRate;
+    breakdown.push({ label: 'Mileage', amount: mileageCharge });
+    totalBilling += mileageCharge;
+  }
+
+  // Check if it's a flat rate code
+  if (rateType === 'per_trip' && !mileageBand && baseRate > 0 && mileageRate === 0) {
+    breakdown.push({ label: 'Flat Rate', amount: baseRate });
+    totalBilling = baseRate;
+  }
+
+  if (breakdown.length === 0) return null;
+
+  return (
+    <div className="mt-4 p-4 rounded-lg border" style={{ backgroundColor: 'rgba(204, 51, 171, 0.1)', borderColor: 'var(--border)' }}>
+      <h4 className="font-semibold mb-3" style={{ color: 'var(--foreground)' }}>Billing Calculation</h4>
+      <div className="space-y-2 text-sm">
+        {breakdown.map((item, index) => (
+          <div key={index} className="flex justify-between">
+            <span className="text-muted-foreground">{item.label}:</span>
+            <span className="font-medium">${item.amount.toFixed(2)}</span>
+          </div>
+        ))}
+        <div className="flex justify-between pt-2 border-t mt-2" style={{ borderColor: 'var(--border)' }}>
+          <span className="font-semibold">Total:</span>
+          <span className="font-bold text-lg">${totalBilling.toFixed(2)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function SimpleBookingForm() {
   const [, setLocation] = useLocation();
@@ -70,8 +150,9 @@ function SimpleBookingForm() {
     clientIds: [] as string[], // Array for multiple individual clients
     clientGroupId: "",
     driverId: "unassigned",
-    pickupAddress: "",
-    dropoffAddress: "",
+    originAddress: "", // Changed from pickupAddress
+    destinationAddress: "", // Changed from dropoffAddress
+    stops: [] as string[], // Array of intermediate stops (max 8)
     scheduledDate: "",
     scheduledTime: "",
     returnTime: "",
@@ -91,6 +172,97 @@ function SimpleBookingForm() {
     appointmentTime: "",
     hasAppointmentTime: false // Checkbox state for appointment time
   });
+
+  // State for leg calculations
+  const [legCalculations, setLegCalculations] = useState<Array<{
+    legNumber: number;
+    fromAddress: string;
+    toAddress: string;
+    estimatedMiles: number | null;
+    estimatedTimeMinutes: number | null;
+    isLoading: boolean;
+  }>>([]);
+
+  // Calculate legs when addresses change
+  useEffect(() => {
+    const calculateLegs = async () => {
+      // Build address array: Origin, Stops, Destination
+      const addresses: string[] = [];
+      if (formData.originAddress) addresses.push(formData.originAddress);
+      addresses.push(...formData.stops.filter(s => s.trim()));
+      if (formData.destinationAddress) addresses.push(formData.destinationAddress);
+
+      // If round trip and no stops, add return leg
+      const isRoundTrip = formData.tripType === "round_trip" && formData.stops.length === 0;
+      if (isRoundTrip && formData.destinationAddress && formData.originAddress) {
+        addresses.push(formData.originAddress); // Return to origin
+      }
+
+      if (addresses.length < 2) {
+        setLegCalculations([]);
+        return;
+      }
+
+      // Calculate each leg
+      const newLegs = addresses.slice(0, -1).map((fromAddress, index) => {
+        const toAddress = addresses[index + 1];
+        return {
+          legNumber: index + 1,
+          fromAddress,
+          toAddress,
+          estimatedMiles: null,
+          estimatedTimeMinutes: null,
+          isLoading: true,
+        };
+      });
+
+      setLegCalculations(newLegs);
+
+      // Calculate route for each leg
+      for (let i = 0; i < newLegs.length; i++) {
+        const leg = newLegs[i];
+        try {
+          console.log(`📏 Calculating leg ${i + 1}: ${leg.fromAddress} → ${leg.toAddress}`);
+          const response = await apiRequest("POST", "/api/trips/estimate-route", {
+            fromAddress: leg.fromAddress,
+            toAddress: leg.toAddress,
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log(`✅ Leg ${i + 1} calculated: ${data.distance} mi, ${data.duration} min`);
+            setLegCalculations(prev => {
+              const updated = [...prev];
+              updated[i] = {
+                ...updated[i],
+                estimatedMiles: data.distance,
+                estimatedTimeMinutes: data.duration,
+                isLoading: false,
+              };
+              return updated;
+            });
+          } else {
+            const errorText = await response.text();
+            console.warn(`⚠️ Leg ${i + 1} calculation failed:`, response.status, errorText);
+            setLegCalculations(prev => {
+              const updated = [...prev];
+              updated[i] = { ...updated[i], isLoading: false };
+              return updated;
+            });
+          }
+        } catch (error) {
+          console.error(`❌ Error calculating leg ${i + 1}:`, error);
+          setLegCalculations(prev => {
+            const updated = [...prev];
+            updated[i] = { ...updated[i], isLoading: false };
+            return updated;
+          });
+        }
+      }
+    };
+
+    calculateLegs();
+  }, [formData.originAddress, formData.destinationAddress, formData.stops, formData.tripType]);
 
   // Local state for program selection (for super admins)
   const [selectedProgramLocal, setSelectedProgramLocal] = useState<string>("");
@@ -306,6 +478,26 @@ function SimpleBookingForm() {
     },
   });
 
+  // Fetch service codes for billing calculation
+  const { data: serviceCodes = [] } = useQuery({
+    queryKey: ["service-codes"],
+    queryFn: async () => {
+      try {
+        const module = await import("../prophet/data/coloradoMedicaidCodes");
+        const { bhstCodes, nemtCodes, nmtCodes } = module;
+        return [
+          ...(bhstCodes || []),
+          ...(nemtCodes || []),
+          ...(nmtCodes || []),
+        ];
+      } catch (error) {
+        console.error("Error loading service codes:", error);
+        return [];
+      }
+    },
+    staleTime: 1000 * 60 * 60,
+  });
+
   // Get program for selected client
   const selectedClient = clients.find((client: any) => client.id === formData.clientId);
   const clientProgram = selectedClient?.program_id;
@@ -380,6 +572,10 @@ function SimpleBookingForm() {
         ? createDateTimeString(tripData.scheduledDate, tripData.returnTime)
         : null;
       
+      // Parse addresses into separated fields
+      const pickupAddress = parseAddressString(tripData.originAddress);
+      const dropoffAddress = parseAddressString(tripData.destinationAddress);
+      
       if (tripData.isRecurring && recurringTripsEnabled) {
         // Create recurring trip
         // Build API payload - explicitly omit client_id for group trips
@@ -387,8 +583,17 @@ function SimpleBookingForm() {
           program_id: effectiveProgram,
           driver_id: tripData.driverId === "unassigned" ? null : tripData.driverId || null,
           trip_type: tripData.tripType,
-          pickup_address: tripData.pickupAddress,
-          dropoff_address: tripData.dropoffAddress,
+          pickup_address: tripData.originAddress, // Legacy field for backward compatibility
+          pickup_street: pickupAddress.street,
+          pickup_city: pickupAddress.city,
+          pickup_state: pickupAddress.state,
+          pickup_zip: pickupAddress.zip,
+          dropoff_address: tripData.destinationAddress, // Legacy field for backward compatibility
+          dropoff_street: dropoffAddress.street,
+          dropoff_city: dropoffAddress.city,
+          dropoff_state: dropoffAddress.state,
+          dropoff_zip: dropoffAddress.zip,
+          stops: tripData.stops || [],
           scheduled_time: tripData.scheduledTime,
           return_time: tripData.tripType === "round_trip" ? tripData.returnTime : null,
           frequency: tripData.frequency,
@@ -442,8 +647,17 @@ function SimpleBookingForm() {
               client_id: clientId,
               driver_id: tripData.driverId === "unassigned" ? null : tripData.driverId || null,
               trip_type: tripData.tripType,
-              pickup_address: tripData.pickupAddress,
-              dropoff_address: tripData.dropoffAddress,
+              pickup_address: tripData.originAddress, // Legacy field for backward compatibility
+              pickup_street: pickupAddress.street,
+              pickup_city: pickupAddress.city,
+              pickup_state: pickupAddress.state,
+              pickup_zip: pickupAddress.zip,
+              dropoff_address: tripData.destinationAddress, // Legacy field for backward compatibility
+              dropoff_street: dropoffAddress.street,
+              dropoff_city: dropoffAddress.city,
+              dropoff_state: dropoffAddress.state,
+              dropoff_zip: dropoffAddress.zip,
+              stops: tripData.stops || [],
               scheduled_pickup_time: scheduledPickupTime,
               scheduled_return_time: scheduledReturnTime,
               passenger_count: 1,
@@ -474,8 +688,17 @@ function SimpleBookingForm() {
             client_group_id: tripData.clientGroupId,
             driver_id: tripData.driverId === "unassigned" ? null : tripData.driverId || null,
             trip_type: tripData.tripType,
-            pickup_address: tripData.pickupAddress,
-            dropoff_address: tripData.dropoffAddress,
+            pickup_address: tripData.originAddress, // Legacy field for backward compatibility
+            pickup_street: pickupAddress.street,
+            pickup_city: pickupAddress.city,
+            pickup_state: pickupAddress.state,
+            pickup_zip: pickupAddress.zip,
+            dropoff_address: tripData.destinationAddress, // Legacy field for backward compatibility
+            dropoff_street: dropoffAddress.street,
+            dropoff_city: dropoffAddress.city,
+            dropoff_state: dropoffAddress.state,
+            dropoff_zip: dropoffAddress.zip,
+            stops: tripData.stops || [],
             scheduled_pickup_time: scheduledPickupTime,
             scheduled_return_time: scheduledReturnTime,
             passenger_count: clientGroups.find((g: { id: string; member_count?: number }) => g.id === tripData.clientGroupId)?.member_count || 1,
@@ -516,8 +739,9 @@ function SimpleBookingForm() {
         clientIds: [] as string[],
         clientGroupId: "",
         driverId: "unassigned",
-        pickupAddress: "",
-        dropoffAddress: "",
+        originAddress: "",
+        destinationAddress: "",
+        stops: [] as string[],
         scheduledDate: "",
         scheduledTime: "",
         returnTime: "",
@@ -663,7 +887,7 @@ function SimpleBookingForm() {
     if (formData.selectionType === "individual") {
       // Check if at least one client is selected (either clientId or any clientIds)
       const hasClient = formData.clientId || formData.clientIds.some(id => id);
-      if (!hasClient || !formData.pickupAddress || !formData.dropoffAddress || !formData.scheduledDate || !formData.scheduledTime) {
+      if (!hasClient || !formData.originAddress || !formData.destinationAddress || !formData.scheduledDate || !formData.scheduledTime) {
         console.log('❌ [Form Submit] Validation failed: Missing individual trip fields');
         toast({
           title: "Missing Information",
@@ -673,11 +897,11 @@ function SimpleBookingForm() {
         return;
       }
     } else {
-      if (!formData.clientGroupId || !formData.pickupAddress || !formData.dropoffAddress || !formData.scheduledDate || !formData.scheduledTime) {
+      if (!formData.clientGroupId || !formData.originAddress || !formData.destinationAddress || !formData.scheduledDate || !formData.scheduledTime) {
         console.log('❌ [Form Submit] Validation failed: Missing group trip fields', {
           clientGroupId: formData.clientGroupId,
-          pickupAddress: formData.pickupAddress,
-          dropoffAddress: formData.dropoffAddress,
+          originAddress: formData.originAddress,
+          destinationAddress: formData.destinationAddress,
           scheduledDate: formData.scheduledDate,
           scheduledTime: formData.scheduledTime
         });
@@ -982,22 +1206,75 @@ function SimpleBookingForm() {
           </div>
 
           <QuickAddLocation
-            value={formData.pickupAddress}
-            onChange={(value) => setFormData({ ...formData, pickupAddress: value })}
-            placeholder="Enter pickup address"
+            value={formData.originAddress}
+            onChange={(value) => setFormData({ ...formData, originAddress: value })}
+            placeholder="Enter origin address"
             locationType="pickup"
-            label="PU Address"
+            label="Origin"
             required
             programId={effectiveProgram}
             corporateClientId={effectiveCorporateClient}
           />
 
+          {/* Intermediate Stops */}
+          {formData.stops.map((stop, index) => (
+            <div key={index} className="flex items-start gap-2">
+              <div className="flex-1">
+                <QuickAddLocation
+                  value={stop}
+                  onChange={(value) => {
+                    const newStops = [...formData.stops];
+                    newStops[index] = value;
+                    setFormData({ ...formData, stops: newStops, tripType: "one_way" }); // Disable round trip when stops added
+                  }}
+                  placeholder={`Enter stop ${index + 1} address`}
+                  locationType="dropoff"
+                  label={`Stop ${index + 1}`}
+                  required
+                  programId={effectiveProgram}
+                  corporateClientId={effectiveCorporateClient}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const newStops = formData.stops.filter((_, i) => i !== index);
+                  setFormData({ ...formData, stops: newStops });
+                }}
+                className="mt-8 px-2 py-1 h-8 w-8"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+
+          {/* Add Stop Button */}
+          {formData.stops.length < 8 && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setFormData({ 
+                  ...formData, 
+                  stops: [...formData.stops, ""],
+                  tripType: "one_way" // Disable round trip when adding stops
+                });
+              }}
+              className="w-full"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Stop ({formData.stops.length}/8)
+            </Button>
+          )}
+
           <QuickAddLocation
-            value={formData.dropoffAddress}
-            onChange={(value) => setFormData({ ...formData, dropoffAddress: value })}
-            placeholder="Enter drop-off address"
+            value={formData.destinationAddress}
+            onChange={(value) => setFormData({ ...formData, destinationAddress: value })}
+            placeholder="Enter destination address"
             locationType="dropoff"
-            label="DO Address"
+            label="Destination"
             required
             programId={effectiveProgram}
             corporateClientId={effectiveCorporateClient}
@@ -1068,42 +1345,124 @@ function SimpleBookingForm() {
             )}
           </div>
 
-          <div>
-            <Label htmlFor="tripType">Trip Type</Label>
-            <Select value={formData.tripType} onValueChange={(value) => setFormData({ ...formData, tripType: value })}>
-              <SelectTrigger style={{ backgroundColor: 'var(--card)' }}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="max-h-60 z-50" style={{ backgroundColor: 'var(--card)', color: 'var(--foreground)' }}>
-                <SelectItem 
-                  value="one_way" 
-                  style={{ color: 'var(--foreground)' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--muted)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                >
-                  One Way
-                </SelectItem>
-                <SelectItem 
-                  value="round_trip" 
-                  style={{ color: 'var(--foreground)' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--muted)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                >
-                  Round Trip
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Trip Type - Only show if no stops added */}
+          {formData.stops.length === 0 && (
+            <>
+              <div>
+                <Label htmlFor="tripType">Trip Type</Label>
+                <Select value={formData.tripType} onValueChange={(value) => setFormData({ ...formData, tripType: value })}>
+                  <SelectTrigger style={{ backgroundColor: 'var(--card)' }}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60 z-50" style={{ backgroundColor: 'var(--card)', color: 'var(--foreground)' }}>
+                    <SelectItem 
+                      value="one_way" 
+                      style={{ color: 'var(--foreground)' }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--muted)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      One Way
+                    </SelectItem>
+                    <SelectItem 
+                      value="round_trip" 
+                      style={{ color: 'var(--foreground)' }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--muted)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      Round Trip
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-          {formData.tripType === "round_trip" && (
-            <div>
-              <Label htmlFor="returnTime">Return Time</Label>
-              <Input
-                type="time"
-                value={formData.returnTime}
-                onChange={(e) => setFormData({ ...formData, returnTime: e.target.value })}
-                placeholder="Select return time"
-              />
+              {formData.tripType === "round_trip" && (
+                <div>
+                  <Label htmlFor="returnTime">Return Time</Label>
+                  <Input
+                    type="time"
+                    value={formData.returnTime}
+                    onChange={(e) => setFormData({ ...formData, returnTime: e.target.value })}
+                    placeholder="Select return time"
+                  />
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Leg Display Section - Show when we have origin and destination */}
+          {(formData.originAddress && formData.destinationAddress) && (
+            <div className="border-t pt-4 mt-4 space-y-4">
+              <h3 className="text-lg font-semibold" style={{ color: 'var(--foreground)' }}>
+                Trip Legs {legCalculations.length === 0 && <span className="text-sm font-normal text-muted-foreground">(Calculating...)</span>}
+              </h3>
+              {legCalculations.length === 0 ? (
+                <div className="p-3 rounded-lg border" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
+                  <div className="text-sm text-muted-foreground">Enter origin and destination addresses to calculate trip legs</div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {legCalculations.map((leg) => (
+                  <div key={leg.legNumber} className="p-3 rounded-lg border" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium">Leg {leg.legNumber}</span>
+                      {leg.isLoading && (
+                        <span className="text-xs text-muted-foreground">Calculating...</span>
+                      )}
+                    </div>
+                    <div className="text-sm space-y-1">
+                      <div>
+                        <span className="text-muted-foreground">From: </span>
+                        <span>{leg.fromAddress}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">To: </span>
+                        <span>{leg.toAddress}</span>
+                      </div>
+                      {leg.estimatedMiles !== null && (
+                        <div className="flex gap-4 mt-2">
+                          <div>
+                            <span className="text-muted-foreground">Distance: </span>
+                            <span className="font-medium">{leg.estimatedMiles.toFixed(2)} mi</span>
+                          </div>
+                          {leg.estimatedTimeMinutes !== null && (
+                            <div>
+                              <span className="text-muted-foreground">Time: </span>
+                              <span className="font-medium">{leg.estimatedTimeMinutes} min</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Total Summary */}
+              {legCalculations.some(leg => leg.estimatedMiles !== null) && (
+                <div className="p-4 rounded-lg border" style={{ backgroundColor: 'rgba(204, 51, 171, 0.1)', borderColor: 'var(--border)' }}>
+                  <h4 className="font-semibold mb-2" style={{ color: 'var(--foreground)' }}>Trip Summary</h4>
+                  <div className="flex gap-4">
+                    <div>
+                      <span className="text-muted-foreground">Total Distance: </span>
+                      <span className="font-bold text-lg">
+                        {legCalculations
+                          .reduce((sum, leg) => sum + (leg.estimatedMiles || 0), 0)
+                          .toFixed(2)} mi
+                      </span>
+                    </div>
+                    {legCalculations.some(leg => leg.estimatedTimeMinutes !== null) && (
+                      <div>
+                        <span className="text-muted-foreground">Total Time: </span>
+                        <span className="font-bold text-lg">
+                          {legCalculations
+                            .reduce((sum, leg) => sum + (leg.estimatedTimeMinutes || 0), 0)} min
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1119,6 +1478,13 @@ function SimpleBookingForm() {
               onTripPurposeChange={(value) => setFormData({ ...formData, tripPurpose: value })}
               onTripCodeChange={(value) => setFormData({ ...formData, tripCode: value })}
               onTripModifierChange={(value) => setFormData({ ...formData, tripModifier: value })}
+            />
+
+            {/* Billing Calculation Display */}
+            <BillingCalculationDisplay 
+              tripCode={formData.tripCode}
+              legCalculations={legCalculations}
+              serviceCodes={serviceCodes}
             />
           </div>
 

@@ -314,19 +314,19 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
     <div className="space-y-6 mt-6">
       {/* Fire Palette Colors */}
       <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
-        <h3 className="text-lg font-semibold mb-2 text-[#26282b] dark:text-[#eaeaea]">Fire Palette - Core Colors</h3>
-        <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mb-4">
+        <h3 className="text-lg font-semibold mb-2 text-[#1e2023] dark:text-[#eaeaea]">Fire Palette - Core Colors</h3>
+        <p className="text-sm text-[#1e2023]/70 dark:text-[#eaeaea]/70 mb-4">
           Your "Fire" color palette - the foundation of the HALCYON design system
         </p>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {[
-            { name: 'Charcoal', value: '#26282b', cssVar: '--color-charcoal', usage: 'Dark backgrounds, light mode text' },
+            { name: 'Charcoal', value: '#1e2023', cssVar: '--color-charcoal', usage: 'Dark backgrounds, light mode text (20% darker)' },
             { name: 'Ice', value: '#e8fffe', cssVar: '--color-ice', usage: 'Light accent backgrounds' },
             { name: 'Lime', value: '#f1fec9', cssVar: '--color-lime', usage: 'Elevated surfaces, accent' },
             { name: 'Coral', value: '#ff8475', cssVar: '--color-coral', usage: 'Primary actions, highlights' },
             { name: 'Silver', value: '#eaeaea', cssVar: '--color-silver', usage: 'Borders, muted backgrounds' },
             { name: 'Cloud', value: '#f4f4f4', cssVar: '--color-cloud', usage: 'Light mode background' },
-            { name: 'Shadow', value: '#343434', cssVar: '--color-shadow', usage: 'Dark gray accents' },
+            { name: 'Shadow', value: '#292929', cssVar: '--color-shadow', usage: 'Dark gray accents (20% darker)' },
             { name: 'Aqua', value: '#a5c8ca', cssVar: '--color-aqua', usage: 'Light teal accents' },
           ].map(({ name, value, cssVar, usage }) => (
             <div key={name} className="space-y-2 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
@@ -334,10 +334,10 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
                 className="w-full h-20 rounded-lg border-2 border-white/30 dark:border-white/20 shadow-md mb-2"
                 style={{ backgroundColor: value }}
               />
-              <div className="text-sm font-semibold text-[#26282b] dark:text-[#eaeaea]">{name}</div>
-              <div className="text-xs font-mono text-[#26282b]/70 dark:text-[#eaeaea]/70">{value}</div>
-              <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mt-1">{usage}</div>
-              <div className="text-xs font-mono text-[#26282b]/50 dark:text-[#eaeaea]/50 mt-1">{cssVar}</div>
+              <div className="text-sm font-semibold text-[#1e2023] dark:text-[#eaeaea]">{name}</div>
+              <div className="text-xs font-mono text-[#1e2023]/70 dark:text-[#eaeaea]/70">{value}</div>
+              <div className="text-xs text-[#1e2023]/60 dark:text-[#eaeaea]/60 mt-1">{usage}</div>
+              <div className="text-xs font-mono text-[#1e2023]/50 dark:text-[#eaeaea]/50 mt-1">{cssVar}</div>
             </div>
           ))}
         </div>
@@ -345,7 +345,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
 
       {/* Extended Palette */}
       <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
-        <h3 className="text-lg font-semibold mb-4 text-[#26282b] dark:text-[#eaeaea]">Extended Palette</h3>
+        <h3 className="text-lg font-semibold mb-4 text-[#1e2023] dark:text-[#eaeaea]">Extended Palette</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { name: 'Charcoal Light', value: '#363a3e', cssVar: '--color-charcoal-light' },
@@ -361,9 +361,9 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
                 className="w-full h-16 rounded-lg border-2 border-white/30 dark:border-white/20 shadow-md mb-2"
                 style={{ backgroundColor: value }}
               />
-              <div className="text-xs font-semibold text-[#26282b] dark:text-[#eaeaea]">{name}</div>
-              <div className="text-xs font-mono text-[#26282b]/70 dark:text-[#eaeaea]/70">{value}</div>
-              <div className="text-xs font-mono text-[#26282b]/50 dark:text-[#eaeaea]/50">{cssVar}</div>
+              <div className="text-xs font-semibold text-[#1e2023] dark:text-[#eaeaea]">{name}</div>
+              <div className="text-xs font-mono text-[#1e2023]/70 dark:text-[#eaeaea]/70">{value}</div>
+              <div className="text-xs font-mono text-[#1e2023]/50 dark:text-[#eaeaea]/50">{cssVar}</div>
             </div>
           ))}
         </div>
@@ -371,10 +371,10 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
 
       {/* Semantic Colors - Light Mode */}
       <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
-        <h3 className="text-lg font-semibold mb-4 text-[#26282b] dark:text-[#eaeaea]">Semantic Colors - Light Mode</h3>
+        <h3 className="text-lg font-semibold mb-4 text-[#1e2023] dark:text-[#eaeaea]">Semantic Colors - Light Mode</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
-            <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-3">Backgrounds & Surfaces</h4>
+            <h4 className="font-medium text-[#1e2023] dark:text-[#eaeaea] mb-3">Backgrounds & Surfaces</h4>
             {[
               { key: 'background', value: 'var(--background)', label: 'Background', color: '#f4f4f4' },
               { key: 'background-secondary', value: 'var(--background-secondary)', label: 'Background Secondary', color: '#eaeaea' },
@@ -384,7 +384,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
               { key: 'surface-muted', value: 'var(--surface-muted)', label: 'Surface Muted', color: '#eaeaea' },
             ].map(({ key, value, label, color }) => (
               <div key={key} className="space-y-2">
-                <Label htmlFor={`semantic-light-${key}`} className="text-sm text-[#26282b] dark:text-[#eaeaea]">
+                <Label htmlFor={`semantic-light-${key}`} className="text-sm text-[#1e2023] dark:text-[#eaeaea]">
                   {label}
                 </Label>
                 <div className="flex items-center space-x-2">
@@ -396,7 +396,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
                     id={`semantic-light-${key}`}
                     value={value}
                     readOnly
-                    className="flex-1 text-sm bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea] placeholder:text-[#26282b]/50 dark:placeholder:text-[#eaeaea]/50 backdrop-blur-sm"
+                    className="flex-1 text-sm bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#1e2023] dark:text-[#eaeaea] placeholder:text-[#1e2023]/50 dark:placeholder:text-[#eaeaea]/50 backdrop-blur-sm"
                   />
                 </div>
               </div>
@@ -404,16 +404,16 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
           </div>
 
           <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
-            <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-3">Actions & Text</h4>
+            <h4 className="font-medium text-[#1e2023] dark:text-[#eaeaea] mb-3">Actions & Text</h4>
             {[
               { key: 'primary', value: 'var(--primary)', label: 'Primary', color: '#ff8475' },
               { key: 'accent', value: 'var(--accent)', label: 'Accent', color: '#f1fec9' },
-              { key: 'foreground', value: 'var(--foreground)', label: 'Foreground', color: '#26282b' },
+              { key: 'foreground', value: 'var(--foreground)', label: 'Foreground', color: '#1e2023' },
               { key: 'foreground-secondary', value: 'var(--foreground-secondary)', label: 'Foreground Secondary', color: '#5c6166' },
               { key: 'foreground-muted', value: 'var(--foreground-muted)', label: 'Foreground Muted', color: '#8a8f94' },
             ].map(({ key, value, label, color }) => (
               <div key={key} className="space-y-2">
-                <Label htmlFor={`semantic-light-${key}`} className="text-sm text-[#26282b] dark:text-[#eaeaea]">
+                <Label htmlFor={`semantic-light-${key}`} className="text-sm text-[#1e2023] dark:text-[#eaeaea]">
                   {label}
                 </Label>
                 <div className="flex items-center space-x-2">
@@ -425,7 +425,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
                     id={`semantic-light-${key}`}
                     value={value}
                     readOnly
-                    className="flex-1 text-sm bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea] placeholder:text-[#26282b]/50 dark:placeholder:text-[#eaeaea]/50 backdrop-blur-sm"
+                    className="flex-1 text-sm bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#1e2023] dark:text-[#eaeaea] placeholder:text-[#1e2023]/50 dark:placeholder:text-[#eaeaea]/50 backdrop-blur-sm"
                   />
                 </div>
               </div>
@@ -436,14 +436,14 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
 
       {/* Complete Semantic Colors - All CSS Variables */}
       <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
-        <h3 className="text-lg font-semibold mb-4 text-[#26282b] dark:text-[#eaeaea]">All Semantic Colors</h3>
-        <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mb-6">
+        <h3 className="text-lg font-semibold mb-4 text-[#1e2023] dark:text-[#eaeaea]">All Semantic Colors</h3>
+        <p className="text-sm text-[#1e2023]/70 dark:text-[#eaeaea]/70 mb-6">
           Complete list of all semantic color CSS variables from the Fire design system
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Backgrounds & Surfaces */}
           <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
-            <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-3">Backgrounds & Surfaces</h4>
+            <h4 className="font-medium text-[#1e2023] dark:text-[#eaeaea] mb-3">Backgrounds & Surfaces</h4>
             {[
               { cssVar: '--background', value: '#f4f4f4', label: 'Background' },
               { cssVar: '--background-secondary', value: '#eaeaea', label: 'Background Secondary' },
@@ -455,7 +455,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
               { cssVar: '--popover', value: '#ffffff', label: 'Popover' },
             ].map(({ cssVar, value, label }) => (
               <div key={cssVar} className="space-y-2">
-                <Label className="text-sm text-[#26282b]/80 dark:text-[#eaeaea]/80">{label}</Label>
+                <Label className="text-sm text-[#1e2023]/80 dark:text-[#eaeaea]/80">{label}</Label>
                 <div className="flex items-center space-x-2">
                   <div 
                     className="w-8 h-8 rounded-lg border-2 border-white/30 dark:border-white/20 shadow-md flex-shrink-0"
@@ -464,17 +464,17 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
                   <Input
                     value={cssVar}
                     readOnly
-                    className="flex-1 text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                    className="flex-1 text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#1e2023] dark:text-[#eaeaea]"
                   />
                 </div>
-                <div className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60 ml-10">{value}</div>
+                <div className="text-xs font-mono text-[#1e2023]/60 dark:text-[#eaeaea]/60 ml-10">{value}</div>
               </div>
             ))}
           </div>
 
           {/* Text & Foreground */}
           <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
-            <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-3">Text & Foreground</h4>
+            <h4 className="font-medium text-[#1e2023] dark:text-[#eaeaea] mb-3">Text & Foreground</h4>
             {[
               { cssVar: '--foreground', value: '#26282b', label: 'Foreground' },
               { cssVar: '--foreground-secondary', value: '#5c6166', label: 'Foreground Secondary' },
@@ -485,7 +485,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
               { cssVar: '--muted-foreground', value: '#6b7280', label: 'Muted Foreground' },
             ].map(({ cssVar, value, label }) => (
               <div key={cssVar} className="space-y-2">
-                <Label className="text-sm text-[#26282b]/80 dark:text-[#eaeaea]/80">{label}</Label>
+                <Label className="text-sm text-[#1e2023]/80 dark:text-[#eaeaea]/80">{label}</Label>
                 <div className="flex items-center space-x-2">
                   <div 
                     className="w-8 h-8 rounded-lg border-2 border-white/30 dark:border-white/20 shadow-md flex-shrink-0"
@@ -494,17 +494,17 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
                   <Input
                     value={cssVar}
                     readOnly
-                    className="flex-1 text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                    className="flex-1 text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#1e2023] dark:text-[#eaeaea]"
                   />
                 </div>
-                <div className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60 ml-10">{value}</div>
+                <div className="text-xs font-mono text-[#1e2023]/60 dark:text-[#eaeaea]/60 ml-10">{value}</div>
               </div>
             ))}
           </div>
 
           {/* Actions */}
           <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
-            <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-3">Actions</h4>
+            <h4 className="font-medium text-[#1e2023] dark:text-[#eaeaea] mb-3">Actions</h4>
             {[
               { cssVar: '--primary', value: '#ff8475', label: 'Primary' },
               { cssVar: '--primary-hover', value: '#e04850', label: 'Primary Hover' },
@@ -517,7 +517,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
               { cssVar: '--destructive-foreground', value: '#ffffff', label: 'Destructive Foreground' },
             ].map(({ cssVar, value, label }) => (
               <div key={cssVar} className="space-y-2">
-                <Label className="text-sm text-[#26282b]/80 dark:text-[#eaeaea]/80">{label}</Label>
+                <Label className="text-sm text-[#1e2023]/80 dark:text-[#eaeaea]/80">{label}</Label>
                 <div className="flex items-center space-x-2">
                   <div 
                     className="w-8 h-8 rounded-lg border-2 border-white/30 dark:border-white/20 shadow-md flex-shrink-0"
@@ -526,17 +526,17 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
                   <Input
                     value={cssVar}
                     readOnly
-                    className="flex-1 text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                    className="flex-1 text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#1e2023] dark:text-[#eaeaea]"
                   />
                 </div>
-                <div className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60 ml-10">{value}</div>
+                <div className="text-xs font-mono text-[#1e2023]/60 dark:text-[#eaeaea]/60 ml-10">{value}</div>
               </div>
             ))}
           </div>
 
           {/* Borders & Inputs */}
           <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
-            <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-3">Borders & Inputs</h4>
+            <h4 className="font-medium text-[#1e2023] dark:text-[#eaeaea] mb-3">Borders & Inputs</h4>
             {[
               { cssVar: '--border', value: '#d4d7da', label: 'Border' },
               { cssVar: '--border-muted', value: '#eaeaea', label: 'Border Muted' },
@@ -549,7 +549,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
               { cssVar: '--muted', value: '#eaeaea', label: 'Muted' },
             ].map(({ cssVar, value, label }) => (
               <div key={cssVar} className="space-y-2">
-                <Label className="text-sm text-[#26282b]/80 dark:text-[#eaeaea]/80">{label}</Label>
+                <Label className="text-sm text-[#1e2023]/80 dark:text-[#eaeaea]/80">{label}</Label>
                 <div className="flex items-center space-x-2">
                   <div 
                     className="w-8 h-8 rounded-lg border-2 border-white/30 dark:border-white/20 shadow-md flex-shrink-0"
@@ -558,18 +558,18 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
                   <Input
                     value={cssVar}
                     readOnly
-                    className="flex-1 text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                    className="flex-1 text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#1e2023] dark:text-[#eaeaea]"
                   />
                 </div>
-                <div className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60 ml-10">{value}</div>
+                <div className="text-xs font-mono text-[#1e2023]/60 dark:text-[#eaeaea]/60 ml-10">{value}</div>
               </div>
             ))}
           </div>
 
           {/* Status Colors - Derived from Fire Palette */}
           <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
-            <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-2">Status Colors</h4>
-            <p className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-3">Derived from Fire palette</p>
+            <h4 className="font-medium text-[#1e2023] dark:text-[#eaeaea] mb-2">Status Colors</h4>
+            <p className="text-xs text-[#1e2023]/60 dark:text-[#eaeaea]/60 mb-3">Derived from Fire palette</p>
             {[
               { cssVar: '--status-pending', value: '#f7ffdf', label: 'Pending', derived: 'Light lime shade' },
               { cssVar: '--status-pending-bg', value: 'rgba(247, 255, 223, 0.15)', label: 'Pending BG', derived: '15% opacity' },
@@ -584,8 +584,8 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
             ].map(({ cssVar, value, label, derived }) => (
               <div key={cssVar} className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm text-[#26282b]/80 dark:text-[#eaeaea]/80">{label}</Label>
-                  {derived && <span className="text-xs text-[#26282b]/50 dark:text-[#eaeaea]/50 italic">{derived}</span>}
+                  <Label className="text-sm text-[#1e2023]/80 dark:text-[#eaeaea]/80">{label}</Label>
+                  {derived && <span className="text-xs text-[#1e2023]/50 dark:text-[#eaeaea]/50 italic">{derived}</span>}
                 </div>
                 <div className="flex items-center space-x-2">
                   <div 
@@ -595,18 +595,18 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
                   <Input
                     value={cssVar}
                     readOnly
-                    className="flex-1 text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                    className="flex-1 text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#1e2023] dark:text-[#eaeaea]"
                   />
                 </div>
-                <div className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60 ml-10">{value}</div>
+                <div className="text-xs font-mono text-[#1e2023]/60 dark:text-[#eaeaea]/60 ml-10">{value}</div>
               </div>
             ))}
           </div>
 
           {/* Trip Status Colors - Derived from Fire Palette */}
           <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
-            <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-2">Trip Status Colors</h4>
-            <p className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-3">Derived from Fire palette</p>
+            <h4 className="font-medium text-[#1e2023] dark:text-[#eaeaea] mb-2">Trip Status Colors</h4>
+            <p className="text-xs text-[#1e2023]/60 dark:text-[#eaeaea]/60 mb-3">Derived from Fire palette</p>
             {[
               { cssVar: '--scheduled', value: '#7afffe', label: 'Scheduled', derived: 'From Ice (#e8fffe) - Red: 7A' },
               { cssVar: '--scheduled-bg', value: 'rgba(122, 255, 254, 0.15)', label: 'Scheduled BG', derived: '15% opacity' },
@@ -621,8 +621,8 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
             ].map(({ cssVar, value, label, derived }) => (
               <div key={cssVar} className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm text-[#26282b]/80 dark:text-[#eaeaea]/80">{label}</Label>
-                  {derived && <span className="text-xs text-[#26282b]/50 dark:text-[#eaeaea]/50 italic">{derived}</span>}
+                  <Label className="text-sm text-[#1e2023]/80 dark:text-[#eaeaea]/80">{label}</Label>
+                  {derived && <span className="text-xs text-[#1e2023]/50 dark:text-[#eaeaea]/50 italic">{derived}</span>}
                 </div>
                 <div className="flex items-center space-x-2">
                   <div 
@@ -632,17 +632,17 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
                   <Input
                     value={cssVar}
                     readOnly
-                    className="flex-1 text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                    className="flex-1 text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#1e2023] dark:text-[#eaeaea]"
                   />
                 </div>
-                <div className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60 ml-10">{value}</div>
+                <div className="text-xs font-mono text-[#1e2023]/60 dark:text-[#eaeaea]/60 ml-10">{value}</div>
               </div>
             ))}
           </div>
 
           {/* Sidebar Colors */}
           <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
-            <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-3">Sidebar Colors</h4>
+            <h4 className="font-medium text-[#1e2023] dark:text-[#eaeaea] mb-3">Sidebar Colors</h4>
             {[
               { cssVar: '--sidebar', value: '#26282b', label: 'Sidebar' },
               { cssVar: '--sidebar-foreground', value: '#f4f4f4', label: 'Sidebar Foreground' },
@@ -655,7 +655,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
               { cssVar: '--sidebar-ring', value: '#ff8475', label: 'Sidebar Ring' },
             ].map(({ cssVar, value, label }) => (
               <div key={cssVar} className="space-y-2">
-                <Label className="text-sm text-[#26282b]/80 dark:text-[#eaeaea]/80">{label}</Label>
+                <Label className="text-sm text-[#1e2023]/80 dark:text-[#eaeaea]/80">{label}</Label>
                 <div className="flex items-center space-x-2">
                   <div 
                     className="w-8 h-8 rounded-lg border-2 border-white/30 dark:border-white/20 shadow-md flex-shrink-0"
@@ -664,17 +664,17 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
                   <Input
                     value={cssVar}
                     readOnly
-                    className="flex-1 text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                    className="flex-1 text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#1e2023] dark:text-[#eaeaea]"
                   />
                 </div>
-                <div className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60 ml-10">{value}</div>
+                <div className="text-xs font-mono text-[#1e2023]/60 dark:text-[#eaeaea]/60 ml-10">{value}</div>
               </div>
             ))}
           </div>
 
           {/* Priority Classification Colors */}
           <div className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
-            <h4 className="font-medium text-[#26282b] dark:text-[#eaeaea] mb-3">Priority Classification</h4>
+            <h4 className="font-medium text-[#1e2023] dark:text-[#eaeaea] mb-3">Priority Classification</h4>
             {[
               { cssVar: '--priority-high', value: '#ff7a80', label: 'High Priority', glow: 'rgba(255, 122, 128, 0.4)' },
               { cssVar: '--priority-high-bg', value: 'rgba(255, 122, 128, 0.15)', label: 'High Priority BG', glow: null },
@@ -687,7 +687,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
               { cssVar: '--priority-low-glow', value: 'rgba(184, 232, 231, 0.3)', label: 'Low Priority Glow', glow: null },
             ].map(({ cssVar, value, label, glow }) => (
               <div key={cssVar} className="space-y-2">
-                <Label className="text-sm text-[#26282b]/80 dark:text-[#eaeaea]/80">{label}</Label>
+                <Label className="text-sm text-[#1e2023]/80 dark:text-[#eaeaea]/80">{label}</Label>
                 <div className="flex items-center space-x-2">
                   <div 
                     className="w-8 h-8 rounded-lg border-2 border-white/30 dark:border-white/20 shadow-md flex-shrink-0"
@@ -699,10 +699,10 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
                   <Input
                     value={cssVar}
                     readOnly
-                    className="flex-1 text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                    className="flex-1 text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#1e2023] dark:text-[#eaeaea]"
                   />
                 </div>
-                <div className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60 ml-10">{value}</div>
+                <div className="text-xs font-mono text-[#1e2023]/60 dark:text-[#eaeaea]/60 ml-10">{value}</div>
               </div>
             ))}
           </div>
@@ -715,8 +715,8 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
     <div className="space-y-6 mt-6">
       {/* Font Families */}
       <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
-        <h3 className="text-lg font-semibold mb-4 text-[#26282b] dark:text-[#eaeaea]">Font Families</h3>
-        <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mb-6">
+        <h3 className="text-lg font-semibold mb-4 text-[#1e2023] dark:text-[#eaeaea]">Font Families</h3>
+        <p className="text-sm text-[#1e2023]/70 dark:text-[#eaeaea]/70 mb-6">
           Fire design system typography - Nohemi for headings, Space Grotesk for body text
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -724,30 +724,30 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
           <div className="space-y-4 bg-white/20 dark:bg-white/10 rounded-lg p-6 border border-white/20 dark:border-white/10">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label className="text-base font-semibold text-[#26282b] dark:text-[#eaeaea]">Nohemi</Label>
-                <span className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60">--font-heading</span>
+                <Label className="text-base font-semibold text-[#1e2023] dark:text-[#eaeaea]">Nohemi</Label>
+                <span className="text-xs font-mono text-[#1e2023]/60 dark:text-[#eaeaea]/60">--font-heading</span>
               </div>
               <Input
                 value="'Nohemi', system-ui, -apple-system, sans-serif"
                 readOnly
-                className="text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                className="text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#1e2023] dark:text-[#eaeaea]"
               />
-              <p className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60">
+              <p className="text-xs text-[#1e2023]/60 dark:text-[#eaeaea]/60">
                 Used for headings, titles, and bold text
               </p>
             </div>
             <div className="space-y-3 pt-4 border-t border-white/20 dark:border-white/10">
               <div className="space-y-2">
-                <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
+                <div className="text-2xl font-bold text-[#1e2023] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
                   The Quick Brown Fox
                 </div>
-                <div className="text-lg font-semibold text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
+                <div className="text-lg font-semibold text-[#1e2023] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
                   Jumps Over The Lazy Dog
                 </div>
-                <div className="text-base font-medium text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
+                <div className="text-base font-medium text-[#1e2023] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
                   ABCDEFGHIJKLMNOPQRSTUVWXYZ
                 </div>
-                <div className="text-sm font-normal text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
+                <div className="text-sm font-normal text-[#1e2023] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
                   0123456789 !@#$%^&*()
                 </div>
               </div>
@@ -758,30 +758,30 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
           <div className="space-y-4 bg-white/20 dark:bg-white/10 rounded-lg p-6 border border-white/20 dark:border-white/10">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label className="text-base font-semibold text-[#26282b] dark:text-[#eaeaea]">Space Grotesk</Label>
-                <span className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60">--font-body</span>
+                <Label className="text-base font-semibold text-[#1e2023] dark:text-[#eaeaea]">Space Grotesk</Label>
+                <span className="text-xs font-mono text-[#1e2023]/60 dark:text-[#eaeaea]/60">--font-body</span>
               </div>
               <Input
                 value="'Space Grotesk', system-ui, -apple-system, sans-serif"
                 readOnly
-                className="text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                className="text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#1e2023] dark:text-[#eaeaea]"
               />
-              <p className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60">
+              <p className="text-xs text-[#1e2023]/60 dark:text-[#eaeaea]/60">
                 Used for body text, UI elements, and general content
               </p>
             </div>
             <div className="space-y-3 pt-4 border-t border-white/20 dark:border-white/10">
               <div className="space-y-2">
-                <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-body)' }}>
+                <div className="text-2xl font-bold text-[#1e2023] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-body)' }}>
                   The Quick Brown Fox
                 </div>
-                <div className="text-lg font-semibold text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-body)' }}>
+                <div className="text-lg font-semibold text-[#1e2023] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-body)' }}>
                   Jumps Over The Lazy Dog
                 </div>
-                <div className="text-base font-normal text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-body)' }}>
+                <div className="text-base font-normal text-[#1e2023] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-body)' }}>
                   ABCDEFGHIJKLMNOPQRSTUVWXYZ
                 </div>
-                <div className="text-sm font-normal text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-body)' }}>
+                <div className="text-sm font-normal text-[#1e2023] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-body)' }}>
                   0123456789 !@#$%^&*()
                 </div>
               </div>
@@ -792,20 +792,20 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
 
       {/* Font Sizes */}
       <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
-        <h3 className="text-lg font-semibold mb-4 text-[#26282b] dark:text-[#eaeaea]">Font Sizes</h3>
+        <h3 className="text-lg font-semibold mb-4 text-[#1e2023] dark:text-[#eaeaea]">Font Sizes</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Object.entries(tokens.typography.fontSize).map(([key, value]) => (
             <div key={key} className="space-y-2 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
-              <Label htmlFor={`fontSize-${key}`} className="text-[#26282b] dark:text-[#eaeaea]">{key}</Label>
+              <Label htmlFor={`fontSize-${key}`} className="text-[#1e2023] dark:text-[#eaeaea]">{key}</Label>
               <div className="flex items-center space-x-2">
                 <Input
                   id={`fontSize-${key}`}
                   value={value as string}
                   onChange={(e) => updateTypography(`typography.fontSize.${key}`, e.target.value)}
-                  className="flex-1 bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea] placeholder:text-[#26282b]/50 dark:placeholder:text-[#eaeaea]/50 backdrop-blur-sm"
+                  className="flex-1 bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#1e2023] dark:text-[#eaeaea] placeholder:text-[#1e2023]/50 dark:placeholder:text-[#eaeaea]/50 backdrop-blur-sm"
                 />
                 <div 
-                  className="text-sm px-3 py-2 bg-white/40 dark:bg-white/20 rounded-lg border border-white/30 dark:border-white/20 backdrop-blur-sm text-[#26282b] dark:text-[#eaeaea] font-medium"
+                  className="text-sm px-3 py-2 bg-white/40 dark:bg-white/20 rounded-lg border border-white/30 dark:border-white/20 backdrop-blur-sm text-[#1e2023] dark:text-[#eaeaea] font-medium"
                   style={{ fontSize: value as string }}
                 >
                   Aa
@@ -818,39 +818,39 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
 
       {/* Typography Scale Preview */}
       <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
-        <h3 className="text-lg font-semibold mb-4 text-[#26282b] dark:text-[#eaeaea]">Typography Scale Preview</h3>
+        <h3 className="text-lg font-semibold mb-4 text-[#1e2023] dark:text-[#eaeaea]">Typography Scale Preview</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Headings with Nohemi */}
           <div className="space-y-4 bg-white/20 dark:bg-white/10 rounded-lg p-6 border border-white/20 dark:border-white/10">
-            <h4 className="text-sm font-semibold text-[#26282b] dark:text-[#eaeaea] mb-4">Headings (Nohemi)</h4>
+            <h4 className="text-sm font-semibold text-[#1e2023] dark:text-[#eaeaea] mb-4">Headings (Nohemi)</h4>
             <div className="space-y-4">
               <div>
-                <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-1">Display / 4xl</div>
-                <div className="text-4xl font-black text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
+                <div className="text-xs text-[#1e2023]/60 dark:text-[#eaeaea]/60 mb-1">Display / 4xl</div>
+                <div className="text-4xl font-black text-[#1e2023] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
                   Display Heading
                 </div>
               </div>
               <div>
-                <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-1">Heading 1 / 3xl</div>
-                <div className="text-3xl font-bold text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
+                <div className="text-xs text-[#1e2023]/60 dark:text-[#eaeaea]/60 mb-1">Heading 1 / 3xl</div>
+                <div className="text-3xl font-bold text-[#1e2023] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
                   Heading One
                 </div>
               </div>
               <div>
-                <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-1">Heading 2 / 2xl</div>
-                <div className="text-2xl font-bold text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
+                <div className="text-xs text-[#1e2023]/60 dark:text-[#eaeaea]/60 mb-1">Heading 2 / 2xl</div>
+                <div className="text-2xl font-bold text-[#1e2023] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
                   Heading Two
                 </div>
               </div>
               <div>
-                <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-1">Heading 3 / xl</div>
-                <div className="text-xl font-semibold text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
+                <div className="text-xs text-[#1e2023]/60 dark:text-[#eaeaea]/60 mb-1">Heading 3 / xl</div>
+                <div className="text-xl font-semibold text-[#1e2023] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
                   Heading Three
                 </div>
               </div>
               <div>
-                <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-1">Heading 4 / lg</div>
-                <div className="text-lg font-semibold text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
+                <div className="text-xs text-[#1e2023]/60 dark:text-[#eaeaea]/60 mb-1">Heading 4 / lg</div>
+                <div className="text-lg font-semibold text-[#1e2023] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-heading)' }}>
                   Heading Four
                 </div>
               </div>
@@ -859,29 +859,29 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
 
           {/* Body Text with Space Grotesk */}
           <div className="space-y-4 bg-white/20 dark:bg-white/10 rounded-lg p-6 border border-white/20 dark:border-white/10">
-            <h4 className="text-sm font-semibold text-[#26282b] dark:text-[#eaeaea] mb-4">Body Text (Space Grotesk)</h4>
+            <h4 className="text-sm font-semibold text-[#1e2023] dark:text-[#eaeaea] mb-4">Body Text (Space Grotesk)</h4>
             <div className="space-y-4">
               <div>
-                <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-1">Body Large / lg</div>
-                <div className="text-lg font-normal text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-body)' }}>
+                <div className="text-xs text-[#1e2023]/60 dark:text-[#eaeaea]/60 mb-1">Body Large / lg</div>
+                <div className="text-lg font-normal text-[#1e2023] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-body)' }}>
                   The quick brown fox jumps over the lazy dog. This is body large text.
                 </div>
               </div>
               <div>
-                <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-1">Body / base</div>
-                <div className="text-base font-normal text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-body)' }}>
+                <div className="text-xs text-[#1e2023]/60 dark:text-[#eaeaea]/60 mb-1">Body / base</div>
+                <div className="text-base font-normal text-[#1e2023] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-body)' }}>
                   The quick brown fox jumps over the lazy dog. This is regular body text.
                 </div>
               </div>
               <div>
-                <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-1">Body Small / sm</div>
-                <div className="text-sm font-normal text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-body)' }}>
+                <div className="text-xs text-[#1e2023]/60 dark:text-[#eaeaea]/60 mb-1">Body Small / sm</div>
+                <div className="text-sm font-normal text-[#1e2023] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-body)' }}>
                   The quick brown fox jumps over the lazy dog. This is small body text.
                 </div>
               </div>
               <div>
-                <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-1">Caption / xs</div>
-                <div className="text-xs font-normal text-[#26282b] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-body)' }}>
+                <div className="text-xs text-[#1e2023]/60 dark:text-[#eaeaea]/60 mb-1">Caption / xs</div>
+                <div className="text-xs font-normal text-[#1e2023] dark:text-[#eaeaea]" style={{ fontFamily: 'var(--font-body)' }}>
                   The quick brown fox jumps over the lazy dog. This is caption text.
                 </div>
               </div>
@@ -896,8 +896,8 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
     <div className="space-y-6 mt-6">
       {/* Border Radius - Fire Design System */}
       <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
-        <h3 className="text-lg font-semibold mb-2 text-[#26282b] dark:text-[#eaeaea]">Border Radius</h3>
-        <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mb-6">
+        <h3 className="text-lg font-semibold mb-2 text-[#1e2023] dark:text-[#eaeaea]">Border Radius</h3>
+        <p className="text-sm text-[#1e2023]/70 dark:text-[#eaeaea]/70 mb-6">
           Fire design system border radius values
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -911,8 +911,8 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
           ].map(({ cssVar, value, label, description }) => (
             <div key={cssVar} className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-semibold text-[#26282b] dark:text-[#eaeaea]">{label}</Label>
-                <span className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60">{cssVar}</span>
+                <Label className="text-sm font-semibold text-[#1e2023] dark:text-[#eaeaea]">{label}</Label>
+                <span className="text-xs font-mono text-[#1e2023]/60 dark:text-[#eaeaea]/60">{cssVar}</span>
               </div>
               <div className="flex items-center space-x-3">
                 <div 
@@ -931,11 +931,11 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
                   <Input
                     value={cssVar}
                     readOnly
-                    className="text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                    className="text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#1e2023] dark:text-[#eaeaea]"
                   />
-                  <div className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60">{value}</div>
+                  <div className="text-xs font-mono text-[#1e2023]/60 dark:text-[#eaeaea]/60">{value}</div>
                   {description && (
-                    <div className="text-xs text-[#26282b]/50 dark:text-[#eaeaea]/50">{description}</div>
+                    <div className="text-xs text-[#1e2023]/50 dark:text-[#eaeaea]/50">{description}</div>
                   )}
                 </div>
               </div>
@@ -946,8 +946,8 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
 
       {/* Spacing Scale - Fire Design System */}
       <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
-        <h3 className="text-lg font-semibold mb-2 text-[#26282b] dark:text-[#eaeaea]">Spacing Scale</h3>
-        <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mb-6">
+        <h3 className="text-lg font-semibold mb-2 text-[#1e2023] dark:text-[#eaeaea]">Spacing Scale</h3>
+        <p className="text-sm text-[#1e2023]/70 dark:text-[#eaeaea]/70 mb-6">
           Fire design system spacing values for consistent layout
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -962,10 +962,10 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
             <div key={cssVar} className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-sm font-semibold text-[#26282b] dark:text-[#eaeaea]">{label}</Label>
-                  <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mt-0.5">{usage}</div>
+                  <Label className="text-sm font-semibold text-[#1e2023] dark:text-[#eaeaea]">{label}</Label>
+                  <div className="text-xs text-[#1e2023]/60 dark:text-[#eaeaea]/60 mt-0.5">{usage}</div>
                 </div>
-                <span className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60">{cssVar}</span>
+                <span className="text-xs font-mono text-[#1e2023]/60 dark:text-[#eaeaea]/60">{cssVar}</span>
               </div>
               <div className="space-y-2">
                 <div className="flex items-center space-x-3">
@@ -979,9 +979,9 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
                     <Input
                       value={cssVar}
                       readOnly
-                      className="text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                      className="text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#1e2023] dark:text-[#eaeaea]"
                     />
-                    <div className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60">{value} ({pixels})</div>
+                    <div className="text-xs font-mono text-[#1e2023]/60 dark:text-[#eaeaea]/60">{value} ({pixels})</div>
                   </div>
                 </div>
               </div>
@@ -999,7 +999,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
           <h2 className="text-2xl font-bold bg-gradient-to-r from-[#26282b] to-[#26282b]/80 dark:from-[#eaeaea] dark:to-[#eaeaea]/80 bg-clip-text text-transparent">
             Design Tokens
           </h2>
-          <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mt-1">
+          <p className="text-sm text-[#1e2023]/70 dark:text-[#eaeaea]/70 mt-1">
             Edit design tokens and stage changes before committing
           </p>
         </div>
@@ -1029,7 +1029,7 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
 
       {hasChanges && (
         <div className="bg-[#ff8475]/10 border border-[#ff8475]/30 rounded-lg p-3 backdrop-blur-sm">
-          <p className="text-sm text-[#26282b] dark:text-[#eaeaea]">
+          <p className="text-sm text-[#1e2023] dark:text-[#eaeaea]">
             <span className="font-semibold">⚠️ Unsaved changes:</span> You have unsaved changes. Click "Stage Changes" to save them, or "Reset" to discard.
           </p>
         </div>
@@ -1080,8 +1080,8 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
           <div className="space-y-6">
             {/* Standard Shadows - Fire Design System */}
             <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
-              <h3 className="text-lg font-semibold mb-2 text-[#26282b] dark:text-[#eaeaea]">Standard Shadows</h3>
-              <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mb-6">
+              <h3 className="text-lg font-semibold mb-2 text-[#1e2023] dark:text-[#eaeaea]">Standard Shadows</h3>
+              <p className="text-sm text-[#1e2023]/70 dark:text-[#eaeaea]/70 mb-6">
                 Fire design system standard elevation shadows for general use
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -1094,20 +1094,20 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
                 ].map(({ cssVar, value, label, usage }) => (
                   <div key={cssVar} className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-medium text-sm text-[#26282b] dark:text-[#eaeaea]">{label}</h4>
-                      <span className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60">{cssVar}</span>
+                      <h4 className="font-medium text-sm text-[#1e2023] dark:text-[#eaeaea]">{label}</h4>
+                      <span className="text-xs font-mono text-[#1e2023]/60 dark:text-[#eaeaea]/60">{cssVar}</span>
                     </div>
                     <div 
                       className="w-full h-20 rounded-lg border border-white/20 bg-white/30 dark:bg-white/10 mx-auto mb-2"
                       style={{ boxShadow: value }}
                     />
-                    <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-1">{usage}</div>
+                    <div className="text-xs text-[#1e2023]/60 dark:text-[#eaeaea]/60 mb-1">{usage}</div>
                     <Input
                       value={cssVar}
                       readOnly
-                      className="text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                      className="text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#1e2023] dark:text-[#eaeaea]"
                     />
-                    <div className="text-xs font-mono text-[#26282b]/50 dark:text-[#eaeaea]/50 break-all">{value}</div>
+                    <div className="text-xs font-mono text-[#1e2023]/50 dark:text-[#eaeaea]/50 break-all">{value}</div>
                   </div>
                 ))}
               </div>
@@ -1115,8 +1115,8 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
 
             {/* Neumorphic Shadows - Fire Design System */}
             <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
-              <h3 className="text-lg font-semibold mb-2 text-[#26282b] dark:text-[#eaeaea]">Neumorphic Shadows</h3>
-              <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mb-6">
+              <h3 className="text-lg font-semibold mb-2 text-[#1e2023] dark:text-[#eaeaea]">Neumorphic Shadows</h3>
+              <p className="text-sm text-[#1e2023]/70 dark:text-[#eaeaea]/70 mb-6">
                 Fire design system neumorphic shadows for soft, tactile depth effects
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1152,20 +1152,20 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
                 ].map(({ cssVar, value, label, usage, computed }) => (
                   <div key={cssVar} className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-medium text-sm text-[#26282b] dark:text-[#eaeaea]">{label}</h4>
-                      <span className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60">{cssVar}</span>
+                      <h4 className="font-medium text-sm text-[#1e2023] dark:text-[#eaeaea]">{label}</h4>
+                      <span className="text-xs font-mono text-[#1e2023]/60 dark:text-[#eaeaea]/60">{cssVar}</span>
                     </div>
                     <div 
                       className="w-full h-20 rounded-lg border border-white/20 bg-white/30 dark:bg-white/10 mx-auto mb-2"
                       style={{ boxShadow: computed }}
                     />
-                    <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-1">{usage}</div>
+                    <div className="text-xs text-[#1e2023]/60 dark:text-[#eaeaea]/60 mb-1">{usage}</div>
                     <Input
                       value={cssVar}
                       readOnly
-                      className="text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                      className="text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#1e2023] dark:text-[#eaeaea]"
                     />
-                    <div className="text-xs font-mono text-[#26282b]/50 dark:text-[#eaeaea]/50 break-all">{value}</div>
+                    <div className="text-xs font-mono text-[#1e2023]/50 dark:text-[#eaeaea]/50 break-all">{value}</div>
                   </div>
                 ))}
               </div>
@@ -1173,8 +1173,8 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
 
             {/* Glass Effect - Fire Design System */}
             <div className="bg-white/25 dark:bg-[#2f3235]/25 backdrop-blur-md rounded-xl p-6 border border-white/20 dark:border-white/10 shadow-xl">
-              <h3 className="text-lg font-semibold mb-2 text-[#26282b] dark:text-[#eaeaea]">Glass Effect</h3>
-              <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mb-6">
+              <h3 className="text-lg font-semibold mb-2 text-[#1e2023] dark:text-[#eaeaea]">Glass Effect</h3>
+              <p className="text-sm text-[#1e2023]/70 dark:text-[#eaeaea]/70 mb-6">
                 Fire design system glass morphism effects for modern UI elements
               </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1203,8 +1203,8 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
                 ].map(({ cssVar, value, label, usage, preview }) => (
                   <div key={cssVar} className="space-y-3 bg-white/20 dark:bg-white/10 rounded-lg p-4 border border-white/20 dark:border-white/10">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-medium text-sm text-[#26282b] dark:text-[#eaeaea]">{label}</h4>
-                      <span className="text-xs font-mono text-[#26282b]/60 dark:text-[#eaeaea]/60">{cssVar}</span>
+                      <h4 className="font-medium text-sm text-[#1e2023] dark:text-[#eaeaea]">{label}</h4>
+                      <span className="text-xs font-mono text-[#1e2023]/60 dark:text-[#eaeaea]/60">{cssVar}</span>
                     </div>
                     {preview && (
                       <div 
@@ -1216,16 +1216,16 @@ const TokenEditor = ({ tokens, onUpdate }: { tokens: any, onUpdate: (tokens: any
                           borderWidth: '1px'
                         }}
                       >
-                        <span className="text-xs text-[#26282b] font-medium">Glass Preview</span>
+                        <span className="text-xs text-[#1e2023] font-medium">Glass Preview</span>
                       </div>
                     )}
-                    <div className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60 mb-1">{usage}</div>
+                    <div className="text-xs text-[#1e2023]/60 dark:text-[#eaeaea]/60 mb-1">{usage}</div>
                     <Input
                       value={cssVar}
                       readOnly
-                      className="text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#26282b] dark:text-[#eaeaea]"
+                      className="text-xs font-mono bg-white/30 dark:bg-white/10 border-white/30 dark:border-white/20 text-[#1e2023] dark:text-[#eaeaea]"
                     />
-                    <div className="text-xs font-mono text-[#26282b]/50 dark:text-[#eaeaea]/50 break-all">{value}</div>
+                    <div className="text-xs font-mono text-[#1e2023]/50 dark:text-[#eaeaea]/50 break-all">{value}</div>
                   </div>
                 ))}
               </div>
@@ -1276,7 +1276,7 @@ const LivePreview = ({ tokens }: { tokens: any }) => {
           <h2 className="text-2xl font-bold bg-gradient-to-r from-[#26282b] to-[#26282b]/80 dark:from-[#eaeaea] dark:to-[#eaeaea]/80 bg-clip-text text-transparent">
             Live Preview
           </h2>
-          <p className="text-sm text-[#26282b]/70 dark:text-[#eaeaea]/70 mt-1">
+          <p className="text-sm text-[#1e2023]/70 dark:text-[#eaeaea]/70 mt-1">
             See how your design token changes affect UI components in real-time
           </p>
         </div>
@@ -1483,7 +1483,7 @@ const LivePreview = ({ tokens }: { tokens: any }) => {
 
             {/* Viewport Info */}
             <div className="mt-4 text-center">
-              <p className="text-xs text-[#26282b]/60 dark:text-[#eaeaea]/60">
+              <p className="text-xs text-[#1e2023]/60 dark:text-[#eaeaea]/60">
                 Viewport: {viewportOptions.find(v => v.value === viewport)?.label} ({viewportOptions.find(v => v.value === viewport)?.width}) • 
                 Theme: {previewTheme === 'light' ? 'Light' : 'Dark'}
               </p>

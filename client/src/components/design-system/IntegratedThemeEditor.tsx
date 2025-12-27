@@ -144,13 +144,13 @@ export function IntegratedThemeEditor({ onThemeSaved }: IntegratedThemeEditorPro
       // Validate that we have valid palette keys
       // Use hardcoded palette to ensure consistent validation
       const HARDCODED_PALETTE = {
-        charcoal: "#26282b",
+        charcoal: "#1e2023", // 20% darker
         ice: "#e8fffe",
         lime: "#f1fec9",
         coral: "#ff8475",
         silver: "#eaeaea",
         cloud: "#f4f4f4",
-        shadow: "#343434",
+        shadow: "#292929", // 20% darker
         aqua: "#a5c8ca",
       } as const;
       

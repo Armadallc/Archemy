@@ -363,7 +363,7 @@ export default function ChatWidget() {
           {/* Discussions Sidebar */}
           <div className="w-80 border-r flex flex-col bg-muted/30 min-h-0">
             {/* Search */}
-            <div className="px-4 pb-4 pt-4 border-b">
+            <div className="px-6 pb-6 pt-6 border-b">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -379,8 +379,8 @@ export default function ChatWidget() {
             {/* Discussions List */}
             <div className="flex-1 overflow-y-auto min-h-0">
               {discussions.length === 0 ? (
-                <div className="text-center py-8 px-4 text-sm text-muted-foreground">
-                  <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <div className="text-center py-8 px-6 text-sm text-muted-foreground">
+                  <MessageSquare className="h-12 w-12 mx-auto mb-6 opacity-50" />
                   <p>No conversations yet</p>
                   <p className="text-xs mt-2">Start a new chat to get started</p>
                 </div>
@@ -612,7 +612,7 @@ export default function ChatWidget() {
             </div>
 
             {/* New Chat Button at Bottom (like reference) */}
-            <div className="flex-shrink-0 p-4 border-t" style={{ height: '93px' }}>
+            <div className="flex-shrink-0 p-6 border-t h-[93px] flex items-center">
               <Dialog open={isNewChatDialogOpen} onOpenChange={setIsNewChatDialogOpen}>
                 <DialogTrigger asChild>
                   <Button className="w-full" size="sm">
@@ -627,7 +627,7 @@ export default function ChatWidget() {
                       Start a new conversation with one or more team members
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="space-y-4 py-4">
+                  <div className="space-y-6 py-6">
                     <div>
                       <Label htmlFor="chat-title">Chat Title (Optional)</Label>
                       <Input
@@ -680,7 +680,7 @@ export default function ChatWidget() {
             {selectedDiscussionId ? (
               <>
                 {/* Discussion Header */}
-                <div className="flex-shrink-0 p-4 border-b bg-background">
+                <div className="flex-shrink-0 p-6 border-b bg-background">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10">
                       {selectedDiscussion?.discussion_type === 'personal' && selectedDiscussion?.otherParticipant ? (
@@ -715,7 +715,7 @@ export default function ChatWidget() {
                 {/* Messages - Scrollable */}
                 <div 
                   ref={messagesContainerRef}
-                  className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0"
+                  className="flex-1 overflow-y-auto p-6 space-y-6 min-h-0"
                 >
                   {messagesLoading ? (
                     <div className="flex items-center justify-center h-32">
@@ -723,7 +723,7 @@ export default function ChatWidget() {
                     </div>
                   ) :                     messages.length === 0 ? (
                     <div className="text-center py-12 text-sm text-muted-foreground">
-                      <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <MessageSquare className="h-12 w-12 mx-auto mb-6 opacity-50" />
                       <p>No messages yet</p>
                       <p className="text-xs mt-2">Start the conversation!</p>
                     </div>
@@ -897,7 +897,7 @@ export default function ChatWidget() {
                 </div>
 
                 {/* Message Input */}
-                <div className="flex-shrink-0 p-4 border-t bg-background">
+                <div className="flex-shrink-0 p-6 border-t bg-background h-[93px] flex flex-col justify-center overflow-hidden">
                   {/* Reply preview */}
                   {replyingTo && (
                     <div className="mb-2 p-2 bg-muted rounded-lg border-l-2 border-primary flex items-start justify-between">
@@ -915,7 +915,7 @@ export default function ChatWidget() {
                       </button>
                     </div>
                   )}
-                  <form onSubmit={handleSendMessage} className="flex gap-2">
+                  <form onSubmit={handleSendMessage} className="flex gap-2 items-center">
                     <Textarea
                       ref={messageInputRef}
                       value={messageInput}
@@ -951,7 +951,7 @@ export default function ChatWidget() {
             ) : (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center text-muted-foreground">
-                  <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <MessageSquare className="h-12 w-12 mx-auto mb-6 opacity-50" />
                   <p>Select a conversation to start chatting</p>
                 </div>
               </div>

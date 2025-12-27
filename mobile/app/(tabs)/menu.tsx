@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Platform,
   Linking,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -18,6 +19,10 @@ import { emergencyService } from '../../services/emergency';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { navigationPreferences, NavigationApp } from '../../services/navigationPreferences';
 import { useNotifications } from '../../contexts/NotificationContext';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '../../services/api';
+import { locationTrackingService } from '../../services/locationTracking';
+import NeumorphicView from '../../components/NeumorphicView';
 
 export default function MenuScreen() {
   const { user, logout } = useAuth();
@@ -26,6 +31,7 @@ export default function MenuScreen() {
   const [preferredNavApp, setPreferredNavApp] = useState<NavigationApp>('default');
   const [showNavAppPicker, setShowNavAppPicker] = useState(false);
   const { unreadCount } = useNotifications();
+  const queryClient = useQueryClient();
 
   // Load navigation preference on mount
   useEffect(() => {
@@ -37,6 +43,54 @@ export default function MenuScreen() {
   }, []);
 
   const handleLogout = async () => {
+    // For drivers, check for active trips before allowing logout
+    if (user?.role === 'driver') {
+      try {
+        const trips = await apiClient.getDriverTrips();
+        // Check for trips that are truly active (started but not ended)
+        const activeTrips = trips?.filter((t: any) => {
+          const isInProgressStatus = t.status === 'in_progress';
+          const hasStarted = t.actual_pickup_time != null && t.actual_pickup_time !== '';
+          const hasNotEnded = t.actual_dropoff_time == null || t.actual_dropoff_time === '';
+          return isInProgressStatus && hasStarted && hasNotEnded;
+        }) || [];
+        
+        if (activeTrips.length > 0) {
+          // Build detailed message with trip information
+          const tripCount = activeTrips.length;
+          const tripList = activeTrips.map((trip: any, idx: number) => {
+            const tripType = trip.trip_type === 'round_trip' ? 'Round Trip' : 'One Way';
+            return `${idx + 1}. ${trip.client_name || 'Unknown Client'} (${tripType})\n   Pickup: ${trip.pickup_address || 'N/A'}\n   Dropoff: ${trip.dropoff_address || 'N/A'}`;
+          }).join('\n\n');
+          
+          const message = `You cannot log out while you have ${tripCount} active trip${tripCount > 1 ? 's' : ''}.\n\n` +
+            `Active trips:\n${tripList}\n\n` +
+            `Please complete or cancel ${tripCount > 1 ? 'these trips' : 'this trip'} before logging out.`;
+          
+          if (Platform.OS === 'web') {
+            const confirmed = typeof window !== 'undefined' && window.confirm(message + '\n\nDo you want to view your trips?');
+            if (confirmed) {
+              router.push('/(tabs)/dashboard');
+            }
+          } else {
+            Alert.alert(
+              'Cannot Log Out',
+              message,
+              [
+                { text: 'View Trips', onPress: () => router.push('/(tabs)/dashboard') },
+                { text: 'OK', style: 'cancel' }
+              ]
+            );
+          }
+          return; // Block logout
+        }
+      } catch (error) {
+        console.error('❌ [Menu] Error checking for active trips before logout:', error);
+        // Continue with logout if check fails - don't block user
+      }
+    }
+    
+    // Proceed with logout if no active trips or check failed
     if (Platform.OS === 'web') {
       // Use window.confirm for web as Alert.alert may not work properly
       const confirmed = typeof window !== 'undefined' && window.confirm('Are you sure you want to logout?');
@@ -106,25 +160,29 @@ export default function MenuScreen() {
   };
 
   const handleCallSupport = () => {
-    Linking.openURL('tel:+1234567890');
+    Linking.openURL('tel:+17209753696');
   };
 
   const handleEmailSupport = () => {
-    Linking.openURL('mailto:support@monarch.com');
+    Linking.openURL('mailto:Seth@Rowandrive.com');
   };
+
+  // Detect dark theme for neumorphic styling
+  const isDark = theme.mode === 'dark' || 
+    (theme.mode === 'system' && theme.colors.background === '#292929');
 
   const getActualThemeMode = () => {
     if (themeState.mode === 'system') {
       return Platform.OS === 'web' 
         ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-        : (themeState.mode === 'dark' ? 'dark' : 'light');
+        : (isDark ? 'dark' : 'light');
     }
     return themeState.mode;
   };
 
   const isDarkMode = getActualThemeMode() === 'dark';
-  const actionColor = isDarkMode ? theme.colors.primary : theme.colors.destructive;
-  const actionForeground = isDarkMode ? theme.colors.primaryForeground : theme.colors.destructiveForeground;
+  const actionColor = isDarkMode ? theme.colors.primary : theme.colors.error;
+  const actionForeground = isDarkMode ? theme.colors.primaryForeground : '#fff';
 
   const styles = StyleSheet.create({
     container: {
@@ -144,16 +202,14 @@ export default function MenuScreen() {
       color: theme.colors.foreground,
       marginBottom: 12,
       paddingHorizontal: 4,
+      fontSize: 16,
     },
     menuItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: theme.colors.card,
-      borderRadius: 12,
       padding: 16,
       marginBottom: 8,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
+      // Remove border, use neumorphic shadows instead
     },
     menuItemIcon: {
       marginRight: 12,
@@ -176,19 +232,23 @@ export default function MenuScreen() {
     },
     divider: {
       height: 1,
-      backgroundColor: theme.colors.border,
+      backgroundColor: 'transparent', // Remove visible divider, use spacing instead
       marginVertical: 16,
     },
     themeToggle: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      backgroundColor: theme.colors.card,
-      borderRadius: 12,
-      padding: 16,
+      justifyContent: 'center',
+      padding: 12,
+      width: 56,
+      height: 56,
+      // Remove border, use neumorphic shadows instead
+    },
+    logoutThemeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
       marginBottom: 8,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
     },
     themeToggleContent: {
       flexDirection: 'row',
@@ -218,11 +278,11 @@ export default function MenuScreen() {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: theme.colors.card,
-      borderRadius: 12,
-      padding: 16,
-      marginBottom: 8,
-      borderWidth: 1,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      flex: 1,
+      height: 56, // Match theme toggle height
+      // Remove border, use neumorphic shadows instead
     },
     logoutButtonText: {
       ...theme.typography.body,
@@ -233,6 +293,10 @@ export default function MenuScreen() {
       flex: 1,
       backgroundColor: 'rgba(0, 0, 0, 0.5)',
       justifyContent: 'flex-end',
+      ...(Platform.OS === 'web' && {
+        backdropFilter: 'blur(3px)',
+        WebkitBackdropFilter: 'blur(3px)',
+      } as any),
     },
     pickerContent: {
       backgroundColor: theme.colors.card,
@@ -280,253 +344,342 @@ export default function MenuScreen() {
       fontWeight: '700',
       fontSize: 11,
     },
+    header: {
+      backgroundColor: theme.colors.card,
+      padding: 16,
+      paddingBottom: 16,
+      zIndex: 10,
+      // Remove border, use neumorphic shadows instead
+    },
+    headerTop: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    headerTitle: {
+      ...theme.typography.h2,
+      color: theme.colors.foreground,
+      fontWeight: '600',
+    },
   });
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      {/* Header */}
+      <NeumorphicView
+        style={isDark ? 'debossed' : 'embossed'}
+        intensity="medium"
+        borderRadius={0}
+        containerStyle={StyleSheet.flatten([styles.header, { paddingTop: insets.top + 16 }])}
+        contentStyle={{ overflow: 'visible' }}
+      >
+        <View style={styles.headerTop}>
+          <Text style={styles.headerTitle}>Menu</Text>
+        </View>
+      </NeumorphicView>
+      <ScrollView 
+        style={styles.content} 
+        contentContainerStyle={{ paddingHorizontal: 20 }}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Profile Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Profile</Text>
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => router.push('/(tabs)/profile')}
-            activeOpacity={0.7}
+          <NeumorphicView
+            style={isDark ? 'debossed' : 'embossed'}
+            intensity="subtle"
+            borderRadius={12}
+            containerStyle={styles.menuItem}
           >
-            <Ionicons
-              name="person"
-              size={24}
-              color={theme.colors.primary}
-              style={styles.menuItemIcon}
-            />
-            <View style={styles.menuItemContent}>
-              <Text style={styles.menuItemTitle}>View Profile</Text>
-              <Text style={styles.menuItemSubtitle}>
-                {user?.name || 'Driver'} • {user?.email}
-              </Text>
-            </View>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={theme.colors.mutedForeground}
-              style={styles.menuItemChevron}
-            />
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => router.push('/(tabs)/notifications')}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name="notifications"
-              size={24}
-              color={theme.colors.primary}
-              style={styles.menuItemIcon}
-            />
-            <View style={styles.menuItemContent}>
-              <Text style={styles.menuItemTitle}>View Notifications</Text>
-              <Text style={styles.menuItemSubtitle}>
-                {unreadCount > 0 
-                  ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}`
-                  : 'No new notifications'}
-              </Text>
-            </View>
-            {unreadCount > 0 && (
-              <View style={[styles.unreadBadge, { backgroundColor: theme.colors.error }]}>
-                <Text style={styles.unreadBadgeText}>
-                  {unreadCount > 99 ? '99+' : unreadCount.toString()}
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/profile')}
+              activeOpacity={0.7}
+              style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}
+            >
+              <Ionicons
+                name="person"
+                size={24}
+                color={theme.colors.primary}
+                style={styles.menuItemIcon}
+              />
+              <View style={styles.menuItemContent}>
+                <Text style={styles.menuItemTitle}>View Profile</Text>
+                <Text style={styles.menuItemSubtitle}>
+                  {user?.name || 'Driver'} • {user?.email}
                 </Text>
               </View>
-            )}
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={theme.colors.mutedForeground}
-              style={styles.menuItemChevron}
-            />
-          </TouchableOpacity>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={theme.colors.mutedForeground}
+                style={styles.menuItemChevron}
+              />
+            </TouchableOpacity>
+          </NeumorphicView>
+          
+          <NeumorphicView
+            style={isDark ? 'debossed' : 'embossed'}
+            intensity="subtle"
+            borderRadius={12}
+            containerStyle={styles.menuItem}
+          >
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/notifications')}
+              activeOpacity={0.7}
+              style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}
+            >
+              <Ionicons
+                name="notifications"
+                size={24}
+                color={theme.colors.primary}
+                style={styles.menuItemIcon}
+              />
+              <View style={styles.menuItemContent}>
+                <Text style={styles.menuItemTitle}>View Notifications</Text>
+                <Text style={styles.menuItemSubtitle}>
+                  {unreadCount > 0 
+                    ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}`
+                    : 'No new notifications'}
+                </Text>
+              </View>
+              {unreadCount > 0 && (
+                <View style={[styles.unreadBadge, { backgroundColor: theme.colors.error }]}>
+                  <Text style={styles.unreadBadgeText}>
+                    {unreadCount > 99 ? '99+' : unreadCount.toString()}
+                  </Text>
+                </View>
+              )}
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={theme.colors.mutedForeground}
+                style={styles.menuItemChevron}
+              />
+            </TouchableOpacity>
+          </NeumorphicView>
         </View>
 
         {/* Settings Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Settings</Text>
           
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => setShowNavAppPicker(true)}
-            activeOpacity={0.7}
+          <NeumorphicView
+            style={isDark ? 'debossed' : 'embossed'}
+            intensity="subtle"
+            borderRadius={12}
+            containerStyle={styles.menuItem}
           >
-            <Ionicons
-              name="navigate"
-              size={24}
-              color={theme.colors.primary}
-              style={styles.menuItemIcon}
-            />
-            <View style={styles.menuItemContent}>
-              <Text style={styles.menuItemTitle}>Navigation App</Text>
-              <Text style={styles.menuItemSubtitle}>
-                {navigationPreferences.getAvailableApps().find(a => a.value === preferredNavApp)?.label || 'Default'}
-              </Text>
-            </View>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={theme.colors.mutedForeground}
-              style={styles.menuItemChevron}
-            />
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setShowNavAppPicker(true)}
+              activeOpacity={0.7}
+              style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}
+            >
+              <Ionicons
+                name="navigate"
+                size={24}
+                color={theme.colors.primary}
+                style={styles.menuItemIcon}
+              />
+              <View style={styles.menuItemContent}>
+                <Text style={styles.menuItemTitle}>Navigation App</Text>
+                <Text style={styles.menuItemSubtitle}>
+                  {navigationPreferences.getAvailableApps().find(a => a.value === preferredNavApp)?.label || 'Default'}
+                </Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={theme.colors.mutedForeground}
+                style={styles.menuItemChevron}
+              />
+            </TouchableOpacity>
+          </NeumorphicView>
 
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => {
-              Alert.alert('Privacy & Security', 'Privacy and security settings coming soon.');
-            }}
-            activeOpacity={0.7}
+          <NeumorphicView
+            style={isDark ? 'debossed' : 'embossed'}
+            intensity="subtle"
+            borderRadius={12}
+            containerStyle={styles.menuItem}
           >
-            <Ionicons
-              name="shield-checkmark"
-              size={24}
-              color={theme.colors.primary}
-              style={styles.menuItemIcon}
-            />
-            <View style={styles.menuItemContent}>
-              <Text style={styles.menuItemTitle}>Privacy & Security</Text>
-              <Text style={styles.menuItemSubtitle}>Manage your privacy settings</Text>
-            </View>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={theme.colors.mutedForeground}
-              style={styles.menuItemChevron}
-            />
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/privacy-security')}
+              activeOpacity={0.7}
+              style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}
+            >
+              <Ionicons
+                name="shield-checkmark"
+                size={24}
+                color={theme.colors.primary}
+                style={styles.menuItemIcon}
+              />
+              <View style={styles.menuItemContent}>
+                <Text style={styles.menuItemTitle}>Privacy & Security</Text>
+                <Text style={styles.menuItemSubtitle}>Manage your privacy settings</Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={theme.colors.mutedForeground}
+                style={styles.menuItemChevron}
+              />
+            </TouchableOpacity>
+          </NeumorphicView>
 
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => {
-              Alert.alert(
-                'Help & FAQ',
-                'Frequently asked questions and help resources coming soon.',
-                [{ text: 'OK', style: 'default' }]
-              );
-            }}
-            activeOpacity={0.7}
+          <NeumorphicView
+            style={isDark ? 'debossed' : 'embossed'}
+            intensity="subtle"
+            borderRadius={12}
+            containerStyle={styles.menuItem}
           >
-            <Ionicons
-              name="help-circle"
-              size={24}
-              color={theme.colors.primary}
-              style={styles.menuItemIcon}
-            />
-            <View style={styles.menuItemContent}>
-              <Text style={styles.menuItemTitle}>Help & FAQ</Text>
-              <Text style={styles.menuItemSubtitle}>Get help and answers to questions</Text>
-            </View>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={theme.colors.mutedForeground}
-              style={styles.menuItemChevron}
-            />
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/help-faq')}
+              activeOpacity={0.7}
+              style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}
+            >
+              <Ionicons
+                name="help-circle"
+                size={24}
+                color={theme.colors.primary}
+                style={styles.menuItemIcon}
+              />
+              <View style={styles.menuItemContent}>
+                <Text style={styles.menuItemTitle}>Help & FAQ</Text>
+                <Text style={styles.menuItemSubtitle}>Get help and answers to questions</Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={theme.colors.mutedForeground}
+                style={styles.menuItemChevron}
+              />
+            </TouchableOpacity>
+          </NeumorphicView>
         </View>
 
         {/* Support Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Support</Text>
           
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={handleCallSupport}
-            activeOpacity={0.7}
+          <NeumorphicView
+            style={isDark ? 'debossed' : 'embossed'}
+            intensity="subtle"
+            borderRadius={12}
+            containerStyle={styles.menuItem}
           >
-            <Ionicons
-              name="call"
-              size={24}
-              color={theme.colors.primary}
-              style={styles.menuItemIcon}
-            />
-            <View style={styles.menuItemContent}>
-              <Text style={styles.menuItemTitle}>Call Support</Text>
-              <Text style={styles.menuItemSubtitle}>Contact support by phone</Text>
-            </View>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={theme.colors.mutedForeground}
-              style={styles.menuItemChevron}
-            />
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleCallSupport}
+              activeOpacity={0.7}
+              style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}
+            >
+              <Ionicons
+                name="call"
+                size={24}
+                color={theme.colors.primary}
+                style={styles.menuItemIcon}
+              />
+              <View style={styles.menuItemContent}>
+                <Text style={styles.menuItemTitle}>Call Support</Text>
+                <Text style={styles.menuItemSubtitle}>Contact support by phone</Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={theme.colors.mutedForeground}
+                style={styles.menuItemChevron}
+              />
+            </TouchableOpacity>
+          </NeumorphicView>
 
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={handleEmailSupport}
-            activeOpacity={0.7}
+          <NeumorphicView
+            style={isDark ? 'debossed' : 'embossed'}
+            intensity="subtle"
+            borderRadius={12}
+            containerStyle={styles.menuItem}
           >
-            <Ionicons
-              name="mail"
-              size={24}
-              color={theme.colors.primary}
-              style={styles.menuItemIcon}
-            />
-            <View style={styles.menuItemContent}>
-              <Text style={styles.menuItemTitle}>Email Support</Text>
-              <Text style={styles.menuItemSubtitle}>Send an email to support</Text>
-            </View>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={theme.colors.mutedForeground}
-              style={styles.menuItemChevron}
-            />
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleEmailSupport}
+              activeOpacity={0.7}
+              style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}
+            >
+              <Ionicons
+                name="mail"
+                size={24}
+                color={theme.colors.primary}
+                style={styles.menuItemIcon}
+              />
+              <View style={styles.menuItemContent}>
+                <Text style={styles.menuItemTitle}>Email Support</Text>
+                <Text style={styles.menuItemSubtitle}>Send an email to support</Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={theme.colors.mutedForeground}
+                style={styles.menuItemChevron}
+              />
+            </TouchableOpacity>
+          </NeumorphicView>
         </View>
 
         <View style={styles.divider} />
 
-        {/* Logout */}
-        <TouchableOpacity
-          style={[styles.logoutButton, { borderColor: actionColor }]}
-          onPress={handleLogout}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="log-out-outline" size={20} color={actionColor} />
-          <Text style={[styles.logoutButtonText, { color: actionColor }]}>Logout</Text>
-        </TouchableOpacity>
+        {/* Logout and Theme Toggle Row */}
+        <View style={styles.logoutThemeRow}>
+          {/* Logout */}
+          <NeumorphicView
+            style={isDark ? 'debossed' : 'embossed'}
+            intensity="subtle"
+            borderRadius={12}
+            containerStyle={styles.logoutButton}
+          >
+            <TouchableOpacity
+              onPress={handleLogout}
+              activeOpacity={0.7}
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%' }}
+            >
+              <Ionicons name="log-out-outline" size={20} color={actionColor} />
+              <Text style={[styles.logoutButtonText, { color: actionColor }]}>Logout</Text>
+            </TouchableOpacity>
+          </NeumorphicView>
 
-        {/* Theme Toggle */}
-        <TouchableOpacity
-          style={styles.themeToggle}
-          onPress={toggleTheme}
-          activeOpacity={0.7}
-        >
-          <View style={styles.themeToggleContent}>
-            <Ionicons
-              name={getActualThemeMode() === 'dark' ? 'moon' : 'sunny'}
-              size={24}
-              color={theme.colors.primary}
-            />
-            <Text style={styles.themeToggleText}>
-              {getActualThemeMode() === 'dark' ? 'Dark Mode' : 'Light Mode'}
-            </Text>
-          </View>
-          <Ionicons
-            name="chevron-forward"
-            size={20}
-            color={theme.colors.mutedForeground}
-          />
-        </TouchableOpacity>
+          {/* Theme Toggle - Icon Only */}
+          <NeumorphicView
+            style={isDark ? 'debossed' : 'embossed'}
+            intensity="subtle"
+            borderRadius={12}
+            containerStyle={styles.themeToggle}
+          >
+            <TouchableOpacity
+              onPress={toggleTheme}
+              activeOpacity={0.7}
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}
+            >
+              <Ionicons
+                name={getActualThemeMode() === 'dark' ? 'moon' : 'sunny'}
+                size={24}
+                color={theme.colors.primary}
+              />
+            </TouchableOpacity>
+          </NeumorphicView>
+        </View>
 
         {/* Emergency Call Button */}
-        <TouchableOpacity
-          style={[styles.emergencyButton, { backgroundColor: actionColor }]}
-          onPress={handleEmergencyCall}
-          activeOpacity={0.8}
+        <NeumorphicView
+          style={isDark ? 'embossed' : 'debossed'}
+          intensity="medium"
+          borderRadius={12}
+          containerStyle={styles.emergencyButton}
+          backgroundColor={actionColor}
         >
-          <Ionicons name="warning" size={24} color={actionForeground} />
-          <Text style={[styles.emergencyButtonText, { color: actionForeground }]}>EMERGENCY CALL</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleEmergencyCall}
+            activeOpacity={0.8}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%' }}
+          >
+            <Ionicons name="warning" size={24} color={actionForeground} />
+            <Text style={[styles.emergencyButtonText, { color: actionForeground }]}>EMERGENCY CALL</Text>
+          </TouchableOpacity>
+        </NeumorphicView>
       </ScrollView>
 
       {/* Navigation App Picker Modal */}

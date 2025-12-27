@@ -113,6 +113,14 @@ export function useActivityLog(options: UseActivityLogOptions = {}) {
     enabled: enabled && isAuthenticated && !!user?.user_id,
     staleTime: 30000, // 30 seconds
     gcTime: 300000, // 5 minutes
+    retry: (failureCount, error) => {
+      // Retry on 401 errors up to 2 times with delay
+      if (error instanceof Error && error.message.includes('401')) {
+        return failureCount < 2;
+      }
+      return false; // Don't retry other errors
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000), // Exponential backoff
   });
 }
 

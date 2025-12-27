@@ -70,7 +70,11 @@ export const corporateClients = pgTable("corporate_clients", {
   id: varchar("id", { length: 50 }).primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
-  address: text("address"),
+  address: text("address"), // Legacy field - kept for backward compatibility
+  street_address: text("street_address"),
+  city: text("city"),
+  state: varchar("state", { length: 2 }),
+  zip_code: varchar("zip_code", { length: 5 }),
   phone: varchar("phone", { length: 20 }),
   email: varchar("email", { length: 255 }),
   website: varchar("website", { length: 255 }),
@@ -87,7 +91,11 @@ export const programs = pgTable("programs", {
   short_name: varchar("short_name", { length: 100 }),
   description: text("description"),
   corporate_client_id: varchar("corporate_client_id", { length: 50 }).notNull().references(() => corporateClients.id, { onDelete: 'cascade' }),
-  address: text("address"),
+  address: text("address"), // Legacy field - kept for backward compatibility
+  street_address: text("street_address"),
+  city: text("city"),
+  state: varchar("state", { length: 2 }),
+  zip_code: varchar("zip_code", { length: 5 }),
   phone: varchar("phone", { length: 20 }),
   email: varchar("email", { length: 255 }),
   logo_url: text("logo_url"),
@@ -102,7 +110,11 @@ export const locations = pgTable("locations", {
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   program_id: varchar("program_id", { length: 50 }).notNull().references(() => programs.id, { onDelete: 'cascade' }),
-  address: text("address").notNull(),
+  address: text("address").notNull(), // Legacy field - kept for backward compatibility
+  street_address: text("street_address"),
+  city: text("city"),
+  state: varchar("state", { length: 2 }),
+  zip_code: varchar("zip_code", { length: 5 }),
   phone: varchar("phone", { length: 20 }),
   contact_person: varchar("contact_person", { length: 255 }),
   latitude: decimal("latitude", { precision: 10, scale: 8 }),
@@ -169,7 +181,11 @@ export const clients = pgTable("clients", {
   phone: varchar("phone", { length: 20 }),
   phone_type: varchar("phone_type", { length: 20 }),
   email: varchar("email", { length: 255 }),
-  address: text("address"),
+  address: text("address"), // Legacy field - kept for backward compatibility
+  street_address: text("street_address"),
+  city: text("city"),
+  state: varchar("state", { length: 2 }),
+  zip_code: varchar("zip_code", { length: 5 }),
   use_location_address: boolean("use_location_address").default(false),
   date_of_birth: date("date_of_birth"),
   birth_sex: varchar("birth_sex", { length: 10 }),
@@ -192,6 +208,7 @@ export const clientGroups = pgTable("client_groups", {
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   program_id: varchar("program_id", { length: 50 }).notNull().references(() => programs.id, { onDelete: 'cascade' }),
+  reference_id: varchar("reference_id", { length: 30 }), // Human-readable reference ID (e.g., MC-G0001)
   // Telematics Phase 1: Default trip purpose for group (remains constant even if clients change)
   trip_purpose: varchar("trip_purpose", { length: 20 }), // Legal, Groceries, Community, Program (adjacent), Medical, Non-Medical
   is_active: boolean("is_active").default(true),
@@ -287,6 +304,7 @@ export const drivers = pgTable("drivers", {
   license_expiry: date("license_expiry"),
   vehicle_info: text("vehicle_info"),
   is_active: boolean("is_active").default(true),
+  is_available: boolean("is_available").default(false), // Location sharing availability toggle - drivers must explicitly enable
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
 });
@@ -351,8 +369,17 @@ export const trips = pgTable("trips", {
   vehicle_id: varchar("vehicle_id", { length: 50 }).references(() => vehicles.id, { onDelete: 'set null' }),
   trip_type: tripTypeEnum("trip_type").notNull(),
   trip_category_id: varchar("trip_category_id", { length: 50 }).references(() => tripCategories.id, { onDelete: 'set null' }),
-  pickup_address: text("pickup_address").notNull(),
-  dropoff_address: text("dropoff_address").notNull(),
+  pickup_address: text("pickup_address").notNull(), // Legacy field - kept for backward compatibility
+  pickup_street: text("pickup_street"),
+  pickup_city: text("pickup_city"),
+  pickup_state: varchar("pickup_state", { length: 2 }),
+  pickup_zip: varchar("pickup_zip", { length: 5 }),
+  dropoff_address: text("dropoff_address").notNull(), // Legacy field - kept for backward compatibility
+  dropoff_street: text("dropoff_street"),
+  dropoff_city: text("dropoff_city"),
+  dropoff_state: varchar("dropoff_state", { length: 2 }),
+  dropoff_zip: varchar("dropoff_zip", { length: 5 }),
+  stops: jsonb("stops").default('[]'), // Array of intermediate stop addresses (max 8) - TODO: Update to use separated fields
   scheduled_pickup_time: timestamp("scheduled_pickup_time").notNull(),
   scheduled_return_time: timestamp("scheduled_return_time"),
   actual_pickup_time: timestamp("actual_pickup_time"),

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import {
   View,
@@ -15,12 +15,14 @@ import {
   ActivityIndicator,
   Platform,
   RefreshControl,
+  Switch,
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api';
+import { locationTrackingService } from '../../services/locationTracking';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -36,6 +38,15 @@ export default function ProfileScreen() {
   const [showImagePicker, setShowImagePicker] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Fetch driver profile to get availability status
+  const { data: driverProfile, refetch: refetchDriverProfile } = useQuery({
+    queryKey: ['driver-profile'],
+    queryFn: () => apiClient.getDriverProfile(),
+    enabled: user?.role === 'driver',
+  });
+
+  const isAvailable = driverProfile?.is_available ?? false; // Default to false - driver must explicitly enable
 
   // Construct full avatar URL from relative path
   const getAvatarUrl = (avatarUrl: string | null | undefined): string | null => {
@@ -72,6 +83,67 @@ export default function ProfileScreen() {
       Alert.alert('Error', 'Failed to update profile. Please try again.');
     },
   });
+
+  // Update availability mutation
+  const updateAvailabilityMutation = useMutation({
+    mutationFn: async (is_available: boolean) => {
+      if (!driverProfile?.id) {
+        throw new Error('Driver profile not loaded');
+      }
+      return apiClient.updateDriverAvailability(driverProfile.id, is_available);
+    },
+    onSuccess: (_, is_available) => {
+      // Update location tracking service
+      locationTrackingService.setAvailability(is_available);
+      // Refresh driver profile
+      refetchDriverProfile();
+      Alert.alert(
+        'Success',
+        is_available
+          ? 'Location sharing enabled. Your location will be visible to fleet managers.'
+          : 'Location sharing disabled.'
+      );
+    },
+    onError: (error: any) => {
+      console.error('Availability update error:', error);
+      const errorMessage = error?.message || 'Failed to update availability';
+      
+      // Check if error is due to active trip
+      if (errorMessage.includes('active trip') || error?.hasActiveTrip) {
+        Alert.alert(
+          'Cannot Disable Location Sharing',
+          'You cannot disable location sharing while providing an active trip. Please complete or cancel your current trip first.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert('Error', errorMessage);
+      }
+    },
+  });
+
+  const handleAvailabilityToggle = async (value: boolean) => {
+    // If trying to disable, check for active trips first
+    if (!value) {
+      try {
+        const trips = await apiClient.getDriverTrips();
+        const activeTrip = trips.find((t: any) => t.status === 'in_progress');
+        
+        if (activeTrip) {
+          Alert.alert(
+            'Cannot Disable Location Sharing',
+            'You cannot disable location sharing while providing an active trip. Please complete or cancel your current trip first.',
+            [{ text: 'OK' }]
+          );
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking for active trips:', error);
+        // Continue with the update - backend will also validate
+      }
+    }
+
+    updateAvailabilityMutation.mutate(value);
+  };
 
 
   const handleCallSupport = () => {
@@ -193,15 +265,32 @@ export default function ProfileScreen() {
     },
     header: {
       backgroundColor: theme.colors.card,
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
       alignItems: 'center',
-      paddingVertical: 32,
-      paddingHorizontal: 24,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
+      zIndex: 10,
+    },
+    backButton: {
+      marginRight: 12,
+      padding: 8,
+    },
+    headerTitle: {
+      ...theme.typography.h2,
+      color: theme.colors.foreground,
+      fontWeight: '600',
+      flex: 1,
+      textAlign: 'center',
+    },
+    headerActions: {
+      width: 40, // Match back button width for centering
     },
     avatarContainer: {
       position: 'relative',
       marginBottom: 16,
+      alignSelf: 'center',
+      alignItems: 'center',
     },
     avatar: {
       width: 80,
@@ -392,14 +481,30 @@ export default function ProfileScreen() {
     },
   });
 
+  const handleBack = () => {
+    router.push('/(tabs)/menu');
+  };
+
   return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />
-      }
-    >
-      <View style={styles.header}>
+    <View style={styles.container}>
+      {/* Header with Back Button */}
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={handleBack}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="chevron-back" size={24} color={theme.colors.foreground} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Profile</Text>
+        <View style={styles.headerActions} />
+      </View>
+      <ScrollView 
+        style={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />
+        }
+      >
         <TouchableOpacity 
           style={styles.avatarContainer}
           onPress={handleImagePicker}
@@ -482,9 +587,8 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
         )}
-      </View>
 
-      <View style={styles.content}>
+        <View style={styles.content}>
         {/* Account Information */}
         <View style={styles.infoCard}>
           <Text style={styles.cardTitle}>Account Information</Text>
@@ -513,12 +617,25 @@ export default function ProfileScreen() {
         {/* Location Tracking Section (for drivers only) */}
         {user?.role === 'driver' && (
           <View style={styles.infoCard}>
-            <Text style={styles.cardTitle}>Location Tracking</Text>
-            <Text style={[styles.infoValue, { marginBottom: 12, fontSize: 14 }]}>
-              Enable location sharing to allow fleet managers to see your position on the map.
+            <Text style={styles.cardTitle}>Location Sharing</Text>
+            <Text style={[styles.infoValue, { marginBottom: 16, fontSize: 14, fontWeight: 'normal' }]}>
+              When enabled, your location will be shared with fleet managers and admins. Location sharing is automatically enabled when you start a trip.
             </Text>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Available</Text>
+              <Switch
+                value={isAvailable}
+                onValueChange={handleAvailabilityToggle}
+                disabled={updateAvailabilityMutation.isPending}
+                trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+                thumbColor={isAvailable ? '#fff' : theme.colors.backgroundSecondary}
+              />
+            </View>
+            {updateAvailabilityMutation.isPending && (
+              <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginTop: 8 }} />
+            )}
             <TouchableOpacity
-              style={[styles.button, { backgroundColor: theme.colors.primary }]}
+              style={[styles.button, { backgroundColor: theme.colors.primary, marginTop: 16 }]}
               onPress={async () => {
                 const success = await initializeLocationTracking();
                 if (success) {
@@ -529,15 +646,13 @@ export default function ProfileScreen() {
               }}
             >
               <Ionicons name="location" size={20} color="#fff" style={{ marginRight: 8 }} />
-              <Text style={styles.buttonText}>Start Location Tracking</Text>
+              <Text style={styles.buttonText}>Initialize Location Tracking</Text>
             </TouchableOpacity>
           </View>
         )}
-
-
-      </View>
-
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 

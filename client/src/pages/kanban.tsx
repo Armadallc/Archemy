@@ -5,11 +5,11 @@ import { Info } from 'lucide-react';
 
 export default function KanbanPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#eaeaea] to-[#f5f5f5] dark:from-[#26282b] dark:to-[#383b3e] pt-4 md:pt-6">
+    <div className="min-h-screen bg-gradient-to-br from-[#eaeaea] to-[#f5f5f5] dark:from-[#1e2023] dark:to-[#383b3e] pt-4 md:pt-6">
       <div className="container mx-auto px-4 md:px-6 pb-4 md:pb-6 space-y-6">
         <div className="kanban-header">
-          <h1 className="text-3xl font-bold text-[#26282b] dark:text-[#eaeaea]">Kanban Board</h1>
-          <p className="text-[#26282b]/70 dark:text-[#eaeaea]/70 mt-2">
+          <h1 className="text-3xl font-bold text-[#1e2023] dark:text-[#eaeaea]">Kanban Board</h1>
+          <p className="text-[#1e2023]/70 dark:text-[#eaeaea]/70 mt-2">
             Manage tasks and workflows with Kanban boards
           </p>
         </div>

@@ -126,6 +126,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const initialized = await locationTrackingService.initialize(userData.id);
         if (initialized) {
           console.log('✅ Location tracking initialized, starting...');
+          
+          // Fetch driver profile to get availability status
+          try {
+            const profile = await apiClient.getDriverProfile();
+            const isAvailable = profile?.is_available ?? false; // Default to false - driver must explicitly enable
+            locationTrackingService.setAvailability(isAvailable);
+            console.log(`📍 Driver availability status: ${isAvailable}`);
+          } catch (error) {
+            console.warn('⚠️ Could not fetch driver profile for availability status:', error);
+            // Default to false - driver must explicitly enable
+            locationTrackingService.setAvailability(false);
+          }
+          
           locationTrackingService.startTracking();
         } else {
           // If location permission denied, still allow login but warn user

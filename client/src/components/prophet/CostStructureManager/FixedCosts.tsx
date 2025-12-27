@@ -3,6 +3,7 @@
  * Manages monthly fixed overhead expenses
  */
 
+// Force Vite to re-process this file
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { useProphetStore } from '../hooks/useProphetStore';
@@ -235,20 +236,3 @@ export function FixedCosts() {
     </Card>
   );
 }
-
-export default FixedCosts;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -5,13 +5,13 @@ import { queryClient } from "../lib/queryClient";
 
 // Your 8 Fire palette colors
 const PALETTE = {
-  charcoal: "#26282b",
+  charcoal: "#1e2023",
   ice: "#e8fffe",
   lime: "#f1fec9",
   coral: "#ff8475",
   silver: "#eaeaea",
   cloud: "#f4f4f4",
-  shadow: "#343434",
+  shadow: "#292929",
   aqua: "#a5c8ca",
 } as const;
 

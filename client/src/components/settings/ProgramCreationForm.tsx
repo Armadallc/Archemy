@@ -8,6 +8,7 @@ import { PhoneInput } from "../ui/phone-input";
 import { Textarea } from "../ui/textarea";
 import { Switch } from "../ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import AddressInput from "../forms/AddressInput";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Separator } from "../ui/separator";
 import { Alert, AlertDescription } from "../ui/alert";
@@ -305,13 +306,21 @@ function CreateProgramForm({
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="prog-address">Address</Label>
-          <Textarea
-            id="prog-address"
+          <AddressInput
             value={formData.address}
-            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            placeholder="Enter program address"
-            rows={2}
+            onChange={(addressData) => {
+              // Generate full address for backward compatibility
+              const fullAddress = [
+                addressData.street,
+                addressData.city,
+                addressData.state && addressData.zip ? `${addressData.state} ${addressData.zip}` : addressData.state || addressData.zip
+              ].filter(Boolean).join(', ');
+              setFormData({ ...formData, address: fullAddress });
+            }}
+            onFullAddressChange={(fullAddress) => setFormData({ ...formData, address: fullAddress })}
+            label="Address"
+            required={false}
+            showLabel={true}
           />
         </div>
       </div>
@@ -458,14 +467,21 @@ function CreateLocationForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="loc-address">Address *</Label>
-          <Textarea
-            id="loc-address"
+          <AddressInput
             value={formData.address}
-            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            placeholder="Enter location address"
-            rows={3}
-            required
+            onChange={(addressData) => {
+              // Generate full address for backward compatibility
+              const fullAddress = [
+                addressData.street,
+                addressData.city,
+                addressData.state && addressData.zip ? `${addressData.state} ${addressData.zip}` : addressData.state || addressData.zip
+              ].filter(Boolean).join(', ');
+              setFormData({ ...formData, address: fullAddress });
+            }}
+            onFullAddressChange={(fullAddress) => setFormData({ ...formData, address: fullAddress })}
+            label="Address"
+            required={true}
+            showLabel={true}
           />
         </div>
         <div className="space-y-2">

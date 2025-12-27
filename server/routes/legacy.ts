@@ -281,7 +281,12 @@ router.post("/client-groups", requireSupabaseAuth, requireSupabaseRole(['super_a
       role: req.user?.role
     });
     const clientGroup = await clientGroupsStorage.createClientGroup(req.body);
-    console.log('✅ [LEGACY] Client group created successfully:', clientGroup.id);
+    console.log('✅ [LEGACY] Client group created successfully:', {
+      id: clientGroup.id,
+      name: clientGroup.name,
+      program_id: clientGroup.program_id,
+      reference_id: clientGroup.reference_id
+    });
     res.status(201).json(clientGroup);
   } catch (error) {
     console.error("❌ [LEGACY] Error creating client group:", error);

@@ -9,14 +9,14 @@
 // ============================================================
 
 export const palette = {
-  // Core brand colors
-  charcoal: '#26282b',
+  // Core brand colors (darkened 20% for better neumorphic contrast)
+  charcoal: '#1e2023', // Was #26282b (38,40,43) → 20% darker = (30,32,35)
   ice: '#e8fffe',
   lime: '#f1fec9',
   coral: '#ff8475',
   silver: '#eaeaea',
   cloud: '#f4f4f4',
-  shadow: '#343434',
+  shadow: '#292929', // Was #343434 (52,52,52) → 20% darker = (41,41,41)
   aqua: '#a5c8ca',
   
   // Extended shades
@@ -39,15 +39,15 @@ export const palette = {
 // ============================================================
 
 export const lightTheme = {
-  // Backgrounds
-  background: palette.cloud,
-  backgroundSecondary: palette.silver,
-  backgroundTertiary: palette.ice,
+  // Backgrounds - same color as cards for neumorphic design
+  background: palette.cloud, // #f4f4f4
+  backgroundSecondary: palette.cloud, // #f4f4f4
+  backgroundTertiary: palette.cloud, // #f4f4f4
   
-  // Surfaces
-  surface: palette.white,
-  surfaceElevated: palette.lime,
-  surfaceMuted: palette.silver,
+  // Surfaces - same color as background for neumorphic design
+  surface: palette.cloud, // #f4f4f4
+  surfaceElevated: palette.cloud, // #f4f4f4
+  surfaceMuted: palette.cloud, // #f4f4f4
   
   // Text
   text: palette.charcoal,
@@ -123,9 +123,9 @@ export const lightTheme = {
   tabActive: palette.coral,
   tabInactive: '#8a8f94',
   
-  // Card
-  card: palette.white,
-  cardBorder: '#d4d7da',
+  // Card - same color as background for neumorphic design
+  card: palette.cloud, // #f4f4f4
+  cardBorder: 'transparent', // No borders, use shadows instead
   
   // Input
   input: palette.white,
@@ -143,15 +143,15 @@ export const lightTheme = {
 // ============================================================
 
 export const darkTheme = {
-  // Backgrounds
-  background: palette.charcoal,
-  backgroundSecondary: palette.charcoalLight,
-  backgroundTertiary: palette.charcoalLighter,
+  // Backgrounds - same color as cards for neumorphic design
+  background: palette.shadow, // #292929 (darker shadow)
+  backgroundSecondary: palette.shadow, // #292929
+  backgroundTertiary: palette.shadow, // #292929
   
-  // Surfaces
-  surface: palette.charcoalLight,
-  surfaceElevated: palette.charcoalLighter,
-  surfaceMuted: palette.charcoalLight,
+  // Surfaces - same color as background for neumorphic design
+  surface: palette.shadow, // #292929
+  surfaceElevated: palette.shadow, // #292929
+  surfaceMuted: palette.shadow, // #292929
   
   // Text
   text: palette.cloud,
@@ -227,9 +227,9 @@ export const darkTheme = {
   tabActive: palette.coral,
   tabInactive: '#6b7280',
   
-  // Card
-  card: palette.charcoalLight,
-  cardBorder: '#464a4f',
+  // Card - same color as background for neumorphic design
+  card: palette.shadow, // #292929
+  cardBorder: 'transparent', // No borders, use shadows instead
   
   // Input
   input: palette.charcoalLight,
@@ -374,3 +374,97 @@ export const getTheme = (isDark: boolean) => ({
 export type MobileTheme = ReturnType<typeof getTheme>;
 export type MobileColors = typeof lightTheme;
 export type ThemeColors = typeof lightTheme;
+
+// ============================================================
+// NEUMORPHIC SHADOW SYSTEM
+// ============================================================
+
+export type NeumorphicStyle = 'embossed' | 'debossed';
+
+export interface NeumorphicShadowConfig {
+  light: {
+    shadowColor: string;
+    shadowOffset: { width: number; height: number };
+    shadowRadius: number;
+    shadowOpacity: number;
+  };
+  dark: {
+    shadowColor: string;
+    shadowOffset: { width: number; height: number };
+    shadowRadius: number;
+    shadowOpacity: number;
+  };
+}
+
+export const neumorphicShadows = {
+  // Light theme - embossed (pushed out)
+  light: {
+    embossed: {
+      light: {
+        shadowColor: '#FAFBFF', // Light highlight (top-left)
+        shadowOffset: { width: -5, height: -5 },
+        shadowRadius: 10,
+        shadowOpacity: 1,
+      },
+      dark: {
+        shadowColor: '#161B1D', // Dark shadow (bottom-right)
+        shadowOffset: { width: 5, height: 5 },
+        shadowRadius: 10,
+        shadowOpacity: 0.23,
+      },
+    },
+    debossed: {
+      light: {
+        shadowColor: '#161B1D', // Reverse for pressed-in
+        shadowOffset: { width: -5, height: -5 },
+        shadowRadius: 10,
+        shadowOpacity: 0.23,
+      },
+      dark: {
+        shadowColor: '#FAFBFF',
+        shadowOffset: { width: 5, height: 5 },
+        shadowRadius: 10,
+        shadowOpacity: 1,
+      },
+    },
+  },
+  // Dark theme - debossed (pushed in) by default
+  dark: {
+    embossed: {
+      light: {
+        shadowColor: '#464a4f', // Lighter than background
+        shadowOffset: { width: -5, height: -5 },
+        shadowRadius: 10,
+        shadowOpacity: 0.5,
+      },
+      dark: {
+        shadowColor: '#1a1c1e', // Darker than background
+        shadowOffset: { width: 5, height: 5 },
+        shadowRadius: 10,
+        shadowOpacity: 0.8,
+      },
+    },
+    debossed: {
+      light: {
+        shadowColor: '#1a1c1e', // Reverse for pressed-in
+        shadowOffset: { width: -5, height: -5 },
+        shadowRadius: 10,
+        shadowOpacity: 0.8,
+      },
+      dark: {
+        shadowColor: '#464a4f',
+        shadowOffset: { width: 5, height: 5 },
+        shadowRadius: 10,
+        shadowOpacity: 0.5,
+      },
+    },
+  },
+} as const;
+
+// Helper function to get neumorphic shadow config
+export const getNeumorphicShadow = (
+  isDark: boolean,
+  style: NeumorphicStyle
+): NeumorphicShadowConfig => {
+  return neumorphicShadows[isDark ? 'dark' : 'light'][style];
+};

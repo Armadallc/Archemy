@@ -4,7 +4,7 @@ import { Card, CardContent } from '../components/ui/card';
 
 export default function ActivityFeedPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#eaeaea] to-[#f5f5f5] dark:from-[#26282b] dark:to-[#383b3e] pt-4 md:pt-6">
+    <div className="min-h-screen bg-gradient-to-br from-[#eaeaea] to-[#f5f5f5] dark:from-[#1e2023] dark:to-[#383b3e] pt-4 md:pt-6">
       <div className="container mx-auto px-4 md:px-6 pb-4 md:pb-6 space-y-6">
         <div className="activity-feed-header">
           <h1 className="text-3xl font-bold text-[#26282b] dark:text-[#eaeaea]">Activity Feed</h1>

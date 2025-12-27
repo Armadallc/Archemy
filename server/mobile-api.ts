@@ -95,6 +95,7 @@ export interface DriverProfile {
     longitude: number;
     timestamp: string;
   };
+  is_available?: boolean; // Location sharing availability
 }
 
 export interface OfflineData {
@@ -128,6 +129,16 @@ export const mobileApi = {
       if (!driver) {
         throw new Error(`Driver not found: ${driverId}`);
       }
+
+      // Log the is_available value from database for debugging
+      console.log('🔍 [Mobile API] Driver is_available from DB:', {
+        driverId,
+        is_available: driver.is_available,
+        is_available_type: typeof driver.is_available,
+        is_available_null: driver.is_available === null,
+        is_available_undefined: driver.is_available === undefined,
+        will_default_to: driver.is_available ?? false
+      });
 
       // Then get user data separately (more reliable than join)
       let userData: { user_name?: string; email?: string; avatar_url?: string } = {};
@@ -163,6 +174,15 @@ export const mobileApi = {
       // Call method - executes at runtime, so circular reference is fine
       const lastLocation = await mobileApi.getLastLocation(driverId);
 
+      // Ensure is_available defaults to false - explicitly handle null, undefined, and any truthy non-boolean values
+      let isAvailable = false;
+      if (driver.is_available === true) {
+        isAvailable = true;
+      } else {
+        // Explicitly set to false for null, undefined, false, or any other value
+        isAvailable = false;
+      }
+
       return {
         id: driver.id,
         user_id: driver.user_id,
@@ -182,10 +202,53 @@ export const mobileApi = {
           color: vehicleData.color
         } : undefined,
         current_status: currentStatus?.status || 'off_duty',
-        last_location: lastLocation || undefined
+        last_location: lastLocation || undefined,
+        is_available: isAvailable // Explicitly false unless database has true
       };
     } catch (error) {
       console.error('Error fetching driver profile:', error);
+      throw error;
+    }
+  },
+
+  // Update driver availability status
+  async updateDriverAvailability(driverId: string, is_available: boolean) {
+    try {
+      // If setting to false, verify no active trips (should be checked by API endpoint, but double-check here)
+      if (is_available === false) {
+        const { data: activeTrips, error: tripsError } = await supabase
+          .from('trips')
+          .select('id')
+          .eq('driver_id', driverId)
+          .eq('status', 'in_progress')
+          .limit(1);
+
+        if (tripsError) {
+          console.error('❌ Error checking for active trips:', tripsError);
+          throw new Error('Failed to verify trip status');
+        }
+
+        if (activeTrips && activeTrips.length > 0) {
+          throw new Error('Cannot disable location sharing while providing an active trip');
+        }
+      }
+
+      const { data, error } = await supabase
+        .from('drivers')
+        .update({
+          is_available: is_available,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', driverId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log(`✅ Driver ${driverId} availability updated to: ${is_available}`);
+      return data;
+    } catch (error) {
+      console.error('Error updating driver availability:', error);
       throw error;
     }
   },
@@ -378,6 +441,9 @@ export const mobileApi = {
           dropoff_address: trip.dropoff_address,
           scheduled_pickup_time: trip.scheduled_pickup_time,
           scheduled_return_time: trip.scheduled_return_time,
+          actual_pickup_time: trip.actual_pickup_time, // Added for frontend validation
+          actual_dropoff_time: trip.actual_dropoff_time, // Added for frontend validation
+          actual_return_time: trip.actual_return_time, // Added for completeness
           status: trip.status,
           passenger_count: trip.passenger_count,
           special_requirements: trip.special_requirements,
@@ -434,6 +500,47 @@ export const mobileApi = {
     driverId?: string,
     userId?: string
   ) {
+    // If trip status is changing to in_progress, ensure driver availability is enabled
+    if (status === 'in_progress') {
+      // Get the trip to find the driver_id if not provided
+      let tripDriverId = driverId;
+      if (!tripDriverId) {
+        const { data: trip, error: tripError } = await supabase
+          .from('trips')
+          .select('driver_id')
+          .eq('id', tripId)
+          .single();
+        
+        if (!tripError && trip?.driver_id) {
+          tripDriverId = trip.driver_id;
+        }
+      }
+
+      // If we have a driver_id, ensure their availability is enabled
+      if (tripDriverId) {
+        const { data: driver, error: driverError } = await supabase
+          .from('drivers')
+          .select('is_available')
+          .eq('id', tripDriverId)
+          .single();
+
+        if (!driverError && driver && driver.is_available === false) {
+          // Automatically enable location sharing when trip starts
+          console.log(`📍 Enabling location sharing for driver ${tripDriverId} - trip ${tripId} started`);
+          const { error: updateError } = await supabase
+            .from('drivers')
+            .update({ is_available: true, updated_at: new Date().toISOString() })
+            .eq('id', tripDriverId);
+
+          if (updateError) {
+            console.error('❌ Failed to enable location sharing for driver:', updateError);
+            // Don't fail the trip status update, but log the error
+          } else {
+            console.log('✅ Location sharing enabled for driver');
+          }
+        }
+      }
+    }
     try {
       // Use validated status update (validation happens inside updateTripStatus)
       // Status logging also happens inside updateTripStatus, but we keep the mobile-specific logic
@@ -503,6 +610,22 @@ export const mobileApi = {
         }
       }
       
+      // CRITICAL FIX: Set all previous locations for this driver to is_active=false
+      // This ensures only the most recent location is marked as active
+      const { error: deactivateError } = await supabase
+        .from('driver_locations')
+        .update({ is_active: false })
+        .eq('driver_id', driverId)
+        .eq('is_active', true);
+      
+      if (deactivateError) {
+        console.warn('⚠️ Failed to deactivate previous locations:', deactivateError);
+        // Continue anyway - the new location will still be inserted
+      } else {
+        console.log('✅ Deactivated previous locations for driver:', driverId);
+      }
+      
+      // Now insert the new location with is_active=true
       const { data, error } = await supabase
         .from('driver_locations')
         .insert({
@@ -523,6 +646,17 @@ export const mobileApi = {
         .single();
 
       if (error) throw error;
+      
+      // Log the location update for debugging
+      console.log('📍 Location update stored:', {
+        driverId,
+        lat: location.latitude.toFixed(6),
+        lng: location.longitude.toFixed(6),
+        accuracy: location.accuracy?.toFixed(0) + 'm',
+        tripId: tripId || 'none',
+        timestamp: new Date().toISOString()
+      });
+      
       return data;
     } catch (error) {
       console.error('Error updating driver location:', error);

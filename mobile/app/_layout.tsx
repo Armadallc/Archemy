@@ -13,46 +13,37 @@ const queryClient = new QueryClient();
 
 export default function RootLayout() {
   // Load fonts for native platforms only
-  // For web, fonts are loaded via CSS @font-face in assets/fonts.css
+  // For web, fonts are loaded via Google Fonts CDN
   const fontConfig = useMemo(() => {
     if (Platform.OS === 'web') {
-      // Web fonts loaded via CSS, not expo-font
+      // Web fonts loaded via Google Fonts CDN, not expo-font
       return {};
     }
-    // Native platforms: load TTF fonts via expo-font
-    return {
-      'Nohemi-Thin': require('../assets/fonts/Nohemi-Thin.ttf'),
-      'Nohemi-ExtraLight': require('../assets/fonts/Nohemi-ExtraLight.ttf'),
-      'Nohemi-Light': require('../assets/fonts/Nohemi-Light.ttf'),
-      'Nohemi-Regular': require('../assets/fonts/Nohemi-Regular.ttf'),
-      'Nohemi-Medium': require('../assets/fonts/Nohemi-Medium.ttf'),
-      'Nohemi-SemiBold': require('../assets/fonts/Nohemi-SemiBold.ttf'),
-      'Nohemi-Bold': require('../assets/fonts/Nohemi-Bold.ttf'),
-      'Nohemi-ExtraBold': require('../assets/fonts/Nohemi-ExtraBold.ttf'),
-      'Nohemi-Black': require('../assets/fonts/Nohemi-Black.ttf'),
-    };
+    // Native platforms: Inter fonts will use system font fallback
+    // For native, we rely on system fonts or can add Inter TTF files later if needed
+    return {};
   }, []);
 
   // Always call useFonts hook (React rules)
   const [fontsLoaded, fontError] = useFonts(fontConfig);
 
-  // Load Google Fonts (Space Grotesk) from CDN - more reliable on mobile
+  // Load Google Fonts (Inter) from CDN - replacing Nohemi and Space Grotesk
   useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
       // Check if Google Fonts link is already added
-      const existingLink = document.getElementById('google-fonts-space-grotesk');
+      const existingLink = document.getElementById('google-fonts-inter');
       if (existingLink) return;
 
-      // Load Space Grotesk from Google Fonts CDN
+      // Load Inter from Google Fonts CDN (all weights)
       const link = document.createElement('link');
-      link.id = 'google-fonts-space-grotesk';
+      link.id = 'google-fonts-inter';
       link.rel = 'stylesheet';
-      link.href = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap';
+      link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap';
       link.crossOrigin = 'anonymous';
       document.head.appendChild(link);
 
       return () => {
-        const linkToRemove = document.getElementById('google-fonts-space-grotesk');
+        const linkToRemove = document.getElementById('google-fonts-inter');
         if (linkToRemove) {
           linkToRemove.remove();
         }
@@ -97,244 +88,9 @@ export default function RootLayout() {
     }
   }, []);
 
-  // Inject font CSS for web platform
-  useEffect(() => {
-    if (Platform.OS === 'web' && typeof document !== 'undefined') {
-      // Check if font styles are already injected
-      const existingStyle = document.getElementById('halcyon-fonts');
-      if (existingStyle) return;
-
-      // For mobile browsers, use FontFace API (more reliable than CSS @font-face)
-      // Mobile browsers are stricter about font loading and CORS
-      if (typeof window !== 'undefined' && 'FontFace' in window) {
-        const loadFontsViaAPI = async () => {
-          const fontBaseUrl = `${window.location.origin}/assets/fonts/`;
-          
-          const nohemiWeights = [
-            { weight: '100', file: 'Nohemi-Thin.woff2' },
-            { weight: '200', file: 'Nohemi-ExtraLight.woff2' },
-            { weight: '300', file: 'Nohemi-Light.woff2' },
-            { weight: '400', file: 'Nohemi-Regular.woff2' },
-            { weight: '500', file: 'Nohemi-Medium.woff2' },
-            { weight: '600', file: 'Nohemi-SemiBold.woff2' },
-            { weight: '700', file: 'Nohemi-Bold.woff2' },
-            { weight: '800', file: 'Nohemi-ExtraBold.woff2' },
-            { weight: '900', file: 'Nohemi-Black.woff2' },
-          ];
-          
-          const loadFont = async (family: string, source: string, weight: string) => {
-            try {
-              const font = new FontFace(family, `url(${source})`, {
-                weight,
-                style: 'normal',
-                display: 'swap',
-              });
-              await font.load();
-              document.fonts.add(font);
-              console.log(`[Fonts] ✅ Loaded ${family} ${weight} via FontFace API`);
-              return true;
-            } catch (error) {
-              console.warn(`[Fonts] ❌ Failed to load ${family} ${weight}:`, error);
-              return false;
-            }
-          };
-          
-          // Try multiple paths for each font
-          const tryLoadFont = async (family: string, fileName: string, weight: string) => {
-            const paths = [
-              `${fontBaseUrl}${fileName}`,
-              `/_expo/static/assets/fonts/${fileName}`,
-              `/assets/fonts/${fileName}`,
-            ];
-            
-            for (const path of paths) {
-              const success = await loadFont(family, path, weight);
-              if (success) return true;
-            }
-            return false;
-          };
-          
-          // Load Nohemi fonts (local files)
-          // Space Grotesk is loaded from Google Fonts CDN, so we don't need to load it here
-          const results = await Promise.all([
-            ...nohemiWeights.map(w => tryLoadFont('Nohemi', w.file, w.weight)),
-          ]);
-          
-          const successCount = results.filter(r => r).length;
-          console.log(`[Fonts] FontFace API: ${successCount}/${results.length} fonts loaded`);
-          
-          return successCount > 0;
-        };
-        
-        // Load fonts via FontFace API (better for mobile)
-        loadFontsViaAPI();
-      }
-      
-      // Also inject @font-face declarations as fallback
-      const style = document.createElement('style');
-      style.id = 'halcyon-fonts';
-      
-      // Detect where Expo actually puts assets in the build
-      const getFontPaths = (fontName: string) => {
-        const origin = typeof window !== 'undefined' ? window.location.origin : '';
-        const paths = [
-          `${origin}/assets/fonts/${fontName}`,
-          `/_expo/static/assets/fonts/${fontName}`,
-          `/assets/fonts/${fontName}`,
-          `./assets/fonts/${fontName}`,
-        ];
-        return paths;
-      };
-      
-      // Helper to create font src with multiple fallback paths
-      const createFontSrc = (fontName: string) => {
-        const paths = getFontPaths(fontName);
-        const srcUrls = paths.map(path => `url('${path}') format('woff2')`).join(', ');
-        return `src: ${srcUrls};`;
-      };
-      
-      // Test font loading and verify fonts are accessible
-      if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-        // Use Font Loading API to check if fonts actually loaded
-        const checkFontLoaded = async () => {
-          try {
-            // Wait a bit for fonts to load
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Check if Nohemi font is available
-            if (document.fonts && document.fonts.check) {
-              const nohemiLoaded = document.fonts.check('1em Nohemi');
-              const spaceGroteskLoaded = document.fonts.check('1em "Space Grotesk"');
-              
-              console.log('[Fonts] Nohemi loaded:', nohemiLoaded);
-              console.log('[Fonts] Space Grotesk loaded:', spaceGroteskLoaded);
-              
-              if (!nohemiLoaded || !spaceGroteskLoaded) {
-                console.warn('[Fonts] ⚠️ Some fonts failed to load. Available fonts:', 
-                  Array.from(document.fonts).map(f => f.family).join(', '));
-                
-                // Try to find fonts in common Expo locations
-                const testFont = 'Nohemi-Regular.woff2';
-                const testPaths = getFontPaths(testFont);
-                console.log('[Fonts] Testing font accessibility at paths:', testPaths);
-                
-                // Test each path
-                for (const path of testPaths) {
-                  try {
-                    const response = await fetch(path, { method: 'HEAD' });
-                    if (response.ok) {
-                      console.log(`[Fonts] ✅ Font accessible at: ${path}`);
-                      break;
-                    }
-                  } catch (e) {
-                    console.log(`[Fonts] ❌ Font not accessible at: ${path}`);
-                  }
-                }
-              } else {
-                console.log('[Fonts] ✅ All fonts loaded successfully!');
-                // Store success in localStorage for debugging
-                if (typeof localStorage !== 'undefined') {
-                  localStorage.setItem('halcyon_fonts_loaded', 'true');
-                  localStorage.setItem('halcyon_fonts_check_time', new Date().toISOString());
-                }
-              }
-              
-              // Store font loading status for debugging (even if failed)
-              if (typeof localStorage !== 'undefined') {
-                localStorage.setItem('halcyon_fonts_status', JSON.stringify({
-                  nohemi: nohemiLoaded,
-                  spaceGrotesk: spaceGroteskLoaded,
-                  timestamp: new Date().toISOString(),
-                }));
-              }
-            }
-          } catch (error) {
-            console.error('[Fonts] Error checking font loading:', error);
-          }
-        };
-        
-        // Check fonts after a delay
-        setTimeout(checkFontLoaded, 2000);
-      }
-      
-      style.textContent = `
-        /* Nohemi Font Family */
-        @font-face {
-          font-family: 'Nohemi';
-          ${createFontSrc('Nohemi-Thin.woff2')}
-          font-weight: 100;
-          font-style: normal;
-          font-display: swap;
-        }
-        @font-face {
-          font-family: 'Nohemi';
-          ${createFontSrc('Nohemi-ExtraLight.woff2')}
-          font-weight: 200;
-          font-style: normal;
-          font-display: swap;
-        }
-        @font-face {
-          font-family: 'Nohemi';
-          ${createFontSrc('Nohemi-Light.woff2')}
-          font-weight: 300;
-          font-style: normal;
-          font-display: swap;
-        }
-        @font-face {
-          font-family: 'Nohemi';
-          ${createFontSrc('Nohemi-Regular.woff2')}
-          font-weight: 400;
-          font-style: normal;
-          font-display: swap;
-        }
-        @font-face {
-          font-family: 'Nohemi';
-          ${createFontSrc('Nohemi-Medium.woff2')}
-          font-weight: 500;
-          font-style: normal;
-          font-display: swap;
-        }
-        @font-face {
-          font-family: 'Nohemi';
-          ${createFontSrc('Nohemi-SemiBold.woff2')}
-          font-weight: 600;
-          font-style: normal;
-          font-display: swap;
-        }
-        @font-face {
-          font-family: 'Nohemi';
-          ${createFontSrc('Nohemi-Bold.woff2')}
-          font-weight: 700;
-          font-style: normal;
-          font-display: swap;
-        }
-        @font-face {
-          font-family: 'Nohemi';
-          ${createFontSrc('Nohemi-ExtraBold.woff2')}
-          font-weight: 800;
-          font-style: normal;
-          font-display: swap;
-        }
-        @font-face {
-          font-family: 'Nohemi';
-          ${createFontSrc('Nohemi-Black.woff2')}
-          font-weight: 900;
-          font-style: normal;
-          font-display: swap;
-        }
-        /* Space Grotesk is loaded from Google Fonts CDN - no need for @font-face here */
-      `;
-      document.head.appendChild(style);
-
-      return () => {
-        // Cleanup: remove style when component unmounts
-        const styleToRemove = document.getElementById('halcyon-fonts');
-        if (styleToRemove) {
-          styleToRemove.remove();
-        }
-      };
-    }
-  }, []);
+  // Inter fonts are loaded from Google Fonts CDN above
+  // No need for local font files, FontFace API, or @font-face declarations
+  // System fonts will be used as fallback on native platforms
 
   useEffect(() => {
     if (fontError) {

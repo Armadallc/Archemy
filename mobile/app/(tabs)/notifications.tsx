@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,14 +6,16 @@ import {
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
-  Switch,
   Alert,
+  Platform,
 } from 'react-native';
+import CustomToggle from '../../components/CustomToggle';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
+import { router } from 'expo-router';
 import { notificationPreferences, NotificationPreferences, NotificationType } from '../../services/notificationPreferences';
 
 interface NotificationItem {
@@ -226,6 +228,128 @@ export default function NotificationsScreen() {
     </View>
   );
 
+  // Generate unique IDs for switches to target with DOM manipulation
+  const switchIds = useMemo(() => ({
+    newTrip: `notification-switch-newTrip-${Math.random().toString(36).substr(2, 9)}`,
+    tripUpdate: `notification-switch-tripUpdate-${Math.random().toString(36).substr(2, 9)}`,
+    tripReminder: `notification-switch-tripReminder-${Math.random().toString(36).substr(2, 9)}`,
+    emergency: `notification-switch-emergency-${Math.random().toString(36).substr(2, 9)}`,
+    system: `notification-switch-system-${Math.random().toString(36).substr(2, 9)}`,
+    sound: `notification-switch-sound-${Math.random().toString(36).substr(2, 9)}`,
+    vibration: `notification-switch-vibration-${Math.random().toString(36).substr(2, 9)}`,
+  }), []);
+
+  // DOM manipulation for web to fix toggle colors
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !preferences) return;
+    if (typeof document === 'undefined' || typeof window === 'undefined') return;
+
+    let observer: MutationObserver | null = null;
+    let intervalId: NodeJS.Timeout | null = null;
+
+    const updateThumbColor = (switchId: string, isEnabled: boolean) => {
+      if (typeof document === 'undefined' || typeof window === 'undefined') return;
+      
+      const wrapper = document.querySelector(`[data-switch-id="${switchId}"]`) as HTMLElement;
+      if (!wrapper) return;
+
+      const allDivs = wrapper.querySelectorAll('div');
+      let thumbElement: HTMLElement | null = null;
+
+      for (const div of Array.from(allDivs)) {
+        const computedStyle = window.getComputedStyle(div);
+        const width = parseFloat(computedStyle.width);
+        const height = parseFloat(computedStyle.height);
+        const borderRadius = computedStyle.borderRadius;
+        const marginLeft = computedStyle.marginLeft;
+        const bgColor = computedStyle.backgroundColor;
+
+        const is20x20 = Math.abs(width - 20) < 1 && Math.abs(height - 20) < 1;
+        const isCircular = borderRadius === '100%' || borderRadius === '50%' || parseFloat(borderRadius) >= 10;
+        const hasTealColor = bgColor.includes('rgb(0, 150, 136)') || bgColor.includes('rgb(0,0,0)');
+        const hasLeftMargin = marginLeft === '-20px' || marginLeft === '0px' || marginLeft === '40px';
+
+        if (is20x20 && (isCircular || hasLeftMargin || hasTealColor)) {
+          thumbElement = div;
+          break;
+        }
+      }
+
+      if (thumbElement) {
+        const targetColor = isEnabled ? '#ff8475' : 'rgba(255, 132, 117, 0.4)';
+        const currentBg = thumbElement.style.backgroundColor || window.getComputedStyle(thumbElement).backgroundColor;
+        const isCorrectColor = currentBg === targetColor || 
+                               currentBg === 'rgb(255, 132, 117)' || 
+                               (isEnabled && currentBg.includes('255, 132, 117'));
+
+        if (!isCorrectColor) {
+          const currentStyle = thumbElement.getAttribute('style') || '';
+          const cleanedStyle = currentStyle
+            .replace(/background[^;]*rgb\(0,\s*150,\s*136\)[^;]*;?/gi, '')
+            .replace(/background[^;]*rgb\(0,\s*0,\s*0\)[^;]*;?/gi, '')
+            .replace(/background-color[^;]*;?/gi, '')
+            .replace(/background[^;]*;?/gi, '');
+
+          thumbElement.setAttribute('style', cleanedStyle);
+          thumbElement.style.removeProperty('background-color');
+          thumbElement.style.setProperty('background-color', targetColor, 'important');
+          thumbElement.style.setProperty('background', targetColor, 'important');
+
+          try {
+            Object.defineProperty(thumbElement.style, 'backgroundColor', {
+              value: targetColor,
+              writable: false,
+            });
+          } catch (e) {
+            // Ignore if can't define property
+          }
+
+          thumbElement.style.display = 'none';
+          thumbElement.offsetHeight;
+          thumbElement.style.display = '';
+        }
+      }
+    };
+
+    const updateAllSwitches = () => {
+      if (!preferences) return;
+      updateThumbColor(switchIds.newTrip, preferences.newTrip);
+      updateThumbColor(switchIds.tripUpdate, preferences.tripUpdate);
+      updateThumbColor(switchIds.tripReminder, preferences.tripReminder);
+      updateThumbColor(switchIds.emergency, preferences.emergency);
+      updateThumbColor(switchIds.system, preferences.system);
+      updateThumbColor(switchIds.sound, preferences.soundEnabled);
+      updateThumbColor(switchIds.vibration, preferences.vibrationEnabled);
+    };
+
+    // Initial update
+    setTimeout(updateAllSwitches, 100);
+    setTimeout(updateAllSwitches, 300);
+    setTimeout(updateAllSwitches, 500);
+
+    // Set up interval for continuous updates
+    intervalId = setInterval(updateAllSwitches, 25);
+
+    // Set up mutation observer
+    if (typeof document !== 'undefined' && document.body) {
+      observer = new MutationObserver(() => {
+        updateAllSwitches();
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['style', 'class'],
+      });
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      if (observer) observer.disconnect();
+    };
+  }, [preferences, switchIds]);
+
   const renderPreferencesSection = () => {
     if (!preferences) return null;
 
@@ -244,6 +368,7 @@ export default function NotificationsScreen() {
             : 'system' as keyof NotificationPreferences;
           const isEnabled = preferences[key];
           const isEmergency = type === 'emergency';
+          const switchId = switchIds[key as keyof typeof switchIds] || switchIds.system;
 
           return (
             <View key={type} style={styles.preferenceItem}>
@@ -259,12 +384,12 @@ export default function NotificationsScreen() {
                   <Text style={styles.preferenceDescription}>{label.description}</Text>
                 </View>
               </View>
-              <Switch
+              <CustomToggle
                 value={isEnabled}
                 onValueChange={(value) => handlePreferenceChange(key, value)}
                 disabled={isEmergency}
-                trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
-                thumbColor={isEnabled ? theme.colors.primaryForeground : theme.colors.mutedForeground}
+                trackColor={{ false: '#343434', true: '#343434' }}
+                thumbColor={{ false: 'rgba(255, 132, 117, 0.4)', true: '#ff8475' }}
               />
             </View>
           );
@@ -285,11 +410,11 @@ export default function NotificationsScreen() {
               <Text style={styles.preferenceDescription}>Play sound for notifications</Text>
             </View>
           </View>
-          <Switch
+          <CustomToggle
             value={preferences.soundEnabled}
             onValueChange={(value) => handlePreferenceChange('soundEnabled', value)}
-            trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
-            thumbColor={preferences.soundEnabled ? theme.colors.primaryForeground : theme.colors.mutedForeground}
+            trackColor={{ false: '#343434', true: '#343434' }}
+            thumbColor={{ false: 'rgba(255, 132, 117, 0.4)', true: '#ff8475' }}
           />
         </View>
 
@@ -306,11 +431,11 @@ export default function NotificationsScreen() {
               <Text style={styles.preferenceDescription}>Vibrate for notifications</Text>
             </View>
           </View>
-          <Switch
+          <CustomToggle
             value={preferences.vibrationEnabled}
             onValueChange={(value) => handlePreferenceChange('vibrationEnabled', value)}
-            trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
-            thumbColor={preferences.vibrationEnabled ? theme.colors.primaryForeground : theme.colors.mutedForeground}
+            trackColor={{ false: '#343434', true: '#343434' }}
+            thumbColor={{ false: 'rgba(255, 132, 117, 0.4)', true: '#ff8475' }}
           />
         </View>
       </View>
@@ -322,21 +447,26 @@ export default function NotificationsScreen() {
     container: {
       flex: 1,
       backgroundColor: theme.colors.background,
-      paddingTop: insets.top,
     },
     header: {
       backgroundColor: theme.colors.card,
-      paddingHorizontal: 20,
+      paddingHorizontal: 16,
       paddingVertical: 16,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
+      zIndex: 10,
+    },
+    backButton: {
+      marginRight: 12,
+      padding: 8,
     },
     title: {
       ...theme.typography.h2,
       color: theme.colors.foreground,
+      fontWeight: '600',
+      flex: 1,
+      textAlign: 'center',
     },
     headerActions: {
       flexDirection: 'row',
@@ -567,9 +697,21 @@ export default function NotificationsScreen() {
     </>
   );
 
+  const handleBack = () => {
+    router.push('/(tabs)/menu');
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      {/* Header with Back Button */}
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={handleBack}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="chevron-back" size={24} color={theme.colors.foreground} />
+        </TouchableOpacity>
         <Text style={styles.title}>Notifications</Text>
         <View style={styles.headerActions}>
           <View style={styles.connectionStatus}>

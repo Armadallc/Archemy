@@ -42,32 +42,36 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 const THEME_STORAGE_KEY = 'halcyon_theme_mode';
 
 // Helper function to get font family name based on weight
-// On web, use 'Nohemi' with font-weight; on native, use specific font family names
+// Using Inter font family (replacing Nohemi and Space Grotesk)
 const getFontFamilyByWeight = (weight: string): string => {
+  // Inter font family - works on both web and native
+  // On web, use 'Inter' with font-weight; on native, React Native will use system font or Inter if loaded
   if (Platform.OS === 'web') {
-    // On web, use the base font family name from @font-face declarations
-    // The browser will automatically select the right weight variant
-    return 'Nohemi';
+    return 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   }
-  // On native platforms, use specific font family names
+  // On native platforms, use Inter with weight specification
+  // React Native will use the system font or Inter if available
   const weightMap: Record<string, string> = {
-    '100': 'Nohemi-Thin',
-    '200': 'Nohemi-ExtraLight',
-    '300': 'Nohemi-Light',
-    '400': 'Nohemi-Regular',
-    '500': 'Nohemi-Medium',
-    '600': 'Nohemi-SemiBold',
-    '700': 'Nohemi-Bold',
-    '800': 'Nohemi-ExtraBold',
-    '900': 'Nohemi-Black',
+    '100': 'Inter-Thin',
+    '200': 'Inter-ExtraLight',
+    '300': 'Inter-Light',
+    '400': 'Inter-Regular',
+    '500': 'Inter-Medium',
+    '600': 'Inter-SemiBold',
+    '700': 'Inter-Bold',
+    '800': 'Inter-ExtraBold',
+    '900': 'Inter-Black',
   };
-  return weightMap[weight] || 'Nohemi-Regular';
+  // Fallback to system font if Inter not available
+  return weightMap[weight] || 'Inter-Regular';
 };
 
 // Helper to get mobile typography styles
 const getMobileTypography = () => {
   return {
-    fontFamily: Platform.OS === 'web' ? 'Nohemi' : 'Nohemi-Regular',
+    fontFamily: Platform.OS === 'web' 
+      ? 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+      : 'Inter-Regular',
     h1: {
       fontFamily: getFontFamilyByWeight(typography.presets.h1.fontWeight),
       fontSize: typography.presets.h1.fontSize.mobile,

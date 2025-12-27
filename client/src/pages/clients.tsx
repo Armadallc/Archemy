@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -13,6 +13,7 @@ import { Badge } from "../components/ui/badge";
 import { Separator } from "../components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../components/ui/collapsible";
 import { useToast } from "../hooks/use-toast";
 import { useAuth } from "../hooks/useAuth";
 import { useHierarchy } from "../hooks/useHierarchy";
@@ -20,7 +21,7 @@ import { usePageAccess } from "../hooks/use-page-access";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Search, Edit, Trash2, Phone, Mail, MapPin, Users, Building2, Calendar, UserPlus, UserMinus, Filter, Download, Upload, AlertTriangle, ArrowLeft, User, Heart, Shield, Star, UserCheck } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Phone, Mail, MapPin, Users, Building2, Calendar, UserPlus, UserMinus, Filter, Download, Upload, AlertTriangle, ArrowLeft, User, Heart, Shield, Star, UserCheck, ChevronDown, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { PhoneInput } from "../components/ui/phone-input";
 import { format, parseISO } from "date-fns";
 import { apiRequest } from "../lib/queryClient";
@@ -193,6 +194,10 @@ export default function Clients() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [formData, setFormData] = useState<ClientFormData>(initialFormData);
+  const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set()); // Track expanded clients
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set()); // Track expanded client groups
+  const [sortColumn, setSortColumn] = useState<string | null>(null); // Column to sort by
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc'); // Sort direction
   
   // React Hook Form for create client
   const createForm = useForm<ClientFormData>({
@@ -583,8 +588,8 @@ export default function Clients() {
       if (groupData.selectedClients.length > 0) {
         await Promise.all(groupData.selectedClients.map(clientId => 
           apiRequest("POST", "/api/client-group-memberships", {
-            client_id: clientId,
-            client_group_id: group.id
+            groupId: group.id,
+            clientId: clientId
           })
         ));
       }
@@ -981,6 +986,83 @@ export default function Clients() {
     return matchesSearch && matchesLocation;
   });
 
+  // Sort clients based on selected column and direction
+  const sortedClients = useMemo(() => {
+    if (!sortColumn) return filteredClients;
+
+    const sorted = [...filteredClients].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortColumn) {
+        case 'scid':
+          aValue = a.scid || '';
+          bValue = b.scid || '';
+          break;
+        case 'name':
+          aValue = `${a.first_name || ''} ${a.last_name || ''}`.trim();
+          bValue = `${b.first_name || ''} ${b.last_name || ''}`.trim();
+          break;
+        case 'tenant':
+          aValue = a.programs?.corporateClient?.name || a.program?.corporateClient?.name || '';
+          bValue = b.programs?.corporateClient?.name || b.program?.corporateClient?.name || '';
+          break;
+        case 'program':
+          aValue = a.programs?.short_name || a.programs?.name || a.program?.short_name || a.program?.name || '';
+          bValue = b.programs?.short_name || b.programs?.name || b.program?.short_name || b.program?.name || '';
+          break;
+        case 'location':
+          aValue = a.locations?.name || a.location?.name || '';
+          bValue = b.locations?.name || b.location?.name || '';
+          break;
+        case 'contact':
+          // Combine phone and email for sorting
+          aValue = `${a.phone || ''} ${a.email || ''}`.trim();
+          bValue = `${b.phone || ''} ${b.email || ''}`.trim();
+          break;
+        case 'status':
+          aValue = a.is_active ? 'active' : 'inactive';
+          bValue = b.is_active ? 'active' : 'inactive';
+          break;
+        default:
+          return 0;
+      }
+
+      // Handle null/undefined values
+      if (aValue === null || aValue === undefined) aValue = '';
+      if (bValue === null || bValue === undefined) bValue = '';
+
+      // Compare values
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return sorted;
+  }, [filteredClients, sortColumn, sortDirection]);
+
+  // Handle column header click for sorting
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      // Toggle direction if same column
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new column and default to ascending
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  // Get sort icon for column header
+  const getSortIcon = (column: string) => {
+    if (sortColumn !== column) {
+      return <ArrowUpDown className="h-3 w-3 ml-1 opacity-50" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="h-3 w-3 ml-1" />
+      : <ArrowDown className="h-3 w-3 ml-1" />;
+  };
+
   if (loadingClients) {
     return (
       <div className="p-6">
@@ -1015,7 +1097,7 @@ export default function Clients() {
               )}
               <div className="flex space-x-2">
                 <ExportButton
-                  data={filteredClients}
+                  data={sortedClients}
                   columns={[
                     { key: 'id', label: 'Client ID' },
                     { key: 'name', label: 'Name', formatter: (client) => `${client.first_name} ${client.last_name}` },
@@ -1170,7 +1252,7 @@ export default function Clients() {
           <div className="flex items-center justify-between text-sm text-gray-600 mt-2">
             <span className="flex items-center">
               <Users className="w-4 h-4 mr-1" />
-              {filteredClients.length} clients
+              {sortedClients.length} clients
             </span>
           </div>
         </CardHeader>
@@ -1210,210 +1292,248 @@ export default function Clients() {
                 Retry
               </Button>
             </div>
-          ) : filteredClients.length === 0 ? (
+          ) : sortedClients.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <Users className="w-16 h-16 mx-auto mb-4 opacity-50" />
                 <p className="text-lg font-medium">No clients found</p>
                 <p className="text-sm">Add clients to start managing your directory</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow style={{ backgroundColor: 'var(--muted)' }}>
-                      <TableHead className="font-semibold">Client</TableHead>
-                      <TableHead className="font-semibold">Contact</TableHead>
-                      <TableHead className="font-semibold">Program</TableHead>
-                      <TableHead className="font-semibold">Location</TableHead>
-                      <TableHead className="font-semibold">Status</TableHead>
-                      <TableHead className="font-semibold">Medical Info</TableHead>
-                      <TableHead className="font-semibold">Created</TableHead>
-                      <TableHead className="text-right font-semibold">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredClients.map((client) => (
-                      <TableRow key={client.id}>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2 text-sm">
-                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                              <span className="font-medium">{client.first_name} {client.last_name}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-gray-500">
-                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--blue-9)' }}></div>
-                              <span className="truncate max-w-32 font-mono">
-                                {client.scid ? (
-                                  <>SCID: {client.scid}</>
+              <Card>
+                <CardContent className="p-0">
+                  {/* Header Row */}
+                  <div className="sticky top-0 z-10 font-semibold text-sm" style={{ backgroundColor: '#f4f4f4', borderBottom: '1px solid #eaeaea', color: '#1e2023' }}>
+                    <div className="flex items-center gap-3 p-4">
+                      <div className="w-4" />
+                      <div className="flex-1 grid grid-cols-12 gap-2 items-center">
+                        <div 
+                          className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                          onClick={() => handleSort('scid')}
+                          title="Click to sort by SCID"
+                        >
+                          SCID{getSortIcon('scid')}
+                        </div>
+                        <div 
+                          className="col-span-2 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                          onClick={() => handleSort('name')}
+                          title="Click to sort by Name"
+                        >
+                          Name{getSortIcon('name')}
+                        </div>
+                        <div 
+                          className="col-span-2 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                          onClick={() => handleSort('tenant')}
+                          title="Click to sort by Tenant"
+                        >
+                          Tenant{getSortIcon('tenant')}
+                        </div>
+                        <div 
+                          className="col-span-2 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                          onClick={() => handleSort('program')}
+                          title="Click to sort by Program"
+                        >
+                          Program{getSortIcon('program')}
+                        </div>
+                        <div 
+                          className="col-span-2 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                          onClick={() => handleSort('location')}
+                          title="Click to sort by Location"
+                        >
+                          Location{getSortIcon('location')}
+                        </div>
+                        <div 
+                          className="col-span-2 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                          onClick={() => handleSort('contact')}
+                          title="Click to sort by Contact"
+                        >
+                          Contact{getSortIcon('contact')}
+                        </div>
+                        <div 
+                          className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                          onClick={() => handleSort('status')}
+                          title="Click to sort by Status"
+                        >
+                          Status{getSortIcon('status')}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="divide-y">
+                    {sortedClients.map((client) => {
+                      const isExpanded = expandedClients.has(client.id);
+                      const tenantName = client.programs?.corporateClient?.name || client.program?.corporateClient?.name || 'N/A';
+                      
+                      return (
+                        <Collapsible
+                          key={client.id}
+                          open={isExpanded}
+                          onOpenChange={(open) => {
+                            const newExpanded = new Set(expandedClients);
+                            if (open) {
+                              newExpanded.add(client.id);
+                            } else {
+                              newExpanded.delete(client.id);
+                            }
+                            setExpandedClients(newExpanded);
+                          }}
+                        >
+                          <CollapsibleTrigger asChild>
+                            <div className="flex items-center gap-3 p-4 transition-colors cursor-pointer hover:bg-[#f9f9f9]" style={{ borderBottom: '1px solid #eaeaea' }}>
+                              <div className="w-4 flex items-center justify-center">
+                                {isExpanded ? (
+                                  <ChevronDown className="h-4 w-4" style={{ color: 'var(--muted-foreground)' }} />
                                 ) : (
-                                  <span className="text-muted-foreground italic">SCID: Pending</span>
+                                  <ChevronRight className="h-4 w-4" style={{ color: 'var(--muted-foreground)' }} />
                                 )}
-                              </span>
+                              </div>
+                              <div className="flex-1 grid grid-cols-12 gap-2 items-center">
+                                {/* SCID */}
+                                <div className="col-span-1 font-mono text-xs truncate" style={{ color: 'var(--muted-foreground)' }}>
+                                  {client.scid || <span className="italic">Pending</span>}
+                                </div>
+                                {/* Name */}
+                                <div className="col-span-2 truncate font-medium">
+                                  {client.first_name} {client.last_name}
+                                </div>
+                                {/* Tenant */}
+                                <div className="col-span-2 truncate" style={{ color: 'var(--muted-foreground)' }}>
+                                  {tenantName}
+                                </div>
+                                {/* Program */}
+                                <div className="col-span-2 truncate" style={{ color: 'var(--muted-foreground)' }}>
+                                  {client.programs?.short_name || client.programs?.name || client.program?.short_name || client.program?.name || 'Unknown'}
+                                </div>
+                                {/* Location */}
+                                <div className="col-span-2 truncate" style={{ color: 'var(--muted-foreground)' }}>
+                                  {client.locations?.name || client.location?.name || 'Not assigned'}
+                                </div>
+                                {/* Contact */}
+                                <div className="col-span-2 truncate" style={{ color: 'var(--muted-foreground)' }}>
+                                  {client.phone && (
+                                    <div className="flex items-center gap-1">
+                                      <Phone className="h-3 w-3" />
+                                      <span className="truncate">{client.phone}</span>
+                                    </div>
+                                  )}
+                                  {client.email && !client.phone && (
+                                    <div className="flex items-center gap-1">
+                                      <Mail className="h-3 w-3" />
+                                      <span className="truncate">{client.email}</span>
+                                    </div>
+                                  )}
+                                  {!client.phone && !client.email && '-'}
+                                </div>
+                                {/* Status */}
+                                <div className="col-span-1">
+                                  {getStatusBadge(client.is_active)}
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            {client.phone && (
-                              <div className="flex items-center gap-2 text-sm">
-                                <Phone className="w-4 h-4 text-gray-400" />
-                                <span>{client.phone}</span>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="px-4 pb-4 pt-2 border-t" style={{ backgroundColor: '#fafafa' }}>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                                {/* Expanded Details */}
+                                <div className="space-y-2">
+                                  <div>
+                                    <strong>Email:</strong> {client.email || 'N/A'}
+                                  </div>
+                                  <div>
+                                    <strong>Phone Type:</strong> {client.phone_type || 'N/A'}
+                                  </div>
+                                  <div>
+                                    <strong>Address:</strong> {client.address || 'N/A'}
+                                  </div>
+                                  <div>
+                                    <strong>Date of Birth:</strong> {client.date_of_birth ? format(parseISO(client.date_of_birth), 'MMM d, yyyy') : 'N/A'}
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <div>
+                                    <strong>Birth Sex:</strong> {client.birth_sex || 'N/A'}
+                                  </div>
+                                  <div>
+                                    <strong>Age:</strong> {client.age || 'N/A'}
+                                  </div>
+                                  <div>
+                                    <strong>Race:</strong> {client.race || 'N/A'}
+                                  </div>
+                                  <div>
+                                    <strong>Created:</strong> {format(parseISO(client.created_at), 'MMM d, yyyy')}
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <div>
+                                    <strong>Emergency Contact:</strong> {client.emergency_contact_name || 'N/A'}
+                                  </div>
+                                  <div>
+                                    <strong>Emergency Phone:</strong> {client.emergency_contact_phone || 'N/A'}
+                                  </div>
+                                  {client.medical_conditions && (
+                                    <div>
+                                      <strong>Medical Conditions:</strong> {client.medical_conditions}
+                                    </div>
+                                  )}
+                                  {client.special_requirements && (
+                                    <div>
+                                      <strong>Special Requirements:</strong> {client.special_requirements}
+                                    </div>
+                                  )}
+                                  {client.mobility_requirements && (
+                                    <div>
+                                      <strong>Mobility Requirements:</strong> {client.mobility_requirements}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                            )}
-                            {client.email && (
-                              <div className="flex items-center gap-2 text-sm">
-                                <Mail className="w-4 h-4 text-gray-400" />
-                                <span className="truncate max-w-32">{client.email}</span>
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm font-medium">{client.programs?.short_name || client.programs?.name || client.program?.short_name || client.program?.name || 'Unknown'}</div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2 text-sm">
-                            <MapPin className="w-4 h-4 text-gray-400" />
-                            <span>{client.locations?.name || client.location?.name || 'Not assigned'}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {getStatusBadge(client.is_active)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1 flex-wrap">
-                            {client.emergency_contact_name && (
-                              <Badge 
-                                className="text-xs px-2 py-1 rounded-full font-medium"
-                                style={{
-                                  backgroundColor: 'rgba(137, 51, 204, 0.15)',
-                                  color: 'var(--chart-2)',
-                                  borderColor: 'var(--chart-2)',
-                                  borderWidth: '1px',
-                                  borderStyle: 'solid'
-                                }}
-                              >
-                                <Phone className="w-3 h-3 mr-1" />
-                                Emergency
-                              </Badge>
-                            )}
-                            {client.medical_conditions && (
-                              <Badge 
-                                className="text-xs px-2 py-1 rounded-full font-medium"
-                                style={{
-                                  backgroundColor: 'rgba(204, 88, 51, 0.15)',
-                                  color: 'var(--destructive)',
-                                  borderColor: 'var(--destructive)',
-                                  borderWidth: '1px',
-                                  borderStyle: 'solid'
-                                }}
-                              >
-                                <Heart className="w-3 h-3 mr-1" />
-                                Medical
-                              </Badge>
-                            )}
-                            {client.special_requirements && (
-                              <Badge 
-                                className="text-xs px-2 py-1 rounded-full font-medium"
-                                style={{
-                                  backgroundColor: 'rgba(204, 51, 171, 0.15)',
-                                  color: 'var(--primary)',
-                                  borderColor: 'var(--primary)',
-                                  borderWidth: '1px',
-                                  borderStyle: 'solid'
-                                }}
-                              >
-                                <Shield className="w-3 h-3 mr-1" />
-                                Special
-                              </Badge>
-                            )}
-                            {client.mobility_requirements && (
-                              <Badge 
-                                className="text-xs px-2 py-1 rounded-full font-medium"
-                                style={{
-                                  backgroundColor: 'rgba(51, 204, 173, 0.15)',
-                                  color: 'var(--accent)',
-                                  borderColor: 'var(--accent)',
-                                  borderWidth: '1px',
-                                  borderStyle: 'solid'
-                                }}
-                              >
-                                <Star className="w-3 h-3 mr-1" />
-                                Mobility
-                              </Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm text-gray-600">
-                            {format(parseISO(client.created_at), 'MMM d, yyyy')}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            {client.is_active && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-8 w-8 p-0 hover:bg-green-50 hover:text-green-600"
-                                onClick={() => {
-                                  // Quick action for active clients
-                                  toast({
-                                    title: "Quick Action",
-                                    description: `Quick action performed for ${client.first_name} ${client.last_name}`,
-                                  });
-                                }}
-                                title="Quick Action"
-                              >
-                                <UserCheck className="h-4 w-4" />
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0"
-                              onClick={() => handleEditClient(client)}
-                              title="Edit Client"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
+                              <div className="mt-4 flex items-center gap-2">
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                  title="Delete Client"
+                                  onClick={() => handleEditClient(client)}
                                 >
-                                  <Trash2 className="h-4 w-4" />
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
                                 </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Client</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to delete {client.first_name} {client.last_name}? 
-                                    This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => handleDeleteClient(client.id)}
-                                    className="bg-red-600 hover:bg-red-700"
-                                  >
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete Client</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete {client.first_name} {client.last_name}? 
+                                        This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleDeleteClient(client.id)}
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </CardContent>
         </Card>
@@ -1466,80 +1586,253 @@ export default function Clients() {
                       </Button>
                     </div>
             ) : (
-                    <div className="space-y-4">
-                      {clientGroups.map((group: any) => (
-                        <div key={group.id} className="border rounded-lg p-4 hover:shadow-md transition-all duration-200" style={{ '--hover-bg': 'var(--muted)' } as React.CSSProperties} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--muted)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h3 className="font-medium text-foreground">{group.name}</h3>
-                        <p className="text-sm text-muted-foreground">{group.description}</p>
-                      </div>
-                      <Badge variant="outline">{group.member_count ?? 0} members</Badge>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm text-muted-foreground">
-                        Program: {group.programs?.name || 'Unknown'}
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setViewingGroup(group);
-                            setIsViewEditMembersDialogOpen(true);
-                          }}
-                        >
-                          <Users className="w-4 h-4 mr-1" />
-                          Members
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setEditingGroup(group);
-                            setGroupFormData({
-                              name: group.name,
-                              description: group.description || "",
-                              selectedClients: [],
-                              program_id: selectedProgram || "",
-                              expiryOption: "never"
-                            });
-                            setIsEditGroupDialogOpen(true);
-                          }}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Group</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete the group "{group.name}"? 
-                                This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction 
-                                onClick={() => handleDeleteGroup(group.id)}
-                                className="bg-red-600 hover:bg-red-700"
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+              <Card>
+                <CardContent className="p-0">
+                  {/* Header Row */}
+                  <div className="sticky top-0 z-10 font-semibold text-sm" style={{ backgroundColor: '#f4f4f4', borderBottom: '1px solid #eaeaea', color: '#1e2023' }}>
+                    <div className="flex items-center gap-3 p-4">
+                      <div className="w-4" />
+                      <div className="flex-1 grid grid-cols-12 gap-2 items-center">
+                        <div className="col-span-1">Reference ID</div>
+                        <div className="col-span-2">Name</div>
+                        <div className="col-span-2">Program</div>
+                        <div className="col-span-3">Description</div>
+                        <div className="col-span-2">Members</div>
+                        <div className="col-span-1">Status</div>
+                        <div className="col-span-1 text-right">Actions</div>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
+                  <div className="divide-y">
+                    {clientGroups.map((group: any) => {
+                      const isExpanded = expandedGroups.has(group.id);
+                      
+                      return (
+                        <Collapsible
+                          key={group.id}
+                          open={isExpanded}
+                          onOpenChange={(open) => {
+                            const newExpanded = new Set(expandedGroups);
+                            if (open) {
+                              newExpanded.add(group.id);
+                            } else {
+                              newExpanded.delete(group.id);
+                            }
+                            setExpandedGroups(newExpanded);
+                          }}
+                        >
+                          <CollapsibleTrigger asChild>
+                            <div className="flex items-center gap-3 p-4 transition-colors cursor-pointer hover:bg-[#f9f9f9]" style={{ borderBottom: '1px solid #eaeaea' }}>
+                              <div className="w-4 flex items-center justify-center">
+                                {isExpanded ? (
+                                  <ChevronDown className="h-4 w-4" style={{ color: 'var(--muted-foreground)' }} />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4" style={{ color: 'var(--muted-foreground)' }} />
+                                )}
+                              </div>
+                              <div className="flex-1 grid grid-cols-12 gap-2 items-center">
+                                {/* Reference ID */}
+                                <div className="col-span-1 font-mono text-xs truncate" style={{ color: 'var(--muted-foreground)' }}>
+                                  {group.reference_id || <span className="italic">Pending</span>}
+                                </div>
+                                {/* Name */}
+                                <div className="col-span-2 truncate font-medium">
+                                  {group.name}
+                                </div>
+                                {/* Program */}
+                                <div className="col-span-2 truncate" style={{ color: 'var(--muted-foreground)' }}>
+                                  {group.programs?.name || group.program?.name || 'Unknown'}
+                                </div>
+                                {/* Description */}
+                                <div className="col-span-3 truncate" style={{ color: 'var(--muted-foreground)' }}>
+                                  {group.description || '-'}
+                                </div>
+                                {/* Members */}
+                                <div className="col-span-2" style={{ color: 'var(--muted-foreground)' }}>
+                                  <Badge variant="outline" className="text-xs">
+                                    {group.member_count ?? 0} {group.member_count === 1 ? 'member' : 'members'}
+                                  </Badge>
+                                </div>
+                                {/* Status */}
+                                <div className="col-span-1">
+                                  {getStatusBadge(group.is_active !== false)}
+                                </div>
+                                {/* Actions - prevent click from expanding */}
+                                <div className="col-span-1 text-right" onClick={(e) => e.stopPropagation()}>
+                                  <div className="flex items-center justify-end gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0"
+                                      onClick={() => {
+                                        setViewingGroup(group);
+                                        setIsViewEditMembersDialogOpen(true);
+                                      }}
+                                      title="View Members"
+                                    >
+                                      <Users className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0"
+                                      onClick={() => {
+                                        setEditingGroup(group);
+                                        setGroupFormData({
+                                          name: group.name,
+                                          description: group.description || "",
+                                          selectedClients: [],
+                                          program_id: selectedProgram || "",
+                                          expiryOption: "never"
+                                        });
+                                        setIsEditGroupDialogOpen(true);
+                                      }}
+                                      title="Edit Group"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                          title="Delete Group"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Delete Group</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            Are you sure you want to delete the group "{group.name}"? 
+                                            This action cannot be undone.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                          <AlertDialogAction 
+                                            onClick={() => handleDeleteGroup(group.id)}
+                                            className="bg-red-600 hover:bg-red-700"
+                                          >
+                                            Delete
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="px-4 pb-4 pt-2 border-t" style={{ backgroundColor: '#fafafa' }}>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                                {/* Expanded Details */}
+                                <div className="space-y-2">
+                                  <div>
+                                    <strong>Reference ID:</strong> {group.reference_id || 'Pending'}
+                                  </div>
+                                  <div>
+                                    <strong>Group Name:</strong> {group.name}
+                                  </div>
+                                  <div>
+                                    <strong>Program:</strong> {group.programs?.name || group.program?.name || 'Unknown'}
+                                  </div>
+                                  <div>
+                                    <strong>Program ID:</strong> {group.program_id || 'N/A'}
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <div>
+                                    <strong>Description:</strong> {group.description || 'N/A'}
+                                  </div>
+                                  <div>
+                                    <strong>Members:</strong> {group.member_count ?? 0}
+                                  </div>
+                                  <div>
+                                    <strong>Status:</strong> {group.is_active !== false ? 'Active' : 'Inactive'}
+                                  </div>
+                                  <div>
+                                    <strong>Created:</strong> {group.created_at ? format(parseISO(group.created_at), 'MMM d, yyyy') : 'N/A'}
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <div>
+                                    <strong>Updated:</strong> {group.updated_at ? format(parseISO(group.updated_at), 'MMM d, yyyy') : 'N/A'}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="mt-4 flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setViewingGroup(group);
+                                    setIsViewEditMembersDialogOpen(true);
+                                  }}
+                                >
+                                  <Users className="h-4 w-4 mr-2" />
+                                  View/Edit Members
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setEditingGroup(group);
+                                    setGroupFormData({
+                                      name: group.name,
+                                      description: group.description || "",
+                                      selectedClients: [],
+                                      program_id: selectedProgram || "",
+                                      expiryOption: "never"
+                                    });
+                                    setIsEditGroupDialogOpen(true);
+                                  }}
+                                >
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit Group
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete Group</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete the group "{group.name}"? 
+                                        This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction 
+                                        onClick={() => handleDeleteGroup(group.id)}
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </CardContent>
         </Card>

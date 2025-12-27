@@ -10,6 +10,7 @@ import { PhoneInput } from "../ui/phone-input";
 import { Textarea } from "../ui/textarea";
 import { Switch } from "../ui/switch";
 import { Separator } from "../ui/separator";
+import AddressInput from "../forms/AddressInput";
 import { Badge } from "../ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Alert, AlertDescription } from "../ui/alert";
@@ -863,21 +864,30 @@ export default function CorporateClientCards() {
                             }
                           />
                         </div>
-                      <div className="space-y-2">
-                        <Label htmlFor={`corp-address-${client.id}`}>Address</Label>
-                        <Textarea
-                          id={`corp-address-${client.id}`}
-                          value={editingClient.address || ''}
-                          onChange={(e) =>
-                            setEditingClients({
-                              ...editingClients,
-                              [client.id]: { ...editingClient, address: e.target.value },
-                            })
-                          }
-                          placeholder="Enter corporate client address"
-                          rows={3}
-                        />
-                      </div>
+                      <AddressInput
+                        value={editingClient.address || ''}
+                        onChange={(addressData) => {
+                          // Generate full address for backward compatibility
+                          const fullAddress = [
+                            addressData.street,
+                            addressData.city,
+                            addressData.state && addressData.zip ? `${addressData.state} ${addressData.zip}` : addressData.state || addressData.zip
+                          ].filter(Boolean).join(', ');
+                          setEditingClients({
+                            ...editingClients,
+                            [client.id]: { ...editingClient, address: fullAddress },
+                          });
+                        }}
+                        onFullAddressChange={(fullAddress) =>
+                          setEditingClients({
+                            ...editingClients,
+                            [client.id]: { ...editingClient, address: fullAddress },
+                          })
+                        }
+                        label="Address"
+                        required={false}
+                        showLabel={true}
+                      />
                     </div>
                     <div className="flex justify-end">
                       <Button
@@ -1008,18 +1018,29 @@ export default function CorporateClientCards() {
                                           />
                                         </div>
                                         <div className="space-y-2 md:col-span-2">
-                                          <Label htmlFor={`prog-address-${program.id}`}>Address</Label>
-                                          <Textarea
-                                            id={`prog-address-${program.id}`}
+                                          <AddressInput
                                             value={editingPrograms[program.id].address || ''}
-                                            onChange={(e) =>
+                                            onChange={(addressData) => {
+                                              // Generate full address for backward compatibility
+                                              const fullAddress = [
+                                                addressData.street,
+                                                addressData.city,
+                                                addressData.state && addressData.zip ? `${addressData.state} ${addressData.zip}` : addressData.state || addressData.zip
+                                              ].filter(Boolean).join(', ');
                                               setEditingPrograms({
                                                 ...editingPrograms,
-                                                [program.id]: { ...editingPrograms[program.id], address: e.target.value },
+                                                [program.id]: { ...editingPrograms[program.id], address: fullAddress },
+                                              });
+                                            }}
+                                            onFullAddressChange={(fullAddress) =>
+                                              setEditingPrograms({
+                                                ...editingPrograms,
+                                                [program.id]: { ...editingPrograms[program.id], address: fullAddress },
                                               })
                                             }
-                                            placeholder="Enter program address"
-                                            rows={2}
+                                            label="Address"
+                                            required={false}
+                                            showLabel={true}
                                           />
                                         </div>
                                         <div className="space-y-2">
@@ -1161,18 +1182,29 @@ export default function CorporateClientCards() {
                                                       />
                                                     </div>
                                                     <div className="space-y-2 md:col-span-2">
-                                                      <Label htmlFor={`loc-address-${location.id}`}>Address *</Label>
-                                                      <Textarea
-                                                        id={`loc-address-${location.id}`}
+                                                      <AddressInput
                                                         value={editingLocation.address}
-                                                        onChange={(e) =>
+                                                        onChange={(addressData) => {
+                                                          // Generate full address for backward compatibility
+                                                          const fullAddress = [
+                                                            addressData.street,
+                                                            addressData.city,
+                                                            addressData.state && addressData.zip ? `${addressData.state} ${addressData.zip}` : addressData.state || addressData.zip
+                                                          ].filter(Boolean).join(', ');
                                                           setEditingLocations({
                                                             ...editingLocations,
-                                                            [location.id]: { ...editingLocation, address: e.target.value },
+                                                            [location.id]: { ...editingLocation, address: fullAddress },
+                                                          });
+                                                        }}
+                                                        onFullAddressChange={(fullAddress) =>
+                                                          setEditingLocations({
+                                                            ...editingLocations,
+                                                            [location.id]: { ...editingLocation, address: fullAddress },
                                                           })
                                                         }
-                                                        placeholder="Enter location address"
-                                                        rows={2}
+                                                        label="Address"
+                                                        required={true}
+                                                        showLabel={true}
                                                       />
                                                     </div>
                                                     <div className="space-y-2 md:col-span-2">
@@ -1534,16 +1566,22 @@ function CreateCorporateClientDialog({
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="create-address">Address</Label>
-              <Textarea
-                id="create-address"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                placeholder="Enter address"
-                rows={2}
-              />
-            </div>
+            <AddressInput
+              value={formData.address}
+              onChange={(addressData) => {
+                // Generate full address for backward compatibility
+                const fullAddress = [
+                  addressData.street,
+                  addressData.city,
+                  addressData.state && addressData.zip ? `${addressData.state} ${addressData.zip}` : addressData.state || addressData.zip
+                ].filter(Boolean).join(', ');
+                setFormData({ ...formData, address: fullAddress });
+              }}
+              onFullAddressChange={(fullAddress) => setFormData({ ...formData, address: fullAddress })}
+              label="Address"
+              required={false}
+              showLabel={true}
+            />
           </div>
 
           {/* Logo Upload */}

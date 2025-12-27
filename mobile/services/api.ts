@@ -335,6 +335,14 @@ class ApiClient {
     });
   }
 
+  // Driver Availability Methods
+  async updateDriverAvailability(driverId: string, is_available: boolean): Promise<any> {
+    return this.request(`/api/mobile/driver/${driverId}/availability`, {
+      method: 'PATCH',
+      body: JSON.stringify({ is_available }),
+    });
+  }
+
   // Avatar upload method - handles FormData
   async uploadAvatar(userId: string, imageUri: string, imageType: string = 'image/jpeg'): Promise<{ success: boolean; avatar_url: string; user: any }> {
     const url = `${this.baseURL}/api/users/${userId}/avatar`;
