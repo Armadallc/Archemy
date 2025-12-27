@@ -378,11 +378,11 @@ export default function Settings() {
   const ENABLE_UNIFIED_HEADER = RollbackManager.isUnifiedHeaderEnabled();
 
   return (
-    <div className="container mx-auto space-y-6 p-6">
+    <div className="flex-1 flex flex-col overflow-hidden" style={{ padding: '24px' }}>
       {/* Header - Only show if unified header is disabled (fallback) */}
       {!ENABLE_UNIFIED_HEADER && (
-        <div>
-          <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between mb-6" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+        <div className="flex-shrink-0 mb-6">
+          <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
             <div>
               <h1 
                 className="font-bold text-foreground" 
@@ -394,7 +394,7 @@ export default function Settings() {
                 settings.
               </h1>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-6">
               {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
                 <HeaderScopeSelector />
               )}
@@ -416,6 +416,8 @@ export default function Settings() {
         </div>
       )}
 
+      {/* Tabs Content - Match header width */}
+      <div className="flex-1 overflow-auto min-h-0">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-10 h-auto p-1 gap-1">
           {visibleTabs.map((tab) => (
@@ -803,6 +805,7 @@ export default function Settings() {
           </Card>
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }

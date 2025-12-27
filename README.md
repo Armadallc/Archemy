@@ -72,6 +72,9 @@ JWT_SECRET=dev-secret
 VITE_API_BASE_URL=http://localhost:8081
 VITE_SUPABASE_URL=...       # anon URL if needed client-side
 VITE_SUPABASE_ANON_KEY=...
+
+# OpenRouteService (for route estimation and distance calculation)
+OPENROUTESERVICE_API_KEY=eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjMxOTVjMDk4M2MxOTQ2NjE5NTI2MGI2MWRlM2ViMWQ2IiwiaCI6Im11cm11cjY0In0=
 ```
 Mobile app env (`mobile/.env`):
 ```env

@@ -17,7 +17,7 @@ export const fullCalendarTheme = {
     primary: FIRE_PALETTE.coral,      // #ff8475 - Primary actions
     secondary: FIRE_PALETTE.lime,     // #f1fec9 - Secondary actions
     accent: FIRE_PALETTE.ice,         // #e8fffe - Accent elements
-    dark: FIRE_PALETTE.charcoal,      // #26282b - Dark text/backgrounds
+    dark: FIRE_PALETTE.charcoal,      // #1e2023 - Dark text/backgrounds (20% darker)
     light: FIRE_PALETTE.silver,       // #eaeaea - Light backgrounds
     background: '#f4f4f4',            // cloud - Main background
   },
@@ -87,14 +87,14 @@ export const fullCalendarTailwindClasses = {
     coral: 'bg-[#ff8475]/20 text-[#ff8475] border-l-4 border-[#ff8475]',
     lime: 'bg-[#f1fec9]/60 text-[#26282b] border-l-4 border-[#d4e5a8]',
     ice: 'bg-[#e8fffe]/60 text-[#26282b] border-l-4 border-[#b8e5e3]',
-    charcoal: 'bg-[#26282b]/20 text-[#26282b] border-l-4 border-[#26282b]',
+    charcoal: 'bg-[#1e2023]/20 text-[#1e2023] border-l-4 border-[#1e2023]',
     silver: 'bg-[#eaeaea]/60 text-[#26282b] border-l-4 border-[#d4d4d4]',
   },
   hover: {
     coral: 'hover:bg-[#ff8475]/30',
     lime: 'hover:bg-[#f1fec9]/80',
     ice: 'hover:bg-[#e8fffe]/80',
-    charcoal: 'hover:bg-[#26282b]/30',
+    charcoal: 'hover:bg-[#1e2023]/30',
     silver: 'hover:bg-[#eaeaea]/80',
   },
 } as const;

@@ -25,20 +25,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="home"
+        name="dashboard"
         options={{
-          title: 'Home',
+          title: 'Dashboard',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="trips"
-        options={{
-          title: 'Trips',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar" size={size} color={color} />
           ),
         }}
       />
@@ -88,6 +79,18 @@ export default function TabLayout() {
         name="debug"
         options={{
           href: null, // Hide from tab bar
+        }}
+      />
+      <Tabs.Screen
+        name="help-faq"
+        options={{
+          href: null, // Hide from tab bar - accessible via menu
+        }}
+      />
+      <Tabs.Screen
+        name="privacy-security"
+        options={{
+          href: null, // Hide from tab bar - accessible via menu
         }}
       />
     </Tabs>

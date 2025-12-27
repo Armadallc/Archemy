@@ -23,6 +23,7 @@ import { apiClient } from '../../services/api';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import NeumorphicView from '../../components/NeumorphicView';
 // Date formatting utilities
 const formatMessageTime = (dateString: string): string => {
   const date = new Date(dateString);
@@ -99,6 +100,13 @@ export default function ChatScreen() {
   
   // Track if we're viewing a chat thread (for mobile navigation)
   const [viewingChatThread, setViewingChatThread] = useState(false);
+  
+  // New state for iOS Messages-like features
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [filterType, setFilterType] = useState<'all' | 'personal' | 'group' | 'unread'>('all');
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedDiscussions, setSelectedDiscussions] = useState<Set<string>>(new Set());
 
   // Listen for screen dimension changes
   useEffect(() => {
@@ -126,9 +134,66 @@ export default function ChatScreen() {
     staleTime: 5000,
   });
 
-  // Sort discussions: pinned first, then by last message time (newest first)
-  const discussions = React.useMemo(() => {
-    return [...discussionsRaw].sort((a, b) => {
+  // Helper function to get discussion name (moved before useMemo)
+  const getDiscussionName = (discussion: Discussion): string => {
+    if (discussion.title) return discussion.title;
+    if (discussion.discussion_type === 'personal' && discussion.otherParticipant) {
+      const other = discussion.otherParticipant;
+      if (other.first_name && other.last_name) {
+        return `${other.first_name} ${other.last_name}`;
+      }
+      return other.user_name || other.email || 'Unknown';
+    }
+    if (discussion.participants && discussion.participants.length > 0) {
+      const names = discussion.participants
+        .filter(p => p.user_id !== user?.id)
+        .map(p => {
+          if (p.first_name && p.last_name) return `${p.first_name} ${p.last_name}`;
+          return p.user_name || p.email || 'Unknown';
+        });
+      return names.length > 0 ? names.join(', ') : 'Group Chat';
+    }
+    return 'Group Chat';
+  };
+
+  // Filter and sort discussions
+  const filteredAndSortedDiscussions = React.useMemo(() => {
+    let filtered = [...discussionsRaw];
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(discussion => {
+        // Search in discussion name
+        const name = getDiscussionName(discussion).toLowerCase();
+        if (name.includes(query)) return true;
+        
+        // Search in last message content
+        if (discussion.lastMessage?.content?.toLowerCase().includes(query)) return true;
+        
+        // Search in participant names
+        if (discussion.participants) {
+          const participantNames = discussion.participants
+            .map(p => `${p.first_name || ''} ${p.last_name || ''} ${p.user_name || ''} ${p.email || ''}`.toLowerCase());
+          if (participantNames.some(n => n.includes(query))) return true;
+        }
+        
+        return false;
+      });
+    }
+    
+    // Apply type filter
+    if (filterType === 'personal') {
+      filtered = filtered.filter(d => d.discussion_type === 'personal');
+    } else if (filterType === 'group') {
+      filtered = filtered.filter(d => d.discussion_type === 'group');
+    } else if (filterType === 'unread') {
+      // TODO: Implement unread filter when unread status is available
+      // For now, we'll show all
+    }
+    
+    // Sort: pinned first, then by last message time (newest first)
+    return filtered.sort((a, b) => {
       // Pinned discussions first
       if (a.is_pinned && !b.is_pinned) return -1;
       if (!a.is_pinned && b.is_pinned) return 1;
@@ -137,10 +202,13 @@ export default function ChatScreen() {
       const bTime = b.last_message_at ? new Date(b.last_message_at).getTime() : (b.lastMessage ? new Date(b.lastMessage.created_at).getTime() : 0);
       return bTime - aTime; // Descending order (newest first)
     });
-  }, [discussionsRaw]);
+  }, [discussionsRaw, searchQuery, filterType, user?.id]);
+  
+  // Use filtered discussions
+  const discussions = filteredAndSortedDiscussions;
 
   // Fetch messages for selected discussion
-  const { data: messages = [], isLoading: messagesLoading, refetch: refetchMessages } = useQuery({
+  const { data: messagesRaw = [], isLoading: messagesLoading, refetch: refetchMessages } = useQuery({
     queryKey: ['discussions', selectedDiscussionId, 'messages'],
     queryFn: async () => {
       if (!selectedDiscussionId) return [];
@@ -153,6 +221,11 @@ export default function ChatScreen() {
     refetchInterval: 5000,
     staleTime: 2000,
   });
+
+  // Reverse messages array so newest appears at bottom (backend returns newest first)
+  const messages = React.useMemo(() => {
+    return [...messagesRaw].reverse();
+  }, [messagesRaw]);
 
   // Auto-select first discussion (only on desktop/tablet, not mobile or web view)
   useEffect(() => {
@@ -356,26 +429,118 @@ export default function ChatScreen() {
     );
   };
 
+  // Delete discussion handler
+  const handleDeleteDiscussion = async (discussionId: string) => {
+    Alert.alert(
+      'Delete Conversation',
+      'Are you sure you want to delete this conversation?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await apiClient.request(`/api/discussions/${discussionId}`, {
+                method: 'DELETE',
+              });
+              queryClient.invalidateQueries({ queryKey: ['discussions'] });
+              if (selectedDiscussionId === discussionId) {
+                setSelectedDiscussionId(null);
+                setViewingChatThread(false);
+              }
+            } catch (error: any) {
+              Alert.alert('Error', error?.message || 'Failed to delete conversation');
+            }
+          },
+        },
+      ]
+    );
+  };
 
-  const getDiscussionName = (discussion: Discussion): string => {
-    if (discussion.title) return discussion.title;
-    if (discussion.discussion_type === 'personal' && discussion.otherParticipant) {
-      const other = discussion.otherParticipant;
-      if (other.first_name && other.last_name) {
-        return `${other.first_name} ${other.last_name}`;
+  // Toggle discussion selection in edit mode
+  const toggleDiscussionSelection = (discussionId: string) => {
+    const newSelected = new Set(selectedDiscussions);
+    if (newSelected.has(discussionId)) {
+      newSelected.delete(discussionId);
+    } else {
+      newSelected.add(discussionId);
+    }
+    setSelectedDiscussions(newSelected);
+  };
+
+  // Pin/unpin discussion
+  const handlePinDiscussion = async (discussionId: string, pinned: boolean) => {
+    try {
+      await apiClient.request(`/api/discussions/${discussionId}/pin`, {
+        method: 'PATCH',
+        body: JSON.stringify({ pinned }),
+      });
+      queryClient.invalidateQueries({ queryKey: ['discussions'] });
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || 'Failed to pin conversation');
+    }
+  };
+
+  // Handle edit mode actions
+  const handleEditModeAction = async (action: 'pin' | 'delete') => {
+    if (selectedDiscussions.size === 0) {
+      Alert.alert('No Selection', 'Please select at least one conversation');
+      return;
+    }
+
+    const selectedArray = Array.from(selectedDiscussions);
+    
+    if (action === 'delete') {
+      Alert.alert(
+        'Delete Conversations',
+        `Are you sure you want to delete ${selectedArray.length} conversation${selectedArray.length > 1 ? 's' : ''}?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await Promise.all(
+                  selectedArray.map(id => 
+                    apiClient.request(`/api/discussions/${id}`, { method: 'DELETE' })
+                  )
+                );
+                queryClient.invalidateQueries({ queryKey: ['discussions'] });
+                setSelectedDiscussions(new Set());
+                setIsEditMode(false);
+                if (selectedArray.includes(selectedDiscussionId || '')) {
+                  setSelectedDiscussionId(null);
+                  setViewingChatThread(false);
+                }
+              } catch (error: any) {
+                Alert.alert('Error', 'Failed to delete some conversations');
+              }
+            },
+          },
+        ]
+      );
+    } else if (action === 'pin') {
+      try {
+        // Toggle pin state for selected discussions
+        await Promise.all(
+          selectedArray.map(async (id) => {
+            const discussion = discussions.find(d => d.id === id);
+            const newPinnedState = !discussion?.is_pinned;
+            await apiClient.request(`/api/discussions/${id}/pin`, {
+              method: 'PATCH',
+              body: JSON.stringify({ pinned: newPinnedState }),
+            });
+          })
+        );
+        queryClient.invalidateQueries({ queryKey: ['discussions'] });
+        setSelectedDiscussions(new Set());
+        setIsEditMode(false);
+      } catch (error: any) {
+        Alert.alert('Error', 'Failed to pin some conversations');
       }
-      return other.user_name || other.email || 'Unknown';
     }
-    if (discussion.participants && discussion.participants.length > 0) {
-      const names = discussion.participants
-        .filter(p => p.user_id !== user?.id)
-        .map(p => {
-          if (p.first_name && p.last_name) return `${p.first_name} ${p.last_name}`;
-          return p.user_name || p.email || 'Unknown';
-        });
-      return names.length > 0 ? names.join(', ') : 'Group Chat';
-    }
-    return 'Group Chat';
   };
 
 
@@ -399,6 +564,10 @@ export default function ChatScreen() {
   };
 
   const selectedDiscussion = discussions.find(d => d.id === selectedDiscussionId);
+  
+  // Detect dark theme for neumorphic styling
+  const isDark = theme.mode === 'dark' || 
+    (theme.mode === 'system' && theme.colors.background === '#292929');
 
   // Simple Message Component (no swipe functionality)
   const MessageComponent = ({ message, isCurrentUser, author }: {
@@ -499,9 +668,11 @@ export default function ChatScreen() {
   };
 
   // Swipeable Discussion Item Component
-  const SwipeableDiscussionItem = ({ discussion, isSelected, onSelect, onDelete }: {
+  const SwipeableDiscussionItem = ({ discussion, isSelected, isEditMode, isEditSelected, onSelect, onDelete }: {
     discussion: Discussion;
     isSelected: boolean;
+    isEditMode: boolean;
+    isEditSelected: boolean;
     onSelect: () => void;
     onDelete: () => void;
   }) => {
@@ -642,6 +813,7 @@ export default function ChatScreen() {
             style={[
               styles.discussionItem,
               isSelected && styles.discussionItemSelected,
+              isEditSelected && styles.discussionItemEditSelected,
             ]}
             activeOpacity={0.7}
             onPress={() => {
@@ -662,6 +834,16 @@ export default function ChatScreen() {
             }}
             delayPressIn={swipedDiscussionId === discussion.id ? 0 : 50}
           >
+            {/* Edit mode checkbox */}
+            {isEditMode && (
+              <View style={styles.editCheckbox}>
+                <Ionicons 
+                  name={isEditSelected ? "checkbox" : "checkbox-outline"} 
+                  size={24} 
+                  color={isEditSelected ? theme.colors.primary : theme.colors.mutedForeground} 
+                />
+              </View>
+            )}
             <Text style={styles.discussionName}>
               {getDiscussionName(discussion)}
             </Text>
@@ -752,33 +934,106 @@ export default function ChatScreen() {
       width: (isMobile || Platform.OS === 'web') ? '100%' : 300,
       flex: (isMobile || Platform.OS === 'web') ? 1 : 0,
       height: Platform.OS === 'web' ? '100%' : undefined,
-      borderRightWidth: (isMobile || Platform.OS === 'web') ? 0 : 1,
-      borderRightColor: theme.colors.border,
       backgroundColor: theme.colors.card,
       display: (isMobile || Platform.OS === 'web') && viewingChatThread ? 'none' : 'flex',
     },
     sidebarHeader: {
       padding: 16,
-      marginTop: 16,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
+      paddingTop: 16,
+      paddingBottom: 20, // Extra padding at bottom for search bar shadows
+      zIndex: 10,
+      // Don't set overflow - let NeumorphicView handle it
+      // Distinct header with stronger shadow
+    },
+    headerTopRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
     },
     sidebarTitle: {
-      ...theme.typography.heading,
-      fontSize: 30,
+      ...theme.typography.h2,
       fontWeight: '600',
       color: theme.colors.foreground,
+    },
+    headerActions: {
+      flexDirection: 'row',
+      gap: 12,
+      alignItems: 'center',
+    },
+    headerButton: {
+      padding: 4,
+    },
+    headerButtonText: {
+      ...theme.typography.body,
+      fontWeight: '600',
+    },
+    searchContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 12,
+      paddingVertical: 12,
+      zIndex: 5,
+      minHeight: 44, // Ensure minimum height for touch targets
+      width: '100%', // Ensure full width
+      // Sunken/indent look with debossed neumorphic style
+    },
+    searchIcon: {
+      marginRight: 8,
+    },
+    searchInput: {
+      flex: 1,
+      ...theme.typography.body,
+      color: theme.colors.foreground,
+      paddingVertical: 4,
+    },
+    searchClearButton: {
+      padding: 4,
+      marginLeft: 8,
+    },
+    filterContainer: {
+      flexDirection: 'row',
+      gap: 8,
+      zIndex: 1,
+      marginTop: 4,
+      flexWrap: 'wrap', // Allow wrapping on small screens
+      overflow: 'visible', // Allow content to be visible
+    },
+    filterButton: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 16,
+      backgroundColor: theme.colors.background,
+    },
+    filterButtonActive: {
+      backgroundColor: theme.colors.primary,
+    },
+    filterButtonText: {
+      ...theme.typography.caption,
+      color: theme.colors.mutedForeground,
+      fontWeight: '500',
+    },
+    filterButtonTextActive: {
+      color: theme.colors.primaryForeground,
+      fontWeight: '600',
+    },
+    editCheckbox: {
+      marginRight: 12,
     },
     discussionsList: {
       flex: 1,
     },
     discussionItem: {
       padding: 16,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
+      flexDirection: 'row',
+      alignItems: 'center',
+      // Remove border, use shadows instead
     },
     discussionItemSelected: {
       backgroundColor: theme.colors.primary + '10',
+    },
+    discussionItemEditSelected: {
+      backgroundColor: theme.colors.primary + '20',
     },
     discussionName: {
       ...theme.typography.body,
@@ -829,11 +1084,10 @@ export default function ChatScreen() {
     messagesHeader: {
       padding: 16,
       paddingTop: Platform.OS === 'ios' ? 16 : 16,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
       backgroundColor: theme.colors.card,
       flexDirection: 'row',
       alignItems: 'center',
+      // Remove border, use shadows instead
     },
     backButton: {
       marginRight: 12,
@@ -920,10 +1174,9 @@ export default function ChatScreen() {
     inputContainer: {
       flexDirection: 'row',
       padding: 16,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.border,
       backgroundColor: theme.colors.card,
       alignItems: 'center',
+      // Remove border, use shadows instead
     },
     input: {
       flex: 1,
@@ -1118,9 +1371,147 @@ export default function ChatScreen() {
       <View style={styles.twoColumnLayout}>
         {/* Sidebar - Discussions List */}
         <View style={styles.sidebar}>
-          <View style={styles.sidebarHeader}>
-            <Text style={styles.sidebarTitle}>CHATBOX</Text>
-          </View>
+          {/* Distinct Header */}
+          <NeumorphicView
+            style={isDark ? 'debossed' : 'embossed'}
+            intensity="medium"
+            borderRadius={0}
+            containerStyle={styles.sidebarHeader}
+            contentStyle={{ overflow: 'visible' }} // Allow search bar to be fully visible
+          >
+            {/* Top row: Title and action buttons */}
+            <View style={styles.headerTopRow}>
+              <Text style={styles.sidebarTitle}>Messages</Text>
+              <View style={styles.headerActions}>
+                {!isEditMode ? (
+                  <>
+                    <TouchableOpacity
+                      style={styles.headerButton}
+                      onPress={() => setIsEditMode(true)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="create-outline" size={22} color={theme.colors.foreground} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.headerButton}
+                      onPress={() => {
+                        // TODO: Open new chat dialog
+                        Alert.alert('New Message', 'New message functionality coming soon');
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="add-circle-outline" size={22} color={theme.colors.primary} />
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <>
+                    <TouchableOpacity
+                      style={styles.headerButton}
+                      onPress={() => {
+                        setSelectedDiscussions(new Set());
+                        setIsEditMode(false);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.headerButtonText, { color: theme.colors.primary }]}>Cancel</Text>
+                    </TouchableOpacity>
+                    {selectedDiscussions.size > 0 && (
+                      <>
+                        <TouchableOpacity
+                          style={styles.headerButton}
+                          onPress={() => handleEditModeAction('pin')}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="pin-outline" size={22} color={theme.colors.primary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.headerButton}
+                          onPress={() => handleEditModeAction('delete')}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="trash-outline" size={22} color={theme.colors.error} />
+                        </TouchableOpacity>
+                      </>
+                    )}
+                  </>
+                )}
+              </View>
+            </View>
+            
+            {/* Search bar with sunken/indent look */}
+            <View style={{ marginBottom: 12, marginTop: 8 }}>
+              <NeumorphicView
+                style="debossed"
+                intensity="medium"
+                borderRadius={12}
+                containerStyle={styles.searchContainer}
+              >
+                <Ionicons 
+                  name="search" 
+                  size={20} 
+                  color={theme.colors.mutedForeground} 
+                  style={styles.searchIcon}
+                />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search"
+                  placeholderTextColor={theme.colors.mutedForeground}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => setIsSearchFocused(false)}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity
+                    onPress={() => setSearchQuery('')}
+                    style={styles.searchClearButton}
+                  >
+                    <Ionicons name="close-circle" size={20} color={theme.colors.mutedForeground} />
+                  </TouchableOpacity>
+                )}
+              </NeumorphicView>
+            </View>
+            
+            {/* Filter buttons - moved below search with proper spacing */}
+            <View style={styles.filterContainer}>
+              <TouchableOpacity
+                style={[styles.filterButton, filterType === 'all' && styles.filterButtonActive]}
+                onPress={() => setFilterType('all')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.filterButtonText, filterType === 'all' && styles.filterButtonTextActive]}>
+                  All
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterButton, filterType === 'personal' && styles.filterButtonActive]}
+                onPress={() => setFilterType('personal')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.filterButtonText, filterType === 'personal' && styles.filterButtonTextActive]}>
+                  Personal
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterButton, filterType === 'group' && styles.filterButtonActive]}
+                onPress={() => setFilterType('group')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.filterButtonText, filterType === 'group' && styles.filterButtonTextActive]}>
+                  Groups
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterButton, filterType === 'unread' && styles.filterButtonActive]}
+                onPress={() => setFilterType('unread')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.filterButtonText, filterType === 'unread' && styles.filterButtonTextActive]}>
+                  Unread
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </NeumorphicView>
           <FlatList
             style={styles.discussionsList}
             data={discussions}
@@ -1138,11 +1529,20 @@ export default function ChatScreen() {
             }
             renderItem={({ item }) => {
               const isSelected = item.id === selectedDiscussionId;
+              const isEditSelected = selectedDiscussions.has(item.id);
               return (
                 <SwipeableDiscussionItem
                   discussion={item}
                   isSelected={isSelected}
-                  onSelect={() => handleSelectDiscussion(item.id)}
+                  isEditMode={isEditMode}
+                  isEditSelected={isEditSelected}
+                  onSelect={() => {
+                    if (isEditMode) {
+                      toggleDiscussionSelection(item.id);
+                    } else {
+                      handleSelectDiscussion(item.id);
+                    }
+                  }}
                   onDelete={() => handleDeleteDiscussion(item.id)}
                 />
               );
@@ -1154,30 +1554,23 @@ export default function ChatScreen() {
               </View>
             }
           />
-          {/* New Chat Button */}
-          <View style={styles.newChatButtonContainer}>
-            <TouchableOpacity
-              style={styles.newChatButton}
-              onPress={() => {
-                // TODO: Open new chat dialog
-                Alert.alert('New Chat', 'New chat functionality coming soon');
-              }}
-            >
-              <Ionicons name="add" size={24} color="#fff" />
-              <Text style={styles.newChatButtonText}>New Chat</Text>
-            </TouchableOpacity>
-          </View>
         </View>
 
         {/* Messages Panel */}
         <View style={styles.messagesContainer}>
           {selectedDiscussionId ? (
             <>
-              <View style={styles.messagesHeader}>
+              <NeumorphicView
+                style={isDark ? 'debossed' : 'embossed'}
+                intensity="subtle"
+                borderRadius={0}
+                containerStyle={styles.messagesHeader}
+              >
                 {(isMobile || Platform.OS === 'web') && (
                   <TouchableOpacity
                     style={styles.backButton}
                     onPress={handleBack}
+                    activeOpacity={0.7}
                   >
                     <Ionicons name="chevron-back" size={24} color={theme.colors.foreground} />
                   </TouchableOpacity>
@@ -1185,7 +1578,7 @@ export default function ChatScreen() {
                 <Text style={styles.messagesHeaderTitle}>
                   {selectedDiscussion ? getDiscussionName(selectedDiscussion) : 'Loading...'}
                 </Text>
-              </View>
+              </NeumorphicView>
 
               {messagesLoading ? (
                 <View style={styles.loadingContainer}>
@@ -1195,9 +1588,8 @@ export default function ChatScreen() {
                 <FlatList
                   ref={messagesEndRef}
                   style={styles.messagesList}
-                  data={messages} // Backend returns newest first (descending)
+                  data={messages} // Messages are reversed: oldest first, newest at bottom
                   keyExtractor={(item) => item.id}
-                  inverted={true} // Inverted shows newest at bottom (standard chat pattern)
                   refreshControl={
                     <RefreshControl
                       refreshing={refreshingMessages}

@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from "../components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Switch } from "../components/ui/switch";
+import AddressInput from "../components/forms/AddressInput";
 import { MapPin, Plus, Search, Edit, Trash2, Users, Building2, Globe, Map, Phone, Mail } from "lucide-react";
 import { PhoneInput } from "../components/ui/phone-input";
 import { apiRequest, queryClient } from "../lib/queryClient";
@@ -487,17 +488,22 @@ export default function Locations() {
               />
             </div>
 
-            <div>
-              <Label htmlFor="address">Address *</Label>
-              <Textarea
-                id="address"
-                value={formData.address}
-                onChange={(e) => setFormData({...formData, address: e.target.value})}
-                placeholder="123 Main St, City, State 12345"
-                required
-                rows={2}
-              />
-            </div>
+            <AddressInput
+              value={formData.address}
+              onChange={(addressData) => {
+                // Generate full address for backward compatibility
+                const fullAddress = [
+                  addressData.street,
+                  addressData.city,
+                  addressData.state && addressData.zip ? `${addressData.state} ${addressData.zip}` : addressData.state || addressData.zip
+                ].filter(Boolean).join(', ');
+                setFormData({...formData, address: fullAddress});
+              }}
+              onFullAddressChange={(fullAddress) => setFormData({...formData, address: fullAddress})}
+              label="Address"
+              required={true}
+              showLabel={true}
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -625,16 +631,22 @@ export default function Locations() {
               />
             </div>
 
-            <div>
-              <Label htmlFor="edit-address">Address *</Label>
-              <Textarea
-                id="edit-address"
-                value={formData.address}
-                onChange={(e) => setFormData({...formData, address: e.target.value})}
-                required
-                rows={2}
-              />
-            </div>
+            <AddressInput
+              value={formData.address}
+              onChange={(addressData) => {
+                // Generate full address for backward compatibility
+                const fullAddress = [
+                  addressData.street,
+                  addressData.city,
+                  addressData.state && addressData.zip ? `${addressData.state} ${addressData.zip}` : addressData.state || addressData.zip
+                ].filter(Boolean).join(', ');
+                setFormData({...formData, address: fullAddress});
+              }}
+              onFullAddressChange={(fullAddress) => setFormData({...formData, address: fullAddress})}
+              label="Address"
+              required={true}
+              showLabel={true}
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <div>

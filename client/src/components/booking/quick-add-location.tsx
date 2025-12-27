@@ -14,6 +14,7 @@ import { Badge } from '../ui/badge';
 import { MapPin, Plus, Building, Gavel, Stethoscope, Store, Search } from 'lucide-react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import AddressInput, { AddressData } from '../forms/AddressInput';
 
 interface FrequentLocation {
   id: string;
@@ -30,8 +31,8 @@ interface FrequentLocation {
 }
 
 interface QuickAddLocationProps {
-  value: string;
-  onChange: (value: string) => void;
+  value: string | AddressData; // Accept both formats for backward compatibility
+  onChange: (value: string) => void; // Always returns full address string for backward compatibility
   placeholder?: string;
   locationType?: 'service_location' | 'legal' | 'healthcare' | 'dmv' | 'grocery' | 'other';
   label?: string;
@@ -40,6 +41,8 @@ interface QuickAddLocationProps {
   programId?: string;
   corporateClientId?: string;
   locationId?: string;
+  // Option to use separated fields (new format)
+  useSeparatedFields?: boolean;
 }
 
 type LocationType = 'service_location' | 'legal' | 'healthcare' | 'dmv' | 'grocery' | 'other';
@@ -120,7 +123,8 @@ export default function QuickAddLocation({
   required = false,
   programId: propProgramId,
   corporateClientId: propCorporateClientId,
-  locationId: propLocationId
+  locationId: propLocationId,
+  useSeparatedFields = true // Default to using separated fields
 }: QuickAddLocationProps) {
   const { user } = useAuth();
   const { selectedProgram, selectedCorporateClient } = useHierarchy();
@@ -245,11 +249,54 @@ export default function QuickAddLocation({
     },
   });
 
+  // Helper to convert AddressData to full address string
+  const addressDataToString = (addr: AddressData): string => {
+    const parts = [
+      addr.street,
+      addr.city,
+      addr.state && addr.zip ? `${addr.state} ${addr.zip}` : addr.state || addr.zip
+    ].filter(Boolean);
+    return parts.join(', ');
+  };
+
+  // Helper to parse string to AddressData
+  const parseAddressString = (addr: string | AddressData): AddressData => {
+    if (typeof addr === 'string') {
+      const parts = addr.split(',').map(p => p.trim());
+      if (parts.length >= 3) {
+        const street = parts[0];
+        const city = parts[1];
+        const stateZip = parts[2].split(/\s+/);
+        const state = stateZip[0] || '';
+        const zip = stateZip[1] || '';
+        return { street, city, state: state.toUpperCase(), zip };
+      } else if (parts.length === 2) {
+        return { street: parts[0], city: parts[1], state: '', zip: '' };
+      } else {
+        return { street: addr, city: '', state: '', zip: '' };
+      }
+    }
+    return addr;
+  };
+
   const handleLocationSelect = (location: FrequentLocation) => {
-    onChange(location.full_address);
+    // Convert frequent location to AddressData format
+    const addressData: AddressData = {
+      street: location.street_address,
+      city: location.city,
+      state: location.state,
+      zip: location.zip_code || ''
+    };
+    onChange(location.full_address); // Still return full address for backward compatibility
     setIsOpen(false);
     setSearchTerm('');
     incrementUsageMutation.mutate(location.id);
+  };
+
+  const handleAddressChange = (addressData: AddressData) => {
+    // Convert AddressData to full address string for backward compatibility
+    const fullAddress = addressDataToString(addressData);
+    onChange(fullAddress);
   };
 
   const handleCreateLocation = (data: Partial<FrequentLocation>) => {
@@ -307,20 +354,101 @@ export default function QuickAddLocation({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor={inputId}>{label} {required && '*'}</Label>
-      
-      <div className="flex gap-2">
-        <div className="flex-1">
-          <Input
-            id={inputId}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={placeholder}
+      {useSeparatedFields ? (
+        <>
+          <AddressInput
+            value={typeof value === 'string' ? value : value}
+            onChange={handleAddressChange}
+            onFullAddressChange={onChange} // Also update full address for backward compatibility
+            label={label}
             required={required}
+            showLabel={true}
           />
-        </div>
-        
-        <Popover open={isOpen} onOpenChange={setIsOpen}>
+          <Popover open={isOpen} onOpenChange={setIsOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" type="button" className="w-full">
+                <Search className="h-4 w-4 mr-2" />
+                Quick Add from Frequent Locations
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-96 p-0 max-h-[500px] overflow-hidden flex flex-col" align="start">
+              <Command className="flex flex-col h-full">
+                <CommandInput
+                  placeholder="Search frequent locations..."
+                  value={searchTerm}
+                  onValueChange={setSearchTerm}
+                  className="border-b"
+                />
+                <CommandList className="flex-1 overflow-y-auto">
+                  {isLoading ? (
+                    <div className="p-4 text-center text-sm text-gray-500">
+                      Loading frequent locations...
+                    </div>
+                  ) : queryError ? (
+                    <div className="p-4 text-center text-sm text-red-500">
+                      Error loading frequent locations. Please try again.
+                    </div>
+                  ) : Object.keys(filteredLocationsByTag).length === 0 ? (
+                    <CommandEmpty>No frequent locations found.</CommandEmpty>
+                  ) : (
+                    Object.entries(filteredLocationsByTag)
+                      .sort(([typeA], [typeB]) => {
+                        const priorityA = locationTags[typeA as LocationType]?.priority || 999;
+                        const priorityB = locationTags[typeB as LocationType]?.priority || 999;
+                        return priorityA - priorityB;
+                      })
+                      .map(([locationType, locations]) => {
+                        const config = locationTags[locationType as LocationType];
+                        const Icon = config?.icon || MapPin;
+                        return (
+                          <CommandGroup key={locationType} heading={config?.label || locationType}>
+                            {(locations as FrequentLocation[]).map((location) => {
+                              const LocationIcon = locationTypeIcons[location.location_type] || MapPin;
+                              return (
+                                <CommandItem
+                                  key={location.id}
+                                  onSelect={() => handleLocationSelect(location)}
+                                  className="cursor-pointer"
+                                >
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <LocationIcon className="h-4 w-4 flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-medium truncate">{location.name}</div>
+                                      <div className="text-xs text-muted-foreground truncate">
+                                        {location.full_address}
+                                      </div>
+                                    </div>
+                                    <Badge variant="outline" className={config?.color}>
+                                      {config?.label}
+                                    </Badge>
+                                  </div>
+                                </CommandItem>
+                              );
+                            })}
+                          </CommandGroup>
+                        );
+                      })
+                  )}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </>
+      ) : (
+        <>
+          <Label htmlFor={inputId}>{label} {required && '*'}</Label>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <Input
+                id={inputId}
+                value={typeof value === 'string' ? value : addressDataToString(value)}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder={placeholder}
+                required={required}
+              />
+            </div>
+            
+            <Popover open={isOpen} onOpenChange={setIsOpen}>
           <PopoverTrigger asChild>
             <Button variant="outline" type="button">
               <Search className="h-4 w-4 mr-2" />
@@ -410,21 +538,23 @@ export default function QuickAddLocation({
           </PopoverContent>
         </Popover>
 
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <Button variant="outline" type="button" onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4" />
-          </Button>
-          <CreateLocationDialog
-            onSave={handleCreateLocation}
-            defaultLocationType={locationType}
-            defaultAddress={value}
-            corporateClientId={effectiveCorporateClient}
-            programId={effectiveProgram}
-            locationId={effectiveLocation}
-            onClose={() => setIsCreateDialogOpen(false)}
-          />
-        </Dialog>
-      </div>
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <Button variant="outline" type="button" onClick={() => setIsCreateDialogOpen(true)}>
+                <Plus className="h-4 w-4" />
+              </Button>
+              <CreateLocationDialog
+                onSave={handleCreateLocation}
+                defaultLocationType={locationType}
+                defaultAddress={typeof value === 'string' ? value : addressDataToString(value)}
+                corporateClientId={effectiveCorporateClient}
+                programId={effectiveProgram}
+                locationId={effectiveLocation}
+                onClose={() => setIsCreateDialogOpen(false)}
+              />
+            </Dialog>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -577,44 +707,21 @@ function CreateLocationDialog({
           />
         </div>
 
-        <div>
-          <Label htmlFor="quick-street_address">Street Address *</Label>
-          <Input
-            id="quick-street_address"
-            value={formData.street_address}
-            onChange={(e) => setFormData({ ...formData, street_address: e.target.value })}
-            required
-          />
-        </div>
-
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <Label htmlFor="quick-city">City *</Label>
-            <Input
-              id="quick-city"
-              value={formData.city}
-              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="quick-state">State *</Label>
-            <Input
-              id="quick-state"
-              value={formData.state}
-              onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="quick-zip_code">ZIP Code</Label>
-            <Input
-              id="quick-zip_code"
-              value={formData.zip_code}
-              onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })}
-            />
-          </div>
-        </div>
+        <AddressInput
+          value={formData}
+          onChange={(addressData) => {
+            setFormData({
+              ...formData,
+              street_address: addressData.street,
+              city: addressData.city,
+              state: addressData.state,
+              zip_code: addressData.zip
+            });
+          }}
+          label="Address"
+          required={true}
+          showLabel={true}
+        />
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Router } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
@@ -22,6 +22,16 @@ function AppContent() {
   const { isLoading: themeLoading } = useSelectedTheme(); // Load selected theme from database
   const [showWelcome, setShowWelcome] = useState<boolean | null>(null); // null = checking
   
+  // Check if login animation is in progress or if animation was already completed
+  // Use state to track these so component re-renders when they change
+  // MUST be declared before any early returns to follow Rules of Hooks
+  const [isLoginAnimating, setIsLoginAnimating] = useState(() => 
+    typeof window !== 'undefined' && sessionStorage.getItem("halcyon-login-animating") === "true"
+  );
+  const [alreadyWelcomed, setAlreadyWelcomed] = useState(() =>
+    typeof window !== 'undefined' && sessionStorage.getItem("halcyon-welcomed") === "true"
+  );
+  
   // Load theme preferences when user is authenticated (legacy - for backward compatibility)
   useEffect(() => {
     if (user && !isLoading) {
@@ -30,16 +40,23 @@ function AppContent() {
   }, [user, isLoading, loadPreferences]);
   
   // Check if we've already shown welcome this session
+  // This could be from either the login animation or the welcome screen
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const welcomed = sessionStorage.getItem("halcyon-welcomed");
-    console.log("🎬 Welcome check - sessionStorage:", welcomed, "user:", user?.email);
+    const isAnimating = sessionStorage.getItem("halcyon-login-animating") === "true";
+    console.log("🎬 Welcome check - welcomed:", welcomed, "isAnimating:", isAnimating, "user:", user?.email);
     
     if (welcomed === "true") {
       console.log("🎬 Welcome already shown this session, skipping");
       setShowWelcome(false);
+    } else if (user && !isAnimating) {
+      // User authenticated but no animation in progress - skip WelcomeScreen
+      console.log("🎬 User authenticated but no animation - will skip WelcomeScreen");
+      setShowWelcome(false);
     } else {
-      console.log("🎬 Welcome not yet shown, will display after auth");
-      setShowWelcome(true);
+      setShowWelcome(false);
     }
   }, [user]);
 
@@ -49,6 +66,89 @@ function AppContent() {
     sessionStorage.setItem("halcyon-welcomed", "true");
     setShowWelcome(false);
   };
+
+  // Clear flags when user logs out, or update state immediately when user logs in with flag set
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    if (!user) {
+      // User logged out - clear flags
+      sessionStorage.removeItem("halcyon-welcomed");
+      sessionStorage.removeItem("halcyon-login-animating");
+      setIsLoginAnimating(false);
+      setAlreadyWelcomed(false);
+    } else {
+      // User just logged in - check flags immediately and update state synchronously
+      const animating = sessionStorage.getItem("halcyon-login-animating") === "true";
+      const welcomed = sessionStorage.getItem("halcyon-welcomed") === "true";
+      
+      // Update state immediately to prevent flash
+      if (prevAnimatingRef.current !== animating) {
+        prevAnimatingRef.current = animating;
+        setIsLoginAnimating(animating);
+      }
+      if (prevWelcomedRef.current !== welcomed) {
+        prevWelcomedRef.current = welcomed;
+        setAlreadyWelcomed(welcomed);
+      }
+    }
+  }, [user]);
+
+  // Use refs to track previous values and prevent unnecessary updates
+  const prevAnimatingRef = useRef(isLoginAnimating);
+  const prevWelcomedRef = useRef(alreadyWelcomed);
+
+  // Listen for storage changes to update state
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const checkFlags = () => {
+      const animating = sessionStorage.getItem("halcyon-login-animating") === "true";
+      const welcomed = sessionStorage.getItem("halcyon-welcomed") === "true";
+      
+      // Only update state if values actually changed
+      if (prevAnimatingRef.current !== animating) {
+        prevAnimatingRef.current = animating;
+        setIsLoginAnimating(animating);
+      }
+      if (prevWelcomedRef.current !== welcomed) {
+        prevWelcomedRef.current = welcomed;
+        setAlreadyWelcomed(welcomed);
+      }
+    };
+    
+    // Check immediately
+    checkFlags();
+    
+    // Listen for storage events (when flags change in other tabs/components)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "halcyon-login-animating" || e.key === "halcyon-welcomed") {
+        checkFlags();
+      }
+    };
+    
+    window.addEventListener("storage", handleStorageChange);
+    
+    // Also poll for changes (since storage events don't fire in same tab)
+    // Poll less frequently to avoid excessive re-renders
+    const interval = setInterval(checkFlags, 200);
+    
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []); // Empty deps - only run once on mount
+
+  // CRITICAL: Check animation flag FIRST, before any other logic
+  // This must happen synchronously on every render to prevent flash
+  const animatingDirect = typeof window !== 'undefined' && sessionStorage.getItem("halcyon-login-animating") === "true";
+  const welcomedDirect = typeof window !== 'undefined' && sessionStorage.getItem("halcyon-welcomed") === "true";
+  
+  // If animation is in progress and not yet welcomed, ALWAYS show Login (even during loading)
+  if (animatingDirect && !welcomedDirect) {
+    console.log("📱 Rendering Login component (animation flag set) - user:", user?.email, "isLoading:", isLoading);
+    return <Login />;
+  }
 
   // Show loading spinner during initial auth check
   // Don't wait for theme loading - it's non-blocking
@@ -62,16 +162,23 @@ function AppContent() {
       </div>
     );
   }
-
-  // Show login if not authenticated
-  if (!user) {
-    // Clear welcome flag when logged out so it shows again on next login
-    sessionStorage.removeItem("halcyon-welcomed");
+  
+  // Prioritize sessionStorage over state - if sessionStorage says animating, show Login
+  // Only use state as fallback if sessionStorage is not set
+  const isAnimating = animatingDirect !== null ? animatingDirect : isLoginAnimating;
+  const isWelcomed = welcomedDirect !== null ? welcomedDirect : alreadyWelcomed;
+  
+  console.log("🔍 App.tsx render - user:", user?.email, "animatingDirect:", animatingDirect, "isAnimating:", isAnimating, "isWelcomed:", isWelcomed, "showWelcome:", showWelcome);
+  
+  // Show login if not authenticated OR if login animation is in progress (but not if already welcomed)
+  if (!user || (isAnimating && !isWelcomed)) {
+    console.log("📱 Rendering Login component - user:", user?.email, "isAnimating:", isAnimating, "isWelcomed:", isWelcomed);
     return <Login />;
   }
 
   // Show welcome screen for authenticated users (once per session)
-  if (showWelcome) {
+  // But skip if login animation was shown (halcyon-welcomed will be set)
+  if (showWelcome && sessionStorage.getItem("halcyon-welcomed") !== "true") {
     console.log("🎬 Showing welcome screen for:", user.first_name || user.user_name || user.email);
     return (
       <WelcomeScreen

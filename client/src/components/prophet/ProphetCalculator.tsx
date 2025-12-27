@@ -91,7 +91,8 @@ export function ProphetCalculator() {
     <div className="space-y-6">
       {/* Header - Only show if unified header is disabled (fallback) */}
       {!ENABLE_UNIFIED_HEADER && (
-        <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+        <div className="flex-shrink-0 mb-6">
+          <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
           <div>
             <h1 
               className="font-bold text-foreground" 
@@ -105,11 +106,11 @@ export function ProphetCalculator() {
           </div>
           
           {/* Sync Status & Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-6">
           {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
             <HeaderScopeSelector />
           )}
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-6 text-sm">
             {pendingSync ? (
               <Badge variant="outline" className="gap-1" style={{ borderColor: 'var(--status-warning)' }}>
                 <CloudOff className="h-3 w-3" style={{ color: 'var(--status-warning)' }} />
@@ -138,35 +139,36 @@ export function ProphetCalculator() {
             Export
           </Button>
         </div>
+          </div>
         </div>
       )}
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
         <TabsList className="w-full justify-start" style={{ backgroundColor: 'var(--muted)' }}>
-          <TabsTrigger value="costs" className="gap-2">
+          <TabsTrigger value="costs" className="gap-6">
             <DollarSign className="h-4 w-4" />
             Cost Structure
           </TabsTrigger>
-          <TabsTrigger value="codes" className="gap-2">
+          <TabsTrigger value="codes" className="gap-6">
             <FileCode className="h-4 w-4" />
             Service Codes
           </TabsTrigger>
-          <TabsTrigger value="facilities" className="gap-2">
+          <TabsTrigger value="facilities" className="gap-6">
             <Building2 className="h-4 w-4" />
             Treatment Facilities
           </TabsTrigger>
-          <TabsTrigger value="scenarios" className="gap-2">
+          <TabsTrigger value="scenarios" className="gap-6">
             <BarChart3 className="h-4 w-4" />
             Scenarios
           </TabsTrigger>
         </TabsList>
 
         {/* Quick Stats - Moved from header */}
-        <Card className="mt-4" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
+        <Card className="mt-6" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
           <CardContent className="p-6 pt-0">
-            <div className="grid grid-cols-4 gap-4">
-              <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
+            <div className="grid grid-cols-4 gap-6">
+              <div className="flex items-center gap-6 p-6 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
                 <DollarSign className="h-5 w-5" style={{ color: 'var(--color-coral)' }} />
                 <div>
                   <div className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>
@@ -176,7 +178,7 @@ export function ProphetCalculator() {
                 </div>
               </div>
               
-              <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
+              <div className="flex items-center gap-6 p-6 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
                 <Building2 className="h-5 w-5" style={{ color: 'var(--color-ice)' }} />
                 <div>
                   <div className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>
@@ -186,7 +188,7 @@ export function ProphetCalculator() {
                 </div>
               </div>
               
-              <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
+              <div className="flex items-center gap-6 p-6 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
                 <BarChart3 className="h-5 w-5" style={{ color: 'var(--color-lime)' }} />
                 <div>
                   <div className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>
@@ -196,7 +198,7 @@ export function ProphetCalculator() {
                 </div>
               </div>
               
-              <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
+              <div className="flex items-center gap-6 p-6 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
                 <FileCode className="h-5 w-5" style={{ color: 'var(--color-silver)' }} />
                 <div>
                   <div className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>
@@ -211,19 +213,19 @@ export function ProphetCalculator() {
           </CardContent>
         </Card>
 
-        <TabsContent value="costs" className="mt-4">
+        <TabsContent value="costs" className="mt-6">
           <CostStructureManager />
         </TabsContent>
 
-        <TabsContent value="codes" className="mt-4">
+        <TabsContent value="codes" className="mt-6">
           <ServiceCodeLibrary />
         </TabsContent>
 
-        <TabsContent value="facilities" className="mt-4">
+        <TabsContent value="facilities" className="mt-6">
           <TreatmentFacilitiesManager />
         </TabsContent>
 
-        <TabsContent value="scenarios" className="mt-4">
+        <TabsContent value="scenarios" className="mt-6">
           <ScenarioBuilder />
         </TabsContent>
       </Tabs>

@@ -98,7 +98,7 @@ export function BentoBoxAgendaView({
       coral: 'bg-[#ff8475]/20 text-[#ff8475] border-l-4 border-[#ff8475]',
       lime: 'bg-[#f1fec9]/60 text-[#26282b] border-l-4 border-[#d4e5a8]',
       ice: 'bg-[#e8fffe]/60 text-[#26282b] border-l-4 border-[#b8e5e3]',
-      charcoal: 'bg-[#26282b]/20 text-[#26282b] border-l-4 border-[#26282b] dark:bg-[#26282b]/40 dark:text-[#eaeaea]',
+      charcoal: 'bg-[#1e2023]/20 text-[#1e2023] border-l-4 border-[#1e2023] dark:bg-[#1e2023]/40 dark:text-[#eaeaea]',
       silver: 'bg-[#eaeaea]/60 text-[#26282b] border-l-4 border-[#d4d4d4]',
     };
     return colorMap[color] || colorMap.silver;

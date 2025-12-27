@@ -18,6 +18,7 @@ import { PhoneInput } from '../components/ui/phone-input';
 import { supabase } from '../lib/supabase';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { apiRequest } from '../lib/queryClient';
+import AddressInput from '../components/forms/AddressInput';
 
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth();
@@ -701,17 +702,23 @@ export default function ProfilePage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground z-10" />
-                    <Textarea
-                      id="address"
-                      value={formData.address}
-                      onChange={(e) => handleInputChange('address', e.target.value)}
-                      disabled={!isEditing}
-                      className="pl-9 min-h-[100px] resize-y"
-                    />
-                  </div>
+                  <AddressInput
+                    value={formData.address || ''}
+                    onChange={(addressData) => {
+                      // Generate full address for backward compatibility
+                      const fullAddress = [
+                        addressData.street,
+                        addressData.city,
+                        addressData.state && addressData.zip ? `${addressData.state} ${addressData.zip}` : addressData.state || addressData.zip
+                      ].filter(Boolean).join(', ');
+                      handleInputChange('address', fullAddress);
+                    }}
+                    onFullAddressChange={(fullAddress) => handleInputChange('address', fullAddress)}
+                    label="Address"
+                    required={false}
+                    showLabel={true}
+                    disabled={!isEditing}
+                  />
                 </div>
 
                 {/* Action Buttons */}

@@ -10,14 +10,14 @@
 // ============================================================
 
 export const palette = {
-  // Core brand colors
-  charcoal: '#26282b',
+  // Core brand colors (20% darker for better neumorphic contrast)
+  charcoal: '#1e2023', // Was #26282b → 20% darker
   ice: '#e8fffe',
   lime: '#f1fec9',
   coral: '#ff8475',
   silver: '#eaeaea',
   cloud: '#f4f4f4',
-  shadow: '#343434',
+  shadow: '#292929', // Was #343434 → 20% darker
   aqua: '#a5c8ca',
   
   // Extended charcoal shades

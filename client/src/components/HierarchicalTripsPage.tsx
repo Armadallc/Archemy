@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -9,6 +9,7 @@ import {
   Car, 
   Clock, 
   ChevronDown, 
+  ChevronRight,
   Filter,
   Search,
   Plus,
@@ -16,8 +17,14 @@ import {
   Edit,
   Trash2,
   List,
-  Grid3x3
+  Grid3x3,
+  Users,
+  Repeat,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { apiRequest } from "../lib/queryClient";
 import { useHierarchy } from "../hooks/useHierarchy";
@@ -35,14 +42,17 @@ import { HeaderScopeSelector } from "./HeaderScopeSelector";
 
 interface Trip {
   id: string;
+  reference_id?: string; // Human-readable trip reference ID
   program_id: string;
   pickup_location_id?: string;
   dropoff_location_id?: string;
-  client_id: string;
+  client_id?: string;
+  client_group_id?: string;
   driver_id?: string;
   trip_type: 'one_way' | 'round_trip';
   pickup_address: string;
   dropoff_address: string;
+  stops?: string[]; // Array of intermediate stops
   scheduled_pickup_time: string;
   scheduled_return_time?: string;
   actual_pickup_time?: string;
@@ -52,8 +62,17 @@ interface Trip {
   special_requirements?: string;
   status: 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'no_show';
   notes?: string;
+  trip_purpose?: string;
+  trip_code?: string;
+  appointment_time?: string;
+  trip_category_id?: string;
+  recurring_trip_id?: string;
+  recurring_pattern?: any;
+  is_group_trip?: boolean;
   created_at: string;
   updated_at: string;
+  created_by?: string;
+  updated_by?: string;
   
   // Joined data
   program?: {
@@ -67,14 +86,25 @@ interface Trip {
   };
   client?: {
     id: string;
+    scid?: string; // Secure Client Identifier
     first_name: string;
     last_name: string;
     phone?: string;
+  };
+  client_group?: {
+    id: string;
+    reference_id?: string; // Human-readable reference ID (e.g., MC-G0001)
+    name: string;
   };
   driver?: {
     id: string;
     user_id: string;
     license_number: string;
+    users?: {
+      user_name: string;
+      first_name?: string;
+      last_name?: string;
+    };
   };
   pickup_location?: {
     id: string;
@@ -85,6 +115,18 @@ interface Trip {
     id: string;
     name: string;
     address: string;
+  };
+  trip_category?: {
+    id: string;
+    name: string;
+  };
+  created_by_user?: {
+    user_id: string;
+    user_name: string;
+  };
+  updated_by_user?: {
+    user_id: string;
+    user_name: string;
   };
 }
 
@@ -100,6 +142,9 @@ export default function HierarchicalTripsPage() {
   const [dateFilter, setDateFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<'detailed' | 'compact'>('detailed');
   const [displayedTripsCount, setDisplayedTripsCount] = useState(20); // For infinite scroll
+  const [expandedTrips, setExpandedTrips] = useState<Set<string>>(new Set()); // Track expanded trips
+  const [sortColumn, setSortColumn] = useState<string | null>(null); // Column to sort by
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc'); // Sort direction
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   // Feature flags - call hooks unconditionally at top level
@@ -150,13 +195,80 @@ export default function HierarchicalTripsPage() {
       console.log('🔍 Fetching trips from:', endpoint, 'for level:', level, 'user role:', user?.role);
       const response = await apiRequest("GET", endpoint);
       const data = await response.json();
-      console.log('🔍 Trips received:', Array.isArray(data) ? data.length : 'not array', data);
+      console.log('🔍 Trips received:', Array.isArray(data) ? data.length : 'not array');
+      // Debug: Check first trip's client data
+      if (Array.isArray(data) && data.length > 0) {
+        const firstTrip = data[0];
+        console.log('🔍 First trip client data:', {
+          trip_id: firstTrip.id,
+          hasClient: !!firstTrip.client,
+          client: firstTrip.client,
+          client_id: firstTrip.client_id,
+          is_group_trip: firstTrip.is_group_trip,
+          client_group_id: firstTrip.client_group_id,
+          hasClientGroup: !!firstTrip.client_group,
+          client_group: firstTrip.client_group,
+          // Check all keys to see what's available
+          tripKeys: Object.keys(firstTrip),
+          // Check if client is an array (Supabase sometimes returns arrays)
+          clientIsArray: Array.isArray(firstTrip.client),
+          clientGroupIsArray: Array.isArray(firstTrip.client_group)
+        });
+        
+        // Check a few more trips to see patterns
+        if (data.length > 1) {
+          const secondTrip = data[1];
+          console.log('🔍 Second trip client data:', {
+            trip_id: secondTrip.id,
+            hasClient: !!secondTrip.client,
+            client_id: secondTrip.client_id,
+            is_group_trip: secondTrip.is_group_trip,
+            hasClientGroup: !!secondTrip.client_group,
+            client_group_id: secondTrip.client_group_id
+          });
+        }
+        
+        // Check for group trips specifically
+        const groupTrips = data.filter(t => t.is_group_trip || t.client_group_id);
+        console.log('🔍 Group trips found:', groupTrips.length, groupTrips.map(t => ({
+          id: t.id,
+          hasClientGroup: !!t.client_group,
+          client_group_id: t.client_group_id
+        })));
+        
+        // Check for individual client trips
+        const clientTrips = data.filter(t => !t.is_group_trip && t.client_id && !t.client_group_id);
+        console.log('🔍 Individual client trips found:', clientTrips.length, clientTrips.map(t => ({
+          id: t.id,
+          hasClient: !!t.client,
+          client_id: t.client_id
+        })));
+      }
       return data;
     },
     enabled: true,
   });
 
   const trips: Trip[] = Array.isArray(tripsData) ? tripsData : tripsData?.trips || [];
+
+  // Debug: Log all trips data to console for troubleshooting
+  useEffect(() => {
+    if (trips.length > 0) {
+      console.log('🔍 ALL TRIPS DATA:', trips.map(t => ({
+        id: t.id,
+        reference_id: t.reference_id,
+        client_id: t.client_id,
+        client_group_id: t.client_group_id,
+        is_group_trip: t.is_group_trip,
+        client: t.client,
+        client_group: t.client_group,
+        hasClient: !!t.client,
+        hasClientGroup: !!t.client_group,
+        clientIsArray: Array.isArray(t.client),
+        clientGroupIsArray: Array.isArray(t.client_group)
+      })));
+    }
+  }, [trips]);
 
   // Filter trips based on search and status
   const allFilteredTrips = trips.filter(trip => {
@@ -180,17 +292,131 @@ export default function HierarchicalTripsPage() {
     return matchesSearch && matchesStatus && matchesDate;
   });
 
+  // Sort trips based on selected column and direction
+  const sortedTrips = useMemo(() => {
+    if (!sortColumn) return allFilteredTrips;
+
+    const sorted = [...allFilteredTrips].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortColumn) {
+        case 'status':
+          aValue = a.status || '';
+          bValue = b.status || '';
+          break;
+        case 'trip_id':
+          aValue = a.reference_id || a.id || '';
+          bValue = b.reference_id || b.id || '';
+          break;
+        case 'reference_id':
+          if (a.is_group_trip || a.client_group_id) {
+            aValue = a.client_group?.reference_id || '';
+          } else {
+            aValue = a.client?.scid || '';
+          }
+          if (b.is_group_trip || b.client_group_id) {
+            bValue = b.client_group?.reference_id || '';
+          } else {
+            bValue = b.client?.scid || '';
+          }
+          break;
+        case 'client':
+          if (a.is_group_trip || a.client_group_id) {
+            aValue = a.client_group?.name || '';
+          } else {
+            aValue = `${a.client?.first_name || ''} ${a.client?.last_name || ''}`.trim();
+          }
+          if (b.is_group_trip || b.client_group_id) {
+            bValue = b.client_group?.name || '';
+          } else {
+            bValue = `${b.client?.first_name || ''} ${b.client?.last_name || ''}`.trim();
+          }
+          break;
+        case 'date':
+          aValue = a.scheduled_pickup_time ? parseISO(a.scheduled_pickup_time).getTime() : 0;
+          bValue = b.scheduled_pickup_time ? parseISO(b.scheduled_pickup_time).getTime() : 0;
+          break;
+        case 'pu':
+          // Use actual_pickup_time if available, otherwise scheduled_pickup_time
+          const aPuTime = a.actual_pickup_time || a.scheduled_pickup_time;
+          const bPuTime = b.actual_pickup_time || b.scheduled_pickup_time;
+          aValue = aPuTime ? parseISO(aPuTime).getTime() : 0;
+          bValue = bPuTime ? parseISO(bPuTime).getTime() : 0;
+          break;
+        case 'do':
+          // Use actual_dropoff_time if available, otherwise scheduled_return_time
+          const aDoTime = a.actual_dropoff_time || a.scheduled_return_time;
+          const bDoTime = b.actual_dropoff_time || b.scheduled_return_time;
+          aValue = aDoTime ? parseISO(aDoTime).getTime() : 0;
+          bValue = bDoTime ? parseISO(bDoTime).getTime() : 0;
+          break;
+        case 'appt_time':
+          aValue = a.appointment_time ? parseISO(a.appointment_time).getTime() : 0;
+          bValue = b.appointment_time ? parseISO(b.appointment_time).getTime() : 0;
+          break;
+        case 'origin':
+          aValue = a.pickup_address || '';
+          bValue = b.pickup_address || '';
+          break;
+        case 'destination':
+          aValue = a.dropoff_address || '';
+          bValue = b.dropoff_address || '';
+          break;
+        case 'pax':
+          aValue = a.passenger_count || 0;
+          bValue = b.passenger_count || 0;
+          break;
+        default:
+          return 0;
+      }
+
+      // Handle null/undefined values
+      if (aValue === null || aValue === undefined) aValue = '';
+      if (bValue === null || bValue === undefined) bValue = '';
+
+      // Compare values
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return sorted;
+  }, [allFilteredTrips, sortColumn, sortDirection]);
+
   // For infinite scroll: limit displayed trips, otherwise show all
   const filteredTrips = infiniteScrollEnabled 
-    ? allFilteredTrips.slice(0, displayedTripsCount)
-    : allFilteredTrips;
+    ? sortedTrips.slice(0, displayedTripsCount)
+    : sortedTrips;
 
-  // Reset displayed count when filters change
+  // Reset displayed count when filters or sort change
   useEffect(() => {
     if (infiniteScrollEnabled) {
       setDisplayedTripsCount(20);
     }
-  }, [searchTerm, statusFilter, dateFilter, infiniteScrollEnabled]);
+  }, [searchTerm, statusFilter, dateFilter, sortColumn, sortDirection, infiniteScrollEnabled]);
+
+  // Handle column header click for sorting
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      // Toggle direction if same column
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new column and default to ascending
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  // Get sort icon for column header
+  const getSortIcon = (column: string) => {
+    if (sortColumn !== column) {
+      return <ArrowUpDown className="h-3 w-3 ml-1 opacity-50" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="h-3 w-3 ml-1" />
+      : <ArrowDown className="h-3 w-3 ml-1" />;
+  };
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
@@ -218,49 +444,57 @@ export default function HierarchicalTripsPage() {
   }, [infiniteScrollEnabled, displayedTripsCount, allFilteredTrips.length]);
 
   const getStatusColor = (status: string) => {
-    // Use HALCYON status colors with opacity backgrounds
+    // Use Fire color palette for all status badges
+    // Fire Palette: Charcoal (#1e2023 - 20% darker), Ice (#e8fffe), Lime (#f1fec9), Coral (#ff8475), Silver (#eaeaea), Cloud (#f4f4f4)
     switch (status) {
       case 'scheduled': 
+        // Use Ice (light mint) for scheduled trips
         return { 
-          backgroundColor: 'hsla(45, 100%, 51%, 0.15)', 
-          color: 'hsl(45, 100%, 30%)',
-          borderColor: 'hsl(45, 100%, 51%)'
+          backgroundColor: 'rgba(232, 255, 254, 0.3)', // Ice with opacity
+          color: '#1e2023', // Charcoal text (20% darker)
+          borderColor: '#b8e5e3' // Ice dark border
         };
       case 'confirmed': 
+        // Use Coral for confirmed trips
         return { 
-          backgroundColor: 'rgba(204, 51, 171, 0.15)', 
-          color: 'var(--primary)',
-          borderColor: 'var(--primary)'
+          backgroundColor: 'rgba(255, 132, 117, 0.2)', // Coral with opacity
+          color: '#e04850', // Coral dark text
+          borderColor: '#ff8475' // Coral border
         };
       case 'in_progress': 
+        // Use Lime for in-progress trips
         return { 
-          backgroundColor: 'hsla(36, 100%, 50%, 0.15)', 
-          color: 'hsl(36, 100%, 30%)',
-          borderColor: 'hsl(36, 100%, 50%)'
+          backgroundColor: 'rgba(241, 254, 201, 0.4)', // Lime with opacity
+          color: '#1e2023', // Charcoal text (20% darker)
+          borderColor: '#d4e5a8' // Lime dark border
         };
       case 'completed': 
+        // Use Ice with darker shade for completed trips
         return { 
-          backgroundColor: 'hsla(122, 39%, 49%, 0.15)', 
-          color: 'hsl(122, 39%, 25%)',
-          borderColor: 'hsl(122, 39%, 49%)'
+          backgroundColor: 'rgba(232, 255, 254, 0.5)', // Ice with more opacity
+          color: '#1e2023', // Charcoal text (20% darker)
+          borderColor: '#a5c8ca' // Aqua border (darker ice)
         };
       case 'cancelled': 
+        // Use Coral dark for cancelled trips
         return { 
-          backgroundColor: 'hsla(0, 84%, 60%, 0.15)', 
-          color: 'hsl(0, 84%, 35%)',
-          borderColor: 'hsl(0, 84%, 60%)'
+          backgroundColor: 'rgba(224, 72, 80, 0.15)', // Coral dark with opacity
+          color: '#e04850', // Coral dark text
+          borderColor: '#e04850' // Coral dark border
         };
       case 'no_show': 
+        // Use Silver for no-show trips
         return { 
-          backgroundColor: 'hsla(36, 100%, 50%, 0.15)', 
-          color: 'hsl(36, 100%, 30%)',
-          borderColor: 'hsl(36, 100%, 50%)'
+          backgroundColor: 'rgba(234, 234, 234, 0.4)', // Silver with opacity
+          color: '#5c6166', // Charcoal muted text
+          borderColor: '#d4d4d4' // Silver dark border
         };
       default: 
+        // Use Silver for unknown status
         return { 
-          backgroundColor: 'var(--muted)', 
-          color: 'var(--muted-foreground)',
-          borderColor: 'var(--border)'
+          backgroundColor: 'rgba(234, 234, 234, 0.3)', // Silver with opacity
+          color: '#5c6166', // Charcoal muted text
+          borderColor: '#eaeaea' // Silver border
         };
     }
   };
@@ -290,7 +524,7 @@ export default function HierarchicalTripsPage() {
       <div className="p-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: 'var(--primary)' }}></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#ff8475' }}></div>
             <p style={{ color: 'var(--muted-foreground)' }}>Loading trips...</p>
           </div>
         </div>
@@ -303,9 +537,9 @@ export default function HierarchicalTripsPage() {
       <div className="p-6">
         <Card>
           <CardContent className="p-6">
-            <div className="text-center" style={{ color: 'var(--destructive)' }}>
+            <div className="text-center" style={{ color: '#e04850' }}>
               <p className="text-lg font-semibold mb-2">Error loading trips</p>
-              <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>{error.message}</p>
+              <p className="text-sm" style={{ color: '#5c6166' }}>{error.message}</p>
             </div>
           </CardContent>
         </Card>
@@ -411,8 +645,8 @@ export default function HierarchicalTripsPage() {
         <Card 
           className="border"
           style={{
-            backgroundColor: 'var(--color-charcoal)',
-            borderColor: 'var(--primary)'
+            backgroundColor: '#1e2023',
+            borderColor: '#ff8475'
           }}
         >
           <CardContent className="p-4">
@@ -488,14 +722,14 @@ export default function HierarchicalTripsPage() {
                   placeholder="Search trips..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-3 py-2 border border-[#eaeaea] rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8475]"
                 />
               </div>
               
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 border border-[#eaeaea] rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8475]"
                 title="Filter by trip status"
                 aria-label="Filter by trip status"
               >
@@ -511,7 +745,7 @@ export default function HierarchicalTripsPage() {
               <select
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 border border-[#eaeaea] rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8475]"
                 title="Filter by date range"
                 aria-label="Filter by date range"
               >
@@ -559,6 +793,8 @@ export default function HierarchicalTripsPage() {
                       checked={bulkOps.selectedItems.includes(trip.id)}
                       onChange={() => bulkOps.toggleItem(trip.id)}
                       className="h-4 w-4"
+                      aria-label={`Select trip ${trip.id}`}
+                      title={`Select trip ${trip.id}`}
                     />
                   )}
                   <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 items-center">
@@ -611,131 +847,436 @@ export default function HierarchicalTripsPage() {
           )}
         </Card>
       ) : (
-        /* Detailed View (default) */
-        <>
-        <div className="space-y-4">
-          {filteredTrips.map((trip) => (
-            <Card key={trip.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  {bulkOpsEnabled && (
-                    <input
-                      type="checkbox"
-                      checked={bulkOps.selectedItems.includes(trip.id)}
-                      onChange={() => bulkOps.toggleItem(trip.id)}
-                      className="mr-4 mt-1 h-4 w-4"
-                    />
-                  )}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-3">
-                      <Badge style={getStatusColor(trip.status)}>
-                        {trip.status.replace('_', ' ').toUpperCase()}
-                      </Badge>
-                      <Badge variant="outline">
-                        {trip.trip_type.replace('_', ' ').toUpperCase()}
-                      </Badge>
-                      {trip.passenger_count > 1 && (
-                        <Badge variant="outline">
-                          {trip.passenger_count} passengers
-                        </Badge>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <h3 className="font-semibold text-lg mb-2">
-                          {trip.client?.first_name} {trip.client?.last_name}
-                        </h3>
-                        <div className="space-y-2 text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4" />
-                            <span><strong>From:</strong> {trip.pickup_address}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4" />
-                            <span><strong>To:</strong> {trip.dropoff_address}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4" />
-                            <span><strong>Pickup:</strong> {format(parseISO(trip.scheduled_pickup_time), 'MMM d, yyyy h:mm a')}</span>
-                          </div>
-                          {trip.scheduled_return_time && (
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-4 w-4" />
-                              <span><strong>Return:</strong> {format(parseISO(trip.scheduled_return_time), 'MMM d, yyyy h:mm a')}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                        <div className="mb-2">
-                          <strong>Program:</strong> {trip.program?.name || 'Unknown'}
-                        </div>
-                        {trip.corporate_client && (
-                          <div className="mb-2">
-                            <strong>Corporate Client:</strong> {trip.corporate_client.name}
-                          </div>
-                        )}
-                        {trip.driver && (
-                          <div className="mb-2">
-                            <strong>Driver:</strong> {trip.driver.license_number}
-                          </div>
-                        )}
-                        {trip.special_requirements && (
-                          <div className="mb-2">
-                            <strong>Special Requirements:</strong> {trip.special_requirements}
-                          </div>
-                        )}
-                        {trip.notes && (
-                          <div>
-                            <strong>Notes:</strong> {trip.notes}
-                          </div>
-                        )}
-                      </div>
-                    </div>
+        /* Collapsible Rows View (default) */
+        <Card>
+          <CardContent className="p-0">
+            {/* Header Row */}
+            <div className="sticky top-0 z-10 font-semibold text-sm" style={{ backgroundColor: '#f4f4f4', borderBottom: '1px solid #eaeaea', color: '#26282b' }}>
+              <div className="flex items-center gap-3 p-4">
+                {bulkOpsEnabled && (
+                  <div className="w-4" />
+                )}
+                <div className="w-4" />
+                <div className="flex-1 grid grid-cols-12 gap-2 items-center">
+                  <div 
+                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                    onClick={() => handleSort('status')}
+                    title="Click to sort by Status"
+                  >
+                    Status{getSortIcon('status')}
                   </div>
-
-                  <div className="flex items-center gap-2 ml-4">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setLocation(`/trips/edit/${trip.id}`)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      style={{ 
-                        color: 'var(--destructive)',
-                        backgroundColor: 'unset',
-                        background: 'unset',
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.color = 'var(--destructive)'}
-                      onMouseLeave={(e) => e.currentTarget.style.color = 'var(--destructive)'}
-                      onClick={() => {
-                        if (confirm('Are you sure you want to delete this trip?')) {
-                          // TODO: Implement trip deletion
-                          console.log('Delete trip:', trip.id);
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  <div 
+                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                    onClick={() => handleSort('trip_id')}
+                    title="Click to sort by Trip ID"
+                  >
+                    Trip ID{getSortIcon('trip_id')}
+                  </div>
+                  <div 
+                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                    onClick={() => handleSort('reference_id')}
+                    title="Click to sort by Reference ID"
+                  >
+                    Reference ID{getSortIcon('reference_id')}
+                  </div>
+                  <div 
+                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                    onClick={() => handleSort('client')}
+                    title="Click to sort by Client"
+                  >
+                    Client{getSortIcon('client')}
+                  </div>
+                  <div 
+                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                    onClick={() => handleSort('date')}
+                    title="Click to sort by Date"
+                  >
+                    Date{getSortIcon('date')}
+                  </div>
+                  <div 
+                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                    onClick={() => handleSort('pu')}
+                    title="Click to sort by Pickup Time"
+                  >
+                    PU{getSortIcon('pu')}
+                  </div>
+                  <div 
+                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                    onClick={() => handleSort('do')}
+                    title="Click to sort by Dropoff Time"
+                  >
+                    DO{getSortIcon('do')}
+                  </div>
+                  <div 
+                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                    onClick={() => handleSort('appt_time')}
+                    title="Click to sort by Appointment Time"
+                  >
+                    Appt Time{getSortIcon('appt_time')}
+                  </div>
+                  <div 
+                    className="col-span-2 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                    onClick={() => handleSort('origin')}
+                    title="Click to sort by Origin"
+                  >
+                    Origin{getSortIcon('origin')}
+                  </div>
+                  <div 
+                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                    onClick={() => handleSort('destination')}
+                    title="Click to sort by Destination"
+                  >
+                    Destination{getSortIcon('destination')}
+                  </div>
+                  <div 
+                    className="col-span-1 text-center flex items-center justify-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                    onClick={() => handleSort('pax')}
+                    title="Click to sort by Passenger Count"
+                  >
+                    PAX{getSortIcon('pax')}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        {/* Infinite scroll trigger */}
-        {infiniteScrollEnabled && displayedTripsCount < allFilteredTrips.length && (
-          <div ref={loadMoreRef} className="flex justify-center py-4">
-            <div className="text-sm text-gray-500">Loading more trips...</div>
-          </div>
-        )}
-        </>
+              </div>
+            </div>
+            <div className="divide-y">
+              {filteredTrips.map((trip) => {
+                const isExpanded = expandedTrips.has(trip.id);
+                const stopsCount = trip.stops?.length || 0;
+                const totalLegs = stopsCount + 2; // Origin + Stops + Destination
+                const showActualTimes = trip.status === 'completed' || trip.status === 'in_progress';
+                const abbreviateSpecialReqs = (reqs?: string) => {
+                  if (!reqs) return '';
+                  return reqs.length > 30 ? reqs.substring(0, 30) + '...' : reqs;
+                };
+
+                return (
+                  <Collapsible
+                    key={trip.id}
+                    open={isExpanded}
+                    onOpenChange={(open) => {
+                      const newExpanded = new Set(expandedTrips);
+                      if (open) {
+                        newExpanded.add(trip.id);
+                      } else {
+                        newExpanded.delete(trip.id);
+                      }
+                      setExpandedTrips(newExpanded);
+                    }}
+                  >
+                    <CollapsibleTrigger asChild>
+                      <div 
+                        className="flex items-center gap-3 p-4 transition-colors cursor-pointer"
+                        style={{ 
+                          backgroundColor: 'transparent',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(234, 234, 234, 0.5)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        {bulkOpsEnabled && (
+                          <input
+                            type="checkbox"
+                            checked={bulkOps.selectedItems.includes(trip.id)}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              bulkOps.toggleItem(trip.id);
+                            }}
+                            className="h-4 w-4"
+                            onClick={(e) => e.stopPropagation()}
+                            aria-label={`Select trip ${trip.id}`}
+                            title={`Select trip ${trip.id}`}
+                          />
+                        )}
+                        <div className="flex-shrink-0">
+                          {isExpanded ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                        </div>
+                        {/* Collapsed Row Content - Left to Right */}
+                        <div className="flex-1 grid grid-cols-12 gap-2 items-center text-sm">
+                          {/* Status */}
+                          <div className="col-span-1">
+                            <Badge style={getStatusColor(trip.status)} className="text-xs">
+                              {trip.status.replace('_', ' ').toUpperCase()}
+                            </Badge>
+                          </div>
+                          {/* Trip ID - Show reference_id if available, otherwise fallback to id */}
+                          <div className="col-span-1 font-mono text-xs truncate" style={{ color: 'var(--muted-foreground)' }}>
+                            {trip.reference_id || trip.id.substring(0, 8) + '...'}
+                          </div>
+                          {/* Reference ID - Show client SCID or group reference_id */}
+                          <div className="col-span-1 font-mono text-xs truncate" style={{ color: 'var(--muted-foreground)' }}>
+                            {(() => {
+                              // Handle group trips
+                              if (trip.is_group_trip || trip.client_group_id) {
+                                const clientGroup = Array.isArray(trip.client_group) 
+                                  ? trip.client_group[0] 
+                                  : trip.client_group;
+                                return clientGroup?.reference_id || <span>-</span>;
+                              }
+                              
+                              // Handle individual client trips
+                              if (trip.client_id) {
+                                const client = Array.isArray(trip.client) 
+                                  ? trip.client[0] 
+                                  : trip.client;
+                                return client?.scid || <span>-</span>;
+                              }
+                              
+                              return <span>-</span>;
+                            })()}
+                          </div>
+                          {/* Client - Show client name or client group name */}
+                          <div className="col-span-1 truncate">
+                            {(() => {
+                              // Debug logging for troubleshooting
+                              if (process.env.NODE_ENV === 'development' && !trip.client && !trip.client_group) {
+                                console.warn('⚠️ Trip missing client data:', {
+                                  trip_id: trip.id,
+                                  client_id: trip.client_id,
+                                  client_group_id: trip.client_group_id,
+                                  is_group_trip: trip.is_group_trip,
+                                  hasClient: !!trip.client,
+                                  hasClientGroup: !!trip.client_group
+                                });
+                              }
+                              
+                              // Handle group trips
+                              if (trip.is_group_trip || trip.client_group_id) {
+                                // Check if client_group is an array (Supabase sometimes returns arrays)
+                                const clientGroup = Array.isArray(trip.client_group) 
+                                  ? trip.client_group[0] 
+                                  : trip.client_group;
+                                
+                                if (clientGroup?.name) {
+                                  return (
+                                    <span className="flex items-center gap-1">
+                                      {clientGroup.name}
+                                    </span>
+                                  );
+                                }
+                                return <span style={{ color: 'var(--muted-foreground)' }}>Group (N/A)</span>;
+                              }
+                              
+                              // Handle individual client trips
+                              if (trip.client_id) {
+                                // Check if client is an array (Supabase sometimes returns arrays)
+                                const client = Array.isArray(trip.client) 
+                                  ? trip.client[0] 
+                                  : trip.client;
+                                
+                                if (client?.first_name || client?.last_name) {
+                                  return (
+                                    <span>
+                                      {client.first_name} {client.last_name}
+                                    </span>
+                                  );
+                                }
+                                return <span style={{ color: 'var(--muted-foreground)' }}>Client (N/A)</span>;
+                              }
+                              
+                              return <span style={{ color: 'var(--muted-foreground)' }}>N/A</span>;
+                            })()}
+                          </div>
+                          {/* Date */}
+                          <div className="col-span-1" style={{ color: 'var(--muted-foreground)' }}>
+                            {format(parseISO(trip.scheduled_pickup_time), 'MMM d, yyyy')}
+                          </div>
+                          {/* PU Time */}
+                          <div className="col-span-1" style={{ color: 'var(--muted-foreground)' }}>
+                            {showActualTimes && trip.actual_pickup_time 
+                              ? format(parseISO(trip.actual_pickup_time), 'h:mm a')
+                              : format(parseISO(trip.scheduled_pickup_time), 'h:mm a')}
+                          </div>
+                          {/* DO Time */}
+                          <div className="col-span-1" style={{ color: 'var(--muted-foreground)' }}>
+                            {showActualTimes && trip.actual_dropoff_time
+                              ? format(parseISO(trip.actual_dropoff_time), 'h:mm a')
+                              : trip.scheduled_return_time 
+                                ? format(parseISO(trip.scheduled_return_time), 'h:mm a')
+                                : '-'}
+                          </div>
+                          {/* Appt Time */}
+                          <div className="col-span-1" style={{ color: 'var(--muted-foreground)' }}>
+                            {trip.appointment_time 
+                              ? format(parseISO(trip.appointment_time), 'h:mm a')
+                              : '-'}
+                          </div>
+                          {/* Origin */}
+                          <div className="col-span-2 truncate" style={{ color: 'var(--muted-foreground)' }}>
+                            <div className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3 flex-shrink-0" />
+                              <span className="truncate">{trip.pickup_address}</span>
+                            </div>
+                          </div>
+                          {/* Destination */}
+                          <div className="col-span-1 truncate" style={{ color: 'var(--muted-foreground)' }}>
+                            <div className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3 flex-shrink-0" />
+                              <span className="truncate">{trip.dropoff_address}</span>
+                              {stopsCount > 0 && (
+                                <Badge variant="outline" className="ml-1 text-xs">
+                                  {totalLegs} Legs
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          {/* PAX */}
+                          <div className="col-span-1 text-center">
+                            <Badge variant="outline" className="text-xs">
+                              {trip.passenger_count} PAX
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="px-4 pb-4 pt-2 border-t" style={{ backgroundColor: 'rgba(234, 234, 234, 0.3)', borderTopColor: '#eaeaea' }}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                          {/* Column 1: Basic Info */}
+                          <div className="space-y-2">
+                            <div>
+                              <strong>Trip Reference:</strong> <span className="font-mono text-xs">{trip.reference_id || 'N/A'}</span>
+                            </div>
+                            <div>
+                              <strong>Client:</strong> {
+                                trip.is_group_trip && trip.client_group ? (
+                                  <span className="flex items-center gap-1">
+                                    <Users className="h-3 w-3" />
+                                    {trip.client_group.name}
+                                  </span>
+                                ) : trip.client ? (
+                                  <span>
+                                    {trip.client.scid && (
+                                      <span className="font-mono text-xs mr-1" style={{ color: 'var(--muted-foreground)' }}>
+                                        {trip.client.scid}
+                                      </span>
+                                    )}
+                                    {trip.client.first_name} {trip.client.last_name}
+                                  </span>
+                                ) : (
+                                  'N/A'
+                                )
+                              }
+                              {trip.client_group_id && (
+                                <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                                  Group ID: {trip.client_group_id}
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <strong>Origin:</strong> {trip.pickup_address}
+                            </div>
+                            <div>
+                              <strong>Destination:</strong> {trip.dropoff_address}
+                            </div>
+                            {stopsCount > 0 && (
+                              <div>
+                                <strong>Stops ({stopsCount}):</strong>
+                                <ul className="list-disc list-inside ml-2 mt-1">
+                                  {trip.stops?.map((stop, idx) => (
+                                    <li key={idx} className="text-xs">{stop}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            <div>
+                              <strong>Trip Purpose:</strong> {trip.trip_purpose || 'N/A'}
+                            </div>
+                          </div>
+
+                          {/* Column 2: Timing */}
+                          <div className="space-y-2">
+                            <div>
+                              <strong>Scheduled PU Time:</strong> {format(parseISO(trip.scheduled_pickup_time), 'MMM d, yyyy h:mm a')}
+                            </div>
+                            {showActualTimes && trip.actual_pickup_time && (
+                              <div>
+                                <strong>Actual Pickup Time:</strong> {format(parseISO(trip.actual_pickup_time), 'MMM d, yyyy h:mm a')}
+                              </div>
+                            )}
+                            {trip.appointment_time && (
+                              <div>
+                                <strong>Appt Time:</strong> {format(parseISO(trip.appointment_time), 'MMM d, yyyy h:mm a')}
+                              </div>
+                            )}
+                            <div>
+                              <strong>Scheduled DO Time:</strong> {trip.scheduled_return_time ? format(parseISO(trip.scheduled_return_time), 'MMM d, yyyy h:mm a') : 'N/A'}
+                            </div>
+                            {showActualTimes && trip.actual_dropoff_time && (
+                              <div>
+                                <strong>Actual DO Time:</strong> {format(parseISO(trip.actual_dropoff_time), 'MMM d, yyyy h:mm a')}
+                              </div>
+                            )}
+                            <div>
+                              <strong>Trip Type:</strong> {trip.trip_type === 'round_trip' ? 'Round Trip' : 'One-Way'}
+                            </div>
+                            {trip.trip_type === 'round_trip' && showActualTimes && trip.actual_return_time && (
+                              <div>
+                                <strong>Actual Return Time:</strong> {format(parseISO(trip.actual_return_time), 'MMM d, yyyy h:mm a')}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Column 3: Additional Info */}
+                          <div className="space-y-2">
+                            <div>
+                              <strong># of Passengers (PAX):</strong> {trip.passenger_count}
+                            </div>
+                            {trip.special_requirements && (
+                              <div>
+                                <strong>Special Requirements:</strong> {abbreviateSpecialReqs(trip.special_requirements)}
+                              </div>
+                            )}
+                            <div>
+                              <strong>Trip Category ID:</strong> {trip.trip_category_id || 'N/A'}
+                            </div>
+                            <div>
+                              <strong>Recurring Trip:</strong> {trip.recurring_trip_id ? 'Yes' : 'No'}
+                            </div>
+                            {trip.recurring_trip_id && (
+                              <>
+                                <div>
+                                  <strong>Recurring Trip ID:</strong> <span className="font-mono text-xs">{trip.recurring_trip_id}</span>
+                                </div>
+                                {trip.recurring_pattern && (
+                                  <div>
+                                    <strong>Recurring Pattern:</strong> {JSON.stringify(trip.recurring_pattern)}
+                                  </div>
+                                )}
+                              </>
+                            )}
+                            <div>
+                              <strong>Is Group Trip:</strong> {trip.is_group_trip ? 'Yes' : 'No'}
+                            </div>
+                            {trip.is_group_trip && trip.client_group_id && (
+                              <div>
+                                <strong>Client Group ID:</strong> {trip.client_group_id}
+                              </div>
+                            )}
+                            <div>
+                              <strong>Created By:</strong> {trip.created_by_user?.user_name || trip.created_by || 'N/A'} at {format(parseISO(trip.created_at), 'MMM d, yyyy h:mm a')}
+                            </div>
+                            <div>
+                              <strong>Updated By:</strong> {trip.updated_by_user?.user_name || trip.updated_by || 'N/A'} at {format(parseISO(trip.updated_at), 'MMM d, yyyy h:mm a')}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                );
+              })}
+            </div>
+          </CardContent>
+          {/* Infinite scroll trigger */}
+          {infiniteScrollEnabled && displayedTripsCount < allFilteredTrips.length && (
+            <div ref={loadMoreRef} className="flex justify-center py-4 border-t">
+              <div className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Loading more trips...</div>
+            </div>
+          )}
+        </Card>
       )}
     </div>
   );

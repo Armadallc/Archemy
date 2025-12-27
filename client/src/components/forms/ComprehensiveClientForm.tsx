@@ -6,6 +6,7 @@ import { Textarea } from "../../components/ui/textarea";
 import { PhoneInput } from "../../components/ui/phone-input";
 import { Button } from "../../components/ui/button";
 import { Checkbox } from "../../components/ui/checkbox";
+import AddressInput from "../forms/AddressInput";
 import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
 import { CustomSelector } from "../../components/ui/custom-selector";
 import { Trash2, UserPlus, Upload, X } from "lucide-react";
@@ -586,10 +587,22 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
             name="address"
             render={({ field }) => (
               <FormItem className="mt-4">
-                <FormLabel className="text-sm font-medium" style={{ fontFamily: 'Nohemi', fontWeight: 500 }}>Address</FormLabel>
-                <FormControl>
-                  <Textarea placeholder="123 Main Street, City, State 12345" className="mt-1" {...field} />
-                </FormControl>
+                <AddressInput
+                  value={field.value || ''}
+                  onChange={(addressData) => {
+                    // Generate full address for backward compatibility
+                    const fullAddress = [
+                      addressData.street,
+                      addressData.city,
+                      addressData.state && addressData.zip ? `${addressData.state} ${addressData.zip}` : addressData.state || addressData.zip
+                    ].filter(Boolean).join(', ');
+                    field.onChange(fullAddress);
+                  }}
+                  onFullAddressChange={field.onChange}
+                  label="Address"
+                  required={false}
+                  showLabel={true}
+                />
                 <div className="flex items-center space-x-2 mt-2">
                   <FormField
                     control={createForm.control}

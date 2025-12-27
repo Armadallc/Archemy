@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 
 interface Trip {
   id: string;
@@ -30,14 +31,36 @@ interface TripCalendarProps {
   trips: Trip[];
   onTripPress: (tripId: string) => void;
   refreshControl?: React.ReactElement;
+  viewMode?: ViewMode;
+  onViewModeChange?: (mode: ViewMode) => void;
+  selectedDate?: Date;
+  onSelectedDateChange?: (date: Date) => void;
+  hideHeader?: boolean;
 }
 
 type ViewMode = 'day' | 'week' | 'month';
 
-export default function TripCalendar({ trips, onTripPress, refreshControl }: TripCalendarProps) {
+export default function TripCalendar({ 
+  trips, 
+  onTripPress, 
+  refreshControl,
+  viewMode: externalViewMode,
+  onViewModeChange,
+  selectedDate: externalSelectedDate,
+  onSelectedDateChange,
+  hideHeader = false,
+}: TripCalendarProps) {
   const { theme } = useTheme();
-  const [viewMode, setViewMode] = useState<ViewMode>('day');
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [internalViewMode, setInternalViewMode] = useState<ViewMode>('day');
+  const [internalSelectedDate, setInternalSelectedDate] = useState(new Date());
+  
+  // Use external view mode if provided, otherwise use internal state
+  const viewMode = externalViewMode ?? internalViewMode;
+  const setViewMode = onViewModeChange ?? setInternalViewMode;
+  
+  // Use external selected date if provided, otherwise use internal state
+  const selectedDate = externalSelectedDate ?? internalSelectedDate;
+  const setSelectedDate = onSelectedDateChange ?? setInternalSelectedDate;
 
   // Get trips for selected date
   const getTripsForDate = (date: Date) => {
@@ -237,11 +260,18 @@ export default function TripCalendar({ trips, onTripPress, refreshControl }: Tri
       justifyContent: 'space-between',
       marginBottom: 8,
     },
+    dateNavigationCenter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+      justifyContent: 'center',
+    },
     dateText: {
       ...theme.typography.h3,
       color: theme.colors.foreground,
       flex: 1,
       textAlign: 'center',
+      marginHorizontal: 8,
     },
     navButton: {
       padding: 8,
@@ -318,69 +348,73 @@ export default function TripCalendar({ trips, onTripPress, refreshControl }: Tri
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        {/* View Mode Selector */}
-        <View style={styles.viewModeSelector}>
+      {!hideHeader && (
+        <View style={styles.header}>
+          {/* View Mode Selector */}
+          <View style={styles.viewModeSelector}>
+            <TouchableOpacity
+              style={[styles.viewModeButton, viewMode === 'day' && styles.viewModeButtonActive]}
+              onPress={() => setViewMode('day')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.viewModeButtonText, viewMode === 'day' && styles.viewModeButtonTextActive]}>
+                Day
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.viewModeButton, viewMode === 'week' && styles.viewModeButtonActive]}
+              onPress={() => setViewMode('week')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.viewModeButtonText, viewMode === 'week' && styles.viewModeButtonTextActive]}>
+                Week
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.viewModeButton, viewMode === 'month' && styles.viewModeButtonActive]}
+              onPress={() => setViewMode('month')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.viewModeButtonText, viewMode === 'month' && styles.viewModeButtonTextActive]}>
+                Month
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Date Navigation */}
+          <View style={styles.dateNavigation}>
+            <View style={styles.dateNavigationCenter}>
+              <TouchableOpacity
+                style={styles.navButton}
+                onPress={() => navigateDate('prev')}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="chevron-back" size={20} color={theme.colors.foreground} />
+              </TouchableOpacity>
+              <Text style={styles.dateText}>
+                {viewMode === 'day' && formatDate(selectedDate)}
+                {viewMode === 'week' && `Week of ${formatDate(selectedDate)}`}
+                {viewMode === 'month' && selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </Text>
+              <TouchableOpacity
+                style={styles.navButton}
+                onPress={() => navigateDate('next')}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="chevron-forward" size={20} color={theme.colors.foreground} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
           <TouchableOpacity
-            style={[styles.viewModeButton, viewMode === 'day' && styles.viewModeButtonActive]}
-            onPress={() => setViewMode('day')}
+            style={styles.todayButton}
+            onPress={goToToday}
             activeOpacity={0.7}
           >
-            <Text style={[styles.viewModeButtonText, viewMode === 'day' && styles.viewModeButtonTextActive]}>
-              Day
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.viewModeButton, viewMode === 'week' && styles.viewModeButtonActive]}
-            onPress={() => setViewMode('week')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.viewModeButtonText, viewMode === 'week' && styles.viewModeButtonTextActive]}>
-              Week
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.viewModeButton, viewMode === 'month' && styles.viewModeButtonActive]}
-            onPress={() => setViewMode('month')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.viewModeButtonText, viewMode === 'month' && styles.viewModeButtonTextActive]}>
-              Month
-            </Text>
+            <Text style={styles.todayButtonText}>Today</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Date Navigation */}
-        <View style={styles.dateNavigation}>
-          <TouchableOpacity
-            style={styles.navButton}
-            onPress={() => navigateDate('prev')}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="chevron-back" size={24} color={theme.colors.foreground} />
-          </TouchableOpacity>
-          <Text style={styles.dateText}>
-            {viewMode === 'day' && formatDate(selectedDate)}
-            {viewMode === 'week' && `Week of ${formatDate(selectedDate)}`}
-            {viewMode === 'month' && selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-          </Text>
-          <TouchableOpacity
-            style={styles.navButton}
-            onPress={() => navigateDate('next')}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="chevron-forward" size={24} color={theme.colors.foreground} />
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity
-          style={styles.todayButton}
-          onPress={goToToday}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.todayButtonText}>Today</Text>
-        </TouchableOpacity>
-      </View>
+      )}
 
       <View style={styles.content}>
         {displayTrips.length === 0 ? (

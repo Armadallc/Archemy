@@ -947,8 +947,19 @@ export const driversStorage = {
     if (error) throw error;
     
     // Get latest location for each driver
+    // Only show locations for drivers where is_available = true (privacy feature)
     const driversWithLocations = await Promise.all(
       (data || []).map(async (driver) => {
+        // Only fetch location if driver is available
+        if (driver.is_available !== true) {
+          return {
+            ...driver,
+            latitude: null,
+            longitude: null,
+            last_location_update: null,
+          };
+        }
+        
         const { data: locationData } = await supabase
           .from('driver_locations')
           .select('latitude, longitude, timestamp')
@@ -1560,6 +1571,7 @@ export const tripsStorage = {
         ),
         clients!client_id (
           id,
+          scid,
           first_name,
           last_name,
           phone,
@@ -1574,12 +1586,30 @@ export const tripsStorage = {
         ),
         client_groups!client_group_id (
           id,
+          reference_id,
           name,
           description
         )
       `);
     if (error) throw error;
-    return data || [];
+    
+    // Transform Supabase response: clients -> client, client_groups -> client_group
+    const transformed = (data || []).map((trip: any) => {
+      const transformedTrip = { ...trip };
+      // Supabase returns 'clients' (plural) but frontend expects 'client' (singular)
+      if (trip.clients) {
+        transformedTrip.client = Array.isArray(trip.clients) ? trip.clients[0] : trip.clients;
+        delete transformedTrip.clients;
+      }
+      // Supabase returns 'client_groups' (plural) but frontend expects 'client_group' (singular)
+      if (trip.client_groups) {
+        transformedTrip.client_group = Array.isArray(trip.client_groups) ? trip.client_groups[0] : trip.client_groups;
+        delete transformedTrip.client_groups;
+      }
+      return transformedTrip;
+    });
+    
+    return transformed;
   },
 
   async getTrip(id: string) {
@@ -1607,6 +1637,7 @@ export const tripsStorage = {
         ),
         clients!client_id (
           id,
+          scid,
           first_name,
           last_name,
           phone,
@@ -1621,6 +1652,7 @@ export const tripsStorage = {
         ),
         client_groups!client_group_id (
           id,
+          reference_id,
           name,
           description
         )
@@ -1656,6 +1688,7 @@ export const tripsStorage = {
         ),
         clients!client_id (
           id,
+          scid,
           first_name,
           last_name,
           phone,
@@ -1670,13 +1703,29 @@ export const tripsStorage = {
         ),
         client_groups!client_group_id (
           id,
+          reference_id,
           name,
           description
         )
       `)
       .eq('program_id', programId);
     if (error) throw error;
-    return data || [];
+    
+    // Transform Supabase response: clients -> client, client_groups -> client_group
+    const transformed = (data || []).map((trip: any) => {
+      const transformedTrip = { ...trip };
+      if (trip.clients) {
+        transformedTrip.client = Array.isArray(trip.clients) ? trip.clients[0] : trip.clients;
+        delete transformedTrip.clients;
+      }
+      if (trip.client_groups) {
+        transformedTrip.client_group = Array.isArray(trip.client_groups) ? trip.client_groups[0] : trip.client_groups;
+        delete transformedTrip.client_groups;
+      }
+      return transformedTrip;
+    });
+    
+    return transformed;
   },
 
   async getTripsByDriver(driverId: string) {
@@ -1704,6 +1753,7 @@ export const tripsStorage = {
         ),
         clients!client_id (
           id,
+          scid,
           first_name,
           last_name,
           phone,
@@ -1718,13 +1768,29 @@ export const tripsStorage = {
         ),
         client_groups!client_group_id (
           id,
+          reference_id,
           name,
           description
         )
       `)
       .eq('driver_id', driverId);
     if (error) throw error;
-    return data || [];
+    
+    // Transform Supabase response: clients -> client, client_groups -> client_group
+    const transformed = (data || []).map((trip: any) => {
+      const transformedTrip = { ...trip };
+      if (trip.clients) {
+        transformedTrip.client = Array.isArray(trip.clients) ? trip.clients[0] : trip.clients;
+        delete transformedTrip.clients;
+      }
+      if (trip.client_groups) {
+        transformedTrip.client_group = Array.isArray(trip.client_groups) ? trip.client_groups[0] : trip.client_groups;
+        delete transformedTrip.client_groups;
+      }
+      return transformedTrip;
+    });
+    
+    return transformed;
   },
 
   async getTripsByCorporateClient(corporateClientId: string) {
@@ -1771,6 +1837,7 @@ export const tripsStorage = {
         ),
         clients!client_id (
           id,
+          scid,
           first_name,
           last_name,
           phone,
@@ -1785,6 +1852,7 @@ export const tripsStorage = {
         ),
         client_groups!client_group_id (
           id,
+          reference_id,
           name,
           description
         )
@@ -1792,7 +1860,22 @@ export const tripsStorage = {
       .in('program_id', programIds)
       .order('scheduled_pickup_time', { ascending: true });
     if (error) throw error;
-    return data || [];
+    
+    // Transform Supabase response: clients -> client, client_groups -> client_group
+    const transformed = (data || []).map((trip: any) => {
+      const transformedTrip = { ...trip };
+      if (trip.clients) {
+        transformedTrip.client = Array.isArray(trip.clients) ? trip.clients[0] : trip.clients;
+        delete transformedTrip.clients;
+      }
+      if (trip.client_groups) {
+        transformedTrip.client_group = Array.isArray(trip.client_groups) ? trip.client_groups[0] : trip.client_groups;
+        delete transformedTrip.client_groups;
+      }
+      return transformedTrip;
+    });
+    
+    return transformed;
   },
 
   async createTrip(trip: any) {
@@ -1890,9 +1973,20 @@ export const tripsStorage = {
       }
     });
     
+    // Convert stops array to JSONB format if it exists
+    if (cleanTrip.stops && Array.isArray(cleanTrip.stops)) {
+      // Filter out empty strings and ensure it's a valid array
+      const validStops = cleanTrip.stops.filter((stop: string) => stop && stop.trim());
+      cleanTrip.stops = validStops.length > 0 ? validStops : [];
+    } else if (!cleanTrip.stops) {
+      // Default to empty array if stops is not provided
+      cleanTrip.stops = [];
+    }
+    
     console.log(`Inserting trip with keys:`, Object.keys(cleanTrip));
     console.log(`client_id in cleanTrip:`, cleanTrip.client_id);
     console.log(`client_group_id in cleanTrip:`, cleanTrip.client_group_id);
+    console.log(`stops in cleanTrip:`, cleanTrip.stops);
     
     const { data, error } = await supabase.from('trips').insert(cleanTrip).select().single();
     if (error) {
@@ -1900,6 +1994,68 @@ export const tripsStorage = {
       console.error(`Trip being inserted:`, JSON.stringify(cleanTrip, null, 2));
       throw error;
     }
+    
+    // Generate reference_id for the trip
+    if (data && !data.reference_id) {
+      try {
+        // Get program code
+        const { data: program, error: programError } = await supabase
+          .from('programs')
+          .select('code')
+          .eq('id', data.program_id)
+          .single();
+        
+        if (programError) {
+          console.error('❌ [createTrip] Error fetching program for reference_id:', programError);
+        } else if (program?.code) {
+          // Get trip date from scheduled_pickup_time (use date portion only)
+          const tripDate = data.scheduled_pickup_time 
+            ? new Date(data.scheduled_pickup_time).toISOString().split('T')[0] 
+            : new Date().toISOString().split('T')[0];
+          
+          console.log('🔍 [createTrip] Generating reference_id:', {
+            trip_id: data.id,
+            program_code: program.code,
+            trip_date: tripDate
+          });
+          
+          // Call RPC function to generate reference_id
+          const { data: referenceIdResult, error: referenceIdError } = await supabase.rpc('generate_trip_reference_id_rpc', {
+            p_program_code: program.code,
+            p_trip_date: tripDate
+          });
+          
+          if (referenceIdError) {
+            console.error('❌ [createTrip] RPC call failed:', referenceIdError);
+            console.error('❌ [createTrip] Error details:', JSON.stringify(referenceIdError, null, 2));
+            // Don't throw - trip was created successfully, just missing reference_id
+          } else if (referenceIdResult) {
+            // Update trip with reference_id
+            const { data: updatedTrip, error: updateError } = await supabase
+              .from('trips')
+              .update({ reference_id: referenceIdResult })
+              .eq('id', data.id)
+              .select()
+              .single();
+            
+            if (updateError) {
+              console.error('❌ [createTrip] Error updating trip with reference_id:', updateError);
+            } else {
+              console.log('✅ [createTrip] Generated reference_id:', referenceIdResult, 'for trip:', data.id);
+              return updatedTrip;
+            }
+          }
+        } else {
+          console.warn('⚠️ [createTrip] Program has no code, skipping reference_id generation:', {
+            program_id: data.program_id
+          });
+        }
+      } catch (refIdError) {
+        console.error('❌ [createTrip] Error generating reference_id:', refIdError);
+        // Don't throw - trip was created successfully, just missing reference_id
+      }
+    }
+    
     return data;
   },
 
@@ -2097,14 +2253,121 @@ export const clientGroupsStorage = {
   },
 
   async createClientGroup(clientGroup: any) {
+    console.log('🔍 [createClientGroup] FUNCTION CALLED with:', {
+      name: clientGroup?.name,
+      program_id: clientGroup?.program_id,
+      has_id: !!clientGroup?.id
+    });
+    
     // Generate a UUID for the client group if not provided
     const groupWithId = {
       ...clientGroup,
       id: clientGroup.id || crypto.randomUUID()
     };
     
-    const { data, error } = await supabase.from('client_groups').insert(groupWithId).select().single();
-    if (error) throw error;
+    console.log('🔍 [createClientGroup] About to insert group with id:', groupWithId.id);
+    
+    const { data, error } = await supabase.from('client_groups').insert(groupWithId).select('*').single();
+    if (error) {
+      console.error('❌ [createClientGroup] Insert error:', error);
+      throw error;
+    }
+    
+    console.log('🔍 [createClientGroup] Group inserted, data:', {
+      id: data?.id,
+      program_id: data?.program_id,
+      reference_id: data?.reference_id,
+      has_reference_id: !!data?.reference_id
+    });
+    
+    // Generate reference_id after insertion if program_id is present
+    if (data && data.program_id && !data.reference_id) {
+      try {
+        console.log('🔍 [createClientGroup] Starting reference_id generation for group:', data.id, 'program_id:', data.program_id);
+        
+        // Fetch program to get its code
+        const { data: program, error: programError } = await supabase
+          .from('programs')
+          .select('code, name')
+          .eq('id', data.program_id)
+          .single();
+        
+        if (programError) {
+          console.error('❌ [createClientGroup] Could not fetch program code for reference_id generation:', programError);
+          console.error('❌ [createClientGroup] Program error details:', JSON.stringify(programError, null, 2));
+          // Continue without reference_id - it can be generated later via backfill
+          return data;
+        }
+        
+        console.log('🔍 [createClientGroup] Fetched program:', { code: program?.code, name: program?.name });
+        
+        // If program code exists, generate reference_id
+        if (program?.code) {
+          // First, check if the RPC function exists by trying to call it
+          console.log('🔍 [createClientGroup] Attempting to call RPC function with program_code:', program.code);
+          
+          // Call the PostgreSQL function via RPC wrapper
+          const { data: referenceIdResult, error: referenceIdError } = await supabase.rpc('generate_client_group_reference_id_rpc', {
+            p_program_code: program.code
+          });
+          
+          if (referenceIdError) {
+            console.error('❌ [createClientGroup] RPC call failed:', referenceIdError);
+            console.error('❌ [createClientGroup] Error code:', referenceIdError.code);
+            console.error('❌ [createClientGroup] Error message:', referenceIdError.message);
+            console.error('❌ [createClientGroup] Error details:', JSON.stringify(referenceIdError, null, 2));
+            
+            // If function doesn't exist (code 42883), log a helpful message
+            if (referenceIdError.code === '42883' || referenceIdError.message?.includes('does not exist')) {
+              console.error('❌ [createClientGroup] RPC function does not exist. Please run migration 016_add_client_group_reference_id.sql');
+            }
+            
+            // Continue without reference_id - it can be generated later via backfill
+            return data;
+          }
+          
+          const newReferenceId = referenceIdResult;
+          console.log('✅ [createClientGroup] Generated reference_id:', newReferenceId, 'Type:', typeof newReferenceId);
+          
+          // Validate that we got a reference_id
+          if (!newReferenceId || typeof newReferenceId !== 'string') {
+            console.error('❌ [createClientGroup] Invalid reference_id returned from RPC:', newReferenceId, 'Type:', typeof newReferenceId);
+            return data; // Return original data if reference_id is invalid
+          }
+          
+          // Update the client group with the generated reference_id
+          const { data: updatedData, error: updateError } = await supabase
+            .from('client_groups')
+            .update({ reference_id: newReferenceId })
+            .eq('id', data.id)
+            .select()
+            .single();
+          
+          if (updateError) {
+            console.error('❌ [createClientGroup] Failed to update group with reference_id:', updateError);
+            console.error('❌ [createClientGroup] Update error details:', JSON.stringify(updateError, null, 2));
+            return data; // Return original data if update fails
+          }
+          
+          console.log('✅ [createClientGroup] Updated group with reference_id:', updatedData);
+          return updatedData;
+        } else {
+          console.warn('⚠️ [createClientGroup] Program has no code, cannot generate reference_id. Program:', program);
+        }
+      } catch (error) {
+        console.error('❌ [createClientGroup] Unexpected error during reference_id generation:', error);
+        console.error('❌ [createClientGroup] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+        // Continue without reference_id - it can be generated later via backfill
+        return data;
+      }
+    } else {
+      if (data && data.reference_id) {
+        console.log('✅ [createClientGroup] Group already has reference_id:', data.reference_id);
+      } else if (data && !data.program_id) {
+        console.warn('⚠️ [createClientGroup] Group has no program_id, cannot generate reference_id');
+      }
+    }
+    
     return data;
   },
 

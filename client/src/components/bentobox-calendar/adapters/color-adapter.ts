@@ -15,7 +15,7 @@ export const FIRE_PALETTE = {
   coral: '#ff8475',      // Clinical groups
   lime: '#f1fec9',       // Life skills
   ice: '#e8fffe',        // Recreation
-  charcoal: '#26282b',   // Medical
+  charcoal: '#1e2023',   // Medical (20% darker)
   silver: '#eaeaea',     // Administrative
 } as const;
 
@@ -55,7 +55,7 @@ export const mapToFireColor = (color: string | undefined | null): FireColor => {
   if (normalizedColor === 'ice' || normalizedColor === '#e8fffe' || normalizedColor === 'e8fffe') {
     return 'ice';
   }
-  if (normalizedColor === 'charcoal' || normalizedColor === '#26282b' || normalizedColor === '26282b') {
+  if (normalizedColor === 'charcoal' || normalizedColor === '#1e2023' || normalizedColor === '#26282b' || normalizedColor === '1e2023' || normalizedColor === '26282b') {
     return 'charcoal';
   }
   if (normalizedColor === 'silver' || normalizedColor === '#eaeaea' || normalizedColor === 'eaeaea') {
@@ -121,7 +121,7 @@ export const fireColorToClasses = (color: FireColor): string => {
     coral: 'bg-[#ff8475]/20 text-[#ff8475] border-l-4 border-[#ff8475] hover:bg-[#ff8475]/30',
     lime: 'bg-[#f1fec9]/60 text-[#26282b] border-l-4 border-[#d4e5a8] hover:bg-[#f1fec9]/80 dark:text-[#26282b]',
     ice: 'bg-[#e8fffe]/60 text-[#26282b] border-l-4 border-[#b8e5e3] hover:bg-[#e8fffe]/80 dark:text-[#26282b]',
-    charcoal: 'bg-[#26282b]/20 text-[#26282b] border-l-4 border-[#26282b] hover:bg-[#26282b]/30 dark:bg-[#26282b]/40 dark:text-[#eaeaea]',
+    charcoal: 'bg-[#1e2023]/20 text-[#1e2023] border-l-4 border-[#1e2023] hover:bg-[#1e2023]/30 dark:bg-[#1e2023]/40 dark:text-[#eaeaea]',
     silver: 'bg-[#eaeaea]/60 text-[#26282b] border-l-4 border-[#d4d4d4] hover:bg-[#eaeaea]/80 dark:text-[#26282b]',
   };
   return colorMap[color] || colorMap.silver;

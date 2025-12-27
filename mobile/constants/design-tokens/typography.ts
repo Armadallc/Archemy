@@ -6,9 +6,9 @@
  */
 
 export const typography = {
-  // Font Family
+  // Font Family - Using Inter (replacing Nohemi and Space Grotesk)
   fontFamily: {
-    sans: 'Nohemi',
+    sans: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     serif: 'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif',
     mono: 'Fira Code, monospace',
   },

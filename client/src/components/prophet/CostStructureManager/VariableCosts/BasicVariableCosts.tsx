@@ -3,6 +3,7 @@
  * Per-mile costs: Fuel, Maintenance, Insurance Variable
  */
 
+// Force Vite to re-process this file
 import React, { useState, useEffect } from 'react';
 import { useProphetStore } from '../../hooks/useProphetStore';
 import { EditableField } from '../../shared/EditableField';
@@ -30,6 +31,7 @@ interface EIAResponse {
   };
 }
 
+// Basic Variable Costs Component
 export function BasicVariableCosts() {
   const { costStructure, updateVariableCosts, setFuelApiPrice } = useProphetStore();
   const variable = costStructure.variable;

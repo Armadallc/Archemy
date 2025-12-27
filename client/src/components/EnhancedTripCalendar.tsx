@@ -441,10 +441,10 @@ export default function EnhancedTripCalendar() {
     <Card className="flex-1 flex flex-col overflow-hidden min-h-0" style={{ display: 'flex', flexDirection: 'column', flex: '1 1 0%', minHeight: 0 }}>
       <CardHeader>
         {/* Header Content */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-6">
           {/* Row 1: Trip Status Legend */}
           <div className="flex items-center justify-end">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-6">
               {Object.entries({
                 scheduled: statusColors.scheduledValue,
                 in_progress: statusColors.in_progressValue,
@@ -520,8 +520,8 @@ export default function EnhancedTripCalendar() {
 
       <CardContent className="flex-1 overflow-hidden min-h-0" style={{ display: 'flex', flexDirection: 'column', flex: '1 1 0%', minHeight: 0 }}>
         {viewMode === 'today' ? (
-          <div className="space-y-4">
-            <div className="text-sm mb-4" style={{ color: 'var(--muted-foreground)' }}>
+          <div className="space-y-6">
+            <div className="text-sm mb-6" style={{ color: 'var(--muted-foreground)' }}>
               {getTripsForDate(currentDate).length} trip(s) scheduled
             </div>
             {getTripsForDate(currentDate).length === 0 ? (
@@ -529,7 +529,7 @@ export default function EnhancedTripCalendar() {
                 No trips scheduled for today
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-6">
                 {getTripsForDate(currentDate)
                   .sort((a: Trip, b: Trip) => a.scheduled_pickup_time.localeCompare(b.scheduled_pickup_time))
                   .map((trip: Trip) => (
@@ -591,7 +591,7 @@ export default function EnhancedTripCalendar() {
         ) : viewMode === 'week' ? (
           <div className="flex flex-col h-full">
             {/* Week header */}
-            <div className="flex border-b" style={{ backgroundColor: '#343434', borderColor: 'var(--border)' }}>
+            <div className="flex border-b" style={{ backgroundColor: '#292929', borderColor: 'var(--border)' }}>
               {/* Time column header - matches time column width */}
               <div className="w-12 sm:w-16 border-r" style={{ borderColor: 'var(--border)' }}></div>
               {/* Days header - matches the 7-column grid below */}
@@ -603,7 +603,7 @@ export default function EnhancedTripCalendar() {
                       key={day.toISOString()} 
                       className="p-2 text-center"
                       style={isDayToday ? {
-                        backgroundColor: "#343434",
+                        backgroundColor: "#292929",
                         color: "var(--color-coral)",
                       } : {
                         borderColor: 'var(--border)',

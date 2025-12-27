@@ -25,6 +25,32 @@ const router = express.Router();
 router.get("/", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_TRIPS), async (req: SupabaseAuthenticatedRequest, res) => {
   try {
     const trips = await tripsStorage.getAllTrips();
+    
+    // Debug logging to inspect client/group data structure
+    if (trips && trips.length > 0) {
+      const firstTrip = trips[0] as any;
+      console.log('🔍 [BACKEND] First trip structure:', {
+        id: firstTrip.id,
+        reference_id: firstTrip.reference_id,
+        client_id: firstTrip.client_id,
+        client_group_id: firstTrip.client_group_id,
+        is_group_trip: firstTrip.is_group_trip,
+        hasClient: !!firstTrip.clients,
+        hasClientGroup: !!firstTrip.client_groups,
+        clientKeys: firstTrip.clients ? Object.keys(firstTrip.clients) : 'no client',
+        clientGroupKeys: firstTrip.client_groups ? Object.keys(firstTrip.client_groups) : 'no group',
+        allKeys: Object.keys(firstTrip).filter(k => k.includes('client') || k.includes('group'))
+      });
+      
+      // Check if client data exists but under different key
+      if (firstTrip.clients) {
+        console.log('🔍 [BACKEND] Client data found:', firstTrip.clients);
+      }
+      if (firstTrip.client_groups) {
+        console.log('🔍 [BACKEND] Client group data found:', firstTrip.client_groups);
+      }
+    }
+    
     res.json(trips);
   } catch (error) {
     console.error("Error fetching trips:", error);
@@ -37,6 +63,20 @@ router.get("/corporate-client/:corporateClientId", requireSupabaseAuth, requireP
   try {
     const { corporateClientId } = req.params;
     const trips = await tripsStorage.getTripsByCorporateClient(corporateClientId);
+    
+    // Debug logging
+    if (trips && trips.length > 0) {
+      const firstTrip = trips[0] as any;
+      console.log('🔍 [BACKEND] Corporate client trip structure:', {
+        corporateClientId,
+        trip_id: firstTrip.id,
+        hasClient: !!firstTrip.clients,
+        hasClientGroup: !!firstTrip.client_groups,
+        client_id: firstTrip.client_id,
+        client_group_id: firstTrip.client_group_id
+      });
+    }
+    
     res.json(trips);
   } catch (error) {
     console.error("Error fetching corporate client trips:", error);
@@ -48,6 +88,20 @@ router.get("/program/:programId", requireSupabaseAuth, requirePermission(PERMISS
   try {
     const { programId } = req.params;
     const trips = await tripsStorage.getTripsByProgram(programId);
+    
+    // Debug logging
+    if (trips && trips.length > 0) {
+      const firstTrip = trips[0] as any;
+      console.log('🔍 [BACKEND] Program trip structure:', {
+        programId,
+        trip_id: firstTrip.id,
+        hasClient: !!firstTrip.clients,
+        hasClientGroup: !!firstTrip.client_groups,
+        client_id: firstTrip.client_id,
+        client_group_id: firstTrip.client_group_id
+      });
+    }
+    
     res.json(trips);
   } catch (error) {
     console.error("Error fetching trips by program:", error);
@@ -1054,6 +1108,66 @@ router.get("/enhanced/:id", requireSupabaseAuth, requirePermission(PERMISSIONS.V
   } catch (error) {
     console.error("Error fetching enhanced trip:", error);
     res.status(500).json({ message: "Failed to fetch trip" });
+  }
+});
+
+// ============================================================================
+// ROUTE ESTIMATION ROUTES
+// ============================================================================
+
+router.post("/estimate-route", requireSupabaseAuth, async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { fromAddress, toAddress, fromCoords, toCoords } = req.body;
+
+    if (!fromAddress || !toAddress) {
+      return res.status(400).json({ message: "fromAddress and toAddress are required" });
+    }
+
+    console.log(`📏 [API] Route estimation request: "${fromAddress}" → "${toAddress}"`);
+    
+    const { estimateRoute } = await import("../services/openroute-service");
+    const result = await estimateRoute(
+      fromAddress,
+      toAddress,
+      fromCoords ? { lat: fromCoords.lat, lng: fromCoords.lng } : undefined,
+      toCoords ? { lat: toCoords.lat, lng: toCoords.lng } : undefined
+    );
+
+    if (!result) {
+      console.error(`❌ [API] Route estimation failed for: "${fromAddress}" → "${toAddress}"`);
+      return res.status(500).json({ 
+        message: "Could not estimate route",
+        details: "Geocoding or route calculation failed. Check server logs for details."
+      });
+    }
+
+    console.log(`✅ [API] Route estimated: ${result.distance} mi, ${result.duration} min`);
+    res.json(result);
+  } catch (error) {
+    console.error("❌ [API] Error estimating route:", error);
+    res.status(500).json({ 
+      message: "Failed to estimate route",
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+router.post("/estimate-multi-leg-route", requireSupabaseAuth, async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { addresses, coordinates } = req.body;
+
+    if (!addresses || !Array.isArray(addresses) || addresses.length < 2) {
+      return res.status(400).json({ message: "addresses array with at least 2 addresses is required" });
+    }
+
+    const { estimateMultiLegRoute } = await import("../services/openroute-service");
+    const coords = coordinates?.map((c: any) => ({ lat: c.lat, lng: c.lng }));
+    const results = await estimateMultiLegRoute(addresses, coords);
+
+    res.json({ legs: results });
+  } catch (error) {
+    console.error("Error estimating multi-leg route:", error);
+    res.status(500).json({ message: "Failed to estimate multi-leg route" });
   }
 });
 
