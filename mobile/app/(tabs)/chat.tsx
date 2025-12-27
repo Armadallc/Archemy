@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -45,6 +45,7 @@ const formatMessageTime = (dateString: string): string => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 };
+
 
 // Types
 interface DiscussionParticipant {
@@ -321,17 +322,40 @@ export default function ChatScreen() {
   // Delete message mutation
   const deleteMessageMutation = useMutation({
     mutationFn: async (messageId: string) => {
-      if (!selectedDiscussionId) throw new Error('No discussion selected');
-      await apiClient.request(
-        `/api/discussions/${selectedDiscussionId}/messages/${messageId}`,
-        {
-          method: 'DELETE',
-        }
-      );
+      if (!selectedDiscussionId) {
+        console.error('❌ [DELETE MESSAGE] No discussion selected');
+        throw new Error('No discussion selected');
+      }
+      const deleteId = `DELETE_${Date.now()}_${messageId.slice(0, 8)}`;
+      console.log(`🚨🚨🚨 [${deleteId}] DELETE MESSAGE MUTATION CALLED 🚨🚨🚨`);
+      console.log(`🚨 [${deleteId}] Message ID:`, messageId);
+      console.log(`🚨 [${deleteId}] Discussion ID:`, selectedDiscussionId);
+      console.log(`🚨 [${deleteId}] Endpoint:`, `/api/discussions/${selectedDiscussionId}/messages/${messageId}`);
+      try {
+        await apiClient.request(
+          `/api/discussions/${selectedDiscussionId}/messages/${messageId}`,
+          {
+            method: 'DELETE',
+          }
+        );
+        console.log(`✅ [${deleteId}] [DELETE MESSAGE] Message deleted successfully`);
+      } catch (error: any) {
+        console.error(`❌ [${deleteId}] [DELETE MESSAGE] Error deleting message:`, error);
+        throw error;
+      }
     },
     onSuccess: () => {
+      console.log('✅ [DELETE MESSAGE] Mutation successful, invalidating queries');
       queryClient.invalidateQueries({ queryKey: ['discussions', selectedDiscussionId, 'messages'] });
+      queryClient.invalidateQueries({ queryKey: ['discussions'] });
       setLongPressedMessage(null);
+    },
+    onError: (error: any) => {
+      console.error('❌ [DELETE MESSAGE] Mutation error:', error);
+      Alert.alert(
+        'Error',
+        error?.message || 'Failed to delete message. You can only delete your own messages.'
+      );
     },
   });
 
@@ -431,18 +455,34 @@ export default function ChatScreen() {
 
   // Delete discussion handler
   const handleDeleteDiscussion = async (discussionId: string) => {
+    console.log('🗑️ [DELETE DISCUSSION] handleDeleteDiscussion called for:', discussionId);
     Alert.alert(
       'Delete Conversation',
       'Are you sure you want to delete this conversation?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Cancel', 
+          style: 'cancel',
+          onPress: () => console.log('🗑️ [DELETE DISCUSSION] User cancelled deletion')
+        },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
+            console.log('🗑️ [DELETE DISCUSSION] User confirmed deletion, making API request for:', discussionId);
             try {
+              const deleteId = `DELETE_DISCUSSION_${Date.now()}_${discussionId.slice(0, 8)}`;
+              console.log(`🚨🚨🚨 [${deleteId}] DELETE DISCUSSION REQUEST 🚨🚨🚨`);
+              console.log(`🚨 [${deleteId}] Endpoint: /api/discussions/${discussionId}`);
+              
               await apiClient.request(`/api/discussions/${discussionId}`, {
                 method: 'DELETE',
+              });
+              
+              console.log(`✅ [${deleteId}] Discussion deleted successfully`);
+              // Immediately remove from cache and refetch
+              queryClient.setQueryData(['discussions'], (old: Discussion[] | undefined) => {
+                return (old || []).filter(d => d.id !== discussionId);
               });
               queryClient.invalidateQueries({ queryKey: ['discussions'] });
               if (selectedDiscussionId === discussionId) {
@@ -450,6 +490,7 @@ export default function ChatScreen() {
                 setViewingChatThread(false);
               }
             } catch (error: any) {
+              console.error('❌ [DELETE DISCUSSION] Error:', error);
               Alert.alert('Error', error?.message || 'Failed to delete conversation');
             }
           },
@@ -567,103 +608,106 @@ export default function ChatScreen() {
   
   // Detect dark theme for neumorphic styling
   const isDark = theme.mode === 'dark' || 
-    (theme.mode === 'system' && theme.colors.background === '#292929');
+    (theme.mode === 'system' && theme.colors.background === '#1e2023');
 
-  // Simple Message Component (no swipe functionality)
+  // Simple Message Component (no swipe functionality - matches main branch)
+  // NO SWIPE CODE - Delete only via long-press action sheet
   const MessageComponent = ({ message, isCurrentUser, author }: {
     message: DiscussionMessage;
     isCurrentUser: boolean;
     author: DiscussionParticipant;
   }) => {
     return (
-      <TouchableOpacity
-        activeOpacity={0.7}
-        onLongPress={() => handleLongPress(message)}
-        delayLongPress={500}
-      >
-            <View style={isCurrentUser ? styles.messageRowReverse : styles.messageRow}>
-              {/* Avatar for incoming messages */}
-              {!isCurrentUser && (
-                <View style={styles.messageAvatarContainer}>
-                  {getAvatarUrl(author.avatar_url) ? (
-                    <Image 
-                      source={{ uri: getAvatarUrl(author.avatar_url)! }} 
-                      style={styles.messageAvatar}
-                    />
-                  ) : (
-                    <View style={[styles.messageAvatar, styles.messageAvatarPlaceholder]}>
-                      <Text style={styles.messageAvatarText}>
-                        {getUserInitials(author)}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              )}
-              <View
-                style={[
-                  styles.messageBubble,
-                  isCurrentUser
-                    ? styles.messageBubbleOutgoing
-                    : styles.messageBubbleIncoming,
-                ]}
-              >
-                {!isCurrentUser && (
-                  <View style={styles.messageAuthorContainer}>
-                    <Text style={styles.messageAuthor}>
-                      {author.first_name && author.last_name
-                        ? `${author.first_name} ${author.last_name}`
-                        : author.user_name || 'Unknown'}
-                    </Text>
-                  </View>
-                )}
-                {message.parentMessage && (
-                  <View style={styles.replyPreview}>
-                    <Text style={styles.replyPreviewText} numberOfLines={1}>
-                      {message.parentMessage.content}
-                    </Text>
-                  </View>
-                )}
-                <Text
-                  style={[
-                    styles.messageText,
-                    isCurrentUser && styles.messageTextOutgoing,
-                  ]}
-                >
-                  {message.content}
-                </Text>
-                {message.reactions && message.reactions.length > 0 && (
-                  <View style={styles.reactionsContainer}>
-                    {Object.entries(
-                      message.reactions.reduce((acc, r) => {
-                        if (!acc[r.emoji]) acc[r.emoji] = [];
-                        acc[r.emoji].push(r);
-                        return acc;
-                      }, {} as Record<string, MessageReaction[]>)
-                    ).map(([emoji, reactions]) => (
-                      <TouchableOpacity
-                        key={emoji}
-                        style={styles.reactionBadge}
-                        onPress={() => handleReact(message, emoji)}
-                      >
-                        <Text style={styles.reactionEmoji}>{emoji}</Text>
-                        <Text style={styles.reactionCount}>{reactions.length}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
-                <View style={styles.messageMeta}>
-                  <Text
-                    style={[
-                      styles.messageTime,
-                      isCurrentUser && { color: theme.colors.primaryForeground + '80' },
-                    ]}
-                  >
-                    {formatMessageTime(message.created_at)}
+      <View style={styles.messageItem}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onLongPress={() => handleLongPress(message)}
+          delayLongPress={500}
+        >
+          <View style={isCurrentUser ? styles.messageRowReverse : styles.messageRow}>
+          {/* Avatar for incoming messages */}
+          {!isCurrentUser && (
+            <View style={styles.messageAvatarContainer}>
+              {getAvatarUrl(author.avatar_url) ? (
+                <Image 
+                  source={{ uri: getAvatarUrl(author.avatar_url)! }} 
+                  style={styles.messageAvatar}
+                />
+              ) : (
+                <View style={[styles.messageAvatar, styles.messageAvatarPlaceholder]}>
+                  <Text style={styles.messageAvatarText}>
+                    {getUserInitials(author)}
                   </Text>
                 </View>
-              </View>
+              )}
             </View>
-          </TouchableOpacity>
+          )}
+          <View
+            style={[
+              styles.messageBubble,
+              isCurrentUser
+                ? styles.messageBubbleOutgoing
+                : styles.messageBubbleIncoming,
+            ]}
+          >
+            {!isCurrentUser && (
+              <View style={styles.messageAuthorContainer}>
+                <Text style={styles.messageAuthor}>
+                  {author.first_name && author.last_name
+                    ? `${author.first_name} ${author.last_name}`
+                    : author.user_name || 'Unknown'}
+                </Text>
+              </View>
+            )}
+            {message.parentMessage && (
+              <View style={styles.replyPreview}>
+                <Text style={styles.replyPreviewText} numberOfLines={1}>
+                  {message.parentMessage.content}
+                </Text>
+              </View>
+            )}
+            <Text
+              style={[
+                styles.messageText,
+                isCurrentUser && styles.messageTextOutgoing,
+              ]}
+            >
+              {message.content}
+            </Text>
+            {message.reactions && message.reactions.length > 0 && (
+              <View style={styles.reactionsContainer}>
+                {Object.entries(
+                  message.reactions.reduce((acc, r) => {
+                    if (!acc[r.emoji]) acc[r.emoji] = [];
+                    acc[r.emoji].push(r);
+                    return acc;
+                  }, {} as Record<string, MessageReaction[]>)
+                ).map(([emoji, reactions]) => (
+                  <TouchableOpacity
+                    key={emoji}
+                    style={styles.reactionBadge}
+                    onPress={() => handleReact(message, emoji)}
+                  >
+                    <Text style={styles.reactionEmoji}>{emoji}</Text>
+                    <Text style={styles.reactionCount}>{reactions.length}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+            <View style={styles.messageMeta}>
+              <Text
+                style={[
+                  styles.messageTime,
+                  isCurrentUser && { color: theme.colors.primaryForeground + '80' },
+                ]}
+              >
+                {formatMessageTime(message.created_at)}
+              </Text>
+            </View>
+          </View>
+        </View>
+        </TouchableOpacity>
+      </View>
     );
   };
 
@@ -679,10 +723,29 @@ export default function ChatScreen() {
     const swipeAnim = useRef(new Animated.Value(0)).current;
     const [swipedDiscussionId, setSwipedDiscussionId] = useState<string | null>(null);
     const [isSwiping, setIsSwiping] = useState(false);
+    const [animationValue, setAnimationValue] = useState(0); // Track animation value for rendering
     const hasSwipedRef = useRef(false);
     const swipeStartTimeRef = useRef<number>(0);
     
-    // Reset swipe state when discussion changes or when swiped state changes
+    // Listen to animation value changes to update render
+    useEffect(() => {
+      const listener = swipeAnim.addListener(({ value }) => {
+        setAnimationValue(value);
+      });
+      return () => {
+        swipeAnim.removeListener(listener);
+      };
+    }, [swipeAnim]);
+    
+    // Reset swipe state on mount and when discussion changes
+    useEffect(() => {
+      // Always reset to 0 when component mounts or discussion changes
+      swipeAnim.setValue(0);
+      setSwipedDiscussionId(null);
+      setAnimationValue(0);
+    }, [discussion.id]);
+    
+    // Reset swipe state when swipedDiscussionId changes externally
     useEffect(() => {
       if (swipedDiscussionId !== discussion.id && swipeAnim._value < 0) {
         // Reset animation if this discussion is no longer swiped
@@ -776,29 +839,38 @@ export default function ChatScreen() {
       })
     ).current;
 
+    // Only show delete button when actually swiped
+    // Check both state and animation value to ensure it shows during swipe
+    const isSwiped = swipedDiscussionId === discussion.id || animationValue < -50;
+
     return (
       <View style={styles.swipeableDiscussionContainer}>
-        {/* Swipe actions - behind the discussion item */}
-        <View style={styles.swipeActions}>
-          <TouchableOpacity
-            style={[styles.swipeAction, styles.swipeActionDelete]}
-            activeOpacity={0.8}
-            onPress={() => {
-              // Close swipe first, then delete
-              Animated.spring(swipeAnim, {
-                toValue: 0,
-                useNativeDriver: true,
-                tension: 100,
-                friction: 8,
-              }).start(() => {
-                setSwipedDiscussionId(null);
-                onDelete();
-              });
-            }}
-          >
-            <Ionicons name="trash" size={20} color="#fff" />
-          </TouchableOpacity>
-        </View>
+        {/* Swipe actions - behind the discussion item - ONLY render when swiped */}
+        {isSwiped && (
+          <View style={styles.swipeActions}>
+            <TouchableOpacity
+              style={[styles.swipeAction, styles.swipeActionDelete]}
+              activeOpacity={0.8}
+              onPress={(e) => {
+                e.stopPropagation(); // Prevent event bubbling
+                console.log('🗑️ [DELETE DISCUSSION] Trash icon pressed for discussion:', discussion.id);
+                // Close swipe first, then delete
+                Animated.spring(swipeAnim, {
+                  toValue: 0,
+                  useNativeDriver: true,
+                  tension: 100,
+                  friction: 8,
+                }).start(() => {
+                  setSwipedDiscussionId(null);
+                  console.log('🗑️ [DELETE DISCUSSION] Calling onDelete() for discussion:', discussion.id);
+                  onDelete(); // This calls handleDeleteDiscussion which shows confirmation
+                });
+              }}
+            >
+              <Ionicons name="trash" size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        )}
         {/* Discussion item - can be swiped left to reveal actions */}
         <Animated.View
           style={[
@@ -1104,8 +1176,14 @@ export default function ChatScreen() {
       flex: 1,
       padding: 16,
     },
+    messagesListContent: {
+      paddingBottom: 20,
+    },
     messageItem: {
       marginBottom: 16,
+      width: '100%',
+      position: 'relative',
+      overflow: 'hidden', // Prevent any absolute positioned elements from showing
     },
     messageRow: {
       flexDirection: 'row',
@@ -1113,6 +1191,8 @@ export default function ChatScreen() {
     },
     messageRowReverse: {
       flexDirection: 'row-reverse',
+      alignItems: 'flex-end',
+      marginLeft: 'auto',
     },
     messageAvatarContainer: {
       marginRight: 8,
@@ -1154,7 +1234,7 @@ export default function ChatScreen() {
       color: theme.colors.foreground,
     },
     messageTextOutgoing: {
-      color: theme.colors.primaryForeground || '#fff',
+      color: theme.colors.primaryForeground,
     },
     messageMeta: {
       flexDirection: 'row',
@@ -1269,16 +1349,26 @@ export default function ChatScreen() {
       bottom: 0,
       flexDirection: 'row',
       alignItems: 'center',
-      zIndex: 0,
+      zIndex: 10,
+      justifyContent: 'flex-end',
+      paddingRight: 8,
     },
     swipeAction: {
-      width: 60,
+      minWidth: 80,
+      width: 80,
       height: '100%',
       justifyContent: 'center',
       alignItems: 'center',
+      paddingHorizontal: 12,
     },
     swipeActionDelete: {
-      backgroundColor: theme.colors.destructive,
+      backgroundColor: theme.colors.destructive || '#ef4444',
+    },
+    swipeActionText: {
+      color: '#fff',
+      fontSize: 12,
+      fontWeight: '600',
+      marginTop: 4,
     },
     actionSheet: {
       backgroundColor: theme.colors.card,
@@ -1610,13 +1700,11 @@ export default function ChatScreen() {
                     };
 
                     return (
-                      <View style={styles.messageItem}>
-                        <MessageComponent
-                          message={item}
-                          isCurrentUser={isCurrentUser}
-                          author={author}
-                        />
-                      </View>
+                      <MessageComponent
+                        message={item}
+                        isCurrentUser={isCurrentUser}
+                        author={author}
+                      />
                     );
                   }}
                   ListEmptyComponent={
@@ -1685,7 +1773,11 @@ export default function ChatScreen() {
           activeOpacity={1}
           onPress={() => setLongPressedMessage(null)}
         >
-          <View style={styles.actionSheet}>
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+            style={styles.actionSheet}
+          >
             <Text style={styles.actionSheetTitle}>Message Actions</Text>
             
             <TouchableOpacity
@@ -1745,7 +1837,7 @@ export default function ChatScreen() {
             >
               <Text style={[styles.actionSheetItemText, { textAlign: 'center', width: '100%' }]}>Cancel</Text>
             </TouchableOpacity>
-          </View>
+          </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
     </KeyboardAvoidingView>

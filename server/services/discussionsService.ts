@@ -110,6 +110,7 @@ export async function getDiscussions(
   console.log('🔍 [DISCUSSIONS SERVICE] Participant data:', JSON.stringify(participantData?.slice(0, 3), null, 2));
 
   // Also check for discussions where user has sent messages (in case they're not in participants table)
+  // BUT only if they haven't left the discussion
   let discussionIdsFromMessages: string[] = [];
   if (!participantData || participantData.length === 0) {
     console.log('ℹ️ [DISCUSSIONS SERVICE] No participants found. Checking for discussions with user messages...');
@@ -120,8 +121,22 @@ export async function getDiscussions(
       .is('deleted_at', null);
 
     if (!messagesError && messagesData && messagesData.length > 0) {
-      discussionIdsFromMessages = [...new Set(messagesData.map((m: any) => m.discussion_id).filter(Boolean))];
-      console.log('🔍 [DISCUSSIONS SERVICE] Found discussions from messages:', discussionIdsFromMessages.length);
+      const messageDiscussionIds = [...new Set(messagesData.map((m: any) => m.discussion_id).filter(Boolean))];
+      
+      // Filter out discussions where user has left
+      if (messageDiscussionIds.length > 0) {
+        const { data: leftDiscussions, error: leftError } = await supabase
+          .from('discussion_participants')
+          .select('discussion_id')
+          .eq('user_id', userId)
+          .in('discussion_id', messageDiscussionIds)
+          .not('left_at', 'is', null);
+        
+        const leftDiscussionIds = new Set((leftDiscussions || []).map((p: any) => p.discussion_id));
+        discussionIdsFromMessages = messageDiscussionIds.filter(id => !leftDiscussionIds.has(id));
+      }
+      
+      console.log('🔍 [DISCUSSIONS SERVICE] Found discussions from messages (excluding left):', discussionIdsFromMessages.length);
     }
   }
 
