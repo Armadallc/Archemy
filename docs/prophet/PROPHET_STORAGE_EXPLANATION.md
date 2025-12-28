@@ -130,3 +130,4 @@ Once the tables are created:
 - ✅ User-specific data isolation
 - ✅ Automatic sync (5-second debounce)
 - ✅ Works offline (localStorage fallback)
+

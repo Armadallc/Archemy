@@ -4,6 +4,7 @@ import { Button } from '../ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '../ui/dropdown-menu';
 import { ExportService, ExportOptions } from '../../services/exportService';
 import { useFeatureFlag } from '../../hooks/use-permissions';
+import { cn } from '../../lib/utils';
 
 interface ExportButtonProps<T> {
   data: T[];
@@ -93,7 +94,13 @@ export default function ExportButton<T>({
           variant="outline"
           size="sm"
           disabled={disabled || isExporting || data.length === 0}
-          className={className}
+          className={cn("card-neu-flat hover:card-neu [&]:shadow-none", className)}
+          style={{ 
+            backgroundColor: 'var(--background)', 
+            border: 'none', 
+            boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)',
+            fontWeight: 400
+          }}
         >
           {isExporting ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -103,26 +110,42 @@ export default function ExportButton<T>({
           {isExporting ? 'Exporting...' : 'Export'}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <div className="px-2 py-1.5 text-sm text-muted-foreground">
+      <DropdownMenuContent align="end" className="w-56 card-neu [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+        <div className="px-2 py-1.5 text-sm" style={{ color: 'var(--muted-foreground)' }}>
           <div>Export {stats.totalRecords} records</div>
           <div className="text-xs">~{stats.exportSize} • {stats.estimatedTime}</div>
         </div>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => handleExport('csv')}>
+        <DropdownMenuSeparator style={{ borderColor: 'var(--border)' }} />
+        <DropdownMenuItem 
+          onClick={() => handleExport('csv')}
+          className="hover:card-neu-flat"
+          style={{ color: 'var(--foreground)' }}
+        >
           {getIcon('csv')}
           <span className="ml-2">CSV Format</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleExport('excel')}>
+        <DropdownMenuItem 
+          onClick={() => handleExport('excel')}
+          className="hover:card-neu-flat"
+          style={{ color: 'var(--foreground)' }}
+        >
           {getIcon('excel')}
           <span className="ml-2">Excel Format</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleExport('json')}>
+        <DropdownMenuItem 
+          onClick={() => handleExport('json')}
+          className="hover:card-neu-flat"
+          style={{ color: 'var(--foreground)' }}
+        >
           {getIcon('json')}
           <span className="ml-2">JSON Format</span>
         </DropdownMenuItem>
         {pdfEnabled && (
-          <DropdownMenuItem onClick={() => handleExport('pdf')}>
+          <DropdownMenuItem 
+            onClick={() => handleExport('pdf')}
+            className="hover:card-neu-flat"
+            style={{ color: 'var(--foreground)' }}
+          >
             {getIcon('pdf')}
             <span className="ml-2">PDF Format</span>
           </DropdownMenuItem>

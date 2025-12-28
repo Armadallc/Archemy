@@ -51,6 +51,7 @@ interface User {
     id: string;
     name: string;
     corporate_client_id: string;
+    logo_url?: string | null;
     corporateClient?: {
       id: string;
       name: string;
@@ -77,6 +78,7 @@ interface CreateUserData {
 interface CorporateClient {
   id: string;
   name: string;
+  logo_url?: string | null;
 }
 
 const roleLabels: Record<string, string> = {
@@ -216,8 +218,14 @@ export default function UsersManagement() {
             id: programData.id,
             name: programData.name,
             corporate_client_id: programData.corporate_client_id,
+            logo_url: programData.logo_url || null,
             corporateClient: programData.corporateClient || programData.corporate_clients
           };
+        }
+        
+        // Also ensure logo_url is preserved if program already exists
+        if (user.program && programsMap[user.program.id]?.logo_url) {
+          user.program.logo_url = programsMap[user.program.id].logo_url;
         }
         
         // Ensure corporateClient is set correctly on program
@@ -347,13 +355,55 @@ export default function UsersManagement() {
     
     if (user?.role === 'super_admin' || user?.role === 'corporate_admin') {
       const client = corporateClients.find(c => c.id === groupId);
-      return client?.name || 'Unknown';
+      const name = client?.name || 'Unknown';
+      
+      // Special handling for specific tenant names
+      const nameLower = name.toLowerCase().trim();
+      if (nameLower === 'apn') {
+        return 'APN';
+      } else if (nameLower === 'halcyon health' || nameLower === 'halcyon') {
+        return 'HALCYON';
+      } else if (nameLower === 'monarch') {
+        return 'MONARCH';
+      } else if (nameLower === 'spero recovery' || nameLower === 'spero') {
+        return 'SPERO RECOVERY';
+      }
+      
+      // Default: Capitalize each word in the name
+      return name
+        .toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
     } else if (user?.role === 'program_admin') {
       // For program admins, show program name or a generic label
       return 'Program Users';
     }
     
     return 'Unknown';
+  };
+
+  // Get group logo URL (corporate client or program)
+  const getGroupLogoUrl = (groupId: string): string | null => {
+    if (groupId === 'unassigned') return null;
+    
+    if (user?.role === 'super_admin' || user?.role === 'corporate_admin') {
+      const client = corporateClients.find(c => c.id === groupId);
+      return client?.logo_url || null;
+    } else if (user?.role === 'program_admin') {
+      // For program admins, try to get program logo from first user in group
+      const groupUsers = filteredUsersByClient[groupId] || [];
+      if (groupUsers.length > 0 && groupUsers[0].program?.logo_url) {
+        return groupUsers[0].program.logo_url;
+      }
+      // Try to get from selectedProgram if available
+      if (selectedProgram) {
+        // We'd need to fetch program data, but for now return null
+        return null;
+      }
+    }
+    
+    return null;
   };
 
   // Get total counts
@@ -552,11 +602,12 @@ export default function UsersManagement() {
             placeholder="Search users..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 card-neu-pressed"
+            style={{ backgroundColor: 'var(--background)', border: 'none' }}
           />
         </div>
         
-        <div className="flex items-center space-x-4 text-sm text-foreground-secondary">
+        <div className="flex items-center space-x-4 text-sm" style={{ color: '#a5c8ca' }}>
           <span className="flex items-center">
             <UsersIcon className="w-4 h-4 mr-1" />
             {totalUsers} users
@@ -568,15 +619,16 @@ export default function UsersManagement() {
         </div>
 
         <Button 
-          className="bg-primary hover:bg-primary-hover"
+          className="card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+          style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(165, 200, 202, 0.15)' }}
           onClick={() => setIsCreateDialogOpen(true)}
         >
-          <UserPlus className="w-4 h-4 mr-2" />
-          Add User
+          <UserPlus className="w-4 h-4 mr-2" style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }} />
+          <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Add User</span>
         </Button>
         
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
             <DialogHeader>
               <DialogTitle>Add New User</DialogTitle>
               <DialogDescription>
@@ -593,6 +645,8 @@ export default function UsersManagement() {
                     onChange={(e) => setCreateUserData({...createUserData, user_name: e.target.value})}
                     placeholder="johndoe"
                     required
+                    className="card-neu-pressed"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   />
                 </div>
                 <div>
@@ -604,6 +658,8 @@ export default function UsersManagement() {
                     onChange={(e) => setCreateUserData({...createUserData, email: e.target.value})}
                     placeholder="john@example.com"
                     required
+                    className="card-neu-pressed"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   />
                 </div>
               </div>
@@ -616,6 +672,8 @@ export default function UsersManagement() {
                     value={createUserData.first_name}
                     onChange={(e) => setCreateUserData({...createUserData, first_name: e.target.value})}
                     placeholder="John"
+                    className="card-neu-pressed"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   />
                 </div>
                 <div>
@@ -625,6 +683,8 @@ export default function UsersManagement() {
                     value={createUserData.last_name}
                     onChange={(e) => setCreateUserData({...createUserData, last_name: e.target.value})}
                     placeholder="Doe"
+                    className="card-neu-pressed"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   />
                 </div>
               </div>
@@ -637,6 +697,8 @@ export default function UsersManagement() {
                     value={createUserData.phone}
                     onChange={(e) => setCreateUserData({...createUserData, phone: e.target.value})}
                     placeholder="(555) 123-4567"
+                    className="card-neu-pressed"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   />
                 </div>
                 <div>
@@ -645,7 +707,7 @@ export default function UsersManagement() {
                     value={createUserData.role} 
                     onValueChange={(value) => setCreateUserData({...createUserData, role: value})}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
                     <SelectContent>
@@ -681,7 +743,7 @@ export default function UsersManagement() {
                           });
                         }}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                           <SelectValue placeholder={
                             createUserData.role !== 'super_admin' && createUserData.role !== 'driver'
                               ? "Select corporate client (required)"
@@ -713,7 +775,7 @@ export default function UsersManagement() {
                         createUserData.corporate_client_id === 'all'
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                         <SelectValue placeholder={
                           (createUserData.role !== 'super_admin' && createUserData.role !== 'driver' && !createUserData.corporate_client_id)
                             ? "Select corporate client first"
@@ -753,7 +815,8 @@ export default function UsersManagement() {
                     id="program_id"
                     value={selectedProgram || user.primary_program_id || ''}
                     disabled
-                    className="bg-muted"
+                    className="card-neu-pressed"
+                    style={{ backgroundColor: 'var(--background)', border: 'none', opacity: 0.6 }}
                   />
                   <p className="text-sm text-muted-foreground mt-1">
                     Users will be assigned to your program automatically
@@ -770,6 +833,8 @@ export default function UsersManagement() {
                   onChange={(e) => setCreateUserData({...createUserData, password: e.target.value})}
                   placeholder="Enter password"
                   required
+                  className="card-neu-pressed"
+                  style={{ backgroundColor: 'var(--background)', border: 'none' }}
                 />
               </div>
 
@@ -784,9 +849,14 @@ export default function UsersManagement() {
                 <Button
                   type="submit"
                   disabled={createUserMutation.isPending}
-                  className="bg-primary hover:bg-primary-hover"
+                  className="card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+                  style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(165, 200, 202, 0.15)' }}
                 >
-                  {createUserMutation.isPending ? "Creating..." : "Create User"}
+                  {createUserMutation.isPending ? (
+                    <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Creating...</span>
+                  ) : (
+                    <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Create User</span>
+                  )}
                 </Button>
               </div>
             </form>
@@ -797,11 +867,11 @@ export default function UsersManagement() {
       {/* Users by Group (Corporate Client or Program) */}
       <div className="space-y-4">
         {sortedGroupIds.length === 0 ? (
-          <Card>
+          <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
             <CardContent className="py-12 text-center">
-              <UsersIcon className="w-12 h-12 mx-auto mb-4 opacity-50 text-muted-foreground" />
-              <p className="text-muted-foreground">No users found</p>
-              <p className="text-sm text-muted-foreground mt-2">Add users to start managing your team</p>
+              <UsersIcon className="w-12 h-12 mx-auto mb-4 opacity-50" style={{ color: '#a5c8ca' }} />
+              <p style={{ color: '#a5c8ca' }}>No users found</p>
+              <p className="text-sm mt-2" style={{ color: '#a5c8ca', opacity: 0.7 }}>Add users to start managing your team</p>
             </CardContent>
           </Card>
         ) : (
@@ -824,15 +894,29 @@ export default function UsersManagement() {
                 open={isExpanded}
                 onOpenChange={() => toggleClient(groupId)}
               >
-                <Card>
+                <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                   <CollapsibleTrigger asChild>
-                    <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                    <CardHeader className="cursor-pointer card-neu-flat [&]:shadow-none transition-colors" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
-                          <Building2 className="h-5 w-5 text-muted-foreground" />
+                          {getGroupLogoUrl(groupId) ? (
+                            <img
+                              src={getGroupLogoUrl(groupId)!}
+                              alt={`${groupName} logo`}
+                              className="rounded"
+                              style={{ 
+                                width: '50px', 
+                                height: '50px', 
+                                objectFit: 'cover',
+                                display: 'block'
+                              }}
+                            />
+                          ) : (
+                            <Building2 className="h-5 w-5" style={{ color: '#a5c8ca' }} />
+                          )}
                           <div>
-                            <CardTitle className="text-lg">{groupName}</CardTitle>
-                            <CardDescription>
+                            <CardTitle className="text-lg" style={{ color: '#a5c8ca' }}>{groupName}</CardTitle>
+                            <CardDescription style={{ color: '#a5c8ca', opacity: 0.7 }}>
                               {groupUsers.length} {groupUsers.length === 1 ? 'user' : 'users'} 
                               {!isExpanded && ` • ${groupUsers.filter(u => u.is_active).length} active`}
                             </CardDescription>
@@ -840,9 +924,9 @@ export default function UsersManagement() {
                         </div>
                         <div className="flex items-center space-x-2">
                           {isExpanded ? (
-                            <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                            <ChevronDown className="h-5 w-5" style={{ color: '#a5c8ca' }} />
                           ) : (
-                            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                            <ChevronRight className="h-5 w-5" style={{ color: '#a5c8ca' }} />
                           )}
                         </div>
                       </div>
@@ -1007,7 +1091,7 @@ export default function UsersManagement() {
 
       {/* Edit User Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
             <DialogDescription>
@@ -1024,6 +1108,8 @@ export default function UsersManagement() {
                     value={selectedUser.user_name}
                     onChange={(e) => setSelectedUser({...selectedUser, user_name: e.target.value})}
                     required
+                    className="card-neu-pressed"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   />
                 </div>
                 <div>
@@ -1034,6 +1120,8 @@ export default function UsersManagement() {
                     value={selectedUser.email}
                     onChange={(e) => setSelectedUser({...selectedUser, email: e.target.value})}
                     required
+                    className="card-neu-pressed"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   />
                 </div>
               </div>
@@ -1045,6 +1133,8 @@ export default function UsersManagement() {
                     id="edit-first_name"
                     value={selectedUser.first_name || ''}
                     onChange={(e) => setSelectedUser({...selectedUser, first_name: e.target.value})}
+                    className="card-neu-pressed"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   />
                 </div>
                 <div>
@@ -1053,6 +1143,8 @@ export default function UsersManagement() {
                     id="edit-last_name"
                     value={selectedUser.last_name || ''}
                     onChange={(e) => setSelectedUser({...selectedUser, last_name: e.target.value})}
+                    className="card-neu-pressed"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   />
                 </div>
               </div>
@@ -1064,6 +1156,8 @@ export default function UsersManagement() {
                     id="edit-phone"
                     value={selectedUser.phone || ''}
                     onChange={(e) => setSelectedUser({...selectedUser, phone: e.target.value})}
+                    className="card-neu-pressed"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   />
                 </div>
                 <div>
@@ -1072,7 +1166,7 @@ export default function UsersManagement() {
                     value={selectedUser.role} 
                     onValueChange={(value) => setSelectedUser({...selectedUser, role: value})}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1114,9 +1208,14 @@ export default function UsersManagement() {
                 <Button 
                   type="submit" 
                   disabled={updateUserMutation.isPending}
-                  className="bg-primary hover:bg-primary-hover"
+                  className="card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+                  style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(165, 200, 202, 0.15)' }}
                 >
-                  {updateUserMutation.isPending ? "Updating..." : "Update User"}
+                  {updateUserMutation.isPending ? (
+                    <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Updating...</span>
+                  ) : (
+                    <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Update User</span>
+                  )}
                 </Button>
               </div>
             </form>

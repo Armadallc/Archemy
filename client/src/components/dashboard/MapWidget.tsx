@@ -148,11 +148,12 @@ export default function MapWidget({ className }: MapWidgetProps) {
 
   return (
     <Widget
-      title="Fleet Map"
+      title="LOCATE"
       icon={<Navigation className="h-5 w-5" />}
       size="large"
       className={className}
       loading={isLoading}
+      titleStyle={{ fontSize: '42px' }}
       actions={
         <div className="flex items-center space-x-2">
           <Button

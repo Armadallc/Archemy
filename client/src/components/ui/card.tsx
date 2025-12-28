@@ -5,22 +5,26 @@ import { cn } from "../../lib/utils"
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, style, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "rounded-lg border shadow-sm",
-      className
-    )}
-    style={{
-      backgroundColor: 'var(--card, #ffffff)',
-      color: 'var(--card-foreground, var(--foreground))',
-      borderColor: 'var(--border)',
-      ...style,
-    }}
-    {...props}
-  />
-))
+>(({ className, style, ...props }, ref) => {
+  const hasCardNeu = className?.includes('card-neu');
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "rounded-lg border",
+        !hasCardNeu && "shadow-sm",
+        className
+      )}
+      style={{
+        backgroundColor: 'var(--card, #ffffff)',
+        color: 'var(--card-foreground, var(--foreground))',
+        borderColor: 'var(--border)',
+        ...style,
+      }}
+      {...props}
+    />
+  );
+})
 Card.displayName = "Card"
 
 const CardHeader = React.forwardRef<

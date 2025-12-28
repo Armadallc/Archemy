@@ -15,7 +15,7 @@ export default function NewTripPage() {
           {/* Page Header - Only show if unified header is disabled (fallback) */}
           {!ENABLE_UNIFIED_HEADER && (
             <div>
-              <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+              <div className="px-6 py-6 rounded-lg card-neu card-glow-border flex items-center justify-between" style={{ backgroundColor: 'var(--background)', border: 'none', height: '150px' }}>
                 <div>
                   <h1 
                     className="font-bold text-foreground" 

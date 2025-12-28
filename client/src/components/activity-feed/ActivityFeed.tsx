@@ -140,10 +140,44 @@ const getActivityIcon = (type: string) => {
   }
 };
 
-export default function ActivityFeed() {
+interface ActivityFeedProps {
+  hideHeader?: boolean;
+  mentionsOnly?: boolean;
+  onMentionsOnlyChange?: (value: boolean) => void;
+  showFilters?: boolean;
+  onShowFiltersChange?: (value: boolean) => void;
+}
+
+export default function ActivityFeed({ 
+  hideHeader = false,
+  mentionsOnly: externalMentionsOnly,
+  onMentionsOnlyChange,
+  showFilters: externalShowFilters,
+  onShowFiltersChange
+}: ActivityFeedProps = {}) {
   const { user, isAuthenticated } = useAuth();
-  const [mentionsOnly, setMentionsOnly] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
+  const [internalMentionsOnly, setInternalMentionsOnly] = useState(false);
+  const [internalShowFilters, setInternalShowFilters] = useState(false);
+  
+  // Use external state if provided, otherwise use internal state
+  const mentionsOnly = externalMentionsOnly !== undefined ? externalMentionsOnly : internalMentionsOnly;
+  const showFilters = externalShowFilters !== undefined ? externalShowFilters : internalShowFilters;
+  
+  const setMentionsOnly = (value: boolean) => {
+    if (onMentionsOnlyChange) {
+      onMentionsOnlyChange(value);
+    } else {
+      setInternalMentionsOnly(value);
+    }
+  };
+  
+  const setShowFilters = (value: boolean) => {
+    if (onShowFiltersChange) {
+      onShowFiltersChange(value);
+    } else {
+      setInternalShowFilters(value);
+    }
+  };
 
   const { data: activities, isLoading, error } = useActivityLog({
     limit: 50,
@@ -332,25 +366,27 @@ export default function ActivityFeed() {
   return (
     <div className="pt-4 px-4 md:pt-6 md:px-6">
       {/* Header */}
-      <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center md:mb-8">
-        <h1 className="text-foreground text-xl font-semibold md:text-2xl">Activity log</h1>
-        <div className="flex items-center gap-3 md:gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground text-xs md:text-sm">Show mentioned only</span>
-            <Switch 
-              checked={mentionsOnly}
-              onCheckedChange={setMentionsOnly}
-            />
+      {!hideHeader && (
+        <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center md:mb-8">
+          <h1 className="text-foreground text-xl font-semibold md:text-2xl">Activity log</h1>
+          <div className="flex items-center gap-3 md:gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground text-xs md:text-sm">Show mentioned only</span>
+              <Switch 
+                checked={mentionsOnly}
+                onCheckedChange={setMentionsOnly}
+              />
+            </div>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="h-4 w-4" />
+            </Button>
           </div>
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter className="h-4 w-4" />
-          </Button>
         </div>
-      </div>
+      )}
 
       {/* Activity Timeline */}
       <div className="border rounded-lg -mt-3.5" style={{ borderColor: 'var(--border)' }}>

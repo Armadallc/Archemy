@@ -344,7 +344,7 @@ export default function ChatWidget() {
   ];
 
   return (
-    <div className="flex h-full min-h-0">
+    <div className="flex h-full min-h-0" style={{ backgroundColor: 'var(--background)' }}>
       {discussionsLoading ? (
         <div className="flex items-center justify-center w-full h-full">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -361,9 +361,9 @@ export default function ChatWidget() {
       ) : (
         <>
           {/* Discussions Sidebar */}
-          <div className="w-80 border-r flex flex-col bg-muted/30 min-h-0">
+          <div className="w-80 flex flex-col min-h-0 card-neu rounded-l-lg" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
             {/* Search */}
-            <div className="px-6 pb-6 pt-6 border-b">
+            <div className="px-6 pb-6 pt-6 border-b" style={{ borderColor: 'var(--border)' }}>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -371,7 +371,11 @@ export default function ChatWidget() {
                   placeholder="Search conversations..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
+                  className="pl-9 card-neu-flat [&]:shadow-none"
+                  style={{ 
+                    backgroundColor: 'var(--background)',
+                    border: 'none'
+                  }}
                 />
               </div>
             </div>
@@ -399,9 +403,13 @@ export default function ChatWidget() {
                           <div
                             className={`relative group rounded-lg ${
                               isSelected
-                                ? 'bg-primary text-primary-foreground'
-                                : 'hover:bg-muted/50'
+                                ? 'card-neu-pressed text-primary-foreground'
+                                : 'card-neu-flat hover:card-neu'
                             }`}
+                            style={{ 
+                              backgroundColor: isSelected ? 'var(--background)' : 'var(--background)',
+                              border: 'none'
+                            }}
                             onMouseEnter={() => setHoveredDiscussionId(discussion.id)}
                             onMouseLeave={() => setHoveredDiscussionId(null)}
                           >
@@ -612,10 +620,10 @@ export default function ChatWidget() {
             </div>
 
             {/* New Chat Button at Bottom (like reference) */}
-            <div className="flex-shrink-0 p-6 border-t h-[93px] flex items-center">
+            <div className="flex-shrink-0 p-6 border-t h-[93px] flex items-center card-neu-flat" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', border: 'none' }}>
               <Dialog open={isNewChatDialogOpen} onOpenChange={setIsNewChatDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="w-full" size="sm">
+                  <Button className="w-full card-neu hover:card-neu [&]:shadow-none" size="sm" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                     <Plus className="h-4 w-4 mr-2" />
                     New Chat
                   </Button>
@@ -680,7 +688,7 @@ export default function ChatWidget() {
             {selectedDiscussionId ? (
               <>
                 {/* Discussion Header */}
-                <div className="flex-shrink-0 p-6 border-b bg-background">
+                <div className="flex-shrink-0 p-6 border-b card-neu-flat" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', border: 'none' }}>
                   <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10">
                       {selectedDiscussion?.discussion_type === 'personal' && selectedDiscussion?.otherParticipant ? (
@@ -716,6 +724,7 @@ export default function ChatWidget() {
                 <div 
                   ref={messagesContainerRef}
                   className="flex-1 overflow-y-auto p-6 space-y-6 min-h-0"
+                  style={{ backgroundColor: 'var(--background)' }}
                 >
                   {messagesLoading ? (
                     <div className="flex items-center justify-center h-32">
@@ -781,11 +790,15 @@ export default function ChatWidget() {
                               )}
                               
                               <div className="relative w-full">
-                                <div className={`text-sm text-foreground break-words rounded-lg p-3 w-fit max-w-[75%] ${
+                                <div className={`text-sm text-foreground break-words rounded-lg p-3 w-fit max-w-[75%] card-neu ${
                                   isCurrentUser
-                                    ? 'bg-primary text-primary-foreground ml-auto'
-                                    : 'bg-muted'
-                                }`}>
+                                    ? 'text-primary-foreground ml-auto'
+                                    : ''
+                                }`}
+                                style={{ 
+                                  backgroundColor: isCurrentUser ? 'var(--primary)' : 'var(--background)',
+                                  border: 'none'
+                                }}>
                                   {message.content}
                                 </div>
                                 
@@ -897,10 +910,10 @@ export default function ChatWidget() {
                 </div>
 
                 {/* Message Input */}
-                <div className="flex-shrink-0 p-6 border-t bg-background h-[93px] flex flex-col justify-center overflow-hidden">
+                <div className="flex-shrink-0 p-6 border-t card-neu-flat h-[93px] flex flex-col justify-center overflow-hidden" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', border: 'none' }}>
                   {/* Reply preview */}
                   {replyingTo && (
-                    <div className="mb-2 p-2 bg-muted rounded-lg border-l-2 border-primary flex items-start justify-between">
+                    <div className="mb-2 p-2 card-neu rounded-lg border-l-2 border-primary flex items-start justify-between" style={{ backgroundColor: 'var(--background)', border: 'none', borderLeft: '2px solid var(--primary)' }}>
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-medium text-primary mb-1">Replying to {getUserDisplayName(replyingTo.author)}</div>
                         <div className="text-xs text-muted-foreground truncate">{replyingTo.content}</div>
@@ -921,7 +934,11 @@ export default function ChatWidget() {
                       value={messageInput}
                       onChange={(e) => setMessageInput(e.target.value)}
                       placeholder={replyingTo ? "Type your reply..." : "Type a message..."}
-                      className="min-h-[60px] max-h-[120px] resize-none"
+                      className="min-h-[60px] max-h-[120px] resize-none card-neu-flat [&]:shadow-none"
+                      style={{ 
+                        backgroundColor: 'var(--background)',
+                        border: 'none'
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
@@ -936,7 +953,11 @@ export default function ChatWidget() {
                     <Button
                       type="submit"
                       size="icon"
-                      className="flex-shrink-0"
+                      className="flex-shrink-0 card-neu hover:card-neu [&]:shadow-none"
+                      style={{ 
+                        backgroundColor: 'var(--background)',
+                        border: 'none'
+                      }}
                       disabled={!messageInput.trim() || sendMessage.isPending}
                     >
                       {sendMessage.isPending ? (

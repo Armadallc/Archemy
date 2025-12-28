@@ -41,13 +41,13 @@ export function ContractTermsTab({
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Billing Method</CardTitle>
+      <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+        <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+          <CardTitle style={{ color: '#a5c8ca' }}>BILLING METHOD</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Select Billing Method</Label>
+            <Label style={{ color: '#a5c8ca', opacity: 0.7 }}>Select Billing Method</Label>
             <Select
               value={contractTerms.billingMethod}
               onValueChange={handleBillingMethodChange}
@@ -65,7 +65,7 @@ export function ContractTermsTab({
 
           {contractTerms.billingMethod === 'monthly_fee' && (
             <div className="space-y-2">
-              <Label className="text-xs">Monthly Fee</Label>
+              <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Monthly Fee</Label>
               <EditableField
                 value={contractTerms.monthlyFee || 0}
                 onChange={(v) => handleContractTermsUpdate('monthlyFee', Number(v) || 0)}
@@ -77,7 +77,7 @@ export function ContractTermsTab({
 
           {contractTerms.billingMethod === 'per_trip' && (
             <div className="space-y-2">
-              <Label className="text-xs">Per Trip Rate</Label>
+              <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Per Trip Rate</Label>
               <EditableField
                 value={contractTerms.perTripRate || 0}
                 onChange={(v) => handleContractTermsUpdate('perTripRate', Number(v) || 0)}
@@ -90,7 +90,7 @@ export function ContractTermsTab({
           {contractTerms.billingMethod === 'hybrid' && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-xs">Monthly Base Fee</Label>
+                <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Monthly Base Fee</Label>
                 <EditableField
                   value={contractTerms.monthlyFee || 0}
                   onChange={(v) => handleContractTermsUpdate('monthlyFee', Number(v) || 0)}
@@ -99,7 +99,7 @@ export function ContractTermsTab({
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs">Included Trips</Label>
+                <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Included Trips</Label>
                 <EditableField
                   value={contractTerms.includedTrips || 0}
                   onChange={(v) => handleContractTermsUpdate('includedTrips', Number(v) || 0)}
@@ -107,7 +107,7 @@ export function ContractTermsTab({
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs">Additional Trip Rate</Label>
+                <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Additional Trip Rate</Label>
                 <EditableField
                   value={contractTerms.additionalTripRate || 0}
                   onChange={(v) => handleContractTermsUpdate('additionalTripRate', Number(v) || 0)}
@@ -132,3 +132,5 @@ export function ContractTermsTab({
     </div>
   );
 }
+
+

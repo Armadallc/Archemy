@@ -49,13 +49,13 @@ export function ABComparisonTab({
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Select Scenario to Compare</CardTitle>
+      <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+        <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+          <CardTitle style={{ color: '#a5c8ca' }}>SELECT SCENARIO TO COMPARE</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Choose a Prophet Scenario</Label>
+            <Label style={{ color: '#a5c8ca', opacity: 0.7 }}>Choose a Prophet Scenario</Label>
             <Select value={selectedScenarioId} onValueChange={handleScenarioSelect}>
               <SelectTrigger>
                 <SelectValue placeholder="Select a scenario..." />
@@ -75,28 +75,28 @@ export function ABComparisonTab({
       {comparison && (
         <div className="grid grid-cols-2 gap-4">
           {/* Provider Side */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Provider Side</CardTitle>
+          <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+            <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+              <CardTitle style={{ color: '#a5c8ca' }}>PROVIDER SIDE</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div>
-                <Label className="text-xs text-muted-foreground">Revenue</Label>
-                <div className="text-lg font-semibold">${comparison.providerRevenue.toLocaleString()}</div>
+                <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Revenue</Label>
+                <div className="text-lg font-semibold" style={{ color: '#a5c8ca' }}>${comparison.providerRevenue.toLocaleString()}</div>
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Costs</Label>
-                <div className="text-lg">${comparison.providerCosts.toLocaleString()}</div>
+                <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Costs</Label>
+                <div className="text-lg" style={{ color: '#a5c8ca' }}>${comparison.providerCosts.toLocaleString()}</div>
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Margin</Label>
-                <div className={`text-lg font-semibold ${comparison.providerMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Margin</Label>
+                <div className="text-lg font-semibold" style={{ color: '#a5c8ca' }}>
                   ${comparison.providerMargin.toLocaleString()} ({comparison.providerMarginPercentage.toFixed(1)}%)
                 </div>
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Benefit Level</Label>
-                <Badge variant={comparison.providerBenefitLevel === 'high' ? 'default' : comparison.providerBenefitLevel === 'medium' ? 'secondary' : 'outline'}>
+                <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Benefit Level</Label>
+                <Badge className="card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}>
                   {comparison.providerBenefitLevel}
                 </Badge>
               </div>
@@ -104,28 +104,28 @@ export function ABComparisonTab({
           </Card>
 
           {/* Facility Side */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Facility Side</CardTitle>
+          <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+            <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+              <CardTitle style={{ color: '#a5c8ca' }}>FACILITY SIDE</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div>
-                <Label className="text-xs text-muted-foreground">Current Costs</Label>
-                <div className="text-lg">${comparison.facilityCurrentCosts.toLocaleString()}</div>
+                <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Current Costs</Label>
+                <div className="text-lg" style={{ color: '#a5c8ca' }}>${comparison.facilityCurrentCosts.toLocaleString()}</div>
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Proposed Costs</Label>
-                <div className="text-lg">${comparison.facilityProposedCosts.toLocaleString()}</div>
+                <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Proposed Costs</Label>
+                <div className="text-lg" style={{ color: '#a5c8ca' }}>${comparison.facilityProposedCosts.toLocaleString()}</div>
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Savings</Label>
-                <div className={`text-lg font-semibold ${comparison.facilitySavings >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Savings</Label>
+                <div className="text-lg font-semibold" style={{ color: '#a5c8ca' }}>
                   ${comparison.facilitySavings.toLocaleString()} ({comparison.facilitySavingsPercentage.toFixed(1)}%)
                 </div>
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Benefit Level</Label>
-                <Badge variant={comparison.facilityBenefitLevel === 'high' ? 'default' : comparison.facilityBenefitLevel === 'medium' ? 'secondary' : 'outline'}>
+                <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Benefit Level</Label>
+                <Badge className="card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}>
                   {comparison.facilityBenefitLevel}
                 </Badge>
               </div>
@@ -136,18 +136,18 @@ export function ABComparisonTab({
 
       {comparison && (
         <>
-          <Card>
-            <CardHeader>
-              <CardTitle>Mutual Benefit Score</CardTitle>
+          <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+            <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+              <CardTitle style={{ color: '#a5c8ca' }}>MUTUAL BENEFIT SCORE</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div>
-                <Label className="text-xs text-muted-foreground">Score</Label>
-                <div className="text-2xl font-bold">{comparison.mutualBenefitScore.toFixed(0)}/100</div>
+                <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Score</Label>
+                <div className="text-2xl font-bold" style={{ color: '#a5c8ca' }}>{comparison.mutualBenefitScore.toFixed(0)}/100</div>
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Recommendation</Label>
-                <div className="text-sm">{comparison.recommendation}</div>
+                <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Recommendation</Label>
+                <div className="text-sm" style={{ color: '#a5c8ca', opacity: 0.8 }}>{comparison.recommendation}</div>
               </div>
             </CardContent>
           </Card>
@@ -155,18 +155,18 @@ export function ABComparisonTab({
           {/* Pros and Cons */}
           <div className="grid grid-cols-2 gap-4">
             {/* Provider Pros/Cons */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Provider Perspective</CardTitle>
+            <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+              <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                <CardTitle style={{ color: '#a5c8ca' }}>PROVIDER PERSPECTIVE</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {comparison.providerPros.length > 0 && (
                   <div>
-                    <Label className="text-xs font-semibold text-green-600">Pros</Label>
+                    <Label className="text-xs font-semibold" style={{ color: '#a5c8ca' }}>Pros</Label>
                     <ul className="mt-2 space-y-1">
                       {comparison.providerPros.map((pro, idx) => (
-                        <li key={idx} className="text-sm flex items-start gap-2">
-                          <span className="text-green-600 mt-0.5">✓</span>
+                        <li key={idx} className="text-sm flex items-start gap-2" style={{ color: '#a5c8ca', opacity: 0.8 }}>
+                          <span className="mt-0.5" style={{ color: '#a5c8ca' }}>✓</span>
                           <span>{pro}</span>
                         </li>
                       ))}
@@ -175,11 +175,11 @@ export function ABComparisonTab({
                 )}
                 {comparison.providerCons.length > 0 && (
                   <div>
-                    <Label className="text-xs font-semibold text-red-600">Cons</Label>
+                    <Label className="text-xs font-semibold" style={{ color: '#a5c8ca' }}>Cons</Label>
                     <ul className="mt-2 space-y-1">
                       {comparison.providerCons.map((con, idx) => (
-                        <li key={idx} className="text-sm flex items-start gap-2">
-                          <span className="text-red-600 mt-0.5">✗</span>
+                        <li key={idx} className="text-sm flex items-start gap-2" style={{ color: '#a5c8ca', opacity: 0.8 }}>
+                          <span className="mt-0.5" style={{ color: '#a5c8ca' }}>✗</span>
                           <span>{con}</span>
                         </li>
                       ))}
@@ -190,18 +190,18 @@ export function ABComparisonTab({
             </Card>
 
             {/* Facility Pros/Cons */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Facility Perspective</CardTitle>
+            <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+              <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                <CardTitle style={{ color: '#a5c8ca' }}>FACILITY PERSPECTIVE</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {comparison.facilityPros.length > 0 && (
                   <div>
-                    <Label className="text-xs font-semibold text-green-600">Pros</Label>
+                    <Label className="text-xs font-semibold" style={{ color: '#a5c8ca' }}>Pros</Label>
                     <ul className="mt-2 space-y-1">
                       {comparison.facilityPros.map((pro, idx) => (
-                        <li key={idx} className="text-sm flex items-start gap-2">
-                          <span className="text-green-600 mt-0.5">✓</span>
+                        <li key={idx} className="text-sm flex items-start gap-2" style={{ color: '#a5c8ca', opacity: 0.8 }}>
+                          <span className="mt-0.5" style={{ color: '#a5c8ca' }}>✓</span>
                           <span>{pro}</span>
                         </li>
                       ))}
@@ -210,11 +210,11 @@ export function ABComparisonTab({
                 )}
                 {comparison.facilityCons.length > 0 && (
                   <div>
-                    <Label className="text-xs font-semibold text-red-600">Cons</Label>
+                    <Label className="text-xs font-semibold" style={{ color: '#a5c8ca' }}>Cons</Label>
                     <ul className="mt-2 space-y-1">
                       {comparison.facilityCons.map((con, idx) => (
-                        <li key={idx} className="text-sm flex items-start gap-2">
-                          <span className="text-red-600 mt-0.5">✗</span>
+                        <li key={idx} className="text-sm flex items-start gap-2" style={{ color: '#a5c8ca', opacity: 0.8 }}>
+                          <span className="mt-0.5" style={{ color: '#a5c8ca' }}>✗</span>
                           <span>{con}</span>
                         </li>
                       ))}
@@ -228,10 +228,12 @@ export function ABComparisonTab({
       )}
 
       {!selectedScenarioId && (
-        <div className="text-sm text-muted-foreground text-center py-8">
+        <div className="text-sm text-center py-8" style={{ color: '#a5c8ca', opacity: 0.7 }}>
           Select a scenario to see the comparison
         </div>
       )}
     </div>
   );
 }
+
+

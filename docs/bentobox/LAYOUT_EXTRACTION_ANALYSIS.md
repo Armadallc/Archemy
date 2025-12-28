@@ -49,3 +49,4 @@ Extract the grid structure from `calendar-week-view.tsx` and create a pure layou
 ### Step 3: Replace Grid in BentoBoxGanttView
 Replace the flex-based grid with the grid-based layout from full-calendar.
 
+

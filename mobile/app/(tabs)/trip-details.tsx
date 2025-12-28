@@ -19,7 +19,6 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { apiClient } from '../../services/api';
 import { useFeatureFlag } from '../../hooks/useFeatureFlag';
 import { locationTrackingService } from '../../services/locationTracking';
-import AvailabilityPopup from '../../components/AvailabilityPopup';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { navigationPreferences } from '../../services/navigationPreferences';
 import { openNavigation } from '../../utils/navigation';
@@ -82,8 +81,6 @@ export default function TripDetailsScreen() {
   const { isEnabled: mobileCheckInEnabled } = useFeatureFlag('mobile_check_in_enabled');
 
   const [refreshing, setRefreshing] = useState(false);
-  const [showAvailabilityPopup, setShowAvailabilityPopup] = useState(false);
-  const [pendingTripStatus, setPendingTripStatus] = useState<string | null>(null);
 
   const { data: trips = [], refetch: refetchTrips } = useQuery({
     queryKey: ['driver-trips'],
@@ -117,38 +114,9 @@ export default function TripDetailsScreen() {
     },
   });
 
-  // Fetch driver profile to check availability
-  const { data: driverProfile } = useQuery({
-    queryKey: ['driver-profile'],
-    queryFn: () => apiClient.getDriverProfile(),
-    enabled: user?.role === 'driver',
-  });
-
-  const handleStatusUpdate = async (newStatus: string) => {
-    // If trying to start a trip, check availability first
+  const handleStatusUpdate = (newStatus: string) => {
+    // Link/unlink location tracking based on trip status
     if (newStatus === 'in_progress') {
-      try {
-        // Always fetch fresh profile to check availability
-        const profile = await apiClient.getDriverProfile();
-        console.log('🔍 Checking availability before trip start:', { is_available: profile?.is_available });
-        
-        if (!profile?.is_available) {
-          console.log('🚫 Availability is false - showing popup');
-          // Show popup to enable availability - this is required
-          setPendingTripStatus(newStatus);
-          setShowAvailabilityPopup(true);
-          return; // Don't proceed with trip start
-        }
-        
-        console.log('✅ Availability is true - proceeding with trip start');
-      } catch (error) {
-        console.error('❌ Error checking driver availability:', error);
-        // If we can't check, show popup to be safe
-        setPendingTripStatus(newStatus);
-        setShowAvailabilityPopup(true);
-        return;
-      }
-      
       // Link location tracking to this trip when trip starts
       locationTrackingService.setActiveTrip(tripId as string);
     } else if (newStatus === 'completed' || newStatus === 'cancelled') {
@@ -486,59 +454,135 @@ export default function TripDetailsScreen() {
     actionsContainer: {
       marginTop: 20,
       marginBottom: 40,
+      paddingHorizontal: 4,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 8,
     },
     actionButtonsContainer: {
-      flexDirection: 'row',
+      flexDirection: 'column',
       gap: 12,
+      flex: 1,
+      alignItems: 'flex-end',
     },
     actionButton: {
-      flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       paddingVertical: 16,
-      paddingHorizontal: 24,
+      paddingHorizontal: 20,
       borderRadius: 12,
+      backgroundColor: '#1e2023',
+      minWidth: 210,
     },
     noShowButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      backgroundColor: theme.colors.driverColors.color5, // Orange
+      width: 76,
+      height: 75,
+      borderRadius: 37.5,
+      borderWidth: 0,
+      backgroundColor: '#1e2023',
       alignItems: 'center',
       justifyContent: 'center',
+      ...(Platform.OS === 'ios' && {
+        shadowColor: '#f1fe60',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+      }),
+      ...(Platform.OS === 'android' && {
+        elevation: 8,
+        shadowColor: '#f1fe60',
+      }),
+      ...(Platform.OS === 'web' && {
+        boxShadow: '0px 0px 12px 0px rgba(241, 254, 96, 0.4)',
+      } as any),
     },
     noShowButtonText: {
-      color: theme.colors.primaryForeground,
+      color: 'rgba(244, 244, 244, 1)',
       ...theme.typography.caption,
+      fontSize: 16,
       fontWeight: '700',
     },
     startButton: {
-      backgroundColor: theme.colors.primary,
+      backgroundColor: '#1e2023',
+      borderWidth: 0,
+      ...(Platform.OS === 'ios' && {
+        shadowColor: '#ff8475',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+      }),
+      ...(Platform.OS === 'android' && {
+        elevation: 8,
+        shadowColor: '#ff8475',
+      }),
+      ...(Platform.OS === 'web' && {
+        boxShadow: '0px 0px 12px 0px rgba(255, 132, 117, 0.4)',
+      } as any),
     },
     completeButton: {
-      backgroundColor: theme.colors.tripStatus.completed,
+      backgroundColor: '#1e2023',
+      borderWidth: 0,
+      ...(Platform.OS === 'ios' && {
+        shadowColor: theme.colors.tripStatus.completed,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+      }),
+      ...(Platform.OS === 'android' && {
+        elevation: 8,
+        shadowColor: theme.colors.tripStatus.completed,
+      }),
+      ...(Platform.OS === 'web' && {
+        boxShadow: '0px 0px 12px 0px rgba(59, 254, 201, 0.4)',
+      } as any),
     },
     navigationButton: {
-      backgroundColor: theme.colors.driverColors.color1, // Purple
+      backgroundColor: '#1e2023',
       marginBottom: 12,
+      borderWidth: 0,
+      ...(Platform.OS === 'ios' && {
+        shadowColor: '#3bfec9',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+      }),
+      ...(Platform.OS === 'android' && {
+        elevation: 8,
+        shadowColor: '#3bfec9',
+      }),
+      ...(Platform.OS === 'web' && {
+        boxShadow: '0px 0px 12px 0px rgba(59, 254, 201, 0.4)',
+      } as any),
     },
     navButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: theme.colors.secondary,
+      backgroundColor: 'transparent',
       paddingHorizontal: 12,
       paddingVertical: 8,
       borderRadius: 8,
+      borderWidth: 0,
+      ...(Platform.OS === 'web' && {
+        boxShadow: 'none',
+      } as any),
     },
     navButtonText: {
       ...theme.typography.caption,
       fontWeight: '600',
-      color: theme.colors.foreground,
+      color: 'rgba(244, 244, 244, 1)',
+      fontSize: 16,
       marginLeft: 4,
     },
     actionButtonText: {
       color: theme.colors.primaryForeground,
+      ...theme.typography.body,
+      fontWeight: '600',
+      marginLeft: 8,
+    },
+    navigationButtonText: {
+      color: '#f4f4f4',
       ...theme.typography.body,
       fontWeight: '600',
       marginLeft: 8,
@@ -573,46 +617,15 @@ export default function TripDetailsScreen() {
     );
   }
 
-  const handleAvailabilityPopupClose = () => {
-    setShowAvailabilityPopup(false);
-    setPendingTripStatus(null);
-  };
-
-  const handleAvailabilityPopupBypass = () => {
-    setShowAvailabilityPopup(false);
-    setPendingTripStatus(null);
-  };
-
-  const handleAvailabilityEnabled = () => {
-    // If availability was enabled and we have a pending trip status, proceed with it
-    if (pendingTripStatus && tripId) {
-      // Link location tracking to this trip when trip starts
-      locationTrackingService.setActiveTrip(tripId as string);
-      updateTripMutation.mutate({ tripId: tripId as string, status: pendingTripStatus });
-      setPendingTripStatus(null);
-    }
-  };
-
   return (
-    <>
-      <AvailabilityPopup
-        visible={showAvailabilityPopup}
-        onClose={handleAvailabilityPopupClose}
-        onBypass={handleAvailabilityPopupBypass}
-        driverProfileId={driverProfile?.id}
-        initialAvailability={driverProfile?.is_available ?? false}
-        message="You must enable location sharing before starting a trip. This allows fleet managers to track your position during the trip."
-        showBypass={false}
-        onAvailabilityEnabled={handleAvailabilityEnabled}
-      />
-      <ScrollView 
-        style={styles.container}
-        refreshControl={
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary || '#3B82F6'} />
       }
     >
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.push('/(tabs)/trips')}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color={theme.colors.foreground} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Trip Details</Text>
@@ -737,8 +750,8 @@ export default function TripDetailsScreen() {
                 )}
               </View>
               <TouchableOpacity style={styles.navButton} onPress={handleNavigateToPickup}>
-                <Ionicons name="navigate" size={20} color={theme.colors.primary} />
-                <Text style={styles.navButtonText}>Navigate</Text>
+                <Ionicons name="navigate" size={20} color="rgba(244, 244, 244, 1)" />
+                <Text style={styles.navButtonText}>NAV</Text>
               </TouchableOpacity>
             </View>
             <View style={styles.locationRow}>
@@ -753,8 +766,8 @@ export default function TripDetailsScreen() {
                 )}
               </View>
               <TouchableOpacity style={styles.navButton} onPress={handleNavigateToDropoff}>
-                <Ionicons name="navigate" size={20} color={theme.colors.tripStatus.completed} />
-                <Text style={styles.navButtonText}>Navigate</Text>
+                <Ionicons name="navigate" size={20} color="rgba(244, 244, 244, 1)" />
+                <Text style={styles.navButtonText}>NAV</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -781,64 +794,66 @@ export default function TripDetailsScreen() {
           </View>
         )}
 
-        {/* Action Buttons - Only show if mobile check-in is enabled */}
-        {mobileCheckInEnabled && (
-          <View style={styles.actionsContainer}>
-            {/* Round Trip Navigation Button */}
-            {(trip.trip_type || (trip.scheduled_return_time ? 'round_trip' : 'one_way')) === 'round_trip' && (
+        {/* Action Buttons */}
+        <View style={styles.actionsContainer}>
+            {/* N/S Button - on the left */}
+            {(trip.status === 'scheduled' || trip.status === 'confirmed') && (
               <TouchableOpacity
-                style={[styles.actionButton, styles.navigationButton]}
-                onPress={handleNavigateRoundTrip}
+                style={[styles.noShowButton]}
+                onPress={() => handleStatusUpdate('no_show')}
+                disabled={updateTripMutation.isPending}
               >
-                <Ionicons name="map" size={20} color={theme.colors.primaryForeground} />
-                <Text style={styles.actionButtonText}>Navigate Round Trip</Text>
+                <Text style={styles.noShowButtonText}>N/S</Text>
               </TouchableOpacity>
             )}
             
-            {trip.status === 'scheduled' || trip.status === 'confirmed' ? (
-              <View style={styles.actionButtonsContainer}>
+            {/* NAV R/T and Start Trip buttons - stacked vertically on the right */}
+            <View style={styles.actionButtonsContainer}>
+              {/* Round Trip Navigation Button */}
+              {(trip.trip_type || (trip.scheduled_return_time ? 'round_trip' : 'one_way')) === 'round_trip' && (
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.navigationButton]}
+                  onPress={handleNavigateRoundTrip}
+                >
+                  <Ionicons name="map" size={20} color="rgba(244, 244, 244, 1)" />
+                  <Text style={[styles.actionButtonText, { color: 'rgba(244, 244, 244, 1)', fontSize: 16 }]}>NAV R/T</Text>
+                </TouchableOpacity>
+              )}
+              
+              {trip.status === 'scheduled' || trip.status === 'confirmed' ? (
                 <TouchableOpacity
                   style={[styles.actionButton, styles.startButton]}
                   onPress={() => handleStatusUpdate('in_progress')}
                   disabled={updateTripMutation.isPending}
                 >
-                  <Ionicons name="play" size={20} color={theme.colors.primaryForeground} />
-                  <Text style={styles.actionButtonText}>Start Trip</Text>
+                  <Ionicons name="play" size={20} color="rgba(244, 244, 244, 1)" />
+                  <Text style={[styles.actionButtonText, { color: 'rgba(244, 244, 244, 1)', fontSize: 16 }]}>Start Trip</Text>
                 </TouchableOpacity>
+              ) : trip.status === 'in_progress' ? (
                 <TouchableOpacity
-                  style={[styles.noShowButton]}
-                  onPress={() => handleStatusUpdate('no_show')}
+                  style={[styles.actionButton, styles.completeButton]}
+                  onPress={() => handleStatusUpdate('completed')}
                   disabled={updateTripMutation.isPending}
                 >
-                  <Text style={styles.noShowButtonText}>N/S</Text>
+                  <Ionicons name="checkmark" size={20} color="rgba(244, 244, 244, 1)" />
+                  <Text style={[styles.actionButtonText, { color: 'rgba(244, 244, 244, 1)', fontSize: 16 }]}>Complete Trip</Text>
                 </TouchableOpacity>
-              </View>
-            ) : trip.status === 'in_progress' ? (
-              <TouchableOpacity
-                style={[styles.actionButton, styles.completeButton]}
-                onPress={() => handleStatusUpdate('completed')}
-                disabled={updateTripMutation.isPending}
-              >
-                <Ionicons name="checkmark" size={20} color={theme.colors.primaryForeground} />
-                <Text style={styles.actionButtonText}>Complete Trip</Text>
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.completedContainer}>
-                <Ionicons 
-                  name="checkmark-circle" 
-                  size={24} 
-                  color={trip.status === 'no_show' 
-                    ? theme.colors.driverColors.color5 
-                    : theme.colors.tripStatus.completed} 
-                />
-                <Text style={styles.completedText}>Trip {trip.status === 'no_show' ? 'No Show' : trip.status}</Text>
-              </View>
-            )}
-          </View>
-        )}
+              ) : (
+                <View style={styles.completedContainer}>
+                  <Ionicons 
+                    name="checkmark-circle" 
+                    size={24} 
+                    color={trip.status === 'no_show' 
+                      ? theme.colors.driverColors.color5 
+                      : theme.colors.tripStatus.completed} 
+                  />
+                  <Text style={styles.completedText}>Trip {trip.status === 'no_show' ? 'No Show' : trip.status}</Text>
+                </View>
+              )}
+            </View>
+        </View>
       </View>
     </ScrollView>
-    </>
   );
 }
 

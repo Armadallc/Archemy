@@ -137,18 +137,18 @@ export default function FeatureFlagsTab() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <Flag className="w-5 h-5 mr-2" />
-          Feature Flags
+    <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+      <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+        <CardTitle className="flex items-center" style={{ color: '#a5c8ca' }}>
+          <Flag className="w-5 h-5 mr-2" style={{ color: '#a5c8ca' }} />
+          FEATURE FLAGS
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Create New Feature Flag */}
         {user?.role === 'super_admin' && (
-          <div className="border rounded-lg p-4 space-y-4">
-            <h3 className="font-medium">Create New Feature Flag</h3>
+          <div className="card-neu-flat rounded-lg p-4 space-y-4" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+            <h3 className="font-medium" style={{ color: '#a5c8ca' }}>CREATE NEW FEATURE FLAG</h3>
             <div className="space-y-4">
               <div>
                 <Label htmlFor="flagName">Flag Name</Label>
@@ -157,6 +157,8 @@ export default function FeatureFlagsTab() {
                   value={newFeatureFlag.flagName}
                   onChange={(e) => setNewFeatureFlag({...newFeatureFlag, flagName: e.target.value})}
                   placeholder="feature_name"
+                  className="card-neu-pressed"
+                  style={{ backgroundColor: 'var(--background)', border: 'none' }}
                 />
               </div>
               
@@ -167,7 +169,7 @@ export default function FeatureFlagsTab() {
                     value={newFeatureFlag.program_id} 
                     onValueChange={(value) => setNewFeatureFlag({...newFeatureFlag, program_id: value})}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <SelectValue placeholder="Select program" />
                     </SelectTrigger>
                     <SelectContent>
@@ -185,7 +187,7 @@ export default function FeatureFlagsTab() {
                     value={newFeatureFlag.corporate_client_id} 
                     onValueChange={(value) => setNewFeatureFlag({...newFeatureFlag, corporate_client_id: value})}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <SelectValue placeholder="Select client" />
                     </SelectTrigger>
                     <SelectContent>
@@ -211,10 +213,13 @@ export default function FeatureFlagsTab() {
               <Button 
                 onClick={handleCreateFeatureFlag}
                 disabled={!newFeatureFlag.flagName || createFeatureFlagMutation.isPending}
-                className="w-full"
+                className="w-full card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+                style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 12px rgba(165, 200, 202, 0.3), 0 0 20px rgba(165, 200, 202, 0.15)' }}
               >
-                <Plus className="w-4 h-4 mr-2" />
-                Create Feature Flag
+                <Plus className="w-4 h-4 mr-2" style={{ color: '#a5c8ca', textShadow: '0 0 12px rgba(165, 200, 202, 0.8), 0 0 20px rgba(165, 200, 202, 0.6), 0 0 30px rgba(165, 200, 202, 0.4)' }} />
+                <span style={{ color: '#a5c8ca', textShadow: '0 0 12px rgba(165, 200, 202, 0.8), 0 0 20px rgba(165, 200, 202, 0.6), 0 0 30px rgba(165, 200, 202, 0.4)' }}>
+                  {createFeatureFlagMutation.isPending ? 'Creating...' : 'Create Feature Flag'}
+                </span>
               </Button>
             </div>
           </div>
@@ -222,25 +227,25 @@ export default function FeatureFlagsTab() {
 
         {/* Current Feature Flags */}
         <div>
-          <h3 className="font-medium mb-3">Current Feature Flags</h3>
+          <h3 className="font-medium mb-3" style={{ color: '#a5c8ca' }}>CURRENT FEATURE FLAGS</h3>
           {flagsLoading ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8" style={{ color: '#a5c8ca', opacity: 0.7 }}>
               <div className="animate-pulse">Loading feature flags...</div>
             </div>
           ) : featureFlags.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Flag className="w-12 h-12 mx-auto mb-2 opacity-50" />
+            <div className="text-center py-8" style={{ color: '#a5c8ca', opacity: 0.7 }}>
+              <Flag className="w-12 h-12 mx-auto mb-2" style={{ color: '#a5c8ca', opacity: 0.5 }} />
               <p>No feature flags configured</p>
             </div>
           ) : (
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {featureFlags.map((flag: FeatureFlag) => (
-                <div key={flag.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted transition-colors">
+                <div key={flag.id} className="flex items-center justify-between p-3 card-neu-flat rounded-lg transition-colors" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                   <div className="flex items-center space-x-3 flex-1 min-w-0">
-                    <Flag className="w-4 h-4 flex-shrink-0" />
+                    <Flag className="w-4 h-4 flex-shrink-0" style={{ color: '#a5c8ca' }} />
                     <div className="min-w-0">
-                      <div className="font-medium">{flag.flag_name}</div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="font-medium" style={{ color: '#a5c8ca' }}>{flag.flag_name}</div>
+                      <div className="text-sm" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                         {flag.program_id ? `Program: ${flag.program_id}` : flag.corporate_client_id ? `Corporate Client: ${flag.corporate_client_id}` : 'Global'}
                       </div>
                     </div>

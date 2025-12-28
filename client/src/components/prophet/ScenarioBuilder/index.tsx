@@ -79,28 +79,28 @@ function TripRow({ trip, onUpdate, onDelete, serviceCodes }: TripRowProps) {
 
   return (
     <div 
-      className="p-4 rounded-lg border"
-      style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
+      className="p-4 rounded-lg card-neu-flat"
+      style={{ backgroundColor: 'var(--background)', border: 'none' }}
     >
       <div className="grid grid-cols-7 gap-4 mb-4">
         {/* Trip Name */}
         <div className="space-y-1">
-          <Label className="text-xs">Trip Name</Label>
+          <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Trip Name</Label>
           <div className="flex items-center gap-2">
-            <Car className="h-4 w-4" style={{ color: 'var(--primary)' }} />
+            <Car className="h-4 w-4" style={{ color: '#a5c8ca' }} />
             <Input
               value={trip.name}
               onChange={(e) => onUpdate({ name: e.target.value })}
-              className="h-7 text-sm font-medium flex-1"
+              className="h-7 text-sm font-medium flex-1 card-neu-pressed"
               placeholder="Trip name..."
-              style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}
+              style={{ backgroundColor: 'var(--background)', border: 'none' }}
             />
           </div>
         </div>
         
         {/* Category Selector */}
         <div className="space-y-1">
-          <Label className="text-xs">Category</Label>
+          <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Category</Label>
           <select
             value={trip.category || ''}
             onChange={(e) => {
@@ -111,8 +111,8 @@ function TripRow({ trip, onUpdate, onDelete, serviceCodes }: TripRowProps) {
                 selectedModifier: undefined, // Clear modifier when category changes
               });
             }}
-            className="w-full h-7 text-xs rounded border px-2"
-            style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
+            className="w-full h-7 text-xs rounded px-2 card-neu-pressed"
+            style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}
             title="Select trip category"
           >
             <option value="">Select Category</option>
@@ -127,7 +127,7 @@ function TripRow({ trip, onUpdate, onDelete, serviceCodes }: TripRowProps) {
         {/* Billing Code Selector - only show if category is selected */}
         {trip.category ? (
           <div className="space-y-1">
-            <Label className="text-xs">Billing Code</Label>
+            <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Billing Code</Label>
             <select
               value={trip.selectedCodeId || ''}
               onChange={(e) => {
@@ -137,8 +137,8 @@ function TripRow({ trip, onUpdate, onDelete, serviceCodes }: TripRowProps) {
                   onUpdate({ selectedCodeId: undefined, selectedModifier: undefined });
                 }
               }}
-              className="w-full h-7 text-xs rounded border px-2"
-              style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
+              className="w-full h-7 text-xs rounded px-2 card-neu-pressed"
+              style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}
               title="Select billing code"
             >
               <option value="">Select Code</option>
@@ -156,12 +156,12 @@ function TripRow({ trip, onUpdate, onDelete, serviceCodes }: TripRowProps) {
         {/* Modifier Selector - only show if billing code is selected */}
         {trip.selectedCodeId && selectedCode ? (
           <div className="space-y-1">
-            <Label className="text-xs">Modifier</Label>
+            <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Modifier</Label>
             <select
               value={trip.selectedModifier || selectedCode.modifier || ''}
               onChange={(e) => onUpdate({ selectedModifier: e.target.value || undefined })}
-              className="w-full h-7 text-xs rounded border px-2"
-              style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
+              className="w-full h-7 text-xs rounded px-2 card-neu-pressed"
+              style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}
               title="Modifier (for reference only)"
             >
               <option value="">{selectedCode.modifier || 'None'}</option>
@@ -181,16 +181,22 @@ function TripRow({ trip, onUpdate, onDelete, serviceCodes }: TripRowProps) {
         {/* Revenue and Delete - Far Right */}
         <div className="space-y-1 flex items-end justify-end">
           <div className="flex items-center gap-2">
-            <span className="text-lg font-bold" style={{ color: 'var(--color-lime)' }}>
+            <span className="text-lg font-bold" style={{ color: '#a5c8ca' }}>
               ${revenue.toFixed(2)}
             </span>
-            <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>/mo</span>
-            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-status-error" onClick={onDelete}>
-              <Trash2 className="h-3 w-3" />
+            <span className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>/mo</span>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-7 w-7 p-0 card-neu-flat hover:card-neu [&]:shadow-none" 
+              style={{ backgroundColor: 'var(--background)', border: 'none' }}
+              onClick={onDelete}
+            >
+              <Trash2 className="h-3 w-3" style={{ color: '#a5c8ca' }} />
             </Button>
             {trip.isBlocked && (
-              <Badge variant="destructive" className="text-xs">
-                <AlertTriangle className="h-3 w-3 mr-1" />
+              <Badge variant="destructive" className="text-xs card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}>
+                <AlertTriangle className="h-3 w-3 mr-1" style={{ color: '#a5c8ca' }} />
                 Blocked
               </Badge>
             )}
@@ -201,7 +207,7 @@ function TripRow({ trip, onUpdate, onDelete, serviceCodes }: TripRowProps) {
       <div className="grid grid-cols-7 gap-4">
         {/* Service/Month */}
         <div className="space-y-1">
-          <Label className="text-xs">Service/Month</Label>
+          <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Service/Month</Label>
           <EditableField
             value={trip.tripsPerMonth}
             onChange={(v) => onUpdate({ tripsPerMonth: Number(v) })}
@@ -212,7 +218,7 @@ function TripRow({ trip, onUpdate, onDelete, serviceCodes }: TripRowProps) {
         
         {/* Clients */}
         <div className="space-y-1">
-          <Label className="text-xs">Clients</Label>
+          <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Clients</Label>
           <EditableField
             value={trip.clients || 1}
             onChange={(v) => onUpdate({ clients: Number(v) || 1 })}
@@ -223,7 +229,7 @@ function TripRow({ trip, onUpdate, onDelete, serviceCodes }: TripRowProps) {
 
         {/* Multiplier */}
         <div className="space-y-1">
-          <Label className="text-xs">Multiplier</Label>
+          <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Multiplier</Label>
           <EditableField
             value={trip.multiplier !== undefined ? trip.multiplier : (trip.roundTrip ? 2 : 1)}
             onChange={(v) => {
@@ -243,7 +249,7 @@ function TripRow({ trip, onUpdate, onDelete, serviceCodes }: TripRowProps) {
 
         {/* Avg Miles */}
         <div className="space-y-1">
-          <Label className="text-xs">Avg Miles</Label>
+          <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Avg Miles</Label>
           <EditableField
             value={trip.avgMiles}
             onChange={(v) => onUpdate({ avgMiles: Number(v) })}
@@ -255,12 +261,12 @@ function TripRow({ trip, onUpdate, onDelete, serviceCodes }: TripRowProps) {
 
         {/* Billing Method */}
         <div className="space-y-1">
-          <Label className="text-xs">Billing</Label>
+          <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Billing</Label>
           <select
             value={trip.billingMethod}
             onChange={(e) => onUpdate({ billingMethod: e.target.value as BillingMethod })}
-            className="w-full h-7 text-xs rounded border px-2"
-            style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
+            className="w-full h-7 text-xs rounded px-2 card-neu-pressed"
+            style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}
             title="Select billing method"
           >
             <option value="medicaid">Medicaid</option>
@@ -272,7 +278,7 @@ function TripRow({ trip, onUpdate, onDelete, serviceCodes }: TripRowProps) {
 
         {/* Base Rate */}
         <div className="space-y-1">
-          <Label className="text-xs">Base Rate</Label>
+          <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Base Rate</Label>
           <EditableField
             value={trip.baseRatePerTrip}
             onChange={(v) => onUpdate({ baseRatePerTrip: Number(v) })}
@@ -282,7 +288,7 @@ function TripRow({ trip, onUpdate, onDelete, serviceCodes }: TripRowProps) {
 
         {/* Mileage Rate */}
         <div className="space-y-1">
-          <Label className="text-xs">Mileage Rate</Label>
+          <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Mileage Rate</Label>
           <EditableField
             value={trip.mileageRate}
             onChange={(v) => onUpdate({ mileageRate: Number(v) })}
@@ -294,16 +300,16 @@ function TripRow({ trip, onUpdate, onDelete, serviceCodes }: TripRowProps) {
 
       {/* Selected Code Info */}
       {selectedCode && (
-        <div className="mt-3 p-2 rounded text-xs" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}>
+        <div className="mt-3 p-2 rounded text-xs card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <div className="flex items-center gap-4 flex-wrap">
-            <span style={{ color: 'var(--primary)' }}>
+            <span style={{ color: '#a5c8ca' }}>
               <strong>Code:</strong> {selectedCode.code}{selectedCode.modifier ? `-${selectedCode.modifier}` : ''}
             </span>
-            <span style={{ color: 'var(--muted-foreground)' }}>
+            <span style={{ color: '#a5c8ca', opacity: 0.7 }}>
               <strong>Rate:</strong> ${selectedCode.baseRate.toFixed(2)}/{selectedCode.unit}
             </span>
             {selectedCode.mileageRate && (
-              <span style={{ color: 'var(--muted-foreground)' }}>
+              <span style={{ color: '#a5c8ca', opacity: 0.7 }}>
                 <strong>Mileage:</strong> ${selectedCode.mileageRate.toFixed(2)}/mi
               </span>
             )}
@@ -313,9 +319,9 @@ function TripRow({ trip, onUpdate, onDelete, serviceCodes }: TripRowProps) {
       
       {/* Waiver requirement for NMT */}
       {trip.billingMethod === 'nmt' && (
-        <div className="mt-3 p-2 rounded text-xs" style={{ backgroundColor: 'rgba(232, 255, 254, 0.1)' }}>
+        <div className="mt-3 p-2 rounded text-xs card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <div className="flex items-center gap-4">
-            <span style={{ color: 'var(--color-ice)' }}>% with waiver:</span>
+            <span style={{ color: '#a5c8ca' }}>% with waiver:</span>
             <EditableField
               value={trip.percentWithWaiver}
               onChange={(v) => onUpdate({ percentWithWaiver: Number(v) })}
@@ -324,7 +330,7 @@ function TripRow({ trip, onUpdate, onDelete, serviceCodes }: TripRowProps) {
               max={100}
               suffix="%"
             />
-            <span style={{ color: 'var(--muted-foreground)' }}>
+            <span style={{ color: '#a5c8ca', opacity: 0.7 }}>
               (Only {Math.round((trip.tripsPerMonth * (trip.clients || 1)) * (trip.percentWithWaiver / 100))} trips billable)
             </span>
           </div>
@@ -333,9 +339,9 @@ function TripRow({ trip, onUpdate, onDelete, serviceCodes }: TripRowProps) {
 
       {/* Contract fee for contract billing */}
       {trip.billingMethod === 'contract' && (
-        <div className="mt-3 p-2 rounded text-xs" style={{ backgroundColor: 'rgba(59, 254, 201, 0.1)' }}>
+        <div className="mt-3 p-2 rounded text-xs card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <div className="flex items-center gap-4">
-            <span style={{ color: 'var(--color-lime)' }}>Monthly Contract Fee:</span>
+            <span style={{ color: '#a5c8ca' }}>Monthly Contract Fee:</span>
             <EditableField
               value={trip.contractFee || 0}
               onChange={(v) => onUpdate({ contractFee: Number(v) })}
@@ -468,18 +474,21 @@ export function ScenarioBuilder() {
                 variant={activeScenarioId === scenario.id ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setActiveScenario(scenario.id)}
-                style={activeScenarioId === scenario.id ? {
-                  backgroundColor: 'var(--primary)',
-                  color: 'var(--primary-foreground)',
-                } : {}}
+                className={activeScenarioId === scenario.id ? 'card-neu-pressed [&]:shadow-none' : 'card-neu-flat hover:card-neu [&]:shadow-none'}
+                style={{ 
+                  backgroundColor: 'var(--background)', 
+                  border: 'none',
+                  color: '#a5c8ca'
+                }}
               >
-                <FileText className="h-3 w-3 mr-1" />
-                {scenario.name}
+                <FileText className="h-3 w-3 mr-1" style={{ color: '#a5c8ca' }} />
+                <span style={{ color: '#a5c8ca' }}>{scenario.name}</span>
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 w-7 p-0 hover:bg-status-error/20 text-status-error"
+                className="h-7 w-7 p-0 card-neu-flat hover:card-neu [&]:shadow-none"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
                 onClick={(e) => {
                   e.stopPropagation();
                   if (confirm('Delete this scenario?')) {
@@ -487,7 +496,7 @@ export function ScenarioBuilder() {
                   }
                 }}
               >
-                <Trash2 className="h-3 w-3" />
+                <Trash2 className="h-3 w-3" style={{ color: '#a5c8ca' }} />
               </Button>
             </div>
           ))}
@@ -497,17 +506,18 @@ export function ScenarioBuilder() {
             placeholder="New scenario name..."
             value={newScenarioName}
             onChange={(e) => setNewScenarioName(e.target.value)}
-            className="w-48"
-            style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
+            className="w-48 card-neu-pressed"
+            style={{ backgroundColor: 'var(--background)', border: 'none' }}
           />
           <Button
             size="sm"
             onClick={handleAddScenario}
             disabled={!newScenarioName.trim()}
-            style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
+            className="card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+            style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(165, 200, 202, 0.15)' }}
           >
-            <Plus className="h-4 w-4 mr-1" />
-            Add Scenario
+            <Plus className="h-4 w-4 mr-1" style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }} />
+            <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Add Scenario</span>
           </Button>
         </div>
       </div>
@@ -515,116 +525,115 @@ export function ScenarioBuilder() {
       {activeScenario ? (
         <>
           {/* Summary Dashboard */}
-          <Card style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
-            <CardHeader className="pb-2">
+          <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+            <CardHeader className="pb-2 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg" style={{ color: 'var(--foreground)' }}>
+                <CardTitle className="text-lg" style={{ color: '#a5c8ca' }}>
                   {activeScenario.name} - Analysis
                 </CardTitle>
-                <Button variant="outline" size="sm">
-                  <Copy className="h-3 w-3 mr-1" />
-                  Duplicate
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="card-neu-flat hover:card-neu [&]:shadow-none"
+                  style={{ backgroundColor: 'var(--background)', border: 'none' }}
+                >
+                  <Copy className="h-3 w-3 mr-1" style={{ color: '#a5c8ca' }} />
+                  <span style={{ color: '#a5c8ca' }}>Duplicate</span>
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-6 gap-4">
                 {/* Revenue */}
-                <div className="text-center p-4 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
-                  <DollarSign className="h-5 w-5 mx-auto mb-1" style={{ color: 'var(--color-lime)' }} />
-                  <div className="text-2xl font-bold" style={{ color: 'var(--color-lime)' }}>
+                <div className="text-center p-4 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                  <DollarSign className="h-5 w-5 mx-auto mb-1" style={{ color: '#a5c8ca' }} />
+                  <div className="text-2xl font-bold" style={{ color: '#a5c8ca' }}>
                     ${totalRevenue.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                   </div>
-                  <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Revenue/Month</div>
+                  <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Revenue/Month</div>
                 </div>
 
                 {/* Costs */}
-                <div className="text-center p-4 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
-                  <TrendingDown className="h-5 w-5 mx-auto mb-1" style={{ color: 'var(--status-error)' }} />
-                  <div className="text-2xl font-bold" style={{ color: 'var(--status-error)' }}>
+                <div className="text-center p-4 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                  <TrendingDown className="h-5 w-5 mx-auto mb-1" style={{ color: '#a5c8ca' }} />
+                  <div className="text-2xl font-bold" style={{ color: '#a5c8ca' }}>
                     ${totalCosts.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                   </div>
-                  <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Costs/Month</div>
+                  <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Costs/Month</div>
                 </div>
 
                 {/* Net Income */}
-                <div className={`text-center p-4 rounded-lg border-2 ${netIncome >= 0 ? '' : 'border-status-error'}`}
+                <div className={`text-center p-4 rounded-lg border-2 card-neu-pressed`}
                   style={{ 
-                    backgroundColor: netIncome >= 0 ? 'rgba(59, 254, 201, 0.1)' : 'rgba(255, 85, 93, 0.1)',
-                    borderColor: netIncome >= 0 ? 'var(--color-lime)' : 'var(--status-error)',
+                    backgroundColor: 'var(--background)',
+                    borderColor: '#a5c8ca',
+                    boxShadow: 'var(--shadow-neu-pressed)'
                   }}>
                   {netIncome >= 0 ? (
-                    <TrendingUp className="h-5 w-5 mx-auto mb-1" style={{ color: 'var(--color-lime)' }} />
+                    <TrendingUp className="h-5 w-5 mx-auto mb-1" style={{ color: '#a5c8ca' }} />
                   ) : (
-                    <TrendingDown className="h-5 w-5 mx-auto mb-1" style={{ color: 'var(--status-error)' }} />
+                    <TrendingDown className="h-5 w-5 mx-auto mb-1" style={{ color: '#a5c8ca' }} />
                   )}
-                  <div className="text-2xl font-bold" style={{ 
-                    color: netIncome >= 0 ? 'var(--color-lime)' : 'var(--status-error)' 
-                  }}>
+                  <div className="text-2xl font-bold" style={{ color: '#a5c8ca' }}>
                     ${Math.abs(netIncome).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                   </div>
-                  <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                  <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                     {netIncome >= 0 ? 'Net Income' : 'Net Loss'}
                   </div>
                 </div>
 
                 {/* Margin */}
-                <div className="text-center p-4 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
-                  <Target className="h-5 w-5 mx-auto mb-1" style={{ color: 'var(--color-ice)' }} />
-                  <div className="text-2xl font-bold" style={{ 
-                    color: margin >= 20 ? 'var(--color-lime)' : 
-                           margin >= 0 ? 'var(--status-warning)' : 'var(--status-error)'
-                  }}>
+                <div className="text-center p-4 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                  <Target className="h-5 w-5 mx-auto mb-1" style={{ color: '#a5c8ca' }} />
+                  <div className="text-2xl font-bold" style={{ color: '#a5c8ca' }}>
                     {margin.toFixed(1)}%
                   </div>
-                  <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Margin</div>
+                  <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Margin</div>
                 </div>
 
                 {/* Break Even */}
-                <div className="text-center p-4 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
-                  <Target className="h-5 w-5 mx-auto mb-1" style={{ color: 'var(--color-coral)' }} />
-                  <div className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>
+                <div className="text-center p-4 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                  <Target className="h-5 w-5 mx-auto mb-1" style={{ color: '#a5c8ca' }} />
+                  <div className="text-2xl font-bold" style={{ color: '#a5c8ca' }}>
                     {breakEven.breakEvenTrips === Infinity ? '∞' : breakEven.breakEvenTrips}
                   </div>
-                  <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Break-Even Trips</div>
+                  <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Break-Even Trips</div>
                 </div>
 
                 {/* Trips Gap */}
-                <div className="text-center p-4 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
+                <div className="text-center p-4 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                   {breakEven.tripsGap <= 0 ? (
-                    <CheckCircle className="h-5 w-5 mx-auto mb-1" style={{ color: 'var(--color-lime)' }} />
+                    <CheckCircle className="h-5 w-5 mx-auto mb-1" style={{ color: '#a5c8ca' }} />
                   ) : (
-                    <AlertTriangle className="h-5 w-5 mx-auto mb-1" style={{ color: 'var(--status-warning)' }} />
+                    <AlertTriangle className="h-5 w-5 mx-auto mb-1" style={{ color: '#a5c8ca' }} />
                   )}
-                  <div className="text-2xl font-bold" style={{ 
-                    color: breakEven.tripsGap <= 0 ? 'var(--color-lime)' : 'var(--status-warning)' 
-                  }}>
+                  <div className="text-2xl font-bold" style={{ color: '#a5c8ca' }}>
                     {breakEven.tripsGap <= 0 ? 'Profitable' : `+${breakEven.tripsGap}`}
                   </div>
-                  <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                  <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                     {breakEven.tripsGap <= 0 ? 'Above break-even' : 'Trips needed'}
                   </div>
                 </div>
               </div>
 
               {/* Cost Breakdown */}
-              <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
+              <div className="mt-4 pt-4 border-t" style={{ borderColor: 'rgba(165, 200, 202, 0.2)' }}>
                 <div className="grid grid-cols-4 gap-4 text-sm">
                   <div className="flex justify-between">
-                    <span style={{ color: 'var(--muted-foreground)' }}>Fixed:</span>
-                    <span style={{ color: 'var(--foreground)' }}>${fixedCosts.toLocaleString()}</span>
+                    <span style={{ color: '#a5c8ca', opacity: 0.7 }}>Fixed:</span>
+                    <span style={{ color: '#a5c8ca' }}>${fixedCosts.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span style={{ color: 'var(--muted-foreground)' }}>Staffing:</span>
-                    <span style={{ color: 'var(--foreground)' }}>${staffingCosts.toLocaleString()}</span>
+                    <span style={{ color: '#a5c8ca', opacity: 0.7 }}>Staffing:</span>
+                    <span style={{ color: '#a5c8ca' }}>${staffingCosts.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span style={{ color: 'var(--muted-foreground)' }}>Variable ({totalMiles.toLocaleString()} mi):</span>
-                    <span style={{ color: 'var(--foreground)' }}>${variableCosts.toFixed(2)}</span>
+                    <span style={{ color: '#a5c8ca', opacity: 0.7 }}>Variable ({totalMiles.toLocaleString()} mi):</span>
+                    <span style={{ color: '#a5c8ca' }}>${variableCosts.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between font-bold">
-                    <span style={{ color: 'var(--muted-foreground)' }}>Total Trips:</span>
-                    <span style={{ color: 'var(--foreground)' }}>
+                    <span style={{ color: '#a5c8ca', opacity: 0.7 }}>Total Trips:</span>
+                    <span style={{ color: '#a5c8ca' }}>
                       {activeScenario.trips.reduce((sum, t) => {
                         const clients = t.clients || 1;
                         const multiplier = t.multiplier !== undefined ? t.multiplier : (t.roundTrip ? 2 : 1);
@@ -638,23 +647,28 @@ export function ScenarioBuilder() {
           </Card>
 
           {/* Trip Scenarios */}
-          <Card style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
-            <CardHeader className="pb-2">
+          <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+            <CardHeader className="pb-2 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
-                  Trip Scenarios
-                  <Badge variant="secondary">{activeScenario.trips.length} trips</Badge>
+                <CardTitle className="text-base flex items-center gap-2" style={{ color: '#a5c8ca' }}>
+                  TRIP SCENARIOS
+                  <Badge variant="secondary" className="card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}>{activeScenario.trips.length} trips</Badge>
                 </CardTitle>
-                <Button size="sm" onClick={handleAddTrip}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Trip
+                <Button 
+                  size="sm" 
+                  onClick={handleAddTrip}
+                  className="card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+                  style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(165, 200, 202, 0.15)' }}
+                >
+                  <Plus className="h-4 w-4 mr-1" style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }} />
+                  <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Add Trip</span>
                 </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
               {activeScenario.trips.length === 0 ? (
-                <div className="text-center py-8" style={{ color: 'var(--muted-foreground)' }}>
-                  <Car className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <div className="text-center py-8" style={{ color: '#a5c8ca', opacity: 0.7 }}>
+                  <Car className="h-12 w-12 mx-auto mb-3 opacity-50" style={{ color: '#a5c8ca', opacity: 0.5 }} />
                   <p>No trip scenarios yet. Add a trip to start building your revenue model.</p>
                 </div>
               ) : (
@@ -672,13 +686,13 @@ export function ScenarioBuilder() {
           </Card>
         </>
       ) : (
-        <Card style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
+        <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <CardContent className="py-12 text-center">
-            <Calculator className="h-16 w-16 mx-auto mb-4" style={{ color: 'var(--muted-foreground)' }} />
-            <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--foreground)' }}>
+            <Calculator className="h-16 w-16 mx-auto mb-4" style={{ color: '#a5c8ca', opacity: 0.7 }} />
+            <h3 className="text-lg font-semibold mb-2" style={{ color: '#a5c8ca' }}>
               No Scenario Selected
             </h3>
-            <p style={{ color: 'var(--muted-foreground)' }}>
+            <p style={{ color: '#a5c8ca', opacity: 0.7 }}>
               Create a new scenario or select an existing one to begin planning.
             </p>
           </CardContent>

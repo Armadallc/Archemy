@@ -285,20 +285,24 @@ export function TemplateBuilder({ className, onClientGroupAdded }: TemplateBuild
         className={cn(
           "min-h-[80px] p-3 rounded-lg border-2 border-dashed transition-colors",
           isDraggingOver
-            ? "border-primary bg-primary/10"
-            : "border-muted bg-muted/20"
+            ? "card-neu-pressed border-[#a5c8ca]"
+            : "card-neu-flat border-dashed"
         )}
+        style={{ 
+          backgroundColor: 'var(--background)', 
+          borderColor: isDraggingOver ? '#a5c8ca' : 'rgba(165, 200, 202, 0.3)'
+        }}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
         <div className="flex items-center gap-2 mb-2">
-          <Icon className="w-4 h-4 text-muted-foreground" />
-          <Label className="text-sm font-medium">{label}</Label>
+          <Icon className="w-4 h-4" style={{ color: '#a5c8ca', opacity: 0.7 }} />
+          <Label className="text-sm font-medium" style={{ color: '#a5c8ca', opacity: 0.8 }}>{label}</Label>
         </div>
         
         {items.length === 0 ? (
-          <div className="text-xs text-muted-foreground text-center py-2">
+          <div className="text-xs text-center py-2" style={{ color: '#a5c8ca', opacity: 0.7 }}>
             Drop {label.toLowerCase()} here
           </div>
         ) : (
@@ -306,17 +310,19 @@ export function TemplateBuilder({ className, onClientGroupAdded }: TemplateBuild
             {items.map((item, index) => (
               <div
                 key={item.id || index}
-                className="flex items-center gap-2 p-2 bg-background rounded border text-sm"
+                className="flex items-center gap-2 p-2 rounded card-neu-flat text-sm"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               >
-                <GripVertical className="w-4 h-4 text-muted-foreground" />
-                <span className="flex-1">
+                <GripVertical className="w-4 h-4" style={{ color: '#a5c8ca', opacity: 0.5 }} />
+                <span className="flex-1" style={{ color: '#a5c8ca', opacity: 0.8 }}>
                   {item.name || item.label || `${item.type} ${index + 1}`}
                 </span>
                 <button
                   onClick={() => onRemove(index, item.id)}
-                  className="text-muted-foreground hover:text-foreground"
+                  className="card-neu-flat hover:card-neu [&]:shadow-none"
+                  style={{ backgroundColor: 'var(--background)', border: 'none' }}
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-4 h-4" style={{ color: '#a5c8ca' }} />
                 </button>
               </div>
             ))}
@@ -329,8 +335,8 @@ export function TemplateBuilder({ className, onClientGroupAdded }: TemplateBuild
   return (
     <div className={cn("p-4 space-y-4 overflow-y-auto", className)}>
       <div>
-        <h3 className="text-lg font-semibold mb-2">Build Encounter Template</h3>
-        <p className="text-sm text-muted-foreground">
+        <h3 className="text-lg font-semibold mb-2" style={{ color: '#a5c8ca' }}>BUILD ENCOUNTER TEMPLATE</h3>
+        <p className="text-sm" style={{ color: '#a5c8ca', opacity: 0.7 }}>
           Drag atoms from the sidebar into the drop zones below to build your template.
         </p>
       </div>
@@ -338,25 +344,29 @@ export function TemplateBuilder({ className, onClientGroupAdded }: TemplateBuild
       {/* Template Name & Description */}
       <div className="space-y-2">
         <div>
-          <Label htmlFor="template-name">Template Name *</Label>
+          <Label htmlFor="template-name" style={{ color: '#a5c8ca', opacity: 0.7 }}>Template Name *</Label>
           <Input
             id="template-name"
             value={templateName}
             onChange={(e) => setTemplateName(e.target.value)}
             placeholder="e.g., Life-Skills Group"
+            className="card-neu-pressed"
+            style={{ backgroundColor: 'var(--background)', border: 'none' }}
           />
         </div>
         <div>
-          <Label htmlFor="template-description">Description (optional)</Label>
+          <Label htmlFor="template-description" style={{ color: '#a5c8ca', opacity: 0.7 }}>Description (optional)</Label>
           <Input
             id="template-description"
             value={templateDescription}
             onChange={(e) => setTemplateDescription(e.target.value)}
             placeholder="Brief description of this template"
+            className="card-neu-pressed"
+            style={{ backgroundColor: 'var(--background)', border: 'none' }}
           />
         </div>
         <div>
-          <Label htmlFor="template-category">Category</Label>
+          <Label htmlFor="template-category" style={{ color: '#a5c8ca', opacity: 0.7 }}>Category</Label>
           <Select
             value={selectedCategory}
             onValueChange={(value) => {
@@ -364,7 +374,7 @@ export function TemplateBuilder({ className, onClientGroupAdded }: TemplateBuild
               setBuilderTemplate({ ...currentTemplate, category: value as TemplateCategory });
             }}
           >
-            <SelectTrigger id="template-category">
+            <SelectTrigger id="template-category" className="card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -429,7 +439,8 @@ export function TemplateBuilder({ className, onClientGroupAdded }: TemplateBuild
       {/* Save Button */}
       <Button
         onClick={handleSaveTemplate}
-        className="w-full"
+        className="w-full card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+        style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(165, 200, 202, 0.15)' }}
         disabled={
           !templateName.trim() ||
           !currentTemplate.activity ||
@@ -437,8 +448,8 @@ export function TemplateBuilder({ className, onClientGroupAdded }: TemplateBuild
           (currentTemplate.staff?.length || 0) === 0
         }
       >
-        <Save className="w-4 h-4 mr-2" />
-        Save Template & Add to Pool
+        <Save className="w-4 h-4 mr-2" style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }} />
+        <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Save Template & Add to Pool</span>
       </Button>
     </div>
   );

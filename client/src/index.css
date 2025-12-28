@@ -25,6 +25,14 @@
 /* Nohemi - Headlines & Bold Text */
 @font-face {
   font-family: 'Nohemi';
+  src: url('/fonts/Nohemi-Thin.woff2') format('woff2');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nohemi';
   src: url('/fonts/Nohemi-Regular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
@@ -253,26 +261,26 @@
   --priority-low-bg: rgba(184, 232, 231, 0.15);
   --priority-low-glow: rgba(184, 232, 231, 0.3);
 
-  /* Trip Status Colors - Derived from Fire Palette */
+  /* Trip Status Colors - Light Mode - Derived from Fire Palette */
   /* Scheduled: Derived from Ice (#e8fffe) - Red: 7A, Green: FF, Blue: FE */
   --scheduled: #7afffe;
-  --scheduled-bg: rgba(122, 255, 254, 0.15);
+  --scheduled-bg: rgba(122, 255, 254, 0.25); /* Increased opacity for better contrast in light mode */
   
   /* In Progress: Derived from Lime (#f1fec9) - Red: F1, Green: FE, Blue: 60 */
   --in-progress: #f1fe60;
-  --in-progress-bg: rgba(241, 254, 96, 0.15);
+  --in-progress-bg: rgba(241, 254, 96, 0.25); /* Increased opacity for better contrast in light mode */
   
   /* Completed: Derived from Lime (#f1fec9) - Red: 3B, Green: FE, Blue: C9 */
   --completed: #3bfec9;
-  --completed-bg: rgba(59, 254, 201, 0.15);
+  --completed-bg: rgba(59, 254, 201, 0.25); /* Increased opacity for better contrast in light mode */
   
   /* Cancelled: Derived from Coral (#ff555d) - using darker shade */
   --cancelled: var(--color-coral-dark);
-  --cancelled-bg: rgba(224, 72, 80, 0.15);
+  --cancelled-bg: rgba(224, 72, 80, 0.25); /* Increased opacity for better contrast in light mode */
   
   /* Confirmed: Derived from Ice (#e8fffe) - Red: C2, Green: B4, Blue: FE */
   --confirmed: #c2b4fe;
-  --confirmed-bg: rgba(194, 180, 254, 0.15);
+  --confirmed-bg: rgba(194, 180, 254, 0.25); /* Increased opacity for better contrast in light mode */
 
   /* ----------------------------------------------------------
      DRIVER ASSIGNMENT COLORS
@@ -492,7 +500,8 @@
   --priority-low-bg: rgba(184, 232, 231, 0.15);
   --priority-low-glow: rgba(184, 232, 231, 0.3);
 
-  /* Trip Status Colors - Dark Mode (same as light mode, derived from Fire palette) */
+  /* Trip Status Colors - Dark Mode - Derived from Fire Palette */
+  /* Keep lighter opacity for dark mode as bright colors work better on dark backgrounds */
   --scheduled: #7afffe;
   --scheduled-bg: rgba(122, 255, 254, 0.15);
   
@@ -529,6 +538,13 @@
   --shadow-neu-pressed: 
     inset 4px 4px 8px var(--neu-shadow-dark),
     inset -4px -4px 8px var(--neu-shadow-light);
+  
+  /* Drop shadow for panels that need to overlay background */
+  --shadow-drop: 
+    0 10px 25px -5px rgba(0, 0, 0, 0.3),
+    0 8px 10px -6px rgba(0, 0, 0, 0.2),
+    8px 8px 16px var(--neu-shadow-dark),
+    -8px -8px 16px var(--neu-shadow-light);
 
   /* Glass effect - dark mode */
   --glass-bg: rgba(38, 40, 43, 0.8);
@@ -596,6 +612,18 @@
     @apply rounded-lg;
     box-shadow: var(--shadow-neu-pressed);
   }
+
+  .card-glow-border {
+    box-shadow: 0 0 20px rgba(70, 74, 79, 0.4), 0 0 40px rgba(70, 74, 79, 0.2), 0 0 60px rgba(70, 74, 79, 0.1) !important;
+  }
+
+  /* Button text hover glow - matching sidebar */
+  .btn-text-glow:hover span,
+  .btn-text-glow:hover {
+    text-shadow: 0 0 8px rgba(122, 255, 254, 0.4), 0 0 12px rgba(122, 255, 254, 0.2);
+    transition: text-shadow 0.2s ease;
+  }
+
 
   /* Typography Presets */
   .text-page-title {
@@ -669,34 +697,39 @@
     @apply px-2 py-1 rounded-md text-xs font-medium;
   }
 
-  /* Trip Status Badges */
+  /* Trip Status Badges - Light Mode */
   .badge-scheduled {
     background-color: var(--scheduled-bg);
-    color: var(--scheduled);
+    color: var(--foreground); /* Theme-aware: dark in light mode, light in dark mode */
+    border: 1px solid var(--scheduled);
     @apply px-2 py-1 rounded-md text-xs font-medium;
   }
 
   .badge-in-progress {
     background-color: var(--in-progress-bg);
-    color: var(--in-progress);
+    color: var(--foreground); /* Theme-aware: dark in light mode, light in dark mode */
+    border: 1px solid var(--in-progress);
     @apply px-2 py-1 rounded-md text-xs font-medium;
   }
 
   .badge-completed {
     background-color: var(--completed-bg);
-    color: var(--completed);
+    color: var(--foreground); /* Theme-aware: dark in light mode, light in dark mode */
+    border: 1px solid var(--completed);
     @apply px-2 py-1 rounded-md text-xs font-medium;
   }
 
   .badge-cancelled {
     background-color: var(--cancelled-bg);
-    color: var(--cancelled);
+    color: var(--foreground); /* Theme-aware: dark in light mode, light in dark mode */
+    border: 1px solid var(--cancelled);
     @apply px-2 py-1 rounded-md text-xs font-medium;
   }
 
   .badge-confirmed {
     background-color: var(--confirmed-bg);
-    color: var(--confirmed);
+    color: var(--foreground); /* Theme-aware: dark in light mode, light in dark mode */
+    border: 1px solid var(--confirmed);
     @apply px-2 py-1 rounded-md text-xs font-medium;
   }
 

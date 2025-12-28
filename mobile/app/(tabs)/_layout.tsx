@@ -1,19 +1,73 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
+import { Platform, View, StyleSheet } from 'react-native';
+
+// Custom icon component with glow effect for active tabs
+const TabBarIconWithGlow = ({ name, color, size, focused }: { name: string; color: string; size: number; focused: boolean }) => {
+  const glowColor = '#ff8475'; // Coral glow from Fire palette
+  
+  return (
+    <View style={styles.iconContainer}>
+      <Ionicons 
+        name={name as any} 
+        size={size} 
+        color={color}
+        style={[
+          focused && Platform.OS === 'web' && {
+            filter: `drop-shadow(0 0 4px ${glowColor}80) drop-shadow(0 0 8px ${glowColor}40)`,
+          } as any,
+          focused && Platform.OS !== 'web' && {
+            textShadowColor: glowColor,
+            textShadowOffset: { width: 0, height: 0 },
+            textShadowRadius: 6,
+          },
+        ]}
+      />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  iconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
 
 export default function TabLayout() {
   const { theme } = useTheme();
+  
+  // Detect dark theme for neumorphic styling
+  const isDark = theme.mode === 'dark' || 
+    (theme.mode === 'system' && theme.colors.background === '#1e2023');
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: theme.colors.primary,
+        tabBarActiveTintColor: '#ff8475',
         tabBarInactiveTintColor: theme.colors.mutedForeground,
+        tabBarLabelStyle: {
+          fontSize: 16,
+        },
         tabBarStyle: {
           backgroundColor: theme.colors.card,
-          borderTopWidth: 1,
-          borderTopColor: theme.colors.border,
+          borderTopWidth: 0, // Remove border for neumorphic design
+          // Enhanced neumorphic shadow effects
+          ...(Platform.OS === 'ios' && {
+            shadowColor: isDark ? '#1a1c1e' : '#161B1D',
+            shadowOffset: { width: 0, height: -4 },
+            shadowOpacity: isDark ? 0.4 : 0.15,
+            shadowRadius: 12,
+          }),
+          ...(Platform.OS === 'android' && {
+            elevation: isDark ? 12 : 6,
+          }),
+          ...(Platform.OS === 'web' && {
+            boxShadow: isDark 
+              ? '0 -6px 12px rgba(26, 28, 30, 0.5), 0 6px 12px rgba(70, 74, 79, 0.3)' 
+              : '0 -4px 8px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1)',
+          } as any),
         },
         headerShown: false,
       }}
@@ -28,8 +82,8 @@ export default function TabLayout() {
         name="dashboard"
         options={{
           title: 'Dashboard',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabBarIconWithGlow name="home" color={color} size={size} focused={focused} />
           ),
         }}
       />
@@ -37,8 +91,8 @@ export default function TabLayout() {
         name="chat"
         options={{
           title: 'Chat',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="chatbubbles" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabBarIconWithGlow name="chatbubbles" color={color} size={size} focused={focused} />
           ),
         }}
       />
@@ -46,8 +100,8 @@ export default function TabLayout() {
         name="menu"
         options={{
           title: 'Menu',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="menu" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabBarIconWithGlow name="menu" color={color} size={size} focused={focused} />
           ),
         }}
       />

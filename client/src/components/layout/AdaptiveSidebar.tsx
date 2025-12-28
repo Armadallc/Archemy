@@ -588,7 +588,7 @@ export default function AdaptiveSidebar({
   return (
     <div className={`transition-all duration-300 ${actualCollapsed ? 'w-16' : 'w-64'} flex flex-col overflow-hidden rounded-lg card-neu`} style={{ color: 'var(--color-aqua)', backgroundColor: 'var(--background)', paddingBottom: '24px', height: 'calc(100vh - 48px)' }}>
       {/* Header */}
-      <div className="px-4 pt-6 pb-4 flex-shrink-0 flex items-center justify-center relative" style={{ borderBottom: '1px solid var(--border)', backgroundColor: 'var(--background)', height: '150px' }}>
+      <div className="px-4 pt-6 pb-4 flex-shrink-0 flex items-center justify-center relative" style={{ backgroundColor: 'var(--background)', height: '150px' }}>
         {shouldShowLogo() && (
           <img 
             src={getDisplayLogo()!} 
@@ -822,7 +822,7 @@ export default function AdaptiveSidebar({
       </nav>
 
       {/* User Menu */}
-      <div className="p-4 relative user-menu-container flex-shrink-0" style={{ borderTop: '1px solid var(--border)', backgroundColor: 'var(--background)', height: '69px' }}>
+      <div className="p-4 relative user-menu-container flex-shrink-0" style={{ backgroundColor: 'var(--background)', height: '69px' }}>
         {!actualCollapsed && user && (
           <div className="flex items-center space-x-3">
             <button
@@ -901,7 +901,7 @@ export default function AdaptiveSidebar({
         
         {/* Slide-up User Menu */}
         {isUserMenuOpen && (
-          <div className="absolute bottom-full mb-2 rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', borderWidth: '1px', borderStyle: 'solid', width: '223.45px' }}>
+          <div className="absolute bottom-full mb-2 rounded-lg overflow-hidden card-neu" style={{ backgroundColor: 'var(--background)', border: 'none', width: '223.45px' }}>
             <div className="py-2">
               {/* User Settings */}
               <button
@@ -909,42 +909,54 @@ export default function AdaptiveSidebar({
                   setLocation('/profile');
                   setIsUserMenuOpen(false);
                 }}
-                className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors"
-                style={{ color: 'var(--gray-11)', fontFamily: "'Nohemi', sans-serif" }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gray-3)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors card-neu-flat hover:card-neu [&]:shadow-none"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--background)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--background)';
+                }}
               >
-                <User className="w-4 h-4" />
-                <span>User Settings</span>
+                <User className="w-4 h-4" style={{ color: '#a5c8ca' }} />
+                <span style={{ color: '#a5c8ca', fontFamily: "'Nohemi', sans-serif" }}>User Settings</span>
               </button>
               
               {/* Theme Toggle */}
               {darkModeEnabled && (
                 <button
                   onClick={toggleTheme}
-                  className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors"
-                  style={{ color: 'var(--gray-11)', fontFamily: "'Nohemi', sans-serif" }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gray-3)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors card-neu-flat hover:card-neu [&]:shadow-none"
+                  style={{ backgroundColor: 'var(--background)', border: 'none' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--background)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--background)';
+                  }}
                 >
-                  {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                  <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+                  {isDarkMode ? <Sun className="w-4 h-4" style={{ color: '#a5c8ca' }} /> : <Moon className="w-4 h-4" style={{ color: '#a5c8ca' }} />}
+                  <span style={{ color: '#a5c8ca', fontFamily: "'Nohemi', sans-serif" }}>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
                 </button>
               )}
               
               {/* Divider */}
-              <div className="border-t my-1" style={{ borderColor: 'var(--border)' }}></div>
+              <div className="border-t my-1" style={{ borderColor: 'rgba(165, 200, 202, 0.2)' }}></div>
               
               {/* Logout */}
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors"
-                style={{ color: 'rgb(248, 113, 113)', fontFamily: "'Nohemi', sans-serif" }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gray-3)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors card-neu-flat hover:card-neu [&]:shadow-none"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--background)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--background)';
+                }}
               >
-                <LogOut className="w-4 h-4" />
-                <span>Logout</span>
+                <LogOut className="w-4 h-4" style={{ color: '#a5c8ca' }} />
+                <span style={{ color: '#a5c8ca', fontFamily: "'Nohemi', sans-serif" }}>Logout</span>
               </button>
             </div>
           </div>

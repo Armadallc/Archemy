@@ -147,9 +147,15 @@ function HeaderScopeSelectorComponent() {
           {getScopeDisplay()}
         </SelectValue>
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent 
+        className="card-neu [&]:shadow-none"
+        style={{ backgroundColor: 'var(--background)', border: 'none' }}
+      >
         {/* Global option - always first */}
-        <SelectItem value="global">
+        <SelectItem 
+          value="global"
+          className="hover:card-neu-flat"
+        >
           <div className="flex items-center gap-2">
             <Globe className="w-4 h-4" />
             <span>Global Dashboard</span>
@@ -165,7 +171,11 @@ function HeaderScopeSelectorComponent() {
               <div className="px-2 py-1.5 text-sm text-muted-foreground">Loading...</div>
             ) : corporateClients.length > 0 ? (
               corporateClients.map((client) => (
-                <SelectItem key={client.id} value={`corporate:${client.id}`}>
+                <SelectItem 
+                  key={client.id} 
+                  value={`corporate:${client.id}`}
+                  className="hover:card-neu-flat"
+                >
                   <div className="flex items-center gap-2">
                     <Building2 className="w-4 h-4" />
                     <span>{client.name}</span>
@@ -185,7 +195,11 @@ function HeaderScopeSelectorComponent() {
               <div className="px-2 py-1.5 text-sm text-muted-foreground">Loading...</div>
             ) : programs.length > 0 ? (
               programs.map((program) => (
-                <SelectItem key={program.id} value={`program:${program.id}`}>
+                <SelectItem 
+                  key={program.id} 
+                  value={`program:${program.id}`}
+                  className="hover:card-neu-flat"
+                >
                   <div className="flex items-center gap-2">
                     <FolderOpen className="w-4 h-4" />
                     <span>{program.program_name || program.name}</span>

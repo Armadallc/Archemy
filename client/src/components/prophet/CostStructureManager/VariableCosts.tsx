@@ -45,31 +45,31 @@ export function VariableCosts() {
     (variable.vehicleSpecific?.depreciationPerMile || 0);
 
   return (
-    <Card style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg" style={{ color: 'var(--foreground)' }}>
-          <Fuel className="h-5 w-5" style={{ color: 'var(--primary)' }} />
-          Variable Costs
+    <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+      <CardHeader className="pb-3 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+        <CardTitle className="flex items-center gap-2 text-lg" style={{ color: '#a5c8ca' }}>
+          <Fuel className="h-5 w-5" style={{ color: '#a5c8ca' }} />
+          VARIABLE COSTS
         </CardTitle>
-        <div className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>
-          Total Per-Mile: <span className="font-bold" style={{ color: 'var(--primary)' }}>${totalPerMile.toFixed(3)}/mile</span>
+        <div className="text-xs mt-1" style={{ color: '#a5c8ca', opacity: 0.7 }}>
+          Total Per-Mile: <span className="font-bold" style={{ color: '#a5c8ca' }}>${totalPerMile.toFixed(3)}/mile</span>
         </div>
       </CardHeader>
       <CardContent className="p-6">
         <Tabs defaultValue="basic" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-6 gap-1 mb-8" style={{ backgroundColor: 'var(--muted)' }}>
-            <TabsTrigger value="basic" className="text-xs">Basic</TabsTrigger>
-            <TabsTrigger value="direct" className="text-xs">Direct</TabsTrigger>
-            <TabsTrigger value="driver" className="text-xs">Driver</TabsTrigger>
-            <TabsTrigger value="patient" className="text-xs">Patient</TabsTrigger>
-            <TabsTrigger value="operational" className="text-xs">Operational</TabsTrigger>
-            <TabsTrigger value="admin" className="text-xs">Admin</TabsTrigger>
-            <TabsTrigger value="marketing" className="text-xs">Marketing</TabsTrigger>
-            <TabsTrigger value="compliance" className="text-xs">Compliance</TabsTrigger>
-            <TabsTrigger value="technology" className="text-xs">Technology</TabsTrigger>
-            <TabsTrigger value="vehicle" className="text-xs">Vehicle</TabsTrigger>
-            <TabsTrigger value="hybrid" className="text-xs">Hybrid</TabsTrigger>
-            <TabsTrigger value="seasonal" className="text-xs">Seasonal</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-6 gap-1 mb-8 card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+            <TabsTrigger value="basic" className="text-xs" style={{ color: '#a5c8ca' }}>Basic</TabsTrigger>
+            <TabsTrigger value="direct" className="text-xs" style={{ color: '#a5c8ca' }}>Direct</TabsTrigger>
+            <TabsTrigger value="driver" className="text-xs" style={{ color: '#a5c8ca' }}>Driver</TabsTrigger>
+            <TabsTrigger value="patient" className="text-xs" style={{ color: '#a5c8ca' }}>Patient</TabsTrigger>
+            <TabsTrigger value="operational" className="text-xs" style={{ color: '#a5c8ca' }}>Operational</TabsTrigger>
+            <TabsTrigger value="admin" className="text-xs" style={{ color: '#a5c8ca' }}>Admin</TabsTrigger>
+            <TabsTrigger value="marketing" className="text-xs" style={{ color: '#a5c8ca' }}>Marketing</TabsTrigger>
+            <TabsTrigger value="compliance" className="text-xs" style={{ color: '#a5c8ca' }}>Compliance</TabsTrigger>
+            <TabsTrigger value="technology" className="text-xs" style={{ color: '#a5c8ca' }}>Technology</TabsTrigger>
+            <TabsTrigger value="vehicle" className="text-xs" style={{ color: '#a5c8ca' }}>Vehicle</TabsTrigger>
+            <TabsTrigger value="hybrid" className="text-xs" style={{ color: '#a5c8ca' }}>Hybrid</TabsTrigger>
+            <TabsTrigger value="seasonal" className="text-xs" style={{ color: '#a5c8ca' }}>Seasonal</TabsTrigger>
           </TabsList>
 
           <TabsContent value="basic" className="mt-0 space-y-4">

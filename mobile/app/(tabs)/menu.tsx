@@ -169,7 +169,7 @@ export default function MenuScreen() {
 
   // Detect dark theme for neumorphic styling
   const isDark = theme.mode === 'dark' || 
-    (theme.mode === 'system' && theme.colors.background === '#292929');
+    (theme.mode === 'system' && theme.colors.background === '#1e2023');
 
   const getActualThemeMode = () => {
     if (themeState.mode === 'system') {

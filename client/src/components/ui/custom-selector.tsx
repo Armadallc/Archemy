@@ -60,14 +60,13 @@ export const CustomSelector: React.FC<CustomSelectorProps> = ({
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
         className={cn(
-          "flex items-center gap-3 flex-1 w-full px-3 py-2 text-left text-sm border rounded-md focus:outline-none focus:ring-2 transition-colors bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700",
+          "flex items-center gap-3 flex-1 w-full px-3 py-2 text-left text-sm rounded-md focus:outline-none focus:ring-2 transition-colors card-neu-flat hover:card-neu [&]:shadow-none",
           disabled && "opacity-50 cursor-not-allowed",
           className
         )}
         style={{ 
-          borderColor: 'var(--border)', 
-          borderWidth: '1px', 
-          borderStyle: 'solid'
+          backgroundColor: 'var(--background)',
+          border: 'none'
         }}
         onFocus={(e) => {
           e.currentTarget.style.boxShadow = '0 0 0 2px var(--blue-9)';
@@ -88,23 +87,16 @@ export const CustomSelector: React.FC<CustomSelectorProps> = ({
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 rounded-md shadow-lg bg-white dark:bg-gray-800" style={{ borderColor: 'var(--border)', borderWidth: '1px', borderStyle: 'solid' }}>
+        <div className="absolute z-50 w-full mt-1 rounded-md card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           {options.map((option) => (
             <button
               key={option.value}
               type="button"
               onClick={() => handleSelect(option.value)}
-              className="w-full px-3 py-2 text-left text-sm transition-colors"
-              style={selectedValue === option.value ? { backgroundColor: 'rgba(124, 173, 197, 0.1)', color: 'var(--blue-11)' } : {}}
-              onMouseEnter={(e) => {
-                if (selectedValue !== option.value) {
-                  e.currentTarget.style.backgroundColor = 'var(--gray-2)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (selectedValue !== option.value) {
-                  e.currentTarget.style.backgroundColor = '';
-                }
+              className="w-full px-3 py-2 text-left text-sm transition-colors hover:card-neu-flat"
+              style={{
+                backgroundColor: selectedValue === option.value ? 'var(--muted)' : 'transparent',
+                color: 'var(--foreground)'
               }}
             >
               {option.label}

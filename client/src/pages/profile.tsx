@@ -503,135 +503,173 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 max-w-4xl">
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Profile</h1>
-          <p className="text-muted-foreground mt-2 text-sm md:text-base">
-            Manage your personal information and preferences
-          </p>
+    <div className="flex-1 flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--background)' }}>
+      <div className="flex-1 flex flex-col overflow-hidden space-y-6" style={{ padding: '24px', backgroundColor: 'var(--background)' }}>
+        {/* Profile Header Card - Full width like dashboard header */}
+        <div className="flex-shrink-0">
+          <div className="px-6 py-6 rounded-lg card-neu flex items-center justify-between" style={{ backgroundColor: 'var(--background)', border: 'none', height: '150px', boxShadow: '8px 8px 16px 0px rgba(30, 32, 35, 0.6), -8px -8px 16px 0px rgba(30, 32, 35, 0.05)' }}>
+          <div className="flex items-center gap-6">
+            <div className="relative">
+              <Avatar className="h-24 w-24 ring-2 ring-background relative">
+                {user?.avatar_url ? (
+                  <AvatarImage 
+                    src={user.avatar_url} 
+                    alt={user?.user_name || 'User'}
+                    className="object-cover relative z-10"
+                  />
+                ) : (
+                  <AvatarFallback className="text-2xl">
+                    {user?.user_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
+                  </AvatarFallback>
+                )}
+              </Avatar>
+              {/* Compact Upload Button Overlay */}
+              <label
+                htmlFor="profile-avatar-upload"
+                className="absolute -right-2 -bottom-2 rounded-full p-2 cursor-pointer transition-colors z-10 border-2 border-background h-8 w-8 flex items-center justify-center card-neu hover:card-neu [&]:shadow-none"
+                style={{ 
+                  backgroundColor: 'var(--background)', 
+                  borderColor: 'var(--background)',
+                  boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)',
+                  color: '#7afffe'
+                }}
+                title="Change profile picture"
+              >
+                {isUploadingAvatar ? (
+                  <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Camera className="h-4 w-4" />
+                )}
+              </label>
+              <input
+                id="profile-avatar-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                disabled={isUploadingAvatar}
+                className="hidden"
+              />
+            </div>
+            <div className="flex-1 space-y-2">
+              <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                <h1 
+                  className="text-2xl"
+                  style={{ fontWeight: 400 }}
+                >
+                  {user?.first_name && user?.last_name
+                    ? `${user.first_name} ${user.last_name}`
+                    : user?.user_name || user?.email || 'User'}
+                </h1>
+                <RoleBadge role={user?.role || 'program_user'} />
+              </div>
+              {formData.job_title && (
+                <p className="text-muted-foreground">{formData.job_title}</p>
+              )}
+              <div className="text-muted-foreground flex flex-wrap gap-4 text-sm">
+                <div className="flex items-center gap-1">
+                  <Mail className="h-4 w-4" />
+                  {user?.email}
+                </div>
+                {formData.location && (
+                  <div className="flex items-center gap-1">
+                    <MapPin className="h-4 w-4" />
+                    {formData.location}
+                  </div>
+                )}
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-4 w-4" />
+                  Joined {formatJoinDate(user?.created_at)}
+                </div>
+              </div>
+            </div>
+          </div>
+          {!isEditing && (
+            <Button 
+              onClick={() => setIsEditing(true)} 
+              variant="default"
+              className="w-full md:w-auto card-neu hover:card-neu [&]:shadow-none"
+              style={{ 
+                backgroundColor: 'var(--background)', 
+                border: 'none',
+                boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)',
+                color: '#7afffe',
+                textShadow: '0 0 8px rgba(122, 255, 254, 0.4), 0 0 12px rgba(122, 255, 254, 0.2)',
+                fontWeight: 400
+              }}
+            >
+              <span>Edit Profile</span>
+            </Button>
+          )}
+          </div>
         </div>
 
-        {/* Profile Header Card */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex flex-col items-start gap-6 md:flex-row md:items-center">
-              <div className="relative">
-                <Avatar className="h-24 w-24 ring-2 ring-background relative">
-                  {user?.avatar_url ? (
-                    <AvatarImage 
-                      src={user.avatar_url} 
-                      alt={user?.user_name || 'User'}
-                      className="object-cover relative z-10"
-                    />
-                  ) : (
-                    <AvatarFallback className="text-2xl">
-                      {user?.user_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
-                    </AvatarFallback>
-                  )}
-                </Avatar>
-                {/* Compact Upload Button Overlay */}
-                <label
-                  htmlFor="profile-avatar-upload"
-                  className="absolute -right-2 -bottom-2 bg-primary text-primary-foreground rounded-full p-2 shadow-md hover:bg-primary/90 cursor-pointer transition-colors z-10 border-2 border-background h-8 w-8 flex items-center justify-center"
-                  title="Change profile picture"
-                >
-                  {isUploadingAvatar ? (
-                    <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <Camera className="h-4 w-4" />
-                  )}
-                </label>
-                <input
-                  id="profile-avatar-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                  disabled={isUploadingAvatar}
-                  className="hidden"
-                />
-              </div>
-              <div className="flex-1 space-y-2 w-full">
-                <div className="flex flex-col gap-2 md:flex-row md:items-center">
-                  <h1 className="text-2xl font-bold">
-                    {user?.first_name && user?.last_name
-                      ? `${user.first_name} ${user.last_name}`
-                      : user?.user_name || user?.email || 'User'}
-                  </h1>
-                  <RoleBadge role={user?.role || 'program_user'} />
-                </div>
-                {formData.job_title && (
-                  <p className="text-muted-foreground">{formData.job_title}</p>
-                )}
-                <div className="text-muted-foreground flex flex-wrap gap-4 text-sm">
-                  <div className="flex items-center gap-1">
-                    <Mail className="h-4 w-4" />
-                    {user?.email}
-                  </div>
-                  {formData.location && (
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4" />
-                      {formData.location}
-                    </div>
-                  )}
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    Joined {formatJoinDate(user?.created_at)}
-                  </div>
-                </div>
-              </div>
-              {!isEditing && (
-                <Button 
-                  onClick={() => setIsEditing(true)} 
-                  variant="default"
-                  className="w-full md:w-auto"
-                >
-                  Edit Profile
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Tabbed Content */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="personal">Personal</TabsTrigger>
-            <TabsTrigger value="account">Account</TabsTrigger>
-            <TabsTrigger value="security">Security</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
+        <div className="flex-1 overflow-auto min-h-0" style={{ overflow: 'visible' }}>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4 card-neu-flat p-1" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+            <TabsTrigger 
+              value="personal"
+              className="data-[state=active]:card-neu-pressed"
+              style={{ backgroundColor: 'var(--background)' }}
+            >
+              Personal
+            </TabsTrigger>
+            <TabsTrigger 
+              value="account"
+              className="data-[state=active]:card-neu-pressed"
+              style={{ backgroundColor: 'var(--background)' }}
+            >
+              Account
+            </TabsTrigger>
+            <TabsTrigger 
+              value="security"
+              className="data-[state=active]:card-neu-pressed"
+              style={{ backgroundColor: 'var(--background)' }}
+            >
+              Security
+            </TabsTrigger>
+            <TabsTrigger 
+              value="notifications"
+              className="data-[state=active]:card-neu-pressed"
+              style={{ backgroundColor: 'var(--background)' }}
+            >
+              Notifications
+            </TabsTrigger>
           </TabsList>
 
           {/* Personal Information Tab */}
-          <TabsContent value="personal" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Personal Information</CardTitle>
+          <TabsContent value="personal" className="space-y-6" style={{ boxShadow: 'none' }}>
+            <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: 'none' }}>
+              <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                <CardTitle style={{ fontSize: '16px', fontWeight: 400 }}>PERSONAL INFORMATION</CardTitle>
                 <CardDescription>Update your personal details and profile information.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="first_name">First Name</Label>
+                    <Label htmlFor="first_name" className="font-medium" style={{ fontSize: '16px' }}>FIRST NAME</Label>
                     <Input
                       id="first_name"
                       value={formData.first_name}
                       onChange={(e) => handleInputChange('first_name', e.target.value)}
                       disabled={!isEditing}
+                      className="card-neu-pressed"
+                      style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="last_name">Last Name</Label>
+                    <Label htmlFor="last_name" className="font-medium" style={{ fontSize: '16px' }}>LAST NAME</Label>
                     <Input
                       id="last_name"
                       value={formData.last_name}
                       onChange={(e) => handleInputChange('last_name', e.target.value)}
                       disabled={!isEditing}
+                      className="card-neu-pressed"
+                      style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email" className="font-medium" style={{ fontSize: '16px' }}>EMAIL</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
                       <Input
@@ -639,7 +677,8 @@ export default function ProfilePage() {
                         type="email"
                         value={formData.email}
                         disabled={true}
-                        className="pl-9"
+                        className="pl-9 card-neu-flat [&]:shadow-none"
+                        style={{ backgroundColor: 'var(--background)', border: 'none' }}
                       />
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
@@ -647,37 +686,43 @@ export default function ProfilePage() {
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone</Label>
+                    <Label htmlFor="phone" className="font-medium" style={{ fontSize: '16px' }}>PHONE</Label>
                     <PhoneInput
                       id="phone"
                       value={formData.phone}
                       onChange={(value) => handleInputChange('phone', value)}
                       disabled={!isEditing}
+                      className="card-neu-pressed"
+                      style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="job_title">Job Title</Label>
+                    <Label htmlFor="job_title" className="font-medium" style={{ fontSize: '16px' }}>JOB TITLE</Label>
                     <Input
                       id="job_title"
                       value={formData.job_title}
                       onChange={(e) => handleInputChange('job_title', e.target.value)}
                       disabled={!isEditing}
                       placeholder="e.g., Senior Product Designer"
+                      className="card-neu-pressed"
+                      style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="company">Company</Label>
+                    <Label htmlFor="company" className="font-medium" style={{ fontSize: '16px' }}>COMPANY</Label>
                     <Input
                       id="company"
                       value={formData.company}
                       onChange={(e) => handleInputChange('company', e.target.value)}
                       disabled={!isEditing}
                       placeholder="e.g., Acme Inc."
+                      className="card-neu-pressed"
+                      style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="bio">Bio</Label>
+                  <Label htmlFor="bio" className="font-medium" style={{ fontSize: '16px' }}>BIO</Label>
                   <Textarea
                     id="bio"
                     placeholder="Tell us about yourself..."
@@ -685,10 +730,12 @@ export default function ProfilePage() {
                     onChange={(e) => handleInputChange('bio', e.target.value)}
                     disabled={!isEditing}
                     rows={4}
+                    className="card-neu-pressed"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
+                  <Label htmlFor="location" className="font-medium" style={{ fontSize: '16px' }}>LOCATION</Label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground z-10" />
                     <Input
@@ -697,7 +744,8 @@ export default function ProfilePage() {
                       onChange={(e) => handleInputChange('location', e.target.value)}
                       disabled={!isEditing}
                       placeholder="e.g., San Francisco, CA"
-                      className="pl-9"
+                      className="pl-9 card-neu-flat [&]:shadow-none"
+                      style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     />
                   </div>
                 </div>
@@ -723,29 +771,42 @@ export default function ProfilePage() {
 
                 {/* Action Buttons */}
                 {isEditing && (
-                  <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t">
+                  <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
                     <Button
                       variant="outline"
                       onClick={handleCancel}
                       disabled={isSaving}
-                      className="w-full sm:w-auto"
+                      className="w-full sm:w-auto card-neu-flat hover:card-neu [&]:shadow-none"
+                      style={{ 
+                        backgroundColor: 'var(--background)', 
+                        border: 'none',
+                        boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                      }}
                     >
                       Cancel
                     </Button>
                     <Button
                       onClick={handleSave}
                       disabled={isSaving}
-                      className="w-full sm:w-auto"
+                      className="w-full sm:w-auto card-neu hover:card-neu [&]:shadow-none"
+                      style={{ 
+                        backgroundColor: 'var(--background)', 
+                        border: 'none',
+                        boxShadow: '0 0 12px rgba(122, 255, 254, 0.2)',
+                        color: '#7afffe',
+                        textShadow: '0 0 8px rgba(122, 255, 254, 0.4), 0 0 12px rgba(122, 255, 254, 0.2)',
+                        fontWeight: 400
+                      }}
                     >
                       {isSaving ? (
                         <>
                           <Save className="mr-2 h-4 w-4 animate-spin" />
-                          Saving...
+                          <span>Saving...</span>
                         </>
                       ) : (
                         <>
                           <Save className="mr-2 h-4 w-4" />
-                          Save Changes
+                          <span>Save Changes</span>
                         </>
                       )}
                     </Button>
@@ -756,10 +817,10 @@ export default function ProfilePage() {
           </TabsContent>
 
           {/* Account Settings Tab */}
-          <TabsContent value="account" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Account Settings</CardTitle>
+          <TabsContent value="account" className="space-y-6" style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
+            <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+              <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                <CardTitle style={{ fontSize: '16px', fontWeight: 400 }}>ACCOUNT SETTINGS</CardTitle>
                 <CardDescription>Manage your account preferences and subscription.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -796,25 +857,46 @@ export default function ProfilePage() {
                     <Label className="text-base">Data Export</Label>
                     <p className="text-muted-foreground text-sm">Download a copy of your data</p>
                   </div>
-                  <Button variant="outline" onClick={handleExportData}>Export Data</Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleExportData}
+                    className="card-neu-flat hover:card-neu [&]:shadow-none"
+                    style={{ 
+                      backgroundColor: 'var(--background)', 
+                      border: 'none',
+                      boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                    }}
+                  >
+                    Export Data
+                  </Button>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-destructive/50">
-              <CardHeader>
-                <CardTitle className="text-destructive">Danger Zone</CardTitle>
+            <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+              <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                <CardTitle style={{ fontSize: '16px', fontWeight: 400, color: '#ff8475' }}>DANGER ZONE</CardTitle>
                 <CardDescription>Irreversible and destructive actions</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
-                    <Label className="text-base">Delete Account</Label>
+                    <Label className="text-base font-medium" style={{ fontSize: '16px' }}>DELETE ACCOUNT</Label>
                     <p className="text-muted-foreground text-sm">
                       Permanently delete your account and all data
                     </p>
                   </div>
-                  <Button variant="destructive" onClick={() => setIsDeleteDialogOpen(true)}>
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => setIsDeleteDialogOpen(true)}
+                    className="card-neu-flat hover:card-neu [&]:shadow-none !text-[#ff8475] hover:!text-[#ff8475] [&_svg]:!text-[#ff8475]"
+                    style={{ 
+                      backgroundColor: 'var(--background)', 
+                      border: 'none',
+                      boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)',
+                      fontWeight: 400
+                    }}
+                  >
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete Account
                   </Button>
@@ -824,20 +906,29 @@ export default function ProfilePage() {
           </TabsContent>
 
           {/* Security Settings Tab */}
-          <TabsContent value="security" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Security Settings</CardTitle>
+          <TabsContent value="security" className="space-y-6" style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
+            <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+              <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                <CardTitle style={{ fontSize: '16px', fontWeight: 400 }}>SECURITY SETTINGS</CardTitle>
                 <CardDescription>Manage your account security and authentication.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-6" style={{ paddingTop: '24px' }}>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
                       <Label className="text-base">Password</Label>
                       <p className="text-muted-foreground text-sm">Last changed 3 months ago</p>
                     </div>
-                    <Button variant="outline" onClick={() => setIsPasswordDialogOpen(true)}>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsPasswordDialogOpen(true)}
+                      className="card-neu-flat hover:card-neu [&]:shadow-none"
+                      style={{ 
+                        backgroundColor: 'var(--background)', 
+                        border: 'none',
+                        boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                      }}
+                    >
                       <Key className="mr-2 h-4 w-4" />
                       Change Password
                     </Button>
@@ -854,7 +945,16 @@ export default function ProfilePage() {
                       <Badge variant="outline" className="border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-900/20 dark:text-gray-400">
                         Disabled
                       </Badge>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="card-neu-flat hover:card-neu [&]:shadow-none"
+                        style={{ 
+                          backgroundColor: 'var(--background)', 
+                          border: 'none',
+                          boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                        }}
+                      >
                         Configure
                       </Button>
                     </div>
@@ -880,7 +980,15 @@ export default function ProfilePage() {
                         Manage devices that are logged into your account
                       </p>
                     </div>
-                    <Button variant="outline">
+                    <Button 
+                      variant="outline"
+                      className="card-neu-flat hover:card-neu [&]:shadow-none"
+                      style={{ 
+                        backgroundColor: 'var(--background)', 
+                        border: 'none',
+                        boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                      }}
+                    >
                       <Shield className="mr-2 h-4 w-4" />
                       View Sessions
                     </Button>
@@ -891,10 +999,10 @@ export default function ProfilePage() {
           </TabsContent>
 
           {/* Notification Settings Tab */}
-          <TabsContent value="notifications" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Notification Preferences</CardTitle>
+          <TabsContent value="notifications" className="space-y-6" style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
+            <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+              <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                <CardTitle style={{ fontSize: '16px', fontWeight: 400 }}>NOTIFICATION PREFERENCES</CardTitle>
                 <CardDescription>Choose what notifications you want to receive.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -949,82 +1057,131 @@ export default function ProfilePage() {
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
-      
-      {/* Password Change Dialog */}
-      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Change Password</DialogTitle>
+        </div>
+        
+        {/* Password Change Dialog */}
+        <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+        <DialogContent className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+          <DialogHeader style={{ backgroundColor: 'var(--background)' }}>
+            <DialogTitle style={{ fontSize: '16px', fontWeight: 400 }}>CHANGE PASSWORD</DialogTitle>
             <DialogDescription>
               Enter your new password. Make sure it's at least 8 characters long.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4" style={{ backgroundColor: 'var(--background)' }}>
             <div className="space-y-2">
-              <Label htmlFor="new-password">New Password</Label>
+              <Label htmlFor="new-password" className="font-medium" style={{ fontSize: '16px' }}>NEW PASSWORD</Label>
               <Input
                 id="new-password"
                 type="password"
                 value={passwordData.newPassword}
                 onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
                 placeholder="Enter new password"
+                className="card-neu-pressed"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirm Password</Label>
+              <Label htmlFor="confirm-password" className="font-medium" style={{ fontSize: '16px' }}>CONFIRM PASSWORD</Label>
               <Input
                 id="confirm-password"
                 type="password"
                 value={passwordData.confirmPassword}
                 onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                 placeholder="Confirm new password"
+                className="card-neu-pressed"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsPasswordDialogOpen(false)} disabled={isChangingPassword}>
+          <DialogFooter style={{ backgroundColor: 'var(--background)' }}>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsPasswordDialogOpen(false)} 
+              disabled={isChangingPassword}
+              className="card-neu-flat hover:card-neu [&]:shadow-none"
+              style={{ 
+                backgroundColor: 'var(--background)', 
+                border: 'none',
+                boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+              }}
+            >
               Cancel
             </Button>
-            <Button onClick={handlePasswordChange} disabled={isChangingPassword}>
-              {isChangingPassword ? 'Changing...' : 'Change Password'}
+            <Button 
+              onClick={handlePasswordChange} 
+              disabled={isChangingPassword}
+              className="card-neu hover:card-neu [&]:shadow-none"
+              style={{ 
+                backgroundColor: 'var(--background)', 
+                border: 'none',
+                boxShadow: '0 0 12px rgba(122, 255, 254, 0.2)',
+                color: '#7afffe',
+                textShadow: '0 0 8px rgba(122, 255, 254, 0.4), 0 0 12px rgba(122, 255, 254, 0.2)',
+                fontWeight: 400
+              }}
+            >
+              <span>{isChangingPassword ? 'Changing...' : 'Change Password'}</span>
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
-      
-      {/* Delete Account Dialog */}
+        </Dialog>
+        
+        {/* Delete Account Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="text-destructive">Delete Account</DialogTitle>
+        <DialogContent className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+          <DialogHeader style={{ backgroundColor: 'var(--background)' }}>
+            <DialogTitle style={{ fontSize: '16px', fontWeight: 400, color: '#ff8475' }}>DELETE ACCOUNT</DialogTitle>
             <DialogDescription>
               This action cannot be undone. This will permanently delete your account and all associated data.
               Type "DELETE" to confirm.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4" style={{ backgroundColor: 'var(--background)' }}>
             <div className="space-y-2">
-              <Label htmlFor="delete-confirm">Type "DELETE" to confirm</Label>
+              <Label htmlFor="delete-confirm" className="font-medium" style={{ fontSize: '16px' }}>TYPE "DELETE" TO CONFIRM</Label>
               <Input
                 id="delete-confirm"
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
                 placeholder="DELETE"
-                className="font-mono"
+                className="font-mono card-neu-pressed"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} disabled={isDeleting}>
+          <DialogFooter style={{ backgroundColor: 'var(--background)' }}>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsDeleteDialogOpen(false)} 
+              disabled={isDeleting}
+              className="card-neu-flat hover:card-neu [&]:shadow-none"
+              style={{ 
+                backgroundColor: 'var(--background)', 
+                border: 'none',
+                boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+              }}
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDeleteAccount} disabled={isDeleting || deleteConfirmText !== 'DELETE'}>
-              {isDeleting ? 'Deleting...' : 'Delete Account'}
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteAccount} 
+              disabled={isDeleting || deleteConfirmText !== 'DELETE'}
+              className="card-neu-flat hover:card-neu [&]:shadow-none !text-[#ff8475] hover:!text-[#ff8475]"
+              style={{ 
+                backgroundColor: 'var(--background)', 
+                border: 'none',
+                boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)',
+                fontWeight: 400
+              }}
+            >
+              <span>{isDeleting ? 'Deleting...' : 'Delete Account'}</span>
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }

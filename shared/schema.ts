@@ -664,6 +664,21 @@ export const tasks = pgTable("tasks", {
   updated_at: timestamp("updated_at").defaultNow(),
 });
 
+// User Todos Table (Personal Todo List)
+export const userTodos = pgTable("user_todos", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()::text`),
+  user_id: varchar("user_id", { length: 50 }).notNull().references(() => users.user_id, { onDelete: 'cascade' }),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  is_completed: boolean("is_completed").default(false),
+  priority: varchar("priority", { length: 20 }).default('medium'), // low, medium, high
+  due_date: timestamp("due_date"),
+  position: integer("position").default(0),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+  completed_at: timestamp("completed_at"),
+});
+
 // Comments Table
 export const comments = pgTable("comments", {
   id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()::text`),
@@ -845,6 +860,7 @@ export const insertActivityLogSchema = createInsertSchema(activityLog);
 export const insertTaskSchema = createInsertSchema(tasks);
 export const insertCommentSchema = createInsertSchema(comments);
 export const insertNoteSchema = createInsertSchema(notes);
+export const insertUserTodoSchema = createInsertSchema(userTodos);
 
 // ============================================================================
 // SELECT SCHEMAS (Zod validation)
@@ -880,6 +896,7 @@ export const selectActivityLogSchema = createSelectSchema(activityLog);
 export const selectTaskSchema = createSelectSchema(tasks);
 export const selectCommentSchema = createSelectSchema(comments);
 export const selectNoteSchema = createSelectSchema(notes);
+export const selectUserTodoSchema = createSelectSchema(userTodos);
 
 // ============================================================================
 // SELECT TYPES (TypeScript types)
@@ -921,6 +938,8 @@ export type Comment = typeof comments.$inferSelect;
 export type InsertComment = typeof comments.$inferInsert;
 export type Note = typeof notes.$inferSelect;
 export type InsertNote = typeof notes.$inferInsert;
+export type UserTodo = typeof userTodos.$inferSelect;
+export type InsertUserTodo = typeof userTodos.$inferInsert;
 export type KanbanBoard = typeof kanbanBoards.$inferSelect;
 export type InsertKanbanBoard = typeof kanbanBoards.$inferInsert;
 export type KanbanColumn = typeof kanbanColumns.$inferSelect;
@@ -962,3 +981,4 @@ export type InsertActivityLog = typeof insertActivityLogSchema._type;
 export type InsertTask = typeof insertTaskSchema._type;
 export type InsertComment = typeof insertCommentSchema._type;
 export type InsertNote = typeof insertNoteSchema._type;
+export type InsertUserTodo = typeof insertUserTodoSchema._type;

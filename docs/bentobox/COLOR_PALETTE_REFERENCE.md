@@ -122,3 +122,4 @@ See `client/src/components/bentobox-calendar/adapters/color-adapter.ts` for full
 - [ ] No color conflicts with existing UI
 - [ ] External colors are mapped correctly
 
+

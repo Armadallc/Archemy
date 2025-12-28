@@ -68,3 +68,4 @@ WHERE cg.reference_id IS NULL
   AND cg.is_active = true
 ORDER BY cg.created_at;
 
+

@@ -366,8 +366,9 @@ export function TripHoverCard({ trip, children }: TripHoverCardProps) {
     if (trip.is_group_trip && trip.client_groups) {
       return trip.client_groups.name;
     } else if (trip.is_group_trip && trip.client_group_id) {
-      // For group trips, show a more descriptive name
-      return `Group Trip (${trip.client_group_id.slice(0, 8)}...)`;
+      // For group trips without a name, try to get the group name from the hook or show a generic name
+      // Don't show the trip ID
+      return 'Group Trip';
     } else if (trip.client) {
       return `${trip.client.first_name} ${trip.client.last_name}`.trim();
     } else if (trip.client_first_name && trip.client_last_name) {
@@ -392,33 +393,30 @@ export function TripHoverCard({ trip, children }: TripHoverCardProps) {
         {children}
       </HoverCardTrigger>
       <HoverCardContent 
-        className="w-[400px] p-0 shadow-lg z-[100]" 
+        className="w-[400px] p-0 z-[100] card-neu [&]:shadow-none rounded-lg" 
         style={{
-          backgroundColor: 'var(--card)',
-          borderColor: 'var(--border)',
-          borderWidth: '1px',
+          backgroundColor: 'var(--background)',
+          border: 'none',
         }}
         side="top" 
         align="start"
         sideOffset={8}
         avoidCollisions={true}
       >
-        <div className="space-y-4 p-4" style={{ backgroundColor: 'var(--card)' }}>
+        <div className="space-y-4 p-4" style={{ backgroundColor: 'var(--background)' }}>
           {/* Header */}
           <div className="flex items-start justify-between">
-            <div className="space-y-1">
+            <div className="space-y-1 flex-1">
               <h4 className="font-semibold text-base leading-none" style={{ color: 'var(--foreground)' }}>
                 {clientName}
               </h4>
-              <div className="flex items-center gap-2">
-                <Badge 
-                  variant="secondary" 
-                  className={`text-xs px-2 py-1 rounded-full border ${statusColors[trip.status as keyof typeof statusColors] || statusColors.scheduled}`}
-                >
-                  {trip.status.charAt(0).toUpperCase() + trip.status.slice(1).replace('_', ' ')}
-                </Badge>
-              </div>
             </div>
+            <Badge 
+              variant="secondary" 
+              className={`text-xs px-2 py-1 rounded-full border ${statusColors[trip.status as keyof typeof statusColors] || statusColors.scheduled}`}
+            >
+              {trip.status.charAt(0).toUpperCase() + trip.status.slice(1).replace('_', ' ')}
+            </Badge>
           </div>
 
           {/* Time */}
@@ -603,16 +601,17 @@ export function TripHoverCard({ trip, children }: TripHoverCardProps) {
               {!showManualEntry ? (
                 <Button 
                   size="sm" 
-                  className="w-full"
+                  className="w-full btn-text-glow"
                   onClick={() => startTripMutation.mutate()}
                   disabled={startTripMutation.isPending || isTrackingLocation}
+                  style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}
                 >
                   {isTrackingLocation ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   ) : (
                     <Play className="h-4 w-4 mr-2" />
                   )}
-                  {isTrackingLocation ? 'Getting Location...' : 'Start Trip'}
+                  <span>{isTrackingLocation ? 'Getting Location...' : 'Start Trip'}</span>
                 </Button>
               ) : (
                 <div className="space-y-2">
@@ -629,23 +628,26 @@ export function TripHoverCard({ trip, children }: TripHoverCardProps) {
                   <div className="flex gap-2">
                     <Button 
                       size="sm" 
-                      className="flex-1"
+                      className="flex-1 btn-text-glow"
                       onClick={() => startTripManualMutation.mutate()}
                       disabled={startTripManualMutation.isPending}
+                      style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}
                     >
                       {startTripManualMutation.isPending ? (
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       ) : (
                         <Play className="h-4 w-4 mr-2" />
                       )}
-                      Start Trip
+                      <span>Start Trip</span>
                     </Button>
                     <Button 
                       size="sm" 
                       variant="outline"
+                      className="btn-text-glow"
                       onClick={() => setShowManualEntry(false)}
+                      style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}
                     >
-                      Cancel
+                      <span>Cancel</span>
                     </Button>
                   </div>
                 </div>
@@ -657,20 +659,22 @@ export function TripHoverCard({ trip, children }: TripHoverCardProps) {
             <div className="space-y-2">
               <Button 
                 size="sm" 
-                className="w-full"
+                className="w-full btn-text-glow"
                 onClick={() => setShowCompletionDialog(true)}
+                style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}
               >
                 <Square className="h-4 w-4 mr-2" />
-                Complete Trip
+                <span>Complete Trip</span>
               </Button>
               <Button 
                 size="sm" 
                 variant="outline"
-                className="w-full"
+                className="w-full btn-text-glow"
                 onClick={() => TripTracker.openNavigation(trip.dropoff_address)}
+                style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}
               >
                 <Navigation className="h-4 w-4 mr-2" />
-                Navigate to Destination
+                <span>Navigate to Destination</span>
               </Button>
             </div>
           )}
@@ -747,12 +751,13 @@ export function TripHoverCard({ trip, children }: TripHoverCardProps) {
           <div className="flex gap-2">
             <Button 
               size="sm" 
-              className="flex-1" 
+              className="flex-1 btn-text-glow" 
               onClick={handleEditTrip}
               variant="outline"
+              style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}
             >
               <Edit className="h-4 w-4 mr-2" />
-              Edit
+              <span>Edit</span>
             </Button>
             
             {trip.recurring_trip_id ? (
@@ -762,10 +767,11 @@ export function TripHoverCard({ trip, children }: TripHoverCardProps) {
                   <Button
                     size="sm"
                     variant="destructive"
-                    className="flex-1"
+                    className="flex-1 btn-text-glow"
+                    style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Delete
+                    <span>Delete</span>
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
@@ -803,10 +809,11 @@ export function TripHoverCard({ trip, children }: TripHoverCardProps) {
                   <Button
                     size="sm"
                     variant="destructive"
-                    className="flex-1"
+                    className="flex-1 btn-text-glow"
+                    style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Delete
+                    <span>Delete</span>
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>

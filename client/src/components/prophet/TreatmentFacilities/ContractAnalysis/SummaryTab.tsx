@@ -30,77 +30,77 @@ export function SummaryTab({
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Facility Overview</CardTitle>
+      <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+        <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+          <CardTitle style={{ color: '#a5c8ca' }}>FACILITY OVERVIEW</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div>
-            <Label className="text-xs text-muted-foreground">Total Monthly Overhead</Label>
-            <div className="text-lg font-semibold">${totalOverhead.toLocaleString()}</div>
+            <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Total Monthly Overhead</Label>
+            <div className="text-lg font-semibold" style={{ color: '#a5c8ca' }}>${totalOverhead.toLocaleString()}</div>
           </div>
           <div>
-            <Label className="text-xs text-muted-foreground">Transportation Burden</Label>
-            <div className="text-lg">${transportationBurden.toLocaleString()}</div>
+            <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Transportation Burden</Label>
+            <div className="text-lg" style={{ color: '#a5c8ca' }}>${transportationBurden.toLocaleString()}</div>
           </div>
           <div>
-            <Label className="text-xs text-muted-foreground">Transportation Burden %</Label>
-            <div className="text-lg font-semibold">{transportationBurdenPercentage.toFixed(1)}%</div>
+            <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Transportation Burden %</Label>
+            <div className="text-lg font-semibold" style={{ color: '#a5c8ca' }}>{transportationBurdenPercentage.toFixed(1)}%</div>
           </div>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Contract Terms</CardTitle>
+      <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+        <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+          <CardTitle style={{ color: '#a5c8ca' }}>CONTRACT TERMS</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div>
-            <Label className="text-xs text-muted-foreground">Billing Method</Label>
-            <div className="text-lg capitalize">{analysis.contractTerms.billingMethod.replace('_', ' ')}</div>
+            <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Billing Method</Label>
+            <div className="text-lg capitalize" style={{ color: '#a5c8ca' }}>{analysis.contractTerms.billingMethod.replace('_', ' ')}</div>
           </div>
           {analysis.contractTerms.billingMethod === 'monthly_fee' && (
             <div>
-              <Label className="text-xs text-muted-foreground">Monthly Fee</Label>
-              <div className="text-lg font-semibold">${(analysis.contractTerms.monthlyFee || 0).toLocaleString()}</div>
+              <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Monthly Fee</Label>
+              <div className="text-lg font-semibold" style={{ color: '#a5c8ca' }}>${(analysis.contractTerms.monthlyFee || 0).toLocaleString()}</div>
             </div>
           )}
           {analysis.contractTerms.billingMethod === 'per_trip' && (
             <div>
-              <Label className="text-xs text-muted-foreground">Per Trip Rate</Label>
-              <div className="text-lg font-semibold">${(analysis.contractTerms.perTripRate || 0).toLocaleString()}</div>
+              <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Per Trip Rate</Label>
+              <div className="text-lg font-semibold" style={{ color: '#a5c8ca' }}>${(analysis.contractTerms.perTripRate || 0).toLocaleString()}</div>
             </div>
           )}
           {analysis.contractTerms.billingMethod === 'hybrid' && (
             <>
               <div>
-                <Label className="text-xs text-muted-foreground">Monthly Base Fee</Label>
-                <div className="text-lg">${(analysis.contractTerms.monthlyFee || 0).toLocaleString()}</div>
+                <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Monthly Base Fee</Label>
+                <div className="text-lg" style={{ color: '#a5c8ca' }}>${(analysis.contractTerms.monthlyFee || 0).toLocaleString()}</div>
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Included Trips</Label>
-                <div className="text-lg">{(analysis.contractTerms.includedTrips || 0).toLocaleString()}</div>
+                <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Included Trips</Label>
+                <div className="text-lg" style={{ color: '#a5c8ca' }}>{(analysis.contractTerms.includedTrips || 0).toLocaleString()}</div>
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Additional Trip Rate</Label>
-                <div className="text-lg">${(analysis.contractTerms.additionalTripRate || 0).toLocaleString()}</div>
+                <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Additional Trip Rate</Label>
+                <div className="text-lg" style={{ color: '#a5c8ca' }}>${(analysis.contractTerms.additionalTripRate || 0).toLocaleString()}</div>
               </div>
             </>
           )}
           <div>
-            <Label className="text-xs text-muted-foreground">Contract Term</Label>
-            <div className="text-lg">{analysis.contractTerms.contractTerm} months</div>
+            <Label className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Contract Term</Label>
+            <div className="text-lg" style={{ color: '#a5c8ca' }}>{analysis.contractTerms.contractTerm} months</div>
           </div>
         </CardContent>
       </Card>
 
       {analysis.comparisons.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Selected Scenario Comparison</CardTitle>
+        <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+          <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+            <CardTitle style={{ color: '#a5c8ca' }}>SELECTED SCENARIO COMPARISON</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm" style={{ color: '#a5c8ca', opacity: 0.7 }}>
               {analysis.comparisons.length} comparison(s) available. View the A/B Comparison tab for details.
             </div>
           </CardContent>
@@ -109,3 +109,5 @@ export function SummaryTab({
     </div>
   );
 }
+
+

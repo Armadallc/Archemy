@@ -160,25 +160,25 @@ export function ContractAnalysisModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-5xl max-h-[90vh] overflow-y-auto"
+        className="max-w-5xl max-h-[90vh] overflow-y-auto card-neu"
         style={{
-          backgroundColor: 'var(--card)',
-          color: 'var(--card-foreground)',
+          backgroundColor: 'var(--background)',
+          border: 'none',
         }}
       >
         <DialogHeader>
-          <DialogTitle>Contract Analysis: {facility.name}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle style={{ color: '#a5c8ca' }}>CONTRACT ANALYSIS: {facility.name}</DialogTitle>
+          <DialogDescription style={{ color: '#a5c8ca', opacity: 0.7 }}>
             Analyze transportation service contracts and compare scenarios
           </DialogDescription>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overhead">Facility Overhead</TabsTrigger>
-            <TabsTrigger value="terms">Contract Terms</TabsTrigger>
-            <TabsTrigger value="comparison">A/B Comparison</TabsTrigger>
-            <TabsTrigger value="summary">Summary</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+            <TabsTrigger value="overhead" style={{ color: '#a5c8ca' }}>Facility Overhead</TabsTrigger>
+            <TabsTrigger value="terms" style={{ color: '#a5c8ca' }}>Contract Terms</TabsTrigger>
+            <TabsTrigger value="comparison" style={{ color: '#a5c8ca' }}>A/B Comparison</TabsTrigger>
+            <TabsTrigger value="summary" style={{ color: '#a5c8ca' }}>Summary</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overhead" className="mt-4">
@@ -211,15 +211,26 @@ export function ContractAnalysisModal({
           </TabsContent>
         </Tabs>
 
-        <div className="flex justify-end gap-2 mt-6 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
-          <Button variant="outline" onClick={handleCancel}>
-            Cancel
+        <div className="flex justify-end gap-2 mt-6 pt-4 border-t" style={{ borderColor: 'rgba(165, 200, 202, 0.2)' }}>
+          <Button 
+            variant="outline" 
+            onClick={handleCancel}
+            className="card-neu-flat hover:card-neu [&]:shadow-none"
+            style={{ backgroundColor: 'var(--background)', border: 'none' }}
+          >
+            <span style={{ color: '#a5c8ca' }}>Cancel</span>
           </Button>
-          <Button onClick={handleSave}>
-            Save Analysis
+          <Button 
+            onClick={handleSave}
+            className="card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+            style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(165, 200, 202, 0.15)' }}
+          >
+            <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Save Analysis</span>
           </Button>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
+
+

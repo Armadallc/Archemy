@@ -124,3 +124,4 @@ WHERE user_id = 'YOUR_USER_ID';
 - User-specific (only you can see your analysis)
 
 **No manual sync needed** - it's all automatic! 🚀
+

@@ -715,9 +715,9 @@ export default function CorporateClientCards() {
             open={isExpanded}
             onOpenChange={() => toggleCard(client.id)}
           >
-            <Card className="overflow-hidden">
+            <Card className="overflow-hidden card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
               <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <CardHeader className="cursor-pointer card-neu-flat hover:card-neu transition-colors [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4 flex-1">
                       {client.logo_url ? (
@@ -766,7 +766,7 @@ export default function CorporateClientCards() {
               </CollapsibleTrigger>
 
               <CollapsibleContent>
-                <CardContent className="space-y-6 pt-0">
+                <CardContent className="space-y-6 pt-0" style={{ backgroundColor: 'var(--background)' }}>
                   {/* Header Section with Census */}
                   <div className="flex items-center justify-between pb-4 border-b">
                     <div className="flex items-center space-x-4">
@@ -820,10 +820,10 @@ export default function CorporateClientCards() {
 
                   {/* Contact Information Section */}
                   <div className="space-y-4">
-                    <h4 className="font-medium">Contact Information</h4>
+                    <h4 className="font-medium" style={{ fontSize: '26px', fontWeight: 400 }}>CONTACT</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor={`corp-name-${client.id}`}>Corporate Client Name</Label>
+                        <Label htmlFor={`corp-name-${client.id}`} className="font-medium" style={{ fontSize: '16px', fontWeight: 400 }}>TENANT NAME</Label>
                         <Input
                           id={`corp-name-${client.id}`}
                           value={editingClient.name}
@@ -834,10 +834,12 @@ export default function CorporateClientCards() {
                             })
                           }
                           placeholder="Enter corporate client name"
+                          className="card-neu-pressed"
+                          style={{ backgroundColor: 'var(--background)', border: 'none' }}
                         />
-                      </div>
+                        </div>
                         <div className="space-y-2">
-                          <Label htmlFor={`corp-email-${client.id}`}>Email</Label>
+                          <Label htmlFor={`corp-email-${client.id}`} className="font-medium" style={{ fontSize: '16px', fontWeight: 400 }}>EMAIL</Label>
                           <Input
                             id={`corp-email-${client.id}`}
                             type="email"
@@ -849,10 +851,12 @@ export default function CorporateClientCards() {
                               })
                             }
                             placeholder="contact@corporateclient.com"
+                            className="card-neu-pressed"
+                            style={{ backgroundColor: 'var(--background)', border: 'none' }}
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor={`corp-phone-${client.id}`}>Phone</Label>
+                          <Label htmlFor={`corp-phone-${client.id}`} className="font-medium" style={{ fontSize: '16px', fontWeight: 400 }}>PHONE</Label>
                           <PhoneInput
                             id={`corp-phone-${client.id}`}
                             value={editingClient.phone || editingClient.contact_phone || ''}
@@ -862,6 +866,8 @@ export default function CorporateClientCards() {
                                 [client.id]: { ...editingClient, phone: value, contact_phone: value },
                               })
                             }
+                            className="card-neu-pressed"
+                            style={{ backgroundColor: 'var(--background)', border: 'none' }}
                           />
                         </div>
                       <AddressInput
@@ -915,10 +921,11 @@ export default function CorporateClientCards() {
                           const admin = programAdmins[program.id];
 
                           return (
-                            <AccordionItem key={program.id} value={program.id}>
+                            <AccordionItem key={program.id} value={program.id} className="card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none', marginBottom: '8px' }}>
                               <AccordionTrigger
                                 onClick={() => toggleProgram(program.id)}
-                                className="hover:no-underline"
+                                className="hover:no-underline card-neu-flat hover:card-neu [&]:shadow-none"
+                                style={{ backgroundColor: 'var(--background)', border: 'none' }}
                               >
                                 <div className="flex items-center justify-between w-full pr-4">
                                   <div className="flex items-center space-x-3">
@@ -969,10 +976,10 @@ export default function CorporateClientCards() {
                                 </div>
                               </AccordionTrigger>
                               <AccordionContent>
-                                <div className="space-y-4 pt-4">
+                                <div className="space-y-4 pt-4" style={{ backgroundColor: 'var(--background)' }}>
                                   {/* Program Edit Form */}
                                   {editingPrograms[program.id] ? (
-                                    <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                                    <div className="space-y-4 p-4 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                           <Label htmlFor={`prog-name-${program.id}`}>Program Name *</Label>
@@ -986,6 +993,8 @@ export default function CorporateClientCards() {
                                               })
                                             }
                                             placeholder="Enter program name"
+                                            className="card-neu-pressed"
+                                            style={{ backgroundColor: 'var(--background)', border: 'none' }}
                                           />
                                         </div>
                                         <div className="space-y-2">
@@ -1000,6 +1009,8 @@ export default function CorporateClientCards() {
                                               })
                                             }
                                             placeholder="Enter short name"
+                                            className="card-neu-pressed"
+                                            style={{ backgroundColor: 'var(--background)', border: 'none' }}
                                           />
                                         </div>
                                         <div className="space-y-2 md:col-span-2">
@@ -1015,6 +1026,8 @@ export default function CorporateClientCards() {
                                             }
                                             placeholder="Enter program description"
                                             rows={3}
+                                            className="card-neu-pressed"
+                                            style={{ backgroundColor: 'var(--background)', border: 'none' }}
                                           />
                                         </div>
                                         <div className="space-y-2 md:col-span-2">
@@ -1056,6 +1069,8 @@ export default function CorporateClientCards() {
                                               })
                                             }
                                             placeholder="program@example.com"
+                                            className="card-neu-pressed"
+                                            style={{ backgroundColor: 'var(--background)', border: 'none' }}
                                           />
                                         </div>
                                         <div className="space-y-2">
@@ -1069,6 +1084,8 @@ export default function CorporateClientCards() {
                                                 [program.id]: { ...editingPrograms[program.id], phone: value },
                                               })
                                             }
+                                            className="card-neu-pressed"
+                                            style={{ backgroundColor: 'var(--background)', border: 'none' }}
                                           />
                                         </div>
                                       </div>
@@ -1166,6 +1183,8 @@ export default function CorporateClientCards() {
                                                           })
                                                         }
                                                         placeholder="Enter location name"
+                                                        className="card-neu-pressed"
+                                                        style={{ backgroundColor: 'var(--background)', border: 'none' }}
                                                       />
                                                     </div>
                                                     <div className="space-y-2">
@@ -1179,6 +1198,8 @@ export default function CorporateClientCards() {
                                                             [location.id]: { ...editingLocation, phone: value },
                                                           })
                                                         }
+                                                        className="card-neu-pressed"
+                                                        style={{ backgroundColor: 'var(--background)', border: 'none' }}
                                                       />
                                                     </div>
                                                     <div className="space-y-2 md:col-span-2">
@@ -1219,6 +1240,8 @@ export default function CorporateClientCards() {
                                                           })
                                                         }
                                                         placeholder="Enter contact person name"
+                                                        className="card-neu-pressed"
+                                                        style={{ backgroundColor: 'var(--background)', border: 'none' }}
                                                       />
                                                     </div>
                                                     <div className="space-y-2 md:col-span-2">
@@ -1234,6 +1257,8 @@ export default function CorporateClientCards() {
                                                         }
                                                         placeholder="Enter a short description of the location"
                                                         rows={3}
+                                                        className="card-neu-pressed"
+                                                        style={{ backgroundColor: 'var(--background)', border: 'none' }}
                                                       />
                                                     </div>
                                                   </div>

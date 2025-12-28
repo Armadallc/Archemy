@@ -23,6 +23,7 @@ import systemSettingsRoutes from "./system-settings";
 import contactsRoutes from "./contacts";
 import discussionsRoutes from "./discussions";
 import tenantRolesRoutes from "./tenant-roles";
+import userTodosRoutes from "./user-todos";
 import legacyRoutes from "./legacy";
 import { 
   requireSupabaseAuth, 
@@ -65,6 +66,7 @@ router.use("/system", systemSettingsRoutes);
 router.use("/contacts", contactsRoutes);
 router.use("/discussions", discussionsRoutes);
 router.use("/tenant-roles", tenantRolesRoutes);
+router.use("/user-todos", userTodosRoutes);
 
 // Alias route for corporate-clients (frontend compatibility)
 router.get("/corporate-clients", requireSupabaseAuth, requirePermission(PERMISSIONS.VIEW_CORPORATE_CLIENTS), async (req: SupabaseAuthenticatedRequest, res) => {

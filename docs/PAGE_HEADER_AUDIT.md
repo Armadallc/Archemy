@@ -226,3 +226,4 @@ import { RollbackManager } from '../utils/rollback-manager';
 - Most pages use the `ENABLE_UNIFIED_HEADER` flag to conditionally show/hide headers
 - Fallback headers need to be manually updated to include scoping selector
 - Scoping selector should be conditionally rendered based on user role
+

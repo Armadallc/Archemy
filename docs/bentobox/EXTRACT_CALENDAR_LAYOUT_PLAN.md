@@ -82,3 +82,4 @@ src/modules/components/calendar/hooks.ts
 - Test thoroughly before enabling
 - Keep old layout as fallback
 
+

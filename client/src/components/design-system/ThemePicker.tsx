@@ -97,11 +97,11 @@ export function ThemePicker({ compact = false, maxThemes = 4 }: ThemePickerProps
 
   if (themesLoading || selectionLoading) {
     return (
-      <Card>
+      <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
         <CardContent className="p-6">
           <div className="flex items-center justify-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span className="text-sm text-muted-foreground">Loading themes...</span>
+            <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#a5c8ca' }} />
+            <span className="text-sm" style={{ color: '#a5c8ca', opacity: 0.7 }}>Loading themes...</span>
           </div>
         </CardContent>
       </Card>
@@ -121,9 +121,9 @@ export function ThemePicker({ compact = false, maxThemes = 4 }: ThemePickerProps
 
   if (displayThemes.length === 0) {
     return (
-      <Card>
+      <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
         <CardContent className="p-6">
-          <div className="text-center text-sm text-muted-foreground">
+          <div className="text-center text-sm" style={{ color: '#a5c8ca', opacity: 0.7 }}>
             No themes available
           </div>
         </CardContent>
@@ -176,14 +176,11 @@ export function ThemePicker({ compact = false, maxThemes = 4 }: ThemePickerProps
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          Theme Selection
+    <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+      <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+        <CardTitle className="flex items-center gap-2" style={{ color: '#a5c8ca' }}>
+          THEME SELECTION
         </CardTitle>
-        <CardDescription>
-          Choose your preferred theme. Changes will apply immediately to the live app.
-        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -192,11 +189,16 @@ export function ThemePicker({ compact = false, maxThemes = 4 }: ThemePickerProps
             return (
               <div
                 key={theme.id}
-                className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                className={`relative p-4 rounded-lg cursor-pointer transition-all ${
                   isSelected
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/50'
+                    ? 'card-neu-pressed'
+                    : 'card-neu-flat hover:card-neu'
                 }`}
+                style={{ 
+                  backgroundColor: 'var(--background)', 
+                  border: 'none',
+                  boxShadow: isSelected ? 'var(--shadow-neu-pressed)' : 'var(--shadow-neu-flat)'
+                }}
                 onClick={() => {
                   if (!isSelected) {
                     selectThemeMutation.mutate({
@@ -208,21 +210,21 @@ export function ThemePicker({ compact = false, maxThemes = 4 }: ThemePickerProps
               >
                 {isSelected && (
                   <div className="absolute top-2 right-2">
-                    <Badge variant="default" className="flex items-center gap-1">
+                    <Badge variant="default" className="flex items-center gap-1" style={{ backgroundColor: '#a5c8ca', color: 'var(--background)' }}>
                       <Check className="w-3 h-3" />
                       Active
                     </Badge>
                   </div>
                 )}
-                <div className="font-semibold text-lg mb-1">{theme.name}</div>
+                <div className="font-semibold text-lg mb-1" style={{ color: '#a5c8ca' }}>{theme.name}</div>
                 {theme.description && (
-                  <div className="text-sm text-muted-foreground mb-3">{theme.description}</div>
+                  <div className="text-sm mb-3" style={{ color: '#a5c8ca', opacity: 0.7 }}>{theme.description}</div>
                 )}
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2 text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                   <span>☀️ Light & 🌙 Dark modes</span>
                 </div>
                 {selectThemeMutation.isPending && isSelected && (
-                  <div className="mt-2 text-sm text-muted-foreground">Applying...</div>
+                  <div className="mt-2 text-sm" style={{ color: '#a5c8ca', opacity: 0.7 }}>Applying...</div>
                 )}
               </div>
             );

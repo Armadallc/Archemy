@@ -22,7 +22,9 @@ import {
   Repeat,
   ArrowUpDown,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  ChevronsDownUp,
+  ChevronsUpDown
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
@@ -389,6 +391,20 @@ export default function HierarchicalTripsPage() {
     ? sortedTrips.slice(0, displayedTripsCount)
     : sortedTrips;
 
+  // Expand/Collapse all functions
+  const expandAllTrips = () => {
+    const allTripIds = new Set(filteredTrips.map(trip => trip.id));
+    setExpandedTrips(allTripIds);
+  };
+
+  const collapseAllTrips = () => {
+    setExpandedTrips(new Set());
+  };
+
+  // Check if all trips are expanded or collapsed
+  const areAllExpanded = filteredTrips.length > 0 && expandedTrips.size === filteredTrips.length;
+  const areAllCollapsed = expandedTrips.size === 0;
+
   // Reset displayed count when filters or sort change
   useEffect(() => {
     if (infiniteScrollEnabled) {
@@ -443,58 +459,93 @@ export default function HierarchicalTripsPage() {
     };
   }, [infiniteScrollEnabled, displayedTripsCount, allFilteredTrips.length]);
 
+  const formatRecurringPattern = (pattern: any): string => {
+    if (!pattern || typeof pattern !== 'object') {
+      return 'N/A';
+    }
+
+    const frequency = pattern.frequency || '';
+    const daysOfWeek = pattern.days_of_week || [];
+
+    // Capitalize first letter of frequency and handle multi-word frequencies
+    const formattedFrequency = frequency
+      .replace('_', '-')
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join('-');
+
+    // Format days of week
+    if (daysOfWeek.length === 0) {
+      return formattedFrequency;
+    }
+
+    if (daysOfWeek.length === 1) {
+      return `${formattedFrequency} on ${daysOfWeek[0]}`;
+    }
+
+    // Multiple days: "Monday, Tuesday, and Wednesday"
+    if (daysOfWeek.length === 2) {
+      return `${formattedFrequency} on ${daysOfWeek[0]} and ${daysOfWeek[1]}`;
+    }
+
+    // More than 2 days: "Monday, Tuesday, and Wednesday"
+    const lastDay = daysOfWeek[daysOfWeek.length - 1];
+    const otherDays = daysOfWeek.slice(0, -1).join(', ');
+    return `${formattedFrequency} on ${otherDays}, and ${lastDay}`;
+  };
+
   const getStatusColor = (status: string) => {
-    // Use Fire color palette for all status badges
-    // Fire Palette: Charcoal (#1e2023 - 20% darker), Ice (#e8fffe), Lime (#f1fec9), Coral (#ff8475), Silver (#eaeaea), Cloud (#f4f4f4)
+    // Use status color variables that adapt to light/dark mode
+    // Text color uses foreground which adapts to theme
     switch (status) {
       case 'scheduled': 
-        // Use Ice (light mint) for scheduled trips
         return { 
-          backgroundColor: 'rgba(232, 255, 254, 0.3)', // Ice with opacity
-          color: '#1e2023', // Charcoal text (20% darker)
-          borderColor: '#b8e5e3' // Ice dark border
+          backgroundColor: 'var(--scheduled-bg)',
+          color: 'var(--foreground)', // Theme-aware text color
+          borderColor: 'var(--scheduled)',
+          border: '1px solid var(--scheduled)'
         };
       case 'confirmed': 
-        // Use Coral for confirmed trips
         return { 
-          backgroundColor: 'rgba(255, 132, 117, 0.2)', // Coral with opacity
-          color: '#e04850', // Coral dark text
-          borderColor: '#ff8475' // Coral border
+          backgroundColor: 'var(--status-info-bg)',
+          color: 'var(--foreground)', // Theme-aware text color
+          borderColor: 'var(--status-info)',
+          border: '1px solid var(--status-info)'
         };
       case 'in_progress': 
-        // Use Lime for in-progress trips
         return { 
-          backgroundColor: 'rgba(241, 254, 201, 0.4)', // Lime with opacity
-          color: '#1e2023', // Charcoal text (20% darker)
-          borderColor: '#d4e5a8' // Lime dark border
+          backgroundColor: 'var(--in-progress-bg)',
+          color: 'var(--foreground)', // Theme-aware text color
+          borderColor: 'var(--in-progress)',
+          border: '1px solid var(--in-progress)'
         };
       case 'completed': 
-        // Use Ice with darker shade for completed trips
         return { 
-          backgroundColor: 'rgba(232, 255, 254, 0.5)', // Ice with more opacity
-          color: '#1e2023', // Charcoal text (20% darker)
-          borderColor: '#a5c8ca' // Aqua border (darker ice)
+          backgroundColor: 'var(--completed-bg)',
+          color: 'var(--foreground)', // Theme-aware text color
+          borderColor: 'var(--completed)',
+          border: '1px solid var(--completed)'
         };
       case 'cancelled': 
-        // Use Coral dark for cancelled trips
         return { 
-          backgroundColor: 'rgba(224, 72, 80, 0.15)', // Coral dark with opacity
-          color: '#e04850', // Coral dark text
-          borderColor: '#e04850' // Coral dark border
+          backgroundColor: 'var(--cancelled-bg)',
+          color: 'var(--foreground)', // Theme-aware text color
+          borderColor: 'var(--cancelled)',
+          border: '1px solid var(--cancelled)'
         };
       case 'no_show': 
-        // Use Silver for no-show trips
         return { 
-          backgroundColor: 'rgba(234, 234, 234, 0.4)', // Silver with opacity
-          color: '#5c6166', // Charcoal muted text
-          borderColor: '#d4d4d4' // Silver dark border
+          backgroundColor: 'var(--muted)',
+          color: 'var(--foreground)',
+          borderColor: 'var(--border)',
+          border: '1px solid var(--border)'
         };
       default: 
-        // Use Silver for unknown status
         return { 
-          backgroundColor: 'rgba(234, 234, 234, 0.3)', // Silver with opacity
-          color: '#5c6166', // Charcoal muted text
-          borderColor: '#eaeaea' // Silver border
+          backgroundColor: 'var(--muted)',
+          color: 'var(--foreground)',
+          borderColor: 'var(--border)',
+          border: '1px solid var(--border)'
         };
     }
   };
@@ -548,11 +599,11 @@ export default function HierarchicalTripsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6" style={{ backgroundColor: 'var(--background)' }}>
       {/* Header - Only show if unified header is disabled (fallback) */}
       {!ENABLE_UNIFIED_HEADER && (
         <div>
-          <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+          <div className="px-6 py-6 rounded-lg card-neu card-glow-border flex items-center justify-between" style={{ backgroundColor: 'var(--background)', border: 'none', height: '150px' }}>
             <div>
               <h1 
                 className="font-bold text-foreground" 
@@ -570,12 +621,13 @@ export default function HierarchicalTripsPage() {
               )}
           {/* View Toggle (only shown if compact view feature flag is enabled) */}
           {compactViewEnabled && (
-            <div className="flex items-center gap-1 border rounded-md p-1">
+            <div className="flex items-center gap-1 rounded-md card-neu-flat p-1" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
               <Button
                 variant={viewMode === 'detailed' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('detailed')}
-                className="h-8 px-2"
+                className={`h-8 px-2 ${viewMode === 'detailed' ? 'card-neu-pressed' : 'card-neu-flat hover:card-neu'} [&]:shadow-none`}
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
                 title="Detailed View"
               >
                 <Grid3x3 className="h-4 w-4" />
@@ -584,7 +636,8 @@ export default function HierarchicalTripsPage() {
                 variant={viewMode === 'compact' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('compact')}
-                className="h-8 px-2"
+                className={`h-8 px-2 ${viewMode === 'compact' ? 'card-neu-pressed' : 'card-neu-flat hover:card-neu'} [&]:shadow-none`}
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
                 title="Compact View"
               >
                 <List className="h-4 w-4" />
@@ -616,12 +669,15 @@ export default function HierarchicalTripsPage() {
           {newTripEnabled && (
             <PermissionGuard permission="create_trips">
               <Button 
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 card-neu hover:card-neu [&]:shadow-none"
+                style={{ 
+                  backgroundColor: 'var(--background)', 
+                  border: 'none',
+                }}
                 onClick={() => {
                   // Store current path before navigating to trip creation
                   const currentPath = window.location.pathname;
-                  if (currentPath && 
-                      currentPath !== '/trips/new' && 
+                  if (currentPath !== '/trips/new' && 
                       currentPath !== '/' &&
                       !currentPath.includes('/corporate-client/') &&
                       !currentPath.includes('/program/')) {
@@ -630,8 +686,8 @@ export default function HierarchicalTripsPage() {
                   setLocation("/trips/new");
                 }}
               >
-                <Plus className="h-4 w-4" />
-                New Trip
+                <Plus className="h-4 w-4" style={{ textShadow: '0 0 8px rgba(122, 255, 254, 0.4), 0 0 12px rgba(122, 255, 254, 0.2)' }} />
+                <span style={{ textShadow: '0 0 8px rgba(122, 255, 254, 0.4), 0 0 12px rgba(122, 255, 254, 0.2)' }}>New Trip</span>
               </Button>
             </PermissionGuard>
           )}
@@ -643,10 +699,11 @@ export default function HierarchicalTripsPage() {
       {/* Bulk Operations Bar */}
       {bulkOpsEnabled && bulkOps.selectedItems.length > 0 && (
         <Card 
-          className="border"
+          className="card-neu"
           style={{
-            backgroundColor: '#1e2023',
-            borderColor: '#ff8475'
+            backgroundColor: 'var(--background)',
+            border: 'none',
+            boxShadow: '0 0 20px rgba(255, 132, 117, 0.3), 0 0 40px rgba(255, 132, 117, 0.15)'
           }}
         >
           <CardContent className="p-4">
@@ -658,6 +715,8 @@ export default function HierarchicalTripsPage() {
                 <Button
                   size="sm"
                   variant="outline"
+                  className="card-neu-flat hover:card-neu [&]:shadow-none"
+                  style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   onClick={() => bulkOps.executeBulkAction('update_status', bulkOps.selectedItems)}
                   disabled={bulkOps.isLoading}
                 >
@@ -666,6 +725,8 @@ export default function HierarchicalTripsPage() {
                 <Button
                   size="sm"
                   variant="outline"
+                  className="card-neu-flat hover:card-neu [&]:shadow-none"
+                  style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   onClick={() => bulkOps.clearSelection()}
                 >
                   Clear Selection
@@ -677,85 +738,176 @@ export default function HierarchicalTripsPage() {
       )}
 
       {/* Filters */}
-      <Card>
+      <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
         <CardContent className="p-4">
-          {advancedFiltersEnabled ? (
-            <AdvancedFilters
-              filters={[
-                { key: 'status', label: 'Status', type: 'select', options: [
-                  { value: 'all', label: 'All Status' },
-                  { value: 'scheduled', label: 'Scheduled' },
-                  { value: 'confirmed', label: 'Confirmed' },
-                  { value: 'in_progress', label: 'In Progress' },
-                  { value: 'completed', label: 'Completed' },
-                  { value: 'cancelled', label: 'Cancelled' },
-                  { value: 'no_show', label: 'No Show' }
-                ]},
-                { key: 'date', label: 'Date', type: 'select', options: [
-                  { value: 'all', label: 'All Dates' },
-                  { value: 'today', label: 'Today' },
-                  { value: 'tomorrow', label: 'Tomorrow' },
-                  { value: 'yesterday', label: 'Yesterday' }
-                ]}
-              ]}
-              sortOptions={[
-                { key: 'time', label: 'Time', direction: 'asc' },
-                { key: 'status', label: 'Status', direction: 'asc' },
-                { key: 'client', label: 'Client', direction: 'asc' }
-              ]}
-              onFiltersChange={(filters) => {
-                setStatusFilter(filters.status || 'all');
-                setDateFilter(filters.date || 'all');
-              }}
-              onSortChange={(sort) => {
-                // Handle sort change if needed
-              }}
-              onSearchChange={setSearchTerm}
-              searchPlaceholder="Search trips..."
-            />
-          ) : (
-            <div className="flex flex-wrap gap-4 items-center">
-              <div className="flex items-center gap-2">
-                <Search className="h-4 w-4" style={{ color: 'var(--muted-foreground)' }} />
-                <input
-                  type="text"
-                  placeholder="Search trips..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="px-3 py-2 border border-[#eaeaea] rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8475]"
-                />
+          <div className="flex flex-wrap gap-4 items-center">
+            {/* Search bar - flexes to fill remaining space */}
+            {advancedFiltersEnabled ? (
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <Search className="h-4 w-4 flex-shrink-0" style={{ color: 'var(--muted-foreground)' }} />
+                  <input
+                    type="text"
+                    placeholder="Search trips..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="flex-1 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff8475]"
+                    style={{ backgroundColor: 'var(--background)', border: '1px solid var(--border)' }}
+                  />
+                </div>
               </div>
-              
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-[#eaeaea] rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8475]"
-                title="Filter by trip status"
-                aria-label="Filter by trip status"
-              >
-                <option value="all">All Status</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="no_show">No Show</option>
-              </select>
+            ) : (
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <Search className="h-4 w-4 flex-shrink-0" style={{ color: 'var(--muted-foreground)' }} />
+                  <input
+                    type="text"
+                    placeholder="Search trips..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="flex-1 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff8475]"
+                    style={{ backgroundColor: 'var(--background)', border: '1px solid var(--border)' }}
+                  />
+                </div>
+              </div>
+            )}
 
-              <select
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="px-3 py-2 border border-[#eaeaea] rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8475]"
-                title="Filter by date range"
-                aria-label="Filter by date range"
-              >
-                <option value="all">All Dates</option>
-                <option value="today">Today</option>
-                <option value="tomorrow">Tomorrow</option>
-                <option value="yesterday">Yesterday</option>
-              </select>
+            {/* Right side: Filters, Sort By, Expand All */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {advancedFiltersEnabled ? (
+                <>
+                  <AdvancedFilters
+                    filters={[
+                      { key: 'status', label: 'Status', type: 'select', options: [
+                        { value: 'all', label: 'All Status' },
+                        { value: 'scheduled', label: 'Scheduled' },
+                        { value: 'confirmed', label: 'Confirmed' },
+                        { value: 'in_progress', label: 'In Progress' },
+                        { value: 'completed', label: 'Completed' },
+                        { value: 'cancelled', label: 'Cancelled' },
+                        { value: 'no_show', label: 'No Show' }
+                      ]},
+                      { key: 'date', label: 'Date', type: 'select', options: [
+                        { value: 'all', label: 'All Dates' },
+                        { value: 'today', label: 'Today' },
+                        { value: 'tomorrow', label: 'Tomorrow' },
+                        { value: 'yesterday', label: 'Yesterday' }
+                      ]}
+                    ]}
+                    sortOptions={[
+                      { key: 'time', label: 'Time', direction: 'asc' },
+                      { key: 'status', label: 'Status', direction: 'asc' },
+                      { key: 'client', label: 'Client', direction: 'asc' }
+                    ]}
+                    onFiltersChange={(filters) => {
+                      setStatusFilter(filters.status || 'all');
+                      setDateFilter(filters.date || 'all');
+                    }}
+                    onSortChange={(sort) => {
+                      // Handle sort change if needed
+                    }}
+                    onSearchChange={setSearchTerm}
+                    searchPlaceholder="Search trips..."
+                    showSearch={false}
+                  />
+                  {/* Expand All / Collapse All Toggle - Only show in detailed view */}
+                  {viewMode === 'detailed' && (
+                    <>
+                      {areAllExpanded ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="card-neu-flat hover:card-neu [&]:shadow-none"
+                          style={{ backgroundColor: 'var(--background)', border: 'none' }}
+                          onClick={collapseAllTrips}
+                          title="Collapse all trips"
+                        >
+                          <ChevronsUpDown className="h-4 w-4 mr-1" />
+                          Collapse All
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="card-neu-flat hover:card-neu [&]:shadow-none"
+                          style={{ backgroundColor: 'var(--background)', border: 'none' }}
+                          onClick={expandAllTrips}
+                          title="Expand all trips"
+                        >
+                          <ChevronsDownUp className="h-4 w-4 mr-1" />
+                          Expand All
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8475] card-neu-flat [&]:shadow-none"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
+                    title="Filter by trip status"
+                    aria-label="Filter by trip status"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="no_show">No Show</option>
+                  </select>
+
+                  <select
+                    value={dateFilter}
+                    onChange={(e) => setDateFilter(e.target.value)}
+                    className="px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8475] card-neu-flat [&]:shadow-none"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
+                    title="Filter by date range"
+                    aria-label="Filter by date range"
+                  >
+                    <option value="all">All Dates</option>
+                    <option value="today">Today</option>
+                    <option value="tomorrow">Tomorrow</option>
+                    <option value="yesterday">Yesterday</option>
+                  </select>
+
+                  {/* Expand All / Collapse All Toggle - Only show in detailed view */}
+                  {viewMode === 'detailed' && (
+                    <>
+                      {areAllExpanded ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="card-neu-flat hover:card-neu [&]:shadow-none"
+                          style={{ backgroundColor: 'var(--background)', border: 'none' }}
+                          onClick={collapseAllTrips}
+                          title="Collapse all trips"
+                        >
+                          <ChevronsUpDown className="h-4 w-4 mr-1" />
+                          Collapse All
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="card-neu-flat hover:card-neu [&]:shadow-none"
+                          style={{ backgroundColor: 'var(--background)', border: 'none' }}
+                          onClick={expandAllTrips}
+                          title="Expand all trips"
+                        >
+                          <ChevronsDownUp className="h-4 w-4 mr-1" />
+                          Expand All
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
 
@@ -774,18 +926,17 @@ export default function HierarchicalTripsPage() {
         </Card>
       ) : compactViewEnabled && viewMode === 'compact' ? (
         /* Compact View */
-        <Card>
+        <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <CardContent className="p-0">
             <div className="divide-y">
               {filteredTrips.map((trip) => (
                 <div 
                   key={trip.id} 
-                  className="flex items-center gap-4 p-3 transition-colors"
+                  className="flex items-center gap-4 p-3 transition-all card-neu-flat hover:card-neu"
                   style={{
-                    backgroundColor: 'transparent',
+                    backgroundColor: 'var(--background)',
+                    border: 'none'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--muted)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 >
                   {bulkOpsEnabled && (
                     <input
@@ -800,12 +951,16 @@ export default function HierarchicalTripsPage() {
                   <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 items-center">
                     {/* Status Badge */}
                     <div className="col-span-1">
-                      <Badge style={getStatusColor(trip.status)}>
+                      <Badge 
+                        variant="outline"
+                        style={getStatusColor(trip.status)} 
+                        className="[&]:shadow-none [&]:bg-transparent"
+                      >
                         {trip.status.replace('_', ' ').toUpperCase()}
                       </Badge>
                     </div>
                     {/* Client Name */}
-                    <div className="col-span-12 md:col-span-2 font-medium truncate">
+                    <div className="col-span-12 md:col-span-2 font-medium truncate" style={{ color: 'var(--foreground)' }}>
                       {trip.client?.first_name} {trip.client?.last_name}
                     </div>
                     {/* Pickup Address */}
@@ -829,7 +984,8 @@ export default function HierarchicalTripsPage() {
                         variant="ghost" 
                         size="sm"
                         onClick={() => setLocation(`/trips/edit/${trip.id}`)}
-                        className="h-8 w-8 p-0"
+                        className="h-8 w-8 p-0 card-neu-flat hover:card-neu [&]:shadow-none"
+                        style={{ backgroundColor: 'var(--background)', border: 'none' }}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -848,10 +1004,10 @@ export default function HierarchicalTripsPage() {
         </Card>
       ) : (
         /* Collapsible Rows View (default) */
-        <Card>
+        <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <CardContent className="p-0">
             {/* Header Row */}
-            <div className="sticky top-0 z-10 font-semibold text-sm" style={{ backgroundColor: '#f4f4f4', borderBottom: '1px solid #eaeaea', color: '#26282b' }}>
+            <div className="sticky top-6 z-10 text-sm card-neu-flat" style={{ backgroundColor: 'var(--background)', borderBottom: '1px solid var(--border)', color: 'var(--foreground)', border: 'none', fontWeight: 400 }}>
               <div className="flex items-center gap-3 p-4">
                 {bulkOpsEnabled && (
                   <div className="w-4" />
@@ -859,77 +1015,88 @@ export default function HierarchicalTripsPage() {
                 <div className="w-4" />
                 <div className="flex-1 grid grid-cols-12 gap-2 items-center">
                   <div 
-                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-all select-none card-neu-flat hover:card-neu px-2 py-1 rounded"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     onClick={() => handleSort('status')}
                     title="Click to sort by Status"
                   >
                     Status{getSortIcon('status')}
                   </div>
                   <div 
-                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-all select-none card-neu-flat hover:card-neu px-2 py-1 rounded"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     onClick={() => handleSort('trip_id')}
                     title="Click to sort by Trip ID"
                   >
                     Trip ID{getSortIcon('trip_id')}
                   </div>
                   <div 
-                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-all select-none card-neu-flat hover:card-neu px-2 py-1 rounded"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     onClick={() => handleSort('reference_id')}
                     title="Click to sort by Reference ID"
                   >
                     Reference ID{getSortIcon('reference_id')}
                   </div>
                   <div 
-                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-all select-none card-neu-flat hover:card-neu px-2 py-1 rounded"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     onClick={() => handleSort('client')}
                     title="Click to sort by Client"
                   >
                     Client{getSortIcon('client')}
                   </div>
                   <div 
-                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-all select-none card-neu-flat hover:card-neu px-2 py-1 rounded"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     onClick={() => handleSort('date')}
                     title="Click to sort by Date"
                   >
                     Date{getSortIcon('date')}
                   </div>
                   <div 
-                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-all select-none card-neu-flat hover:card-neu px-2 py-1 rounded"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     onClick={() => handleSort('pu')}
                     title="Click to sort by Pickup Time"
                   >
                     PU{getSortIcon('pu')}
                   </div>
                   <div 
-                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-all select-none card-neu-flat hover:card-neu px-2 py-1 rounded"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     onClick={() => handleSort('do')}
                     title="Click to sort by Dropoff Time"
                   >
                     DO{getSortIcon('do')}
                   </div>
                   <div 
-                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-all select-none card-neu-flat hover:card-neu px-2 py-1 rounded"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     onClick={() => handleSort('appt_time')}
                     title="Click to sort by Appointment Time"
                   >
                     Appt Time{getSortIcon('appt_time')}
                   </div>
                   <div 
-                    className="col-span-2 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                    className="col-span-2 flex items-center cursor-pointer hover:opacity-70 transition-all select-none card-neu-flat hover:card-neu px-2 py-1 rounded"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     onClick={() => handleSort('origin')}
                     title="Click to sort by Origin"
                   >
                     Origin{getSortIcon('origin')}
                   </div>
                   <div 
-                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                    className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-all select-none card-neu-flat hover:card-neu px-2 py-1 rounded"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     onClick={() => handleSort('destination')}
                     title="Click to sort by Destination"
                   >
                     Destination{getSortIcon('destination')}
                   </div>
                   <div 
-                    className="col-span-1 text-center flex items-center justify-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                    className="col-span-1 text-center flex items-center justify-center cursor-pointer hover:opacity-70 transition-all select-none card-neu-flat hover:card-neu px-2 py-1 rounded"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     onClick={() => handleSort('pax')}
                     title="Click to sort by Passenger Count"
                   >
@@ -965,12 +1132,11 @@ export default function HierarchicalTripsPage() {
                   >
                     <CollapsibleTrigger asChild>
                       <div 
-                        className="flex items-center gap-3 p-4 transition-colors cursor-pointer"
+                        className="flex items-center gap-3 p-4 transition-all cursor-pointer card-neu-flat hover:card-neu"
                         style={{ 
-                          backgroundColor: 'transparent',
+                          backgroundColor: 'var(--background)',
+                          border: 'none'
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(234, 234, 234, 0.5)'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                       >
                         {bulkOpsEnabled && (
                           <input
@@ -997,7 +1163,11 @@ export default function HierarchicalTripsPage() {
                         <div className="flex-1 grid grid-cols-12 gap-2 items-center text-sm">
                           {/* Status */}
                           <div className="col-span-1">
-                            <Badge style={getStatusColor(trip.status)} className="text-xs">
+                            <Badge 
+                              variant="outline"
+                              style={getStatusColor(trip.status)} 
+                              className="text-xs [&]:shadow-none [&]:bg-transparent"
+                            >
                               {trip.status.replace('_', ' ').toUpperCase()}
                             </Badge>
                           </div>
@@ -1028,7 +1198,7 @@ export default function HierarchicalTripsPage() {
                             })()}
                           </div>
                           {/* Client - Show client name or client group name */}
-                          <div className="col-span-1 truncate">
+                          <div className="col-span-1 truncate" style={{ color: 'var(--foreground)' }}>
                             {(() => {
                               // Debug logging for troubleshooting
                               if (process.env.NODE_ENV === 'development' && !trip.client && !trip.client_group) {
@@ -1116,7 +1286,7 @@ export default function HierarchicalTripsPage() {
                               <MapPin className="h-3 w-3 flex-shrink-0" />
                               <span className="truncate">{trip.dropoff_address}</span>
                               {stopsCount > 0 && (
-                                <Badge variant="outline" className="ml-1 text-xs">
+                                <Badge variant="outline" className="ml-1 text-xs card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                                   {totalLegs} Legs
                                 </Badge>
                               )}
@@ -1124,7 +1294,7 @@ export default function HierarchicalTripsPage() {
                           </div>
                           {/* PAX */}
                           <div className="col-span-1 text-center">
-                            <Badge variant="outline" className="text-xs">
+                            <Badge variant="outline" className="text-xs card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                               {trip.passenger_count} PAX
                             </Badge>
                           </div>
@@ -1132,7 +1302,7 @@ export default function HierarchicalTripsPage() {
                       </div>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
-                      <div className="px-4 pb-4 pt-2 border-t" style={{ backgroundColor: 'rgba(234, 234, 234, 0.3)', borderTopColor: '#eaeaea' }}>
+                      <div className="px-4 pb-4 pt-2 border-t card-neu-flat" style={{ backgroundColor: 'var(--background)', borderTopColor: 'var(--border)', border: 'none' }}>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
                           {/* Column 1: Basic Info */}
                           <div className="space-y-2">
@@ -1159,9 +1329,9 @@ export default function HierarchicalTripsPage() {
                                   'N/A'
                                 )
                               }
-                              {trip.client_group_id && (
+                              {trip.is_group_trip && trip.client_group?.reference_id && (
                                 <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                                  Group ID: {trip.client_group_id}
+                                  Reference ID: <span className="font-mono">{trip.client_group.reference_id}</span>
                                 </div>
                               )}
                             </div>
@@ -1222,7 +1392,7 @@ export default function HierarchicalTripsPage() {
                           {/* Column 3: Additional Info */}
                           <div className="space-y-2">
                             <div>
-                              <strong># of Passengers (PAX):</strong> {trip.passenger_count}
+                              <strong>PAX:</strong> {trip.passenger_count}
                             </div>
                             {trip.special_requirements && (
                               <div>
@@ -1242,7 +1412,7 @@ export default function HierarchicalTripsPage() {
                                 </div>
                                 {trip.recurring_pattern && (
                                   <div>
-                                    <strong>Recurring Pattern:</strong> {JSON.stringify(trip.recurring_pattern)}
+                                    <strong>Recurring Pattern:</strong> {formatRecurringPattern(trip.recurring_pattern)}
                                   </div>
                                 )}
                               </>
@@ -1250,9 +1420,9 @@ export default function HierarchicalTripsPage() {
                             <div>
                               <strong>Is Group Trip:</strong> {trip.is_group_trip ? 'Yes' : 'No'}
                             </div>
-                            {trip.is_group_trip && trip.client_group_id && (
+                            {trip.is_group_trip && trip.client_group?.reference_id && (
                               <div>
-                                <strong>Client Group ID:</strong> {trip.client_group_id}
+                                <strong>Reference ID:</strong> <span className="font-mono text-xs">{trip.client_group.reference_id}</span>
                               </div>
                             )}
                             <div>

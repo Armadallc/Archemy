@@ -1,4 +1,5 @@
 import express from "express";
+import multer from "multer";
 import { 
   requireSupabaseAuth, 
   requireSupabaseRole,
@@ -9,6 +10,32 @@ import { PERMISSIONS } from "../permissions";
 import { clientsStorage, clientGroupsStorage } from "../minimal-supabase";
 
 const router = express.Router();
+
+// Configure multer for CSV file uploads
+const csvUpload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: (req, file, cb) => {
+    // Accept CSV and Excel files
+    const allowedMimes = [
+      'text/csv',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'text/plain'
+    ];
+    
+    const allowedExtensions = ['.csv', '.xlsx', '.xls'];
+    const fileExtension = file.originalname.toLowerCase().substring(file.originalname.lastIndexOf('.'));
+    
+    if (allowedMimes.includes(file.mimetype) || allowedExtensions.includes(fileExtension)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only CSV and Excel files are allowed'));
+    }
+  },
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+});
 
 // ============================================================================
 // CLIENTS ROUTES
@@ -248,6 +275,139 @@ router.delete("/:id", requireSupabaseAuth, requireSupabaseRole(['super_admin', '
   } catch (error) {
     console.error("Error deleting client:", error);
     res.status(500).json({ message: "Failed to delete client" });
+  }
+});
+
+/**
+ * POST /api/clients/merge
+ * Merge multiple clients into a primary client
+ * Body: { primaryClientId: string, secondaryClientIds: string[] }
+ */
+router.post("/merge", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin']), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { primaryClientId, secondaryClientIds } = req.body;
+
+    if (!primaryClientId || !secondaryClientIds || !Array.isArray(secondaryClientIds) || secondaryClientIds.length === 0) {
+      return res.status(400).json({ 
+        message: "primaryClientId and secondaryClientIds array are required" 
+      });
+    }
+
+    if (secondaryClientIds.includes(primaryClientId)) {
+      return res.status(400).json({ 
+        message: "Primary client cannot be in the secondary clients list" 
+      });
+    }
+
+    const result = await clientsStorage.mergeClients(primaryClientId, secondaryClientIds);
+    
+    res.json({
+      message: "Clients merged successfully",
+      ...result
+    });
+  } catch (error: any) {
+    console.error("Error merging clients:", error);
+    res.status(500).json({ 
+      message: error.message || "Failed to merge clients" 
+    });
+  }
+});
+
+/**
+ * POST /api/clients/bulk-delete
+ * Bulk delete multiple clients (soft delete)
+ * Body: { clientIds: string[] }
+ */
+router.post("/bulk-delete", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin']), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { clientIds } = req.body;
+
+    if (!clientIds || !Array.isArray(clientIds) || clientIds.length === 0) {
+      return res.status(400).json({ 
+        message: "clientIds array is required" 
+      });
+    }
+
+    const result = await clientsStorage.bulkDeleteClients(clientIds);
+    
+    res.json({
+      message: "Clients deleted successfully",
+      ...result
+    });
+  } catch (error: any) {
+    console.error("Error bulk deleting clients:", error);
+    res.status(500).json({ 
+      message: error.message || "Failed to delete clients" 
+    });
+  }
+});
+
+/**
+ * POST /api/clients/import
+ * Import clients from CSV/Excel file
+ * Body: FormData with 'file' and 'program_id'
+ */
+router.post("/import", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin']), csvUpload.single('file'), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    // Check if file was uploaded
+    if (!req.file) {
+      return res.status(400).json({ 
+        message: "No file provided. Please upload a CSV file." 
+      });
+    }
+
+    const { program_id } = req.body;
+    if (!program_id) {
+      return res.status(400).json({ 
+        message: "program_id is required" 
+      });
+    }
+
+    // Parse CSV file
+    const { parseCSV, excelToCSV } = await import('../utils/csv-parser');
+    let csvText: string;
+
+    try {
+      csvText = await excelToCSV(req.file.buffer, req.file.mimetype);
+    } catch (error: any) {
+      return res.status(400).json({ 
+        message: error.message || "Failed to parse file. Please ensure it's a valid CSV file." 
+      });
+    }
+
+    // Parse CSV content
+    const parseResult = parseCSV(csvText);
+
+    if (parseResult.errors.length > 0 && parseResult.data.length === 0) {
+      return res.status(400).json({ 
+        message: "Failed to parse CSV file",
+        errors: parseResult.errors
+      });
+    }
+
+    if (parseResult.data.length === 0) {
+      return res.status(400).json({ 
+        message: "No data rows found in CSV file" 
+      });
+    }
+
+    // Import clients
+    const importResult = await clientsStorage.bulkImportClients(parseResult.data, program_id);
+
+    // Combine parsing errors with import errors
+    const allErrors = [...parseResult.errors, ...importResult.errors];
+
+    res.json({
+      success: importResult.success,
+      failed: importResult.failed + parseResult.errors.length,
+      errors: allErrors,
+      message: `Import completed: ${importResult.success} successful, ${importResult.failed + parseResult.errors.length} failed`
+    });
+  } catch (error: any) {
+    console.error("Error importing clients:", error);
+    res.status(500).json({ 
+      message: error.message || "Failed to import clients" 
+    });
   }
 });
 

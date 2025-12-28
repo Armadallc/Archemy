@@ -136,7 +136,7 @@ export function TripPurposeBillingSelector({
     <div className={`space-y-4 ${className}`} data-testid="trip-purpose-billing-selector">
       {/* Trip Purpose */}
       <div className="space-y-2">
-        <Label htmlFor="trip-purpose">Trip Purpose</Label>
+        <Label htmlFor="trip-purpose" className="font-medium" style={{ fontSize: '16px' }}>PURPOSE</Label>
         <Select
           value={tripPurpose || "__none__"}
           onValueChange={(value) => {
@@ -164,17 +164,14 @@ export function TripPurposeBillingSelector({
 
       {/* Billing Code Section */}
       <div className="space-y-4 border-t pt-4">
-        <div className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
-          Billing Information (Optional)
-          <span className="text-xs font-normal text-muted-foreground ml-2">
-            Used when corporate client is not the payer
-          </span>
+        <div className="font-medium" style={{ color: 'var(--foreground)', fontSize: '16px' }}>
+          BILLING
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Trip Code (Billing Code) */}
           <div className="space-y-2">
-            <Label htmlFor="trip-code">Trip Code (CPT/HCPCS)</Label>
+            <Label htmlFor="trip-code" className="font-normal" style={{ fontSize: '16px' }}>SVC CODE</Label>
             <Select
               value={tripCode || "__none__"}
               onValueChange={(value) => {
@@ -244,5 +241,7 @@ export function TripPurposeBillingSelector({
     </div>
   );
 }
+
+
 
 
