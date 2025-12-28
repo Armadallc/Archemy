@@ -345,12 +345,13 @@ export default function InteractiveMapWidget({ className, shadow }: InteractiveM
 
   return (
     <Widget
-      title="Fleet Map"
-      icon={<MapPin className="h-5 w-5" />}
+      title="LOCATE"
+      icon={<MapPin className="h-8 w-8" />}
       size="large"
       className={className}
-      shadow={shadow}
+      shadow="xl"
       loading={isLoading}
+      titleStyle={{ fontSize: '42px' }}
       actions={
         <div className="flex items-center space-x-1">
           <Button variant="outline" size="sm" onClick={handleRefresh}>
@@ -363,13 +364,11 @@ export default function InteractiveMapWidget({ className, shadow }: InteractiveM
         {/* Map Controls */}
         <Tabs value={selectedView} onValueChange={(value) => setSelectedView(value as 'drivers' | 'trips')}>
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="drivers" className="flex items-center space-x-2">
-              <Car className="h-4 w-4" />
-              <span>Drivers</span>
+            <TabsTrigger value="drivers">
+              <span style={{ fontSize: '26px' }}>DRIVERS</span>
             </TabsTrigger>
-            <TabsTrigger value="trips" className="flex items-center space-x-2">
-              <Navigation className="h-4 w-4" />
-              <span>Trips</span>
+            <TabsTrigger value="trips">
+              <span style={{ fontSize: '26px' }}>TRIPS</span>
             </TabsTrigger>
           </TabsList>
 

@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { MapPin, Car, Navigation, AlertTriangle, Loader2 } from "lucide-react";
+import { Car, Navigation, AlertTriangle, Loader2 } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import Widget from "./Widget";
@@ -185,11 +185,11 @@ export default function FleetStatusWidget({ className, drivers, trips: propTrips
 
   return (
     <Widget
-      title="Fleet Status"
-      icon={<MapPin className="h-5 w-5" />}
+      title="TRIP STATUS"
       size="full"
       className={className}
       shadow={shadow}
+      titleStyle={{ fontSize: '42px' }}
       actions={
         <div className="flex items-center gap-2">
           {tripsLoading && (
@@ -202,14 +202,14 @@ export default function FleetStatusWidget({ className, drivers, trips: propTrips
         </div>
       }
     >
-      <div className="space-y-4">
+      <div className="space-y-4" style={{ padding: '8px', margin: '-4px' }}>
         {hasTrips ? (
           fleetData.map((vehicle) => {
             const batteryPercent = getBatteryPercentage(vehicle.tripStatus);
             const statusColor = getTripStatusColor(vehicle.tripStatus);
             
             return (
-              <div key={vehicle.id} className="p-4 bg-surface-muted dark:bg-surface-muted rounded-lg border border-border hover:border-primary/20 transition-colors">
+              <div key={vehicle.id} className="p-4 card-neu-pressed rounded-lg hover:opacity-90 transition-opacity" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-3">
                     <div className={`p-2 rounded-full ${getStatusColor(vehicle.status)}`}>
@@ -282,19 +282,19 @@ export default function FleetStatusWidget({ className, drivers, trips: propTrips
         {/* Fleet Summary - Today's Trips */}
         {hasTrips && (
           <div className="grid grid-cols-3 gap-4 pt-2 pb-2 border-t">
-            <div className="text-center shadow-xl flex flex-col justify-center items-center" style={{ height: '75px' }}>
+            <div className="text-center card-neu flex flex-col justify-center items-center" style={{ height: '75px', backgroundColor: 'var(--background)', border: 'none', boxShadow: 'none' }}>
               <div className="text-2xl font-bold text-foreground">
                 {scheduledTrips.length}
               </div>
               <div className="text-xs text-foreground-secondary flex flex-col justify-center items-center">Scheduled</div>
             </div>
-            <div className="text-center shadow-xl flex flex-col justify-center items-center" style={{ height: '75px' }}>
+            <div className="text-center card-neu flex flex-col justify-center items-center" style={{ height: '75px', backgroundColor: 'var(--background)', border: 'none', boxShadow: 'none' }}>
               <div className="text-2xl font-bold" style={{ color: 'var(--in-progress)' }}>
                 {inProgressTrips.length}
               </div>
               <div className="text-xs text-foreground-secondary flex flex-col justify-center items-center">In Progress</div>
             </div>
-            <div className="text-center shadow-xl flex flex-col justify-center items-center" style={{ height: '75px' }}>
+            <div className="text-center card-neu flex flex-col justify-center items-center" style={{ height: '75px', backgroundColor: 'var(--background)', border: 'none', boxShadow: 'none' }}>
               <div className="text-2xl font-bold" style={{ color: 'var(--completed)' }}>
                 {completedTrips.length}
               </div>

@@ -92,13 +92,15 @@ export function ProphetCalculator() {
       {/* Header - Only show if unified header is disabled (fallback) */}
       {!ENABLE_UNIFIED_HEADER && (
         <div className="flex-shrink-0 mb-6">
-          <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+          <div className="px-6 py-6 rounded-lg card-neu flex items-center justify-between" style={{ backgroundColor: 'var(--background)', border: 'none', height: '150px', boxShadow: '8px 8px 16px 0px rgba(30, 32, 35, 0.6), -8px -8px 16px 0px rgba(30, 32, 35, 0.05)' }}>
           <div>
             <h1 
-              className="font-bold text-foreground" 
+              className="font-bold" 
               style={{ 
                 fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
-                fontSize: '110px'
+                fontSize: '110px',
+                fontWeight: 700,
+                color: '#a5c8ca'
               }}
             >
               prophet.
@@ -112,31 +114,49 @@ export function ProphetCalculator() {
           )}
           <div className="flex items-center gap-6 text-sm">
             {pendingSync ? (
-              <Badge variant="outline" className="gap-1" style={{ borderColor: 'var(--status-warning)' }}>
-                <CloudOff className="h-3 w-3" style={{ color: 'var(--status-warning)' }} />
-                Unsaved
+              <Badge variant="outline" className="gap-1 card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                <CloudOff className="h-3 w-3" style={{ color: '#a5c8ca' }} />
+                <span style={{ color: '#a5c8ca' }}>Unsaved</span>
               </Badge>
             ) : lastSyncedAt ? (
-              <Badge variant="outline" className="gap-1" style={{ borderColor: 'var(--color-lime)' }}>
-                <Cloud className="h-3 w-3" style={{ color: 'var(--color-lime)' }} />
-                Synced
+              <Badge variant="outline" className="gap-1 card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                <Cloud className="h-3 w-3" style={{ color: '#a5c8ca' }} />
+                <span style={{ color: '#a5c8ca' }}>Synced</span>
               </Badge>
             ) : null}
           </div>
           
-          <Button variant="outline" size="sm" onClick={() => syncToSupabase()}>
-            <Save className="h-4 w-4 mr-1" />
-            Save
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => syncToSupabase()}
+            className="card-neu-flat hover:card-neu [&]:shadow-none"
+            style={{ backgroundColor: 'var(--background)', border: 'none' }}
+          >
+            <Save className="h-4 w-4 mr-1" style={{ color: '#a5c8ca' }} />
+            <span style={{ color: '#a5c8ca' }}>Save</span>
           </Button>
           
-          <Button variant="outline" size="sm" onClick={() => syncFromSupabase()}>
-            <RefreshCw className="h-4 w-4 mr-1" />
-            Sync
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => syncFromSupabase()}
+            className="card-neu-flat hover:card-neu [&]:shadow-none"
+            style={{ backgroundColor: 'var(--background)', border: 'none' }}
+          >
+            <RefreshCw className="h-4 w-4 mr-1" style={{ color: '#a5c8ca' }} />
+            <span style={{ color: '#a5c8ca' }}>Sync</span>
           </Button>
           
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-1" />
-            Export
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleExport}
+            className="card-neu-flat hover:card-neu [&]:shadow-none"
+            style={{ backgroundColor: 'var(--background)', border: 'none' }}
+          >
+            <Download className="h-4 w-4 mr-1" style={{ color: '#a5c8ca' }} />
+            <span style={{ color: '#a5c8ca' }}>Export</span>
           </Button>
         </div>
           </div>
@@ -145,66 +165,66 @@ export function ProphetCalculator() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
-        <TabsList className="w-full justify-start" style={{ backgroundColor: 'var(--muted)' }}>
-          <TabsTrigger value="costs" className="gap-6">
-            <DollarSign className="h-4 w-4" />
+        <TabsList className="w-full justify-start card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+          <TabsTrigger value="costs" className="gap-6" style={{ color: '#a5c8ca' }}>
+            <DollarSign className="h-4 w-4" style={{ color: '#a5c8ca' }} />
             Cost Structure
           </TabsTrigger>
-          <TabsTrigger value="codes" className="gap-6">
-            <FileCode className="h-4 w-4" />
+          <TabsTrigger value="codes" className="gap-6" style={{ color: '#a5c8ca' }}>
+            <FileCode className="h-4 w-4" style={{ color: '#a5c8ca' }} />
             Service Codes
           </TabsTrigger>
-          <TabsTrigger value="facilities" className="gap-6">
-            <Building2 className="h-4 w-4" />
+          <TabsTrigger value="facilities" className="gap-6" style={{ color: '#a5c8ca' }}>
+            <Building2 className="h-4 w-4" style={{ color: '#a5c8ca' }} />
             Treatment Facilities
           </TabsTrigger>
-          <TabsTrigger value="scenarios" className="gap-6">
-            <BarChart3 className="h-4 w-4" />
+          <TabsTrigger value="scenarios" className="gap-6" style={{ color: '#a5c8ca' }}>
+            <BarChart3 className="h-4 w-4" style={{ color: '#a5c8ca' }} />
             Scenarios
           </TabsTrigger>
         </TabsList>
 
         {/* Quick Stats - Moved from header */}
-        <Card className="mt-6" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
+        <Card className="mt-6 card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <CardContent className="p-6 pt-0">
             <div className="grid grid-cols-4 gap-6">
-              <div className="flex items-center gap-6 p-6 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
-                <DollarSign className="h-5 w-5" style={{ color: 'var(--color-coral)' }} />
+              <div className="flex items-center gap-6 p-6 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                <DollarSign className="h-5 w-5" style={{ color: '#a5c8ca' }} />
                 <div>
-                  <div className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>
+                  <div className="text-lg font-bold" style={{ color: '#a5c8ca' }}>
                     ${totalMonthlyOverhead.toLocaleString()}
                   </div>
-                  <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Monthly Overhead</div>
+                  <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Monthly Overhead</div>
                 </div>
               </div>
               
-              <div className="flex items-center gap-6 p-6 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
-                <Building2 className="h-5 w-5" style={{ color: 'var(--color-ice)' }} />
+              <div className="flex items-center gap-6 p-6 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                <Building2 className="h-5 w-5" style={{ color: '#a5c8ca' }} />
                 <div>
-                  <div className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>
+                  <div className="text-lg font-bold" style={{ color: '#a5c8ca' }}>
                     {totalFacilities}/3
                   </div>
-                  <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Facilities</div>
+                  <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Facilities</div>
                 </div>
               </div>
               
-              <div className="flex items-center gap-6 p-6 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
-                <BarChart3 className="h-5 w-5" style={{ color: 'var(--color-lime)' }} />
+              <div className="flex items-center gap-6 p-6 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                <BarChart3 className="h-5 w-5" style={{ color: '#a5c8ca' }} />
                 <div>
-                  <div className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>
+                  <div className="text-lg font-bold" style={{ color: '#a5c8ca' }}>
                     {totalScenarios}
                   </div>
-                  <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Scenarios</div>
+                  <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Scenarios</div>
                 </div>
               </div>
               
-              <div className="flex items-center gap-6 p-6 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
-                <FileCode className="h-5 w-5" style={{ color: 'var(--color-silver)' }} />
+              <div className="flex items-center gap-6 p-6 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                <FileCode className="h-5 w-5" style={{ color: '#a5c8ca' }} />
                 <div>
-                  <div className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>
+                  <div className="text-lg font-bold" style={{ color: '#a5c8ca' }}>
                     {serviceCodes.length}
                   </div>
-                  <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                  <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                     Service Codes {customCodes > 0 && `(${customCodes} custom)`}
                   </div>
                 </div>

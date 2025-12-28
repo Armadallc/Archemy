@@ -366,9 +366,9 @@ export default function QuickAddLocation({
           />
           <Popover open={isOpen} onOpenChange={setIsOpen}>
             <PopoverTrigger asChild>
-              <Button variant="outline" type="button" className="w-full">
-                <Search className="h-4 w-4 mr-2" />
-                Quick Add from Frequent Locations
+              <Button variant="outline" type="button" className="w-full card-neu-flat hover:card-neu [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)' }}>
+                <Plus className="h-4 w-4 mr-2" />
+                From Frequent Locations
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-96 p-0 max-h-[500px] overflow-hidden flex flex-col" align="start">

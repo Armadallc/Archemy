@@ -39,7 +39,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
-import { CalendarProvider } from "../components/event-calendar/calendar-context";
+import { CalendarProvider, useCalendarContext } from "../components/event-calendar/calendar-context";
 import { useLayout } from "../contexts/layout-context";
 import { RollbackManager } from "../utils/rollback-manager";
 import { Maximize2, Minimize2 } from "lucide-react";
@@ -48,6 +48,8 @@ import { useRealtimeService } from "../services/realtimeService";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../hooks/useAuth";
 import { HeaderScopeSelector } from "../components/HeaderScopeSelector";
+import { format } from "date-fns";
+import { cn } from "../lib/utils";
 
 export default function CalendarPage() {
   const { user } = useAuth();
@@ -144,8 +146,8 @@ export default function CalendarPage() {
     defaultSortOrder: 'asc' as 'asc' | 'desc'
   });
 
-  // Calendar date state
-  const [calendarDate, setCalendarDate] = useState(new Date());
+  // Calendar date state - Set to December 27, 2025
+  const [calendarDate, setCalendarDate] = useState(new Date(2025, 11, 27)); // Month is 0-indexed, so 11 = December
   
   // Listen for mini calendar date changes from sidebar
   useEffect(() => {
@@ -166,6 +168,46 @@ export default function CalendarPage() {
       window.removeEventListener('mini-calendar-date-change', handleMiniCalendarDateChange as EventListener);
     };
   }, [calendarDate]);
+
+  // Format month abbreviation (3 letters, all caps)
+  const formatMonth = (date: Date) => {
+    return format(date, 'MMM').toUpperCase();
+  };
+
+  // Format day
+  const formatDay = (date: Date) => {
+    return format(date, 'd');
+  };
+
+  // Calendar Header Date Component - uses calendar context to ensure it tracks with calendar navigation
+  const CalendarHeaderDate = () => {
+    const { currentDate } = useCalendarContext();
+    
+    return (
+      <div 
+        className="flex items-center text-foreground"
+        style={{
+          fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+          fontWeight: 700,
+          fontSize: '110px',
+          lineHeight: 1.15,
+          letterSpacing: '-0.015em',
+          textTransform: 'none',
+        }}
+      >
+        <span 
+          style={{
+            fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+            fontWeight: 100,
+          }}
+        >
+          {formatMonth(currentDate)}
+        </span>
+        <span style={{ marginLeft: '0.1em', marginRight: '0.1em', fontWeight: 700, fontSize: '0.25em' }}>●</span>
+        <span style={{ fontWeight: 100 }}>{formatDay(currentDate)}</span>
+      </div>
+    );
+  };
 
   const getPageTitle = () => {
     if (level === 'corporate') {
@@ -325,61 +367,80 @@ export default function CalendarPage() {
             {/* Header - Only show if unified header is disabled (fallback) */}
             {!ENABLE_UNIFIED_HEADER && (
               <div>
-                <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
-                  <div>
-                    <h1 
-                      className="font-bold text-foreground" 
-                      style={{ 
-                        fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
-                        fontSize: '110px'
-                      }}
-                    >
-                      calendar.
-                    </h1>
+                <div className="px-6 py-6 rounded-lg card-neu flex items-center justify-between" style={{ backgroundColor: 'var(--background)', border: 'none', height: '150px' }}>
+                  <div className="flex items-center gap-3">
+                    <CalendarHeaderDate />
                   </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-4 flex-shrink min-w-0">
                   {(user?.role === 'super_admin' || user?.role === 'corporate_admin') && (
                     <HeaderScopeSelector />
                   )}
+                  
                   {/* View Mode Toggle */}
-                  <div className="flex items-center border rounded-lg">
+                  <div 
+                    className="flex items-center gap-1 rounded-md card-neu-flat p-1 flex-shrink-0"
+                    style={{
+                      backgroundColor: 'var(--background)',
+                      height: '32px'
+                    }}
+                  >
                     <Button
-                      variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+                      variant="ghost"
                       size="sm"
                       onClick={() => setViewMode('calendar')}
-                      className="rounded-r-none"
+                      className={cn("h-7 px-2 min-w-[32px] [&]:shadow-none", viewMode === 'calendar' ? 'card-neu-pressed' : 'hover:card-neu')}
+                      style={{ 
+                        backgroundColor: viewMode === 'calendar' ? 'var(--background)' : 'transparent',
+                        border: 'none',
+                        boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                      }}
                     >
-                      <Grid3X3 className="h-4 w-4 mr-1" />
-                      Calendar
+                      <Grid3X3 className="h-4 w-4" />
+                      {viewMode === 'calendar' && <span className="ml-1.5 text-xs">Calendar</span>}
                     </Button>
                     <Button
-                      variant={viewMode === 'list' ? 'default' : 'ghost'}
+                      variant="ghost"
                       size="sm"
                       onClick={() => setViewMode('list')}
-                      className="rounded-none border-x"
+                      className={cn("h-7 px-2 min-w-[32px] [&]:shadow-none", viewMode === 'list' ? 'card-neu-pressed' : 'hover:card-neu')}
+                      style={{ 
+                        backgroundColor: viewMode === 'list' ? 'var(--background)' : 'transparent',
+                        border: 'none',
+                        boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                      }}
                     >
-                      <List className="h-4 w-4 mr-1" />
-                      List
+                      <List className="h-4 w-4" />
+                      {viewMode === 'list' && <span className="ml-1.5 text-xs">List</span>}
                     </Button>
                     <Button
-                      variant={viewMode === 'map' ? 'default' : 'ghost'}
+                      variant="ghost"
                       size="sm"
                       onClick={() => setViewMode('map')}
-                      className="rounded-l-none"
+                      className={cn("h-7 px-2 min-w-[32px] [&]:shadow-none", viewMode === 'map' ? 'card-neu-pressed' : 'hover:card-neu')}
+                      style={{ 
+                        backgroundColor: viewMode === 'map' ? 'var(--background)' : 'transparent',
+                        border: 'none',
+                        boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                      }}
                     >
-                      <Map className="h-4 w-4 mr-1" />
-                      Map
+                      <Map className="h-4 w-4" />
+                      {viewMode === 'map' && <span className="ml-1.5 text-xs">Map</span>}
                     </Button>
                   </div>
 
                   {/* Action Buttons */}
                   {newTripEnabled && (
                     <PermissionGuard permission="create_trips">
-                      <Button asChild>
+                      <Button 
+                        asChild
+                        variant="ghost"
+                        size="sm"
+                        className="card-neu-flat hover:card-neu"
+                        style={{ height: '32px' }}
+                      >
                         <Link 
                           to="/trips/new"
                           onClick={() => {
-                            // Store current path before navigating to trip creation (preserve hierarchical URLs)
                             const currentPath = window.location.pathname;
                             sessionStorage.setItem('previousPath', currentPath);
                           }}
@@ -392,24 +453,33 @@ export default function CalendarPage() {
                   )}
                   
                   <Button 
-                    variant="outline"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setShowFilters(!showFilters)}
+                    className="card-neu-flat hover:card-neu"
+                    style={{ height: '32px' }}
                   >
                     <Filter className="h-4 w-4 mr-2" />
                     Filters
                   </Button>
                   
                   <Button 
-                    variant="outline"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => handleExport()}
+                    className="card-neu-flat hover:card-neu"
+                    style={{ height: '32px' }}
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Export
                   </Button>
                   
                   <Button 
-                    variant="outline"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setShowSettings(true)}
+                    className="card-neu-flat hover:card-neu"
+                    style={{ height: '32px', width: '32px', padding: 0 }}
                   >
                     <Settings className="h-4 w-4" />
                   </Button>
@@ -422,10 +492,15 @@ export default function CalendarPage() {
             {ENABLE_UNIFIED_HEADER && (
               <div className="flex items-center justify-end mb-6">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   onClick={toggleFullScreen}
-                  className="flex items-center gap-2"
+                  className="card-neu-flat hover:card-neu [&]:shadow-none flex items-center gap-2"
+                  style={{ 
+                    backgroundColor: 'var(--background)',
+                    border: 'none',
+                    boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                  }}
                   title={isFullScreen ? "Exit Full Screen" : "Enter Full Screen"}
                 >
                   {isFullScreen ? (
@@ -445,42 +520,70 @@ export default function CalendarPage() {
             
             {/* View Mode Toggle - Show when unified header is enabled or in full-screen */}
             {(ENABLE_UNIFIED_HEADER || isFullScreen) && (
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center border rounded-lg">
+              <div className="flex items-center justify-between mb-6 gap-4">
+                {/* View Mode Toggle */}
+                <div 
+                  className="flex items-center gap-1 rounded-md card-neu-flat p-1 flex-shrink-0"
+                  style={{
+                    backgroundColor: 'var(--background)',
+                    height: '32px'
+                  }}
+                >
                   <Button
-                    variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+                    variant="ghost"
                     size="sm"
                     onClick={() => setViewMode('calendar')}
-                    className="rounded-r-none"
+                    className={cn("h-7 px-2 min-w-[32px] [&]:shadow-none", viewMode === 'calendar' ? 'card-neu-pressed' : 'hover:card-neu')}
+                    style={{ 
+                      backgroundColor: viewMode === 'calendar' ? 'var(--background)' : 'transparent',
+                      border: 'none',
+                      boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                    }}
                   >
-                    <Grid3X3 className="h-4 w-4 mr-1" />
-                    Calendar
+                    <Grid3X3 className="h-4 w-4" />
+                    {viewMode === 'calendar' && <span className="ml-1.5 text-xs">Calendar</span>}
                   </Button>
                   <Button
-                    variant={viewMode === 'list' ? 'default' : 'ghost'}
+                    variant="ghost"
                     size="sm"
                     onClick={() => setViewMode('list')}
-                    className="rounded-none border-x"
+                    className={cn("h-7 px-2 min-w-[32px] [&]:shadow-none", viewMode === 'list' ? 'card-neu-pressed' : 'hover:card-neu')}
+                    style={{ 
+                      backgroundColor: viewMode === 'list' ? 'var(--background)' : 'transparent',
+                      border: 'none',
+                      boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                    }}
                   >
-                    <List className="h-4 w-4 mr-1" />
-                    List
+                    <List className="h-4 w-4" />
+                    {viewMode === 'list' && <span className="ml-1.5 text-xs">List</span>}
                   </Button>
                   <Button
-                    variant={viewMode === 'map' ? 'default' : 'ghost'}
+                    variant="ghost"
                     size="sm"
                     onClick={() => setViewMode('map')}
-                    className="rounded-l-none"
+                    className={cn("h-7 px-2 min-w-[32px] [&]:shadow-none", viewMode === 'map' ? 'card-neu-pressed' : 'hover:card-neu')}
+                    style={{ 
+                      backgroundColor: viewMode === 'map' ? 'var(--background)' : 'transparent',
+                      border: 'none',
+                      boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                    }}
                   >
-                    <Map className="h-4 w-4 mr-1" />
-                    Map
+                    <Map className="h-4 w-4" />
+                    {viewMode === 'map' && <span className="ml-1.5 text-xs">Map</span>}
                   </Button>
                 </div>
                 
                 {/* Action Buttons */}
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-2">
                   {newTripEnabled && (
                     <PermissionGuard permission="create_trips">
-                      <Button asChild size="sm">
+                      <Button 
+                        asChild
+                        variant="ghost"
+                        size="sm"
+                        className="card-neu-flat hover:card-neu"
+                        style={{ height: '32px' }}
+                      >
                         <Link 
                           to="/trips/new"
                           onClick={() => {
@@ -496,27 +599,29 @@ export default function CalendarPage() {
                   )}
                   
                   <Button 
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     onClick={() => setShowFilters(!showFilters)}
+                    className="card-neu-flat hover:card-neu"
+                    style={{ height: '32px' }}
                   >
                     <Filter className="h-4 w-4 mr-2" />
                     Filters
                   </Button>
                   
                   <Button 
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleExport()}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Export
-                  </Button>
-                  
-                  <Button 
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     onClick={() => setShowSettings(true)}
+                    className="card-neu-flat hover:card-neu [&]:shadow-none"
+                    style={{ 
+                      height: '32px', 
+                      width: '32px', 
+                      padding: 0,
+                      backgroundColor: 'var(--background)',
+                      border: 'none',
+                      boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                    }}
                   >
                     <Settings className="h-4 w-4" />
                   </Button>
@@ -526,7 +631,7 @@ export default function CalendarPage() {
 
       {/* Filters Panel */}
       {showFilters && (
-        <Card>
+        <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div>
@@ -586,7 +691,13 @@ export default function CalendarPage() {
 
               <div className="flex items-end space-x-2">
                 <Button
-                  variant="outline"
+                  variant="ghost"
+                  className="card-neu-flat hover:card-neu [&]:shadow-none"
+                  style={{ 
+                    backgroundColor: 'var(--background)',
+                    border: 'none',
+                    boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                  }}
                   onClick={() => {
                     setSearchTerm('');
                     setStatusFilter('all');
@@ -602,13 +713,25 @@ export default function CalendarPage() {
       )}
 
       {/* Calendar Content */}
-      <Card className="flex-1 flex flex-col overflow-hidden min-h-0" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-        <CardContent className="px-0 pb-0 flex-1 overflow-hidden min-h-0" style={{ display: 'flex', flexDirection: 'column', flex: '1 1 0%', minHeight: 0 }}>
-          {viewMode === 'calendar' && (
-            <div className="flex-1 min-h-0" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      <div className="flex flex-1 overflow-visible min-h-0 gap-6 pt-0 pb-6 px-0">
+        {/* Calendar View - Matching bentobox styling exactly */}
+        <div 
+          className="flex-1 overflow-visible min-w-0 min-h-0 flex flex-col bg-background rounded-lg card-neu"
+          style={{
+            backgroundColor: '#26282b',
+            overflow: 'visible'
+          }}
+        >
+          <div 
+            className="flex-1 overflow-hidden min-h-0"
+            style={{ 
+              backgroundColor: 'transparent',
+              boxShadow: 'none'
+            }}
+          >
+            {viewMode === 'calendar' && (
               <EnhancedTripCalendar />
-            </div>
-          )}
+            )}
           
           {viewMode === 'list' && (
             <div className="space-y-6">
@@ -665,7 +788,8 @@ export default function CalendarPage() {
                   {filteredAndSortedTrips.map((trip: any) => (
                     <div
                       key={trip.id}
-                      className="border border-border rounded-lg p-4 hover:shadow-md transition-shadow"
+                      className="card-neu rounded-lg p-4 transition-shadow"
+                      style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
@@ -727,7 +851,16 @@ export default function CalendarPage() {
                           
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="card-neu-flat hover:card-neu [&]:shadow-none"
+                                style={{ 
+                                  backgroundColor: 'var(--background)',
+                                  border: 'none',
+                                  boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                                }}
+                              >
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -768,8 +901,14 @@ export default function CalendarPage() {
                   
                   <div className="flex items-center space-x-2">
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
+                      className="card-neu-flat hover:card-neu [&]:shadow-none"
+                      style={{ 
+                        backgroundColor: 'var(--background)',
+                        border: 'none',
+                        boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                      }}
                       onClick={() => {/* Center on Denver functionality would go here */}}
                     >
                       <MapPin className="h-4 w-4 mr-1" />
@@ -787,7 +926,7 @@ export default function CalendarPage() {
 
               {/* Interactive Map */}
               <div className="relative">
-                <div className="h-96 rounded-lg border border-border overflow-hidden" style={{ backgroundColor: 'var(--secondary)' }}>
+                <div className="h-96 rounded-lg card-neu overflow-hidden" style={{ backgroundColor: 'var(--secondary)', border: 'none' }}>
                   {/* Map Placeholder - In real implementation, this would be a Leaflet map */}
                   <div className="h-full flex items-center justify-center relative">
                     <div className="text-center">
@@ -805,8 +944,8 @@ export default function CalendarPage() {
                           mapData.trips.slice(0, 8).map((trip: any) => (
                             <div
                               key={trip.id}
-                              className="p-3  rounded-lg border border-border cursor-pointer hover:shadow-md transition-shadow"
-                              style={{ backgroundColor: 'var(--card)' }}
+                              className="p-3 card-neu rounded-lg cursor-pointer transition-shadow"
+                              style={{ backgroundColor: 'var(--background)', border: 'none' }}
                               onClick={() => setSelectedMapTrip(trip)}
                             >
                               <div className="flex items-center space-x-2 mb-2">
@@ -840,8 +979,8 @@ export default function CalendarPage() {
                           mapData.drivers.slice(0, 8).map((driver: any) => (
                             <div
                               key={driver.id}
-                              className="p-3  rounded-lg border border-border cursor-pointer hover:shadow-md transition-shadow"
-                              style={{ backgroundColor: 'var(--card)' }}
+                              className="p-3 card-neu rounded-lg cursor-pointer transition-shadow"
+                              style={{ backgroundColor: 'var(--background)', border: 'none' }}
                             >
                               <div className="flex items-center space-x-2 mb-2">
                                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'var(--completed)' }}></div>
@@ -864,7 +1003,7 @@ export default function CalendarPage() {
                 </div>
 
                 {/* Map Legend */}
-                <div className="absolute top-4 right-4 rounded-lg p-3 shadow-lg border border-border" style={{ backgroundColor: 'var(--card)' }}>
+                <div className="absolute top-4 right-4 rounded-lg p-3 card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                   <h4 className="text-sm font-medium text-foreground mb-2">Legend</h4>
                   <div className="space-y-1">
                     <div className="flex items-center space-x-2">
@@ -889,7 +1028,7 @@ export default function CalendarPage() {
 
               {/* Selected Trip Details */}
               {selectedMapTrip && (
-                <Card>
+                <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                       <span>Trip Details</span>
@@ -947,13 +1086,14 @@ export default function CalendarPage() {
               )}
             </div>
           )}
-        </CardContent>
-      </Card>
+          </div>
+        </div>
+      </div>
 
       {/* Settings Dialog */}
       {showSettings && (
         <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: 'rgba(32, 32, 35, 0.5)' }}>
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <Card className="card-neu w-full max-w-2xl max-h-[90vh] overflow-y-auto" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
             <CardHeader>
               <CardTitle className="flex items-center justify-end">
                 <Button
@@ -1000,8 +1140,14 @@ export default function CalendarPage() {
                   </p>
                 </div>
                 <Button
-                  variant={settings.autoRefresh ? "default" : "outline"}
+                  variant="ghost"
                   size="sm"
+                  className={cn("card-neu-flat hover:card-neu [&]:shadow-none", settings.autoRefresh ? "card-neu-pressed" : "")}
+                  style={{ 
+                    backgroundColor: 'var(--background)',
+                    border: 'none',
+                    boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                  }}
                   onClick={() => setSettings(prev => ({ ...prev, autoRefresh: !prev.autoRefresh }))}
                 >
                   {settings.autoRefresh ? "On" : "Off"}
@@ -1049,8 +1195,14 @@ export default function CalendarPage() {
                     </p>
                   </div>
                   <Button
-                    variant={settings.showCompletedTrips ? "default" : "outline"}
+                    variant="ghost"
                     size="sm"
+                    className={cn("card-neu-flat hover:card-neu [&]:shadow-none", settings.showCompletedTrips ? "card-neu-pressed" : "")}
+                    style={{ 
+                      backgroundColor: 'var(--background)',
+                      border: 'none',
+                      boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                    }}
                     onClick={() => setSettings(prev => ({ ...prev, showCompletedTrips: !prev.showCompletedTrips }))}
                   >
                     {settings.showCompletedTrips ? "Show" : "Hide"}
@@ -1067,8 +1219,14 @@ export default function CalendarPage() {
                     </p>
                   </div>
                   <Button
-                    variant={settings.showCancelledTrips ? "default" : "outline"}
+                    variant="ghost"
                     size="sm"
+                    className={cn("card-neu-flat hover:card-neu [&]:shadow-none", settings.showCancelledTrips ? "card-neu-pressed" : "")}
+                    style={{ 
+                      backgroundColor: 'var(--background)',
+                      border: 'none',
+                      boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                    }}
                     onClick={() => setSettings(prev => ({ ...prev, showCancelledTrips: !prev.showCancelledTrips }))}
                   >
                     {settings.showCancelledTrips ? "Show" : "Hide"}
@@ -1124,12 +1282,24 @@ export default function CalendarPage() {
               {/* Action Buttons */}
               <div className="flex justify-end space-x-2 pt-4 border-t border-border">
                 <Button
-                  variant="outline"
+                  variant="ghost"
+                  className="card-neu-flat hover:card-neu [&]:shadow-none"
+                  style={{ 
+                    backgroundColor: 'var(--background)',
+                    border: 'none',
+                    boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                  }}
                   onClick={() => setShowSettings(false)}
                 >
                   Cancel
                 </Button>
                 <Button
+                  className="card-neu hover:card-neu [&]:shadow-none"
+                  style={{ 
+                    backgroundColor: 'var(--background)',
+                    border: 'none',
+                    boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                  }}
                   onClick={() => {
                     // Apply settings
                     setViewMode(settings.defaultView);
@@ -1148,23 +1318,23 @@ export default function CalendarPage() {
 
       {/* Quick Stats - Fixed at bottom, aligned with sidebar */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 flex-shrink-0" style={{ marginTop: 'auto', height: '93px', paddingTop: '24px', paddingBottom: '24px', marginBottom: '24px' }}>
-        <Card>
+        <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Today's Trips</p>
-                <p className="text-2xl font-bold">{stats.todayTrips}</p>
+                <p className="text-sm font-medium" style={{ color: 'var(--muted-foreground)' }}>Today's Trips</p>
+                <p className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>{stats.todayTrips}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Completed</p>
-                <p className="text-2xl font-bold">{stats.completed}</p>
+                <p className="text-sm font-medium" style={{ color: 'var(--completed)' }}>Completed</p>
+                <p className="text-2xl font-bold" style={{ color: 'var(--completed)' }}>{stats.completed}</p>
               </div>
               <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--completed)' }}>
                 <span className="text-white text-sm font-bold">✓</span>
@@ -1173,12 +1343,12 @@ export default function CalendarPage() {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">In Progress</p>
-                <p className="text-2xl font-bold">{stats.inProgress}</p>
+                <p className="text-sm font-medium" style={{ color: 'var(--in-progress)' }}>In Progress</p>
+                <p className="text-2xl font-bold" style={{ color: 'var(--in-progress)' }}>{stats.inProgress}</p>
               </div>
               <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--in-progress)' }}>
                 <span className="text-white text-sm font-bold">→</span>
@@ -1187,12 +1357,12 @@ export default function CalendarPage() {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Scheduled</p>
-                <p className="text-2xl font-bold">{stats.scheduled}</p>
+                <p className="text-sm font-medium" style={{ color: 'var(--scheduled)' }}>Scheduled</p>
+                <p className="text-2xl font-bold" style={{ color: 'var(--scheduled)' }}>{stats.scheduled}</p>
               </div>
               <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--scheduled)' }}>
                 <span className="text-white text-sm font-bold">⏰</span>

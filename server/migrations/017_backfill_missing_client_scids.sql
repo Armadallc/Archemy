@@ -198,3 +198,4 @@ ORDER BY p.code;
 -- 2. Check the summary queries above for any issues
 -- 3. If any clients are still missing SCIDs, check if their programs have codes
 
+

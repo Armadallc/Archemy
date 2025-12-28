@@ -16,3 +16,4 @@ COMMENT ON COLUMN trips.stops IS 'Array of intermediate stop addresses for multi
 -- Create index for JSONB queries (optional, but useful for filtering/searching)
 CREATE INDEX IF NOT EXISTS idx_trips_stops ON trips USING GIN (stops);
 
+

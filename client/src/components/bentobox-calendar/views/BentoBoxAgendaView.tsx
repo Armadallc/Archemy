@@ -112,9 +112,9 @@ export function BentoBoxAgendaView({
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
+      <div className="flex items-center justify-between px-4 py-3 border-b card-neu-flat" style={{ backgroundColor: 'var(--background)', borderColor: 'rgba(165, 200, 202, 0.2)' }}>
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold">
+          <h2 className="text-lg font-semibold" style={{ color: '#a5c8ca' }}>
             Agenda - {format(weekStart, 'MMM d')} - {format(weekEnd, 'MMM d, yyyy')}
           </h2>
         </div>
@@ -132,19 +132,28 @@ export function BentoBoxAgendaView({
               key={dayKey}
               className={cn(
                 "border-b last:border-b-0",
-                isCurrentDay && "bg-primary/5"
+                isCurrentDay && "card-neu-pressed"
               )}
+              style={{ 
+                backgroundColor: isCurrentDay ? 'var(--background)' : 'transparent',
+                borderColor: 'rgba(165, 200, 202, 0.2)'
+              }}
             >
               {/* Day Header */}
               <div
                 className={cn(
-                  "px-4 py-3 font-semibold text-sm sticky top-0 bg-background z-10 border-b",
-                  isCurrentDay && "text-primary"
+                  "px-4 py-3 font-semibold text-sm sticky top-0 z-10 border-b card-neu-flat",
+                  isCurrentDay && ""
                 )}
+                style={{ 
+                  backgroundColor: 'var(--background)',
+                  borderColor: 'rgba(165, 200, 202, 0.2)',
+                  color: '#a5c8ca'
+                }}
               >
                 {formatDateHeader(day)}
                 {dayEncounters.length > 0 && (
-                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  <span className="ml-2 text-xs font-normal" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                     ({dayEncounters.length} {dayEncounters.length === 1 ? 'encounter' : 'encounters'})
                   </span>
                 )}
@@ -152,11 +161,11 @@ export function BentoBoxAgendaView({
 
               {/* Encounters for this day */}
               {dayEncounters.length === 0 ? (
-                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                <div className="px-4 py-8 text-center text-sm" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                   No encounters scheduled
                 </div>
               ) : (
-                <div className="divide-y">
+                <div className="divide-y" style={{ borderColor: 'rgba(165, 200, 202, 0.2)' }}>
                   {dayEncounters.map((encounter) => {
                     const startTime = new Date(encounter.start);
                     const endTime = new Date(encounter.end);
@@ -167,21 +176,22 @@ export function BentoBoxAgendaView({
                         key={encounter.id}
                         onClick={() => onEncounterClick?.(encounter)}
                         className={cn(
-                          "px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors",
+                          "px-4 py-3 cursor-pointer hover:card-neu transition-colors",
                           getColorClasses(encounter.color)
                         )}
+                        style={{ backgroundColor: 'var(--background)' }}
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium text-sm mb-1">
+                            <div className="font-medium text-sm mb-1" style={{ color: '#a5c8ca', opacity: 0.8 }}>
                               {encounter.title}
                             </div>
                             {encounter.description && (
-                              <div className="text-xs text-muted-foreground mb-1 line-clamp-2">
+                              <div className="text-xs mb-1 line-clamp-2" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                                 {encounter.description}
                               </div>
                             )}
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-3 text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                               <span>
                                 {formatTime(startTime)} - {formatTime(endTime)}
                               </span>
@@ -196,7 +206,7 @@ export function BentoBoxAgendaView({
                             </div>
                           </div>
                           {encounter.status && (
-                            <div className="text-xs px-2 py-1 rounded bg-muted">
+                            <div className="text-xs px-2 py-1 rounded card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}>
                               {encounter.status}
                             </div>
                           )}

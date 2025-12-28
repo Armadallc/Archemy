@@ -69,14 +69,15 @@ export function PoolSection({ onEdit, className }: PoolSectionProps) {
     <div className={cn("flex flex-col h-full overflow-hidden", className)}>
       {/* Clear All Button */}
       {pool.length > 0 && (
-        <div className="p-1 border-b flex-shrink-0">
+        <div className="p-1 border-b flex-shrink-0" style={{ borderColor: 'rgba(165, 200, 202, 0.2)' }}>
           <Button
             variant="ghost"
             size="sm"
-            className="w-full h-6 text-[10px] text-muted-foreground hover:text-destructive"
+            className="w-full h-6 text-[10px] card-neu-flat hover:card-neu [&]:shadow-none"
+            style={{ backgroundColor: 'var(--background)', border: 'none' }}
             onClick={handleClearAll}
           >
-            Clear All ({pool.length})
+            <span style={{ color: '#a5c8ca', opacity: 0.7 }}>Clear All ({pool.length})</span>
           </Button>
         </div>
       )}
@@ -84,7 +85,7 @@ export function PoolSection({ onEdit, className }: PoolSectionProps) {
       <div className="flex-1 overflow-y-auto space-y-1.5 p-1">
         {/* Encounter Templates */}
         <div className="mb-2">
-          <h4 className="text-[10px] font-medium text-muted-foreground mb-1 uppercase tracking-wide">
+          <h4 className="text-[10px] font-medium mb-1 uppercase tracking-wide" style={{ color: '#a5c8ca', opacity: 0.7 }}>
             Templates
           </h4>
           <div className="space-y-1">
@@ -107,15 +108,15 @@ export function PoolSection({ onEdit, className }: PoolSectionProps) {
                     }}
                     onDragEnd={handleDragEnd}
                     className={cn(
-                      "group relative p-1.5 rounded border cursor-move transition-all flex items-center gap-1.5",
-                      getColorClasses(poolTemplate.color),
-                      "hover:card-neu-flat"
+                      "group relative p-1.5 rounded cursor-move transition-all flex items-center gap-1.5",
+                      "card-neu-flat hover:card-neu [&]:shadow-none"
                     )}
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   >
-                    <GripVertical className="w-3 h-3 opacity-50 flex-shrink-0" />
+                    <GripVertical className="w-3 h-3 flex-shrink-0" style={{ color: '#a5c8ca', opacity: 0.5 }} />
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-[11px] leading-tight truncate">{poolTemplate.name}</div>
-                      <div className="text-[10px] opacity-70 leading-tight">
+                      <div className="font-medium text-[11px] leading-tight truncate" style={{ color: '#a5c8ca', opacity: 0.8 }}>{poolTemplate.name}</div>
+                      <div className="text-[10px] leading-tight" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                         {poolTemplate.quickInfo.duration} • {poolTemplate.quickInfo.staffInitials}
                       </div>
                     </div>
@@ -123,18 +124,20 @@ export function PoolSection({ onEdit, className }: PoolSectionProps) {
                       {onEdit && (
                         <button
                           onClick={(e) => handleEdit(poolTemplate.templateId, e)}
-                          className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-background/50 rounded transition-opacity"
+                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded transition-opacity card-neu-flat hover:card-neu [&]:shadow-none"
+                          style={{ backgroundColor: 'var(--background)', border: 'none' }}
                           title="Edit template"
                         >
-                          <Edit className="w-3 h-3 text-muted-foreground hover:text-foreground" />
+                          <Edit className="w-3 h-3" style={{ color: '#a5c8ca' }} />
                         </button>
                       )}
                       <button
                         onClick={(e) => handleRemove(poolTemplate, e)}
-                        className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-destructive/10 rounded transition-opacity"
+                        className="opacity-0 group-hover:opacity-100 p-0.5 rounded transition-opacity card-neu-flat hover:card-neu [&]:shadow-none"
+                        style={{ backgroundColor: 'var(--background)', border: 'none' }}
                         title="Remove from pool"
                       >
-                        <X className="w-3 h-3 text-muted-foreground hover:text-destructive" />
+                        <X className="w-3 h-3" style={{ color: '#a5c8ca' }} />
                       </button>
                     </div>
                   </div>

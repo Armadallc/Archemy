@@ -111,17 +111,17 @@ export default function EIAGasolinePrices() {
   };
 
   const getTrendIcon = (change: number | null) => {
-    if (change === null) return <Minus className="h-4 w-4 text-muted-foreground" />;
-    if (change > 0) return <TrendingUp className="h-4 w-4 text-status-error" />;
-    if (change < 0) return <TrendingDown className="h-4 w-4 text-status-success" />;
-    return <Minus className="h-4 w-4 text-muted-foreground" />;
+    if (change === null) return <Minus className="h-4 w-4" style={{ color: '#a5c8ca', opacity: 0.7 }} />;
+    if (change > 0) return <TrendingUp className="h-4 w-4" style={{ color: '#a5c8ca' }} />;
+    if (change < 0) return <TrendingDown className="h-4 w-4" style={{ color: '#a5c8ca' }} />;
+    return <Minus className="h-4 w-4" style={{ color: '#a5c8ca', opacity: 0.7 }} />;
   };
 
   const getTrendColor = (change: number | null) => {
-    if (change === null) return "text-muted-foreground";
-    if (change > 0) return "text-status-error";
-    if (change < 0) return "text-status-success";
-    return "text-muted-foreground";
+    if (change === null) return { color: '#a5c8ca', opacity: 0.7 };
+    if (change > 0) return { color: '#a5c8ca' };
+    if (change < 0) return { color: '#a5c8ca' };
+    return { color: '#a5c8ca', opacity: 0.7 };
   };
 
   const formatPrice = (price: number | null) => {
@@ -137,32 +137,32 @@ export default function EIAGasolinePrices() {
 
   return (
     <Card 
+      className="card-neu"
       style={{ 
-        backgroundColor: 'var(--card)', 
-        borderColor: 'var(--border)', 
-        borderWidth: '1px', 
-        borderStyle: 'solid' 
+        backgroundColor: 'var(--background)', 
+        border: 'none'
       }}
     >
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="flex items-center space-x-2">
-          <Fuel className="h-5 w-5" style={{ color: 'var(--primary)' }} />
-          <span style={{ color: 'var(--foreground)' }}>Colorado Fuel Prices</span>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+        <CardTitle className="flex items-center space-x-2" style={{ color: '#a5c8ca' }}>
+          <Fuel className="h-5 w-5" style={{ color: '#a5c8ca' }} />
+          <span>COLORADO FUEL PRICES</span>
         </CardTitle>
         <Button
           variant="ghost"
           size="sm"
           onClick={fetchGasolinePrices}
           disabled={isLoading}
-          className="h-8 w-8 p-0"
+          className="h-8 w-8 p-0 card-neu-flat hover:card-neu [&]:shadow-none"
+          style={{ backgroundColor: 'var(--background)', border: 'none' }}
         >
-          <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} style={{ color: '#a5c8ca' }} />
         </Button>
       </CardHeader>
       <CardContent>
         {error ? (
-          <div className="flex items-center space-x-2 text-status-error py-4">
-            <AlertCircle className="h-5 w-5" />
+          <div className="flex items-center space-x-2 py-4" style={{ color: '#a5c8ca' }}>
+            <AlertCircle className="h-5 w-5" style={{ color: '#a5c8ca' }} />
             <span className="text-sm">{error}</span>
           </div>
         ) : (
@@ -171,13 +171,13 @@ export default function EIAGasolinePrices() {
             <div className="grid grid-cols-2 gap-4 mb-4">
               {/* Regular Gasoline */}
               <div 
-                className="p-4 rounded-lg"
-                style={{ backgroundColor: 'var(--muted)' }}
+                className="p-4 rounded-lg card-neu-flat"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span 
                     className="text-xs font-medium uppercase tracking-wide"
-                    style={{ color: 'var(--muted-foreground)' }}
+                    style={{ color: '#a5c8ca', opacity: 0.8 }}
                   >
                     Regular
                   </span>
@@ -185,16 +185,16 @@ export default function EIAGasolinePrices() {
                 </div>
                 <div 
                   className="text-2xl font-bold"
-                  style={{ color: 'var(--foreground)' }}
+                  style={{ color: '#a5c8ca' }}
                 >
                   {isLoading ? (
-                    <div className="h-8 w-20 bg-muted-foreground/20 rounded animate-pulse" />
+                    <div className="h-8 w-20 rounded animate-pulse" style={{ backgroundColor: 'rgba(165, 200, 202, 0.2)' }} />
                   ) : (
                     formatPrice(priceData.regular.current)
                   )}
                 </div>
                 {!isLoading && priceData.regular.previous && (
-                  <div className={`text-xs mt-1 ${getTrendColor(getPriceChange(priceData.regular.current, priceData.regular.previous))}`}>
+                  <div className="text-xs mt-1" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                     {formatChange(getPriceChange(priceData.regular.current, priceData.regular.previous))} from last week
                   </div>
                 )}
@@ -202,13 +202,13 @@ export default function EIAGasolinePrices() {
 
               {/* Premium Gasoline */}
               <div 
-                className="p-4 rounded-lg"
-                style={{ backgroundColor: 'var(--muted)' }}
+                className="p-4 rounded-lg card-neu-flat"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span 
                     className="text-xs font-medium uppercase tracking-wide"
-                    style={{ color: 'var(--muted-foreground)' }}
+                    style={{ color: '#a5c8ca', opacity: 0.8 }}
                   >
                     Premium
                   </span>
@@ -216,16 +216,16 @@ export default function EIAGasolinePrices() {
                 </div>
                 <div 
                   className="text-2xl font-bold"
-                  style={{ color: 'var(--foreground)' }}
+                  style={{ color: '#a5c8ca' }}
                 >
                   {isLoading ? (
-                    <div className="h-8 w-20 bg-muted-foreground/20 rounded animate-pulse" />
+                    <div className="h-8 w-20 rounded animate-pulse" style={{ backgroundColor: 'rgba(165, 200, 202, 0.2)' }} />
                   ) : (
                     formatPrice(priceData.premium.current)
                   )}
                 </div>
                 {!isLoading && priceData.premium.previous && (
-                  <div className={`text-xs mt-1 ${getTrendColor(getPriceChange(priceData.premium.current, priceData.premium.previous))}`}>
+                  <div className="text-xs mt-1" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                     {formatChange(getPriceChange(priceData.premium.current, priceData.premium.previous))} from last week
                   </div>
                 )}
@@ -233,7 +233,7 @@ export default function EIAGasolinePrices() {
             </div>
 
             {/* Location & Date Info */}
-            <div className="flex items-center justify-between text-xs" style={{ color: 'var(--muted-foreground)' }}>
+            <div className="flex items-center justify-between text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>
               <span>Denver, CO Area • Per Gallon</span>
               {priceData.regular.date && (
                 <span>Week of {priceData.regular.date}</span>
@@ -250,8 +250,8 @@ export default function EIAGasolinePrices() {
       
       {/* EIA Attribution - Fixed at bottom */}
       <div 
-        className="px-6 py-3 border-t flex items-center justify-between"
-        style={{ borderColor: 'var(--border)' }}
+        className="px-6 py-3 border-t flex items-center justify-between card-neu-flat [&]:shadow-none"
+        style={{ borderColor: 'rgba(165, 200, 202, 0.2)', backgroundColor: 'var(--background)', borderTop: '1px solid rgba(165, 200, 202, 0.2)' }}
       >
         <div className="flex items-center space-x-2">
           {/* EIA Logo SVG */}
@@ -264,7 +264,7 @@ export default function EIAGasolinePrices() {
             <path 
               d="M15 35 Q50 -5, 90 25" 
               fill="none" 
-              stroke="#00A3E0" 
+              stroke="#a5c8ca" 
               strokeWidth="8"
               strokeLinecap="round"
             />
@@ -275,13 +275,13 @@ export default function EIAGasolinePrices() {
               fontFamily="Arial, sans-serif" 
               fontSize="32" 
               fontWeight="bold"
-              fill="#4A4A4A"
+              fill="#a5c8ca"
             >
               e
             </text>
             {/* "i" with dot */}
-            <circle cx="42" cy="28" r="4" fill="#4A4A4A" />
-            <rect x="38" y="35" width="8" height="20" rx="1" fill="#4A4A4A" />
+            <circle cx="42" cy="28" r="4" fill="#a5c8ca" />
+            <rect x="38" y="35" width="8" height="20" rx="1" fill="#a5c8ca" />
             {/* "a" */}
             <text 
               x="52" 
@@ -289,14 +289,14 @@ export default function EIAGasolinePrices() {
               fontFamily="Arial, sans-serif" 
               fontSize="32" 
               fontWeight="bold"
-              fill="#4A4A4A"
+              fill="#a5c8ca"
             >
               a
             </text>
           </svg>
           <span 
             className="text-xs hidden sm:inline"
-            style={{ color: 'var(--muted-foreground)' }}
+            style={{ color: '#a5c8ca', opacity: 0.7 }}
           >
             U.S. Energy Information Administration
           </span>
@@ -304,7 +304,7 @@ export default function EIAGasolinePrices() {
         {lastUpdated && (
           <span 
             className="text-xs"
-            style={{ color: 'var(--muted-foreground)' }}
+            style={{ color: '#a5c8ca', opacity: 0.7 }}
           >
             {lastUpdated.toLocaleTimeString()}
           </span>

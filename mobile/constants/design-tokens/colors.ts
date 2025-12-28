@@ -80,25 +80,25 @@ export const lightTheme = {
   info: '#3b82f6',
   infoBg: '#dbeafe',
   
-  // Trip status
-  scheduled: '#3b82f6',
+  // Trip status - Fire palette colors
+  scheduled: '#7afffe',
   scheduledBg: '#dbeafe',
-  inProgress: '#f59e0b',
+  inProgress: '#f1fe60',
   inProgressBg: '#fef3c7',
-  completed: '#22c55e',
-  completedBg: '#dcfce7',
-  cancelled: '#ef4444',
-  cancelledBg: '#fee2e2',
-  confirmed: '#8b5cf6',
-  confirmedBg: '#ede9fe',
+  completed: '#3bfec9',
+  completedBg: 'rgba(59, 254, 201, 0.15)',
+  cancelled: '#e04850',
+  cancelledBg: 'rgba(224, 72, 80, 0.15)',
+  confirmed: '#c2b4fe',
+  confirmedBg: 'rgba(194, 180, 254, 0.15)',
   
-  // Trip status grouped (for easier access)
+  // Trip status grouped (for easier access) - Fire palette
   tripStatus: {
-    scheduled: '#3b82f6',
-    inProgress: '#f59e0b',
-    completed: '#22c55e',
-    cancelled: '#ef4444',
-    confirmed: '#8b5cf6',
+    scheduled: '#7afffe',
+    inProgress: '#f1fe60',
+    completed: '#3bfec9',
+    cancelled: '#e04850',
+    confirmed: '#c2b4fe',
   },
   
   // Driver colors (for UI elements)
@@ -144,14 +144,14 @@ export const lightTheme = {
 
 export const darkTheme = {
   // Backgrounds - same color as cards for neumorphic design
-  background: palette.shadow, // #292929 (darker shadow)
-  backgroundSecondary: palette.shadow, // #292929
-  backgroundTertiary: palette.shadow, // #292929
+  background: palette.charcoal, // #1e2023 (20% darker charcoal)
+  backgroundSecondary: palette.charcoal, // #1e2023
+  backgroundTertiary: palette.charcoal, // #1e2023
   
   // Surfaces - same color as background for neumorphic design
-  surface: palette.shadow, // #292929
-  surfaceElevated: palette.shadow, // #292929
-  surfaceMuted: palette.shadow, // #292929
+  surface: palette.charcoal, // #1e2023
+  surfaceElevated: palette.charcoal, // #1e2023
+  surfaceMuted: palette.charcoal, // #1e2023
   
   // Text
   text: palette.cloud,
@@ -184,25 +184,25 @@ export const darkTheme = {
   info: '#3b82f6',
   infoBg: 'rgba(59, 130, 246, 0.15)',
   
-  // Trip status
-  scheduled: '#3b82f6',
-  scheduledBg: 'rgba(59, 130, 246, 0.15)',
-  inProgress: '#f59e0b',
-  inProgressBg: 'rgba(245, 158, 11, 0.15)',
-  completed: '#22c55e',
-  completedBg: 'rgba(34, 197, 94, 0.15)',
-  cancelled: '#ef4444',
-  cancelledBg: 'rgba(239, 68, 68, 0.15)',
-  confirmed: '#8b5cf6',
-  confirmedBg: 'rgba(139, 92, 246, 0.15)',
+  // Trip status - Fire palette colors
+  scheduled: '#7afffe',
+  scheduledBg: 'rgba(122, 255, 254, 0.15)',
+  inProgress: '#f1fe60',
+  inProgressBg: 'rgba(241, 254, 96, 0.15)',
+  completed: '#3bfec9',
+  completedBg: 'rgba(59, 254, 201, 0.15)',
+  cancelled: '#e04850',
+  cancelledBg: 'rgba(224, 72, 80, 0.15)',
+  confirmed: '#c2b4fe',
+  confirmedBg: 'rgba(194, 180, 254, 0.15)',
   
-  // Trip status grouped (for easier access)
+  // Trip status grouped (for easier access) - Fire palette
   tripStatus: {
-    scheduled: '#3b82f6',
-    inProgress: '#f59e0b',
-    completed: '#22c55e',
-    cancelled: '#ef4444',
-    confirmed: '#8b5cf6',
+    scheduled: '#7afffe',
+    inProgress: '#f1fe60',
+    completed: '#3bfec9',
+    cancelled: '#e04850',
+    confirmed: '#c2b4fe',
   },
   
   // Driver colors (for UI elements)
@@ -228,7 +228,7 @@ export const darkTheme = {
   tabInactive: '#6b7280',
   
   // Card - same color as background for neumorphic design
-  card: palette.shadow, // #292929
+  card: palette.charcoal, // #1e2023 (20% darker charcoal)
   cardBorder: 'transparent', // No borders, use shadows instead
   
   // Input

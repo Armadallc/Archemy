@@ -9,7 +9,10 @@ import {
   Alert,
   Platform,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import CustomToggle from './CustomToggle';
+import NeumorphicCard from './NeumorphicCard';
+import NeumorphicView from './NeumorphicView';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -104,19 +107,8 @@ export default function AvailabilityPopup({
       } as any),
     },
     modalContent: {
-      backgroundColor: theme.colors.card,
-      borderRadius: 16,
-      paddingVertical: 24,
-      paddingHorizontal: 20,
       width: '100%',
       maxWidth: 400,
-      borderWidth: 1,
-      borderColor: 'rgba(212, 215, 218, 1)',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 8,
-      elevation: 8,
     },
     title: {
       ...theme.typography.h2,
@@ -142,8 +134,6 @@ export default function AvailabilityPopup({
       justifyContent: 'space-between',
       paddingVertical: 16,
       paddingHorizontal: 16,
-      backgroundColor: theme.colors.backgroundSecondary,
-      borderRadius: 12,
       marginBottom: 24,
     },
     toggleLabel: {
@@ -222,6 +212,70 @@ export default function AvailabilityPopup({
     }
   }, [isAvailable, visible]);
 
+  const renderContent = () => (
+    <NeumorphicCard
+      style="embossed"
+      intensity="medium"
+      borderRadius={16}
+      padding={24}
+      containerStyle={styles.modalContent}
+    >
+      <Text style={styles.title}>Driver Status</Text>
+      <Text style={styles.message}>
+        {message || 
+          'Enable location sharing to allow fleet managers to track your position. Location sharing is required when providing trips.'}
+      </Text>
+      
+      <NeumorphicView
+        style="debossed"
+        intensity="subtle"
+        borderRadius={12}
+        contentStyle={styles.toggleContainer}
+      >
+        <Text style={styles.toggleLabel}>Available</Text>
+        <CustomToggle
+          value={isAvailable}
+          onValueChange={handleToggle}
+          disabled={updateAvailabilityMutation.isPending}
+          trackColor={{ false: 'rgba(255, 255, 255, 1)', true: 'rgba(255, 255, 255, 1)' }}
+          thumbColor={{ false: 'rgba(255, 132, 117, 0.4)', true: '#ff8475' }}
+        />
+        {updateAvailabilityMutation.isPending && (
+          <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginLeft: 8 }} />
+        )}
+      </NeumorphicView>
+
+      <View style={styles.buttonContainer}>
+        {showBypass && (
+          <TouchableOpacity
+            style={[styles.button, styles.secondaryButton]}
+            onPress={onBypass}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.buttonText, styles.secondaryButtonText]}>View Trips</Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity
+          style={[styles.button, styles.primaryButton]}
+          onPress={handleContinue}
+          activeOpacity={0.7}
+          disabled={updateAvailabilityMutation.isPending}
+        >
+          {updateAvailabilityMutation.isPending ? (
+            <ActivityIndicator color={theme.colors.primaryForeground} />
+          ) : (
+            <>
+              <Ionicons name="checkmark-circle" size={20} color={theme.colors.primaryForeground} />
+              <Text style={[styles.buttonText, styles.primaryButtonText]}>
+                Continue
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </NeumorphicCard>
+  );
+
   return (
     <Modal
       visible={visible}
@@ -229,58 +283,21 @@ export default function AvailabilityPopup({
       animationType="fade"
       onRequestClose={showBypass ? onBypass : onClose}
     >
-      <View style={styles.modalOverlay} collapsable={false}>
-        <View style={styles.modalContent} collapsable={true}>
-            <Text style={styles.title}>Driver Status</Text>
-            <Text style={styles.message}>
-              {message || 
-                'Enable location sharing to allow fleet managers to track your position. Location sharing is required when providing trips.'}
-            </Text>
-            
-            <View style={styles.toggleContainer}>
-              <Text style={styles.toggleLabel}>Available</Text>
-              <CustomToggle
-                value={isAvailable}
-                onValueChange={handleToggle}
-                disabled={updateAvailabilityMutation.isPending}
-                trackColor={{ false: 'rgba(255, 255, 255, 1)', true: 'rgba(255, 255, 255, 1)' }}
-                thumbColor={{ false: 'rgba(255, 132, 117, 0.4)', true: '#ff8475' }}
-              />
-              {updateAvailabilityMutation.isPending && (
-                <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginLeft: 8 }} />
-              )}
-            </View>
-
-            <View style={styles.buttonContainer}>
-              {showBypass && (
-                <TouchableOpacity
-                  style={[styles.button, styles.secondaryButton]}
-                  onPress={onBypass}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.buttonText, styles.secondaryButtonText]}>View Trips</Text>
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity
-                style={[styles.button, styles.primaryButton]}
-                onPress={handleContinue}
-                activeOpacity={0.7}
-                disabled={updateAvailabilityMutation.isPending}
-              >
-                {updateAvailabilityMutation.isPending ? (
-                  <ActivityIndicator color={theme.colors.primaryForeground} />
-                ) : (
-                  <>
-                    <Ionicons name="checkmark-circle" size={20} color={theme.colors.primaryForeground} />
-                    <Text style={[styles.buttonText, styles.primaryButtonText]}>
-                      Continue
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
+      {Platform.OS === 'web' ? (
+        <View style={styles.modalOverlay} collapsable={false}>
+          {renderContent()}
+        </View>
+      ) : (
+        <BlurView
+          intensity={80}
+          tint={theme.mode === 'dark' ? 'dark' : 'light'}
+          style={StyleSheet.absoluteFill}
+        >
+          <View style={[styles.modalOverlay, { backgroundColor: 'transparent' }]} collapsable={false}>
+            {renderContent()}
           </View>
-      </View>
+        </BlurView>
+      )}
     </Modal>
   );
 }

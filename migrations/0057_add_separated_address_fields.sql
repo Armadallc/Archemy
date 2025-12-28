@@ -228,3 +228,4 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 -- For now, we'll maintain full_address in application layer
 -- Old address fields remain for backward compatibility during migration
 
+

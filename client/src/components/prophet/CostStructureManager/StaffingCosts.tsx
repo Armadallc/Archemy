@@ -33,23 +33,23 @@ function StaffRow({ role, icon, label, description }: StaffRowProps) {
   };
 
   return (
-    <div className={`p-4 rounded-lg border transition-opacity ${staff.enabled ? '' : 'opacity-50'}`}
+    <div className={`p-4 rounded-lg border transition-opacity ${staff.enabled ? 'card-neu-flat' : 'card-neu-flat opacity-50'}`}
       style={{ 
-        backgroundColor: 'var(--surface)', 
-        borderColor: staff.enabled ? 'var(--border)' : 'var(--border)' 
+        backgroundColor: 'var(--background)', 
+        border: 'none'
       }}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-md" style={{ backgroundColor: 'var(--muted)' }}>
+          <div className="p-2 rounded-md card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
             {icon}
           </div>
           <div>
-            <div className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>{label}</div>
-            <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>{description}</div>
+            <div className="text-sm font-medium" style={{ color: '#a5c8ca', opacity: 0.8 }}>{label}</div>
+            <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>{description}</div>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Label htmlFor={`${role}-enabled`} className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+          <Label htmlFor={`${role}-enabled`} className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>
             {staff.enabled ? 'Active' : 'Inactive'}
           </Label>
           <Switch
@@ -64,7 +64,7 @@ function StaffRow({ role, icon, label, description }: StaffRowProps) {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Hourly Rate</span>
+              <span className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Hourly Rate</span>
               <EditableField
                 value={staff.hourlyRate}
                 onChange={(v) => handleUpdate('hourlyRate', Number(v))}
@@ -73,7 +73,7 @@ function StaffRow({ role, icon, label, description }: StaffRowProps) {
               />
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Hours/Month</span>
+              <span className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Hours/Month</span>
               <EditableField
                 value={staff.hoursPerMonth}
                 onChange={(v) => handleUpdate('hoursPerMonth', Number(v))}
@@ -84,7 +84,7 @@ function StaffRow({ role, icon, label, description }: StaffRowProps) {
               />
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Benefits %</span>
+              <span className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Benefits %</span>
               <EditableField
                 value={staff.benefitsPercentage}
                 onChange={(v) => handleUpdate('benefitsPercentage', Number(v))}
@@ -98,14 +98,14 @@ function StaffRow({ role, icon, label, description }: StaffRowProps) {
           </div>
           <div className="flex flex-col justify-center items-end">
             <div className="text-right">
-              <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Base Pay</div>
-              <div className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
+              <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Base Pay</div>
+              <div className="text-sm font-medium" style={{ color: '#a5c8ca' }}>
                 ${staff.basePay.toFixed(2)}
               </div>
             </div>
             <div className="text-right mt-2">
-              <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Total Cost</div>
-              <div className="text-lg font-bold" style={{ color: 'var(--color-lime)' }}>
+              <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Total Cost</div>
+              <div className="text-lg font-bold" style={{ color: '#a5c8ca' }}>
                 ${staff.totalCost.toFixed(2)}
               </div>
             </div>
@@ -134,18 +134,18 @@ export function StaffingCosts() {
   const totalStaffing = calculateTotal();
 
   return (
-    <Card style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg" style={{ color: 'var(--foreground)' }}>
-          <Users className="h-6 w-6" style={{ color: 'var(--primary)' }} />
-          Staffing Costs
+    <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+      <CardHeader className="pb-3 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+        <CardTitle className="flex items-center gap-2 text-lg" style={{ color: '#a5c8ca' }}>
+          <Users className="h-6 w-6" style={{ color: '#a5c8ca' }} />
+          STAFFING COSTS
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Owner */}
         <StaffRow
           role="owner"
-          icon={<UserCog className="h-4 w-4" style={{ color: 'var(--primary)' }} />}
+          icon={<UserCog className="h-4 w-4" style={{ color: '#a5c8ca' }} />}
           label="Owner/Operator"
           description="Primary driver & manager"
         />
@@ -153,19 +153,19 @@ export function StaffingCosts() {
         {/* Driver */}
         <StaffRow
           role="driver"
-          icon={<Car className="h-4 w-4" style={{ color: 'var(--color-lime)' }} />}
+          icon={<Car className="h-4 w-4" style={{ color: '#a5c8ca' }} />}
           label="Driver"
           description="Full-time driver position"
         />
 
         {/* Additional Drivers */}
         {staffing.driver.enabled && (
-          <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
+          <div className="flex items-center justify-between p-3 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
             <div>
-              <div className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
+              <div className="text-sm font-medium" style={{ color: '#a5c8ca', opacity: 0.8 }}>
                 Additional Drivers
               </div>
-              <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+              <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                 Same rate as primary driver
               </div>
             </div>
@@ -173,29 +173,31 @@ export function StaffingCosts() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 card-neu-flat hover:card-neu [&]:shadow-none"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
                 onClick={() => updateStaffingCosts({
                   additionalDrivers: Math.max(0, staffing.additionalDrivers - 1)
                 })}
                 disabled={staffing.additionalDrivers === 0}
               >
-                <Minus className="h-4 w-4" />
+                <Minus className="h-4 w-4" style={{ color: '#a5c8ca' }} />
               </Button>
-              <span className="text-lg font-bold w-8 text-center" style={{ color: 'var(--foreground)' }}>
+              <span className="text-lg font-bold w-8 text-center" style={{ color: '#a5c8ca' }}>
                 {staffing.additionalDrivers}
               </span>
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 card-neu-flat hover:card-neu [&]:shadow-none"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
                 onClick={() => updateStaffingCosts({
                   additionalDrivers: staffing.additionalDrivers + 1
                 })}
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-4 w-4" style={{ color: '#a5c8ca' }} />
               </Button>
               {staffing.additionalDrivers > 0 && (
-                <span className="text-sm" style={{ color: 'var(--color-lime)' }}>
+                <span className="text-sm" style={{ color: '#a5c8ca' }}>
                   +${(staffing.driver.totalCost * staffing.additionalDrivers).toFixed(2)}
                 </span>
               )}
@@ -206,22 +208,22 @@ export function StaffingCosts() {
         {/* Admin */}
         <StaffRow
           role="admin"
-          icon={<ClipboardList className="h-4 w-4" style={{ color: 'var(--color-ice)' }} />}
+          icon={<ClipboardList className="h-4 w-4" style={{ color: '#a5c8ca' }} />}
           label="Admin/Scheduler"
           description="Part-time office support"
         />
 
         {/* Total */}
-        <div className="pt-4 border-t-2" style={{ borderColor: 'var(--border)' }}>
+        <div className="pt-4 border-t-2" style={{ borderColor: 'rgba(165, 200, 202, 0.2)' }}>
           <div className="flex items-center justify-between">
-            <span className="text-base font-bold" style={{ color: 'var(--foreground)' }}>
+            <span className="text-base font-bold" style={{ color: '#a5c8ca' }}>
               Total Staffing Costs
             </span>
-            <span className="text-xl font-bold" style={{ color: 'var(--primary)' }}>
+            <span className="text-xl font-bold" style={{ color: '#a5c8ca' }}>
               ${totalStaffing.toFixed(2)}/mo
             </span>
           </div>
-          <div className="flex justify-between text-xs mt-2" style={{ color: 'var(--muted-foreground)' }}>
+          <div className="flex justify-between text-xs mt-2" style={{ color: '#a5c8ca', opacity: 0.7 }}>
             <span>
               {[
                 staffing.owner.enabled && 'Owner',

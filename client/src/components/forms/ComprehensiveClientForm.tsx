@@ -280,11 +280,11 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
   }, [useLocationAddress, selectedLocationId, filteredLocations, locations, createForm]);
 
   return (
-    <div className="space-y-6" style={{ backgroundColor: 'var(--card)' }}>
+    <div className="space-y-6" style={{ backgroundColor: 'var(--background)' }}>
       
       {/* 1. Avatar Section */}
-      <div className="border-t pt-4" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
-        <h4 className="text-sm font-medium mb-3" style={{ fontFamily: 'Nohemi', fontWeight: 500, color: 'var(--foreground)' }}>Client Photo</h4>
+      <div className="pt-4 px-6 py-4 rounded-lg card-neu-flat -mx-6" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+        <h4 className="font-medium mb-3" style={{ fontSize: '16px', color: 'var(--foreground)' }}>CLIENT PHOTO</h4>
         <div className="flex items-center space-x-4">
           {/* Avatar Preview */}
           <div className="relative">
@@ -333,7 +333,8 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploadingAvatar}
-                className="flex items-center space-x-2"
+                className="flex items-center space-x-2 card-neu-flat hover:card-neu [&]:shadow-none"
+                style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)' }}
               >
                 {isUploadingAvatar ? (
                   <>
@@ -362,16 +363,16 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
 
       {/* 2. Tenant/Corporate Client Section (if needed) */}
       {needsTenantSelector && (
-        <div className="border-t pt-4" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
-          <h4 className="text-sm font-medium mb-3" style={{ fontFamily: 'Nohemi', fontWeight: 500, color: 'var(--foreground)' }}>Tenant Selection</h4>
+        <div className="pt-4 px-6 py-4 rounded-lg card-neu-flat -mx-6" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+          <h4 className="font-medium mb-3" style={{ fontSize: '16px', color: 'var(--foreground)' }}>TENANT SELECTION</h4>
           <div className="grid grid-cols-1 gap-4">
             <FormField
               control={createForm.control}
               name="corporate_client_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-medium" style={{ fontFamily: 'Nohemi', fontWeight: 500 }}>
-                    {user?.role === 'super_admin' ? 'Corporate Client / Tenant *' : 'Tenant *'}
+                  <FormLabel className="font-medium" style={{ fontSize: '16px' }}>
+                    {user?.role === 'super_admin' ? 'CORPORATE CLIENT / TENANT *' : 'TENANT *'}
                   </FormLabel>
                   <FormControl>
                     <CustomSelector
@@ -411,15 +412,15 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
       )}
 
       {/* 3. Program & Location Section */}
-      <div className="border-t pt-4" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
-        <h4 className="text-sm font-medium mb-3" style={{ fontFamily: 'Nohemi', fontWeight: 500, color: 'var(--foreground)' }}>Program & Location</h4>
+      <div className="pt-4 px-6 py-4 rounded-lg card-neu-flat -mx-6" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+        <h4 className="font-medium mb-3" style={{ fontSize: '16px', color: 'var(--foreground)' }}>PROGRAM & LOCATION</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={createForm.control}
             name="program_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm font-medium" style={{ fontFamily: 'Nohemi', fontWeight: 500 }}>Program *</FormLabel>
+                <FormLabel className="font-medium" style={{ fontSize: '16px' }}>PROGRAM *</FormLabel>
                 <FormControl>
                   <CustomSelector
                     value={field.value || selectedProgram || ''}
@@ -447,7 +448,7 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
             name="location_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm font-medium" style={{ fontFamily: 'Nohemi', fontWeight: 500 }}>Location</FormLabel>
+                  <FormLabel className="font-medium" style={{ fontSize: '16px' }}>LOCATION</FormLabel>
                 <FormControl>
                   <CustomSelector
                     value={field.value}
@@ -469,21 +470,21 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
       </div>
 
       {/* 3. Personal Information Section */}
-      <div className="border-t pt-4" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
-        <h4 className="text-sm font-medium mb-3" style={{ fontFamily: 'Nohemi', fontWeight: 500, color: 'var(--foreground)' }}>Personal Information</h4>
+      <div className="pt-4 px-6 py-4 rounded-lg card-neu-flat -mx-6" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+        <h4 className="font-medium mb-3" style={{ fontSize: '16px', color: 'var(--foreground)' }}>PERSONAL INFORMATION</h4>
         
         {/* Contact Subsection */}
         <div className="mb-6">
-          <h5 className="text-sm font-medium mb-3" style={{ fontFamily: 'Nohemi', fontWeight: 500, color: 'var(--foreground)' }}>Contact</h5>
+          <h5 className="font-medium mb-3" style={{ fontSize: '16px', color: 'var(--foreground)' }}>CONTACT</h5>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={createForm.control}
               name="first_name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-medium" style={{ fontFamily: 'Nohemi', fontWeight: 500 }}>First Name *</FormLabel>
+                  <FormLabel className="font-medium" style={{ fontSize: '16px' }}>FIRST NAME *</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter first name" className="mt-1" {...field} />
+                    <Input placeholder="Enter first name" className="mt-1 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -494,9 +495,9 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
               name="last_name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-medium" style={{ fontFamily: 'Nohemi', fontWeight: 500 }}>Last Name *</FormLabel>
+                  <FormLabel className="font-medium" style={{ fontSize: '16px' }}>LAST NAME *</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter last name" className="mt-1" {...field} />
+                    <Input placeholder="Enter last name" className="mt-1 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -509,7 +510,7 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
               name="phone_type"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-medium" style={{ fontFamily: 'Nohemi', fontWeight: 500 }}>Phone Type</FormLabel>
+                  <FormLabel className="font-medium" style={{ fontSize: '16px' }}>PHONE TYPE</FormLabel>
                   <FormControl>
                     <CustomSelector
                       value={field.value}
@@ -531,12 +532,13 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-medium" style={{ fontFamily: 'Nohemi', fontWeight: 500 }}>Phone</FormLabel>
+                  <FormLabel className="font-medium" style={{ fontSize: '16px' }}>PHONE</FormLabel>
                   <FormControl>
                     <PhoneInput
                       value={field.value || ''}
                       onChange={field.onChange}
-                      className="mt-1"
+                      className="mt-1 card-neu-flat [&]:shadow-none"
+                      style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     />
                   </FormControl>
                   <FormMessage />
@@ -548,9 +550,9 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-medium" style={{ fontFamily: 'Nohemi', fontWeight: 500 }}>Email</FormLabel>
+                  <FormLabel className="font-medium" style={{ fontSize: '16px' }}>EMAIL</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="client@email.com" className="mt-1" {...field} />
+                    <Input type="email" placeholder="client@email.com" className="mt-1 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -561,12 +563,13 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
               name="pin"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-medium" style={{ fontFamily: 'Nohemi', fontWeight: 500 }}>4-Digit PIN</FormLabel>
+                  <FormLabel className="font-medium" style={{ fontSize: '16px' }}>4-DIGIT PIN</FormLabel>
                   <FormControl>
                     <Input 
                       type="text" 
                       placeholder="1234" 
-                      className="mt-1" 
+                      className="mt-1 card-neu-flat [&]:shadow-none" 
+                      style={{ backgroundColor: 'var(--background)', border: 'none' }}
                       maxLength={4}
                       {...field}
                       onChange={(e) => {
@@ -630,14 +633,14 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
 
         {/* Demographics Subsection */}
         <div>
-          <h5 className="text-sm font-medium mb-3" style={{ fontFamily: 'Nohemi', fontWeight: 500, color: 'var(--foreground)' }}>Demographics</h5>
+          <h5 className="font-medium mb-3" style={{ fontSize: '16px', color: 'var(--foreground)' }}>DEMOGRAPHICS</h5>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={createForm.control}
               name="birth_sex"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-medium" style={{ fontFamily: 'Nohemi', fontWeight: 500 }}>Birth Sex</FormLabel>
+                  <FormLabel className="font-medium" style={{ fontSize: '16px' }}>BIRTH SEX</FormLabel>
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
@@ -663,9 +666,9 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
               name="date_of_birth"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-medium" style={{ fontFamily: 'Nohemi', fontWeight: 500 }}>Date of Birth</FormLabel>
+                  <FormLabel className="font-medium" style={{ fontSize: '16px' }}>DATE OF BIRTH</FormLabel>
                   <FormControl>
-                    <Input type="date" className="mt-1" {...field} />
+                    <Input type="date" className="mt-1 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }} {...field} />
                   </FormControl>
                   {calculatedAge !== null && (
                     <p className="text-sm mt-1" style={{ color: 'var(--muted-foreground)' }}>
@@ -695,9 +698,9 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
               name="race"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-medium" style={{ fontFamily: 'Nohemi', fontWeight: 500 }}>Race</FormLabel>
+                  <FormLabel className="font-medium" style={{ fontSize: '16px' }}>RACE</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter race" className="mt-1" {...field} />
+                    <Input placeholder="Enter race" className="mt-1 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -708,8 +711,8 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
       </div>
 
       {/* 4. Program Contacts Section */}
-      <div className="border-t pt-4" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
-        <h4 className="text-sm font-medium mb-3" style={{ fontFamily: 'Nohemi', fontWeight: 500, color: 'var(--foreground)' }}>Program Contacts</h4>
+      <div className="pt-4 px-6 py-4 rounded-lg card-neu-flat -mx-6" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+        <h4 className="font-medium mb-3" style={{ fontSize: '16px', color: 'var(--foreground)' }}>PROGRAM CONTACTS</h4>
         <div className="space-y-4">
           <div className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
             Add program contacts (Case Manager, Peer, etc.) who can be reached during trips.
@@ -721,31 +724,27 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
               {programContacts.map((contact, index) => (
                 <div 
                   key={contact.id} 
-                  className="border rounded-lg p-4"
+                  className="rounded-lg p-4 card-neu-flat"
                   style={{ 
-                    borderColor: 'var(--border)',
-                    backgroundColor: 'var(--muted)'
+                    backgroundColor: 'var(--background)',
+                    border: 'none'
                   }}
                 >
                   <div className="flex items-start justify-between mb-3">
-                    <h5 className="text-sm font-medium" style={{ fontFamily: 'Nohemi', fontWeight: 500, color: 'var(--foreground)' }}>
-                      Contact {index + 1}
+                    <h5 className="font-medium" style={{ fontSize: '16px', color: 'var(--foreground)' }}>
+                      CONTACT {index + 1}
                     </h5>
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       onClick={() => removeContact(index)}
+                      className="card-neu-flat hover:card-neu [&]:shadow-none !text-[#ff8475] hover:!text-[#ff8475] [&_svg]:!text-[#ff8475]"
                       style={{ 
-                        color: 'var(--destructive)'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'hsla(0, 84%, 60%, 0.15)';
-                        e.currentTarget.style.color = 'var(--destructive)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = 'var(--destructive)';
+                        backgroundColor: 'var(--background)',
+                        border: 'none',
+                        boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)',
+                        fontWeight: 400
                       }}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -758,9 +757,9 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
                       name={`program_contacts.${index}.first_name`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium" style={{ fontFamily: 'Nohemi', fontWeight: 500 }}>First Name *</FormLabel>
+                          <FormLabel className="font-medium" style={{ fontSize: '16px' }}>FIRST NAME *</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter first name" className="mt-1" {...field} />
+                            <Input placeholder="Enter first name" className="mt-1 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -772,9 +771,9 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
                       name={`program_contacts.${index}.last_name`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium" style={{ fontFamily: 'Nohemi', fontWeight: 500 }}>Last Name *</FormLabel>
+                          <FormLabel className="font-medium" style={{ fontSize: '16px' }}>LAST NAME *</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter last name" className="mt-1" {...field} />
+                            <Input placeholder="Enter last name" className="mt-1 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -786,9 +785,9 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
                       name={`program_contacts.${index}.role`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium" style={{ fontFamily: 'Nohemi', fontWeight: 500 }}>Role *</FormLabel>
+                          <FormLabel className="font-medium" style={{ fontSize: '16px' }}>ROLE *</FormLabel>
                           <FormControl>
-                            <Input placeholder="e.g., Case Manager, Peer" className="mt-1" {...field} />
+                            <Input placeholder="e.g., Case Manager, Peer" className="mt-1 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -800,9 +799,9 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
                       name={`program_contacts.${index}.phone`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium" style={{ fontFamily: 'Nohemi', fontWeight: 500 }}>Phone *</FormLabel>
+                          <FormLabel className="font-medium" style={{ fontSize: '16px' }}>PHONE *</FormLabel>
                           <FormControl>
-                            <Input placeholder="(555) 123-4567" className="mt-1" {...field} />
+                            <Input placeholder="(555) 123-4567" className="mt-1 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -839,6 +838,12 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
             type="button"
             variant="outline"
             size="sm"
+            className="card-neu-flat hover:card-neu [&]:shadow-none"
+            style={{ 
+              backgroundColor: 'var(--background)', 
+              border: 'none',
+              boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+            }}
             onClick={() => appendContact({
               first_name: "",
               last_name: "",
@@ -846,7 +851,6 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
               phone: "",
               is_preferred_poc: false
             })}
-            className="flex items-center space-x-2"
           >
             <UserPlus className="h-4 w-4" />
             <span>+ Add Contact</span>
@@ -855,19 +859,19 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
       </div>
 
       {/* 5. Transport Requirements Section */}
-      <div className="border-t pt-4" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
-        <h4 className="text-sm font-medium mb-3" style={{ fontFamily: 'Nohemi', fontWeight: 500, color: 'var(--foreground)' }}>Transport Requirements</h4>
+      <div className="pt-4 px-6 py-4 rounded-lg card-neu-flat -mx-6" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+        <h4 className="font-medium mb-3" style={{ fontSize: '16px', color: 'var(--foreground)' }}>TRANSPORT REQUIREMENTS</h4>
         
         {/* Mobility Requirements */}
         <div className="mb-6">
-          <h5 className="text-sm font-medium mb-3" style={{ fontFamily: 'Nohemi', fontWeight: 500, color: 'var(--foreground)' }}>Mobility</h5>
+          <h5 className="font-medium mb-3" style={{ fontSize: '16px', color: 'var(--foreground)' }}>MOBILITY</h5>
           <div className="space-y-2">
             {['Ambulatory', 'Wheelchair', 'Walker/Cane', 'Bariatric', 'Limited Mobility/Needs Assistance', 'Other'].map((option) => (
               <div key={option} className="flex items-center space-x-2">
                 <Checkbox id={`mobility-${option}`} />
                 <label htmlFor={`mobility-${option}`} className="text-sm">{option}</label>
                 {option === 'Other' && (
-                  <Input placeholder="Specify other mobility need" className="ml-4 w-64" />
+                  <Input placeholder="Specify other mobility need" className="ml-4 w-64 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }} />
                 )}
               </div>
             ))}
@@ -876,14 +880,14 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
 
         {/* Special Requirements */}
         <div className="mb-6">
-          <h5 className="text-sm font-medium mb-3" style={{ fontFamily: 'Nohemi', fontWeight: 500, color: 'var(--foreground)' }}>Special</h5>
+          <h5 className="font-medium mb-3" style={{ fontSize: '16px', color: 'var(--foreground)' }}>SPECIAL</h5>
           <div className="space-y-2">
             {['Door to Door', 'Curb to Curb', 'Soft Landing (driver escorts client to/from)', 'Driver needs to: Pick up paperwork', 'Driver needs to: Drop off paperwork', 'Other'].map((option) => (
               <div key={option} className="flex items-center space-x-2">
                 <Checkbox id={`special-${option}`} />
                 <label htmlFor={`special-${option}`} className="text-sm">{option}</label>
                 {option === 'Other' && (
-                  <Input placeholder="Specify other special need" className="ml-4 w-64" />
+                  <Input placeholder="Specify other special need" className="ml-4 w-64 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }} />
                 )}
               </div>
             ))}
@@ -892,14 +896,14 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
 
         {/* Communication Needs */}
         <div className="mb-6">
-          <h5 className="text-sm font-medium mb-3" style={{ fontFamily: 'Nohemi', fontWeight: 500, color: 'var(--foreground)' }}>Communication Needs</h5>
+          <h5 className="font-medium mb-3" style={{ fontSize: '16px', color: 'var(--foreground)' }}>COMMUNICATION NEEDS</h5>
           <div className="space-y-2">
             {['Non-Verbal', 'Calm Communication', 'Calm Music', 'Other'].map((option) => (
               <div key={option} className="flex items-center space-x-2">
                 <Checkbox id={`communication-${option}`} />
                 <label htmlFor={`communication-${option}`} className="text-sm">{option}</label>
                 {option === 'Other' && (
-                  <Input placeholder="Specify other communication need" className="ml-4 w-64" />
+                  <Input placeholder="Specify other communication need" className="ml-4 w-64 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }} />
                 )}
               </div>
             ))}
@@ -908,15 +912,15 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
 
         {/* Safety/Comfort */}
         <div>
-          <h5 className="text-sm font-medium mb-3" style={{ fontFamily: 'Nohemi', fontWeight: 500, color: 'var(--foreground)' }}>Safety/Comfort</h5>
+          <h5 className="font-medium mb-3" style={{ fontSize: '16px', color: 'var(--foreground)' }}>SAFETY/COMFORT</h5>
           <FormField
             control={createForm.control}
             name="preferred_driver_request"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm font-medium" style={{ fontFamily: 'Nohemi', fontWeight: 500 }}>Driver Request (familiar face)</FormLabel>
+                <FormLabel className="font-medium" style={{ fontSize: '16px' }}>DRIVER REQUEST (FAMILIAR FACE)</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="Any specific driver preferences or requests" className="mt-1" {...field} />
+                  <Textarea placeholder="Any specific driver preferences or requests" className="mt-1 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

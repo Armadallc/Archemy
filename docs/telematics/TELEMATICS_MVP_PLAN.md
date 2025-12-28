@@ -700,3 +700,4 @@ ALTER TABLE driver_locations ADD COLUMN IF NOT EXISTS trip_id VARCHAR(50) REFERE
 
 
 
+

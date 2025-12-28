@@ -6,10 +6,12 @@ import {
   StyleSheet,
   FlatList,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import NeumorphicCard from './NeumorphicCard';
 
 interface Trip {
   id: string;
@@ -130,7 +132,7 @@ export default function TripCalendar({
       switch (status) {
         case 'scheduled':
         case 'confirmed':
-          return theme.colors.scheduled || '#3b82f6';
+          return theme.colors.scheduled || '#7afffe';
         case 'in_progress':
           return theme.colors.inProgress || '#f59e0b';
         case 'completed':
@@ -146,7 +148,7 @@ export default function TripCalendar({
     switch (status) {
       case 'scheduled':
       case 'confirmed':
-        return theme.colors.tripStatus?.scheduled || theme.colors.scheduled || '#3b82f6';
+        return theme.colors.tripStatus?.scheduled || theme.colors.scheduled || '#7afffe';
       case 'in_progress':
         return theme.colors.tripStatus?.inProgress || theme.colors.inProgress || '#f59e0b';
       case 'completed':
@@ -187,34 +189,46 @@ export default function TripCalendar({
     setSelectedDate(new Date());
   };
 
+  // Detect dark theme for neumorphic styling
+  const isDark = theme.mode === 'dark' || 
+    (theme.mode === 'system' && theme.colors.background === '#1e2023');
+
   const renderTrip = ({ item: trip }: { item: Trip }) => (
     <TouchableOpacity
-      style={[styles.tripCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
       onPress={() => onTripPress(trip.id)}
       activeOpacity={0.7}
+      style={styles.tripCardWrapper}
     >
-      <View style={styles.tripHeader}>
-        <View style={styles.statusContainer}>
-          <View style={[styles.statusDot, { backgroundColor: getStatusColor(trip.status) }]} />
-          <Text style={[styles.statusText, { color: theme.colors.foreground }, theme.typography.caption]}>
-            {trip.status.replace('_', ' ').toUpperCase()}
+      <NeumorphicCard
+        style={isDark ? 'embossed' : 'debossed'}
+        intensity="medium"
+        borderRadius={12}
+        padding={12}
+        containerStyle={styles.tripCardContainer}
+      >
+        <View style={styles.tripHeader}>
+          <View style={styles.statusContainer}>
+            <View style={[styles.statusDot, { backgroundColor: getStatusColor(trip.status) }]} />
+            <Text style={[styles.statusText, { color: theme.colors.foreground }, theme.typography.caption]}>
+              {trip.status.replace('_', ' ').toUpperCase()}
+            </Text>
+          </View>
+          <Text style={[styles.timeText, { color: theme.colors.foreground }, theme.typography.body]}>
+            {formatTime(trip.scheduled_pickup_time)}
           </Text>
         </View>
-        <Text style={[styles.timeText, { color: theme.colors.foreground }, theme.typography.body]}>
-          {formatTime(trip.scheduled_pickup_time)}
-        </Text>
-      </View>
 
-      <Text style={[styles.clientName, { color: theme.colors.foreground }, theme.typography.body]} numberOfLines={1}>
-        {getDisplayName(trip)}
-      </Text>
-
-      <View style={styles.locationRow}>
-        <Ionicons name="location" size={14} color={theme.colors.mutedForeground} />
-        <Text style={[styles.locationText, { color: theme.colors.mutedForeground }, theme.typography.bodySmall]} numberOfLines={1}>
-          {trip.pickup_address}
+        <Text style={[styles.clientName, { color: theme.colors.foreground }, theme.typography.body]} numberOfLines={1}>
+          {getDisplayName(trip)}
         </Text>
-      </View>
+
+        <View style={styles.locationRow}>
+          <Ionicons name="location" size={14} color={theme.colors.mutedForeground} />
+          <Text style={[styles.locationText, { color: theme.colors.mutedForeground }, theme.typography.bodySmall]} numberOfLines={1}>
+            {trip.pickup_address}
+          </Text>
+        </View>
+      </NeumorphicCard>
     </TouchableOpacity>
   );
 
@@ -289,12 +303,23 @@ export default function TripCalendar({
     content: {
       flex: 1,
       padding: 16,
+      paddingTop: 8,
+      paddingBottom: 8,
+      // Allow shadows to render without clipping
+      ...(Platform.OS === 'web' && {
+        overflow: 'visible',
+      } as any),
     },
-    tripCard: {
-      borderRadius: 12,
-      padding: 12,
-      marginBottom: 8,
-      borderWidth: 1,
+    tripCardWrapper: {
+      marginBottom: 12,
+      marginHorizontal: 4, // Add horizontal margin to allow shadows to show
+      // Ensure shadows aren't clipped
+      ...(Platform.OS === 'web' && {
+        overflow: 'visible',
+      } as any),
+    },
+    tripCardContainer: {
+      width: '100%',
     },
     tripHeader: {
       flexDirection: 'row',
@@ -431,6 +456,18 @@ export default function TripCalendar({
             keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={false}
             refreshControl={refreshControl}
+            contentContainerStyle={{
+              paddingHorizontal: 4, // Add horizontal padding to allow shadows
+              paddingVertical: 8,
+              ...(Platform.OS === 'web' && {
+                overflow: 'visible',
+              } as any),
+            }}
+            style={{
+              ...(Platform.OS === 'web' && {
+                overflow: 'visible',
+              } as any),
+            }}
           />
         )}
       </View>

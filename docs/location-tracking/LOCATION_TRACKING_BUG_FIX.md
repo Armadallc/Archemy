@@ -64,3 +64,4 @@ After deploying this fix:
 - Location permission is required on mobile device
 - Background location permission is required for iOS to track when app is in background
 
+

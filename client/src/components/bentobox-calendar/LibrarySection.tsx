@@ -25,15 +25,15 @@ export function LibrarySection({ className }: LibrarySectionProps) {
 
   return (
     <div className={cn("flex flex-col h-full overflow-hidden", className)}>
-      <div className="p-4 border-b flex items-center">
-        <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
+      <div className="p-4 border-b flex items-center" style={{ borderColor: 'rgba(165, 200, 202, 0.2)' }}>
+        <div className="inline-flex h-10 items-center justify-center rounded-md p-1">
           <button
             className={cn(
               "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 font-medium transition-all",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-              "bg-background text-foreground shadow-sm"
+              "card-neu-pressed [&]:shadow-none"
             )}
-            style={{ fontSize: '23px' }}
+            style={{ fontSize: '23px', backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}
           >
             LIBRARY
           </button>
@@ -43,7 +43,7 @@ export function LibrarySection({ className }: LibrarySectionProps) {
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {/* Staff */}
         <div>
-          <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase">
+          <h4 className="text-xs font-medium mb-2 uppercase" style={{ color: '#a5c8ca', opacity: 0.7 }}>
             Staff
           </h4>
           <div className="space-y-2">
@@ -52,14 +52,15 @@ export function LibrarySection({ className }: LibrarySectionProps) {
                 key={staff.id}
                 draggable
                 onDragStart={(e) => handleDragStart(e, staff)}
-                className="p-2 rounded-md border bg-background cursor-move hover:bg-muted transition-colors"
+                className="p-2 rounded-md card-neu-flat cursor-move hover:card-neu transition-colors"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               >
                 <div className="flex items-center gap-2">
-                  <GripVertical className="w-4 h-4 opacity-50" />
+                  <GripVertical className="w-4 h-4" style={{ color: '#a5c8ca', opacity: 0.5 }} />
                   <div className="flex-1">
-                    <div className="text-sm font-medium">{staff.name}</div>
+                    <div className="text-sm font-medium" style={{ color: '#a5c8ca', opacity: 0.8 }}>{staff.name}</div>
                     {staff.role && (
-                      <div className="text-xs text-muted-foreground">{staff.role}</div>
+                      <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>{staff.role}</div>
                     )}
                   </div>
                 </div>
@@ -70,7 +71,7 @@ export function LibrarySection({ className }: LibrarySectionProps) {
 
         {/* Activities */}
         <div>
-          <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase">
+          <h4 className="text-xs font-medium mb-2 uppercase" style={{ color: '#a5c8ca', opacity: 0.7 }}>
             Encounter Type
           </h4>
           <div className="space-y-2">
@@ -79,11 +80,12 @@ export function LibrarySection({ className }: LibrarySectionProps) {
                 key={activity.id}
                 draggable
                 onDragStart={(e) => handleDragStart(e, activity)}
-                className="p-2 rounded-md border bg-background cursor-move hover:bg-muted transition-colors"
+                className="p-2 rounded-md card-neu-flat cursor-move hover:card-neu transition-colors"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               >
                 <div className="flex items-center gap-2">
-                  <GripVertical className="w-4 h-4 opacity-50" />
-                  <div className="text-sm font-medium">{activity.name}</div>
+                  <GripVertical className="w-4 h-4" style={{ color: '#a5c8ca', opacity: 0.5 }} />
+                  <div className="text-sm font-medium" style={{ color: '#a5c8ca', opacity: 0.8 }}>{activity.name}</div>
                 </div>
               </div>
             ))}
@@ -92,7 +94,7 @@ export function LibrarySection({ className }: LibrarySectionProps) {
 
         {/* Clients */}
         <div>
-          <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase">
+          <h4 className="text-xs font-medium mb-2 uppercase" style={{ color: '#a5c8ca', opacity: 0.7 }}>
             Clients
           </h4>
           <div className="space-y-2">
@@ -101,11 +103,12 @@ export function LibrarySection({ className }: LibrarySectionProps) {
                 key={client.id}
                 draggable
                 onDragStart={(e) => handleDragStart(e, client)}
-                className="p-2 rounded-md border bg-background cursor-move hover:bg-muted transition-colors"
+                className="p-2 rounded-md card-neu-flat cursor-move hover:card-neu transition-colors"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               >
                 <div className="flex items-center gap-2">
-                  <GripVertical className="w-4 h-4 opacity-50" />
-                  <div className="text-sm font-medium">{client.name}</div>
+                  <GripVertical className="w-4 h-4" style={{ color: '#a5c8ca', opacity: 0.5 }} />
+                  <div className="text-sm font-medium" style={{ color: '#a5c8ca', opacity: 0.8 }}>{client.name}</div>
                 </div>
               </div>
             ))}
@@ -114,7 +117,7 @@ export function LibrarySection({ className }: LibrarySectionProps) {
 
         {/* Client Groups */}
         <div>
-          <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase">
+          <h4 className="text-xs font-medium mb-2 uppercase" style={{ color: '#a5c8ca', opacity: 0.7 }}>
             Client Groups
           </h4>
           <div className="space-y-2">
@@ -123,13 +126,14 @@ export function LibrarySection({ className }: LibrarySectionProps) {
                 key={group.id}
                 draggable
                 onDragStart={(e) => handleDragStart(e, group)}
-                className="p-2 rounded-md border bg-background cursor-move hover:bg-muted transition-colors"
+                className="p-2 rounded-md card-neu-flat cursor-move hover:card-neu transition-colors"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               >
                 <div className="flex items-center gap-2">
-                  <GripVertical className="w-4 h-4 opacity-50" />
+                  <GripVertical className="w-4 h-4" style={{ color: '#a5c8ca', opacity: 0.5 }} />
                   <div className="flex-1">
-                    <div className="text-sm font-medium">{group.name}</div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-sm font-medium" style={{ color: '#a5c8ca', opacity: 0.8 }}>{group.name}</div>
+                    <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                       {group.clientIds.length} clients
                     </div>
                   </div>
@@ -141,7 +145,7 @@ export function LibrarySection({ className }: LibrarySectionProps) {
 
         {/* Locations */}
         <div>
-          <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase">
+          <h4 className="text-xs font-medium mb-2 uppercase" style={{ color: '#a5c8ca', opacity: 0.7 }}>
             Locations
           </h4>
           <div className="space-y-2">
@@ -150,11 +154,12 @@ export function LibrarySection({ className }: LibrarySectionProps) {
                 key={location.id}
                 draggable
                 onDragStart={(e) => handleDragStart(e, location)}
-                className="p-2 rounded-md border bg-background cursor-move hover:bg-muted transition-colors"
+                className="p-2 rounded-md card-neu-flat cursor-move hover:card-neu transition-colors"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               >
                 <div className="flex items-center gap-2">
-                  <GripVertical className="w-4 h-4 opacity-50" />
-                  <div className="text-sm font-medium">{location.name}</div>
+                  <GripVertical className="w-4 h-4" style={{ color: '#a5c8ca', opacity: 0.5 }} />
+                  <div className="text-sm font-medium" style={{ color: '#a5c8ca', opacity: 0.8 }}>{location.name}</div>
                 </div>
               </div>
             ))}
@@ -163,7 +168,7 @@ export function LibrarySection({ className }: LibrarySectionProps) {
 
         {/* Durations */}
         <div>
-          <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase">
+          <h4 className="text-xs font-medium mb-2 uppercase" style={{ color: '#a5c8ca', opacity: 0.7 }}>
             Duration
           </h4>
           <div className="space-y-2">
@@ -172,11 +177,12 @@ export function LibrarySection({ className }: LibrarySectionProps) {
                 key={duration.id}
                 draggable
                 onDragStart={(e) => handleDragStart(e, duration)}
-                className="p-2 rounded-md border bg-background cursor-move hover:bg-muted transition-colors"
+                className="p-2 rounded-md card-neu-flat cursor-move hover:card-neu transition-colors"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               >
                 <div className="flex items-center gap-2">
-                  <GripVertical className="w-4 h-4 opacity-50" />
-                  <div className="text-sm font-medium">{duration.label}</div>
+                  <GripVertical className="w-4 h-4" style={{ color: '#a5c8ca', opacity: 0.5 }} />
+                  <div className="text-sm font-medium" style={{ color: '#a5c8ca', opacity: 0.8 }}>{duration.label}</div>
                 </div>
               </div>
             ))}

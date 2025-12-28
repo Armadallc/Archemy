@@ -1451,7 +1451,286 @@ export const clientsStorage = {
     const { data, error } = await supabase.from('clients').update({ is_active: false }).eq('id', id);
     if (error) throw error;
     return data;
-  }
+  },
+
+  /**
+   * Merge multiple clients into a primary client
+   * Transfers all related data (trips, group memberships) to the primary client
+   */
+  async mergeClients(primaryClientId: string, secondaryClientIds: string[]) {
+    if (!primaryClientId || secondaryClientIds.length === 0) {
+      throw new Error('Primary client ID and at least one secondary client ID are required');
+    }
+
+    // Verify primary client exists and has SCID
+    const { data: primaryClient, error: primaryError } = await supabase
+      .from('clients')
+      .select('id, scid')
+      .eq('id', primaryClientId)
+      .single();
+
+    if (primaryError || !primaryClient) {
+      throw new Error(`Primary client not found: ${primaryClientId}`);
+    }
+
+    if (!primaryClient.scid) {
+      throw new Error('Primary client must have a valid SCID to merge');
+    }
+
+    // Verify secondary clients exist
+    const { data: secondaryClients, error: secondaryError } = await supabase
+      .from('clients')
+      .select('id')
+      .in('id', secondaryClientIds);
+
+    if (secondaryError || !secondaryClients || secondaryClients.length !== secondaryClientIds.length) {
+      throw new Error('One or more secondary clients not found');
+    }
+
+    // Check for active trips on secondary clients
+    const { data: activeTrips, error: activeTripsError } = await supabase
+      .from('trips')
+      .select('id, status, client_id')
+      .in('client_id', secondaryClientIds)
+      .in('status', ['scheduled', 'confirmed', 'in_progress']);
+
+    if (activeTripsError) {
+      throw new Error(`Error checking active trips: ${activeTripsError.message}`);
+    }
+
+    if (activeTrips && activeTrips.length > 0) {
+      throw new Error(`Cannot merge: ${activeTrips.length} active trip(s) found on secondary clients. Please complete or cancel active trips first.`);
+    }
+
+    // Get count of all trips to transfer (for reporting)
+    const { count: totalTripsCount, error: countError } = await supabase
+      .from('trips')
+      .select('id', { count: 'exact', head: true })
+      .in('client_id', secondaryClientIds);
+
+    if (countError) {
+      throw new Error(`Error counting trips: ${countError.message}`);
+    }
+
+    // Transfer trips from secondary clients to primary
+    const { error: updateTripsError } = await supabase
+      .from('trips')
+      .update({ client_id: primaryClientId })
+      .in('client_id', secondaryClientIds);
+
+    if (updateTripsError) {
+      throw new Error(`Error transferring trips: ${updateTripsError.message}`);
+    }
+
+    // Transfer client group memberships
+    // First, get all memberships for secondary clients
+    const { data: memberships, error: membershipsError } = await supabase
+      .from('client_group_memberships')
+      .select('group_id, client_id')
+      .in('client_id', secondaryClientIds);
+
+    if (membershipsError) {
+      throw new Error(`Error fetching group memberships: ${membershipsError.message}`);
+    }
+
+    if (memberships && memberships.length > 0) {
+      // Get existing memberships for primary client to avoid duplicates
+      const { data: existingMemberships, error: existingError } = await supabase
+        .from('client_group_memberships')
+        .select('group_id')
+        .eq('client_id', primaryClientId);
+
+      if (existingError) {
+        throw new Error(`Error checking existing memberships: ${existingError.message}`);
+      }
+
+      const existingGroupIds = new Set((existingMemberships || []).map(m => m.group_id));
+
+      // Insert new memberships (avoiding duplicates)
+      const newMemberships = memberships
+        .filter(m => !existingGroupIds.has(m.group_id))
+        .map(m => ({
+          group_id: m.group_id,
+          client_id: primaryClientId,
+          joined_at: new Date().toISOString()
+        }));
+
+      if (newMemberships.length > 0) {
+        const { error: insertError } = await supabase
+          .from('client_group_memberships')
+          .insert(newMemberships);
+
+        if (insertError) {
+          throw new Error(`Error transferring group memberships: ${insertError.message}`);
+        }
+      }
+
+      // Delete old memberships
+      const { error: deleteMembershipsError } = await supabase
+        .from('client_group_memberships')
+        .delete()
+        .in('client_id', secondaryClientIds);
+
+      if (deleteMembershipsError) {
+        throw new Error(`Error deleting old memberships: ${deleteMembershipsError.message}`);
+      }
+    }
+
+    // Merge client data (keep most complete data from primary, fill gaps from secondary)
+    // This is handled by keeping primary client as-is since it has SCID
+
+    // Delete secondary clients (soft delete - set is_active to false)
+    const { error: deleteError } = await supabase
+      .from('clients')
+      .update({ is_active: false })
+      .in('id', secondaryClientIds);
+
+    if (deleteError) {
+      throw new Error(`Error deleting secondary clients: ${deleteError.message}`);
+    }
+
+    return {
+      success: true,
+      primaryClientId,
+      mergedCount: secondaryClientIds.length,
+      tripsTransferred: totalTripsCount || 0,
+      membershipsTransferred: memberships ? memberships.length : 0
+    };
+  },
+
+  /**
+   * Bulk delete clients (soft delete)
+   * Checks for active trips before deletion
+   */
+  async bulkDeleteClients(clientIds: string[]) {
+    if (!clientIds || clientIds.length === 0) {
+      throw new Error('At least one client ID is required');
+    }
+
+    // Check for active trips
+    const { data: activeTrips, error: tripsError } = await supabase
+      .from('trips')
+      .select('id, status, client_id')
+      .in('client_id', clientIds)
+      .in('status', ['scheduled', 'confirmed', 'in_progress']);
+
+    if (tripsError) {
+      throw new Error(`Error checking active trips: ${tripsError.message}`);
+    }
+
+    const clientsWithActiveTrips = new Set(
+      (activeTrips || []).map(trip => trip.client_id)
+    );
+
+    if (clientsWithActiveTrips.size > 0) {
+      throw new Error(
+        `Cannot delete ${clientsWithActiveTrips.size} client(s) with active trips. ` +
+        `Please complete or cancel active trips first.`
+      );
+    }
+
+    // Soft delete clients
+    const { error: deleteError } = await supabase
+      .from('clients')
+      .update({ is_active: false })
+      .in('id', clientIds);
+
+    if (deleteError) {
+      throw new Error(`Error deleting clients: ${deleteError.message}`);
+    }
+
+    return {
+      success: true,
+      deletedCount: clientIds.length,
+      skippedCount: clientsWithActiveTrips.size
+    };
+  },
+
+  /**
+   * Bulk import clients from CSV/Excel data
+   * @param clients Array of client objects to import
+   * @param programId Program ID to assign to all imported clients
+   * @returns Object with success count, failed count, and errors
+   */
+  async bulkImportClients(clients: any[], programId: string) {
+    console.log(`Attempting to bulk import ${clients.length} clients for program: ${programId}`);
+
+    if (!programId) {
+      throw new Error('Program ID is required for bulk import');
+    }
+
+    // Validate program exists
+    const { data: program, error: programError } = await supabase
+      .from('programs')
+      .select('id, name')
+      .eq('id', programId)
+      .single();
+
+    if (programError || !program) {
+      throw new Error(`Program not found: ${programId}`);
+    }
+
+    const results = {
+      success: 0,
+      failed: 0,
+      errors: [] as Array<{ row: number; error: string }>,
+    };
+
+    // Process clients one by one to capture individual errors
+    for (let i = 0; i < clients.length; i++) {
+      const clientData = clients[i];
+      const rowNumber = i + 2; // +2 because row 1 is header, and arrays are 0-indexed
+
+      try {
+        // Validate required fields
+        if (!clientData.first_name || !clientData.last_name) {
+          results.failed++;
+          results.errors.push({
+            row: rowNumber,
+            error: 'Missing required fields: first_name and last_name are required',
+          });
+          continue;
+        }
+
+        // Prepare client data for insertion
+        const insertData: any = {
+          first_name: clientData.first_name.trim(),
+          last_name: clientData.last_name.trim(),
+          program_id: programId,
+          is_active: true,
+        };
+
+        // Add optional fields if provided
+        if (clientData.email) insertData.email = clientData.email.trim();
+        if (clientData.phone) insertData.phone = clientData.phone.trim();
+        if (clientData.phone_type) insertData.phone_type = clientData.phone_type.trim();
+        if (clientData.street_address) insertData.street_address = clientData.street_address.trim();
+        if (clientData.city) insertData.city = clientData.city.trim();
+        if (clientData.state) insertData.state = clientData.state.trim();
+        if (clientData.zip_code) insertData.zip_code = clientData.zip_code.trim();
+        if (clientData.date_of_birth) insertData.date_of_birth = clientData.date_of_birth;
+        if (clientData.birth_sex) insertData.birth_sex = clientData.birth_sex.trim();
+        if (clientData.age) insertData.age = parseInt(clientData.age);
+        if (clientData.race) insertData.race = clientData.race.trim();
+        if (clientData.emergency_contact_name) insertData.emergency_contact_name = clientData.emergency_contact_name.trim();
+        if (clientData.emergency_contact_phone) insertData.emergency_contact_phone = clientData.emergency_contact_phone.trim();
+
+        // Use createClient to leverage SCID generation
+        await this.createClient(insertData);
+        results.success++;
+      } catch (error: any) {
+        results.failed++;
+        results.errors.push({
+          row: rowNumber,
+          error: error.message || 'Unknown error occurred',
+        });
+        console.error(`Error importing client at row ${rowNumber}:`, error);
+      }
+    }
+
+    console.log(`Bulk import completed: ${results.success} successful, ${results.failed} failed`);
+    return results;
+  },
 };
 
 // ============================================================================

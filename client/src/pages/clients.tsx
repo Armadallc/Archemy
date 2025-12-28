@@ -14,6 +14,7 @@ import { Separator } from "../components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../components/ui/collapsible";
+import { Checkbox } from "../components/ui/checkbox";
 import { useToast } from "../hooks/use-toast";
 import { useAuth } from "../hooks/useAuth";
 import { useHierarchy } from "../hooks/useHierarchy";
@@ -21,7 +22,7 @@ import { usePageAccess } from "../hooks/use-page-access";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Search, Edit, Trash2, Phone, Mail, MapPin, Users, Building2, Calendar, UserPlus, UserMinus, Filter, Download, Upload, AlertTriangle, ArrowLeft, User, Heart, Shield, Star, UserCheck, ChevronDown, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Phone, Mail, MapPin, Users, Building2, Calendar, UserPlus, UserMinus, Filter, Download, Upload, AlertTriangle, ArrowLeft, User, Heart, Shield, Star, UserCheck, ChevronDown, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
 import { PhoneInput } from "../components/ui/phone-input";
 import { format, parseISO } from "date-fns";
 import { apiRequest } from "../lib/queryClient";
@@ -29,6 +30,7 @@ import ExportButton from "../components/export/ExportButton";
 import { ComprehensiveClientForm } from "../components/forms/ComprehensiveClientForm";
 import { RollbackManager } from "../utils/rollback-manager";
 import { HeaderScopeSelector } from "../components/HeaderScopeSelector";
+import { ClientImportDialog } from "../components/import/ClientImportDialog";
 
 // Zod schema for client validation
 const clientFormSchema = z.object({
@@ -198,6 +200,10 @@ export default function Clients() {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set()); // Track expanded client groups
   const [sortColumn, setSortColumn] = useState<string | null>(null); // Column to sort by
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc'); // Sort direction
+  const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
+  const [duplicateGroups, setDuplicateGroups] = useState<Client[][]>([]);
+  const [selectedDuplicateClients, setSelectedDuplicateClients] = useState<Set<string>>(new Set());
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   
   // React Hook Form for create client
   const createForm = useForm<ClientFormData>({
@@ -545,23 +551,60 @@ export default function Clients() {
     },
   });
 
-  // Cleanup duplicates mutation
-  const cleanupDuplicatesMutation = useMutation({
-    mutationFn: async () => {
-      return apiRequest("POST", `/api/clients/cleanup-duplicates`);
+  // Merge clients mutation
+  const mergeClientsMutation = useMutation({
+    mutationFn: async ({ primaryClientId, secondaryClientIds }: { primaryClientId: string; secondaryClientIds: string[] }) => {
+      const response = await apiRequest("POST", `/api/clients/merge`, {
+        primaryClientId,
+        secondaryClientIds
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to merge clients");
+      }
+      return response.json();
     },
-    onSuccess: async (response) => {
-      const data = await response.json();
+    onSuccess: (data) => {
       toast({
-        title: "Cleanup Complete",
-        description: `Deleted ${data.deletedCount || 0} duplicate clients. ${data.remainingCount || 0} clients remain.`,
+        title: "Clients Merged Successfully",
+        description: `Merged ${data.mergedCount} client(s) into primary client. ${data.tripsTransferred || 0} trips and ${data.membershipsTransferred || 0} group memberships transferred.`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      setIsDuplicateDialogOpen(false);
+      setSelectedDuplicateClients(new Set());
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
-        title: "Error",
-        description: "Failed to cleanup duplicates. Please try again.",
+        title: "Merge Failed",
+        description: error.message || "Failed to merge clients. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Bulk delete clients mutation
+  const bulkDeleteClientsMutation = useMutation({
+    mutationFn: async (clientIds: string[]) => {
+      const response = await apiRequest("POST", `/api/clients/bulk-delete`, { clientIds });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to delete clients");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Clients Deleted Successfully",
+        description: `Deleted ${data.deletedCount} client(s).`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      setIsDuplicateDialogOpen(false);
+      setSelectedDuplicateClients(new Set());
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete clients. Please try again.",
         variant: "destructive",
       });
     },
@@ -1063,6 +1106,48 @@ export default function Clients() {
       : <ArrowDown className="h-3 w-3 ml-1" />;
   };
 
+  // Expand/Collapse all functions
+  const expandAllClients = () => {
+    setExpandedClients(new Set(sortedClients.map(c => c.id)));
+  };
+
+  const collapseAllClients = () => {
+    setExpandedClients(new Set());
+  };
+
+  const areAllExpanded = sortedClients.length > 0 && expandedClients.size === sortedClients.length;
+  const areAllCollapsed = expandedClients.size === 0;
+
+  // Find duplicate clients based on first_name and last_name
+  const findDuplicates = useMemo(() => {
+    const nameMap = new Map<string, Client[]>();
+    
+    sortedClients.forEach(client => {
+      const key = `${client.first_name?.toLowerCase().trim()}_${client.last_name?.toLowerCase().trim()}`;
+      if (!nameMap.has(key)) {
+        nameMap.set(key, []);
+      }
+      nameMap.get(key)!.push(client);
+    });
+    
+    // Filter to only groups with 2+ clients
+    const duplicates: Client[][] = [];
+    nameMap.forEach((clients) => {
+      if (clients.length > 1) {
+        duplicates.push(clients);
+      }
+    });
+    
+    return duplicates;
+  }, [sortedClients]);
+
+  // Function to open duplicate dialog
+  const handleOpenDuplicateDialog = () => {
+    setDuplicateGroups(findDuplicates);
+    setSelectedDuplicateClients(new Set());
+    setIsDuplicateDialogOpen(true);
+  };
+
   if (loadingClients) {
     return (
       <div className="p-6">
@@ -1075,11 +1160,11 @@ export default function Clients() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="p-6 space-y-6" style={{ backgroundColor: 'var(--background)' }}>
       {/* Header - Only show if unified header is disabled (fallback) */}
       {!RollbackManager.isUnifiedHeaderEnabled() && (
         <div>
-          <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+          <div className="px-6 py-6 rounded-lg card-neu card-glow-border flex items-center justify-between" style={{ backgroundColor: 'var(--background)', border: 'none', height: '150px' }}>
             <div>
               <h1 
                 className="font-bold text-foreground" 
@@ -1115,41 +1200,28 @@ export default function Clients() {
             onExportError={(error) => console.error('Client export failed:', error)}
                 />
               </div>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" className="text-red-600 hover:text-red-700">
-                <Trash2 className="w-4 h-4 mr-2" />
-                Cleanup Duplicates
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Clean Up Duplicate Clients</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will automatically delete duplicate clients based on matching first and last names. 
-                  For each set of duplicates, the oldest client will be kept and the rest will be deleted.
-                  <br /><br />
-                  <strong>This action cannot be undone.</strong>
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => cleanupDuplicatesMutation.mutate()}
-                  disabled={cleanupDuplicatesMutation.isPending}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  {cleanupDuplicatesMutation.isPending ? "Cleaning..." : "Cleanup Duplicates"}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-          
-          <Button variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Export
+          <Button 
+            variant="outline" 
+            className="card-neu-flat hover:card-neu [&]:shadow-none" 
+            style={{ 
+              backgroundColor: 'var(--background)', 
+              border: 'none', 
+              boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)',
+              color: '#ff8475',
+              fontWeight: 400
+            }}
+            onClick={handleOpenDuplicateDialog}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Cleanup Duplicates {findDuplicates.length > 0 && `(${findDuplicates.length})`}
           </Button>
-          <Button variant="outline">
+          
+          <Button 
+            variant="outline" 
+            className="card-neu-flat hover:card-neu [&]:shadow-none" 
+            style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)' }}
+            onClick={() => setIsImportDialogOpen(true)}
+          >
             <Upload className="w-4 h-4 mr-2" />
             Import
           </Button>
@@ -1160,7 +1232,7 @@ export default function Clients() {
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card className="border-0 shadow-sm" style={{ backgroundColor: 'var(--card)' }}>
+        <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Active Clients</CardTitle>
           </CardHeader>
@@ -1170,7 +1242,7 @@ export default function Clients() {
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-sm" style={{ backgroundColor: 'var(--card)' }}>
+        <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Total Clients</CardTitle>
           </CardHeader>
@@ -1180,7 +1252,7 @@ export default function Clients() {
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-sm" style={{ backgroundColor: 'var(--card)', color: 'var(--card-foreground)' }}>
+        <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Recent Clients</CardTitle>
           </CardHeader>
@@ -1196,18 +1268,21 @@ export default function Clients() {
       <div className="grid grid-cols-1 gap-6">
         
         {/* TOP PANEL: Clients List */}
-        <Card className="flex flex-col">
-          <CardHeader className="flex-shrink-0">
+        <Card className="flex flex-col card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+          <CardHeader className="flex-shrink-0 card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center">
-                <Users className="w-5 h-5 mr-2" />
-                Clients Directory
+              <CardTitle className="flex items-center" style={{ fontSize: '26px', fontWeight: 400 }}>
+                CLIENT DIRECTORY
               </CardTitle>
               <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Client
+                  <Button 
+                    variant="outline"
+                    className="flex items-center gap-2 card-neu hover:card-neu [&]:shadow-none"
+                    style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)' }}
+                  >
+                    <Plus className="w-4 h-4" style={{ textShadow: '0 0 8px rgba(122, 255, 254, 0.4), 0 0 12px rgba(122, 255, 254, 0.2)' }} />
+                    <span style={{ textShadow: '0 0 8px rgba(122, 255, 254, 0.4), 0 0 12px rgba(122, 255, 254, 0.2)' }}>Add Client</span>
                   </Button>
                 </DialogTrigger>
               </Dialog>
@@ -1219,139 +1294,172 @@ export default function Clients() {
       </div>
 
       {/* Enhanced Search and Filters */}
-      <Card className="flex flex-col">
-        <CardHeader className="flex-shrink-0">
-          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <div className="flex flex-1 items-center space-x-2">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
-                <Input
+      <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+        <CardContent className="p-4">
+          <div className="flex flex-wrap gap-4 items-center">
+            {/* Search bar - flexes to fill remaining space */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <Search className="h-4 w-4 flex-shrink-0" style={{ color: 'var(--muted-foreground)' }} />
+                <input
+                  type="text"
                   placeholder="Search clients..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
+                  className="flex-1 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff8475]"
+                  style={{ backgroundColor: 'var(--background)', border: '1px solid var(--border)' }}
                 />
               </div>
+            </div>
+
+            {/* Right side: Filters, Sort By, Expand All */}
+            <div className="flex items-center gap-2 flex-shrink-0">
               <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-40 card-neu-flat hover:card-neu [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                   <Filter className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Location" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Locations</SelectItem>
+                <SelectContent className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                  <SelectItem value="all" className="hover:card-neu-flat">All Locations</SelectItem>
                   {locations.map((location: any) => (
-                    <SelectItem key={location.id} value={location.id}>
+                    <SelectItem key={location.id} value={location.id} className="hover:card-neu-flat">
                       {location.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+
+              {/* Expand All/Collapse All Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="card-neu-flat hover:card-neu [&]:shadow-none"
+                style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)' }}
+                onClick={areAllExpanded ? collapseAllClients : expandAllClients}
+                title={areAllExpanded ? "Collapse all clients" : "Expand all clients"}
+              >
+                {areAllExpanded ? (
+                  <>
+                    <ChevronsUpDown className="h-4 w-4 mr-1" />
+                    Collapse All
+                  </>
+                ) : (
+                  <>
+                    <ChevronsDownUp className="h-4 w-4 mr-1" />
+                    Expand All
+                  </>
+                )}
+              </Button>
             </div>
           </div>
           
-          <div className="flex items-center justify-between text-sm text-gray-600 mt-2">
-            <span className="flex items-center">
-              <Users className="w-4 h-4 mr-1" />
-              {sortedClients.length} clients
-            </span>
+          <div className="flex items-center justify-between text-sm mt-2" style={{ color: 'var(--muted-foreground)' }}>
           </div>
-        </CardHeader>
+        </CardContent>
+      </Card>
         
-        <CardContent className="flex-1 overflow-auto">
-          {loadingClients ? (
-            <div className="space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="animate-pulse">
-                  <div className="flex items-center space-x-4 p-4 border rounded-lg">
-                    <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                      <div className="h-3 bg-gray-200 rounded w-1/4"></div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <div className="w-8 h-8 bg-gray-200 rounded"></div>
-                      <div className="w-8 h-8 bg-gray-200 rounded"></div>
+      <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+          <CardContent className="p-0">
+            {loadingClients ? (
+              <div className="space-y-4 p-6">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="flex items-center space-x-4 p-4 border rounded-lg">
+                      <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <div className="w-8 h-8 bg-gray-200 rounded"></div>
+                        <div className="w-8 h-8 bg-gray-200 rounded"></div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : clientsError ? (
-            <div className="text-center py-12">
-              <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Clients</h3>
-              <p className="text-red-600 mb-4">{clientsError.message}</p>
-              <p className="text-gray-600 mb-4">Please check your connection and try again.</p>
-              <Button 
-                onClick={() => window.location.reload()} 
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Retry
-              </Button>
-            </div>
-          ) : sortedClients.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
+                ))}
+              </div>
+            ) : clientsError ? (
+              <div className="text-center py-12 p-6">
+                <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Clients</h3>
+                <p className="text-red-600 mb-4">{clientsError.message}</p>
+                <p className="text-gray-600 mb-4">Please check your connection and try again.</p>
+                <Button 
+                  onClick={() => window.location.reload()} 
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Retry
+                </Button>
+              </div>
+            ) : sortedClients.length === 0 ? (
+              <div className="text-center py-12 text-gray-500 p-6">
                 <Users className="w-16 h-16 mx-auto mb-4 opacity-50" />
                 <p className="text-lg font-medium">No clients found</p>
                 <p className="text-sm">Add clients to start managing your directory</p>
               </div>
             ) : (
-              <Card>
-                <CardContent className="p-0">
-                  {/* Header Row */}
-                  <div className="sticky top-0 z-10 font-semibold text-sm" style={{ backgroundColor: '#f4f4f4', borderBottom: '1px solid #eaeaea', color: '#1e2023' }}>
-                    <div className="flex items-center gap-3 p-4">
+              <>
+                {/* Header Row */}
+                <div className="sticky top-6 z-10 text-sm card-neu-flat" style={{ backgroundColor: 'var(--background)', borderBottom: '1px solid var(--border)', color: 'var(--foreground)', border: 'none', fontWeight: 400 }}>
+                  <div className="flex items-center gap-3 p-4">
                       <div className="w-4" />
                       <div className="flex-1 grid grid-cols-12 gap-2 items-center">
                         <div 
-                          className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                          className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-all select-none card-neu-flat hover:card-neu px-2 py-1 rounded"
                           onClick={() => handleSort('scid')}
                           title="Click to sort by SCID"
+                          style={{ backgroundColor: 'var(--background)', border: 'none' }}
                         >
                           SCID{getSortIcon('scid')}
                         </div>
                         <div 
-                          className="col-span-2 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                          className="col-span-2 flex items-center cursor-pointer hover:opacity-70 transition-all select-none card-neu-flat hover:card-neu px-2 py-1 rounded"
                           onClick={() => handleSort('name')}
                           title="Click to sort by Name"
+                          style={{ backgroundColor: 'var(--background)', border: 'none' }}
                         >
                           Name{getSortIcon('name')}
                         </div>
                         <div 
-                          className="col-span-2 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                          className="col-span-2 flex items-center cursor-pointer hover:opacity-70 transition-all select-none card-neu-flat hover:card-neu px-2 py-1 rounded"
                           onClick={() => handleSort('tenant')}
                           title="Click to sort by Tenant"
+                          style={{ backgroundColor: 'var(--background)', border: 'none' }}
                         >
                           Tenant{getSortIcon('tenant')}
                         </div>
                         <div 
-                          className="col-span-2 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                          className="col-span-2 flex items-center cursor-pointer hover:opacity-70 transition-all select-none card-neu-flat hover:card-neu px-2 py-1 rounded"
                           onClick={() => handleSort('program')}
                           title="Click to sort by Program"
+                          style={{ backgroundColor: 'var(--background)', border: 'none' }}
                         >
                           Program{getSortIcon('program')}
                         </div>
                         <div 
-                          className="col-span-2 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                          className="col-span-2 flex items-center cursor-pointer hover:opacity-70 transition-all select-none card-neu-flat hover:card-neu px-2 py-1 rounded"
                           onClick={() => handleSort('location')}
                           title="Click to sort by Location"
+                          style={{ backgroundColor: 'var(--background)', border: 'none' }}
                         >
                           Location{getSortIcon('location')}
                         </div>
                         <div 
-                          className="col-span-2 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                          className="col-span-2 flex items-center cursor-pointer hover:opacity-70 transition-all select-none card-neu-flat hover:card-neu px-2 py-1 rounded"
                           onClick={() => handleSort('contact')}
                           title="Click to sort by Contact"
+                          style={{ backgroundColor: 'var(--background)', border: 'none' }}
                         >
                           Contact{getSortIcon('contact')}
                         </div>
                         <div 
-                          className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-opacity select-none"
+                          className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-all select-none card-neu-flat hover:card-neu px-2 py-1 rounded"
                           onClick={() => handleSort('status')}
                           title="Click to sort by Status"
+                          style={{ backgroundColor: 'var(--background)', border: 'none' }}
                         >
                           Status{getSortIcon('status')}
                         </div>
@@ -1378,7 +1486,7 @@ export default function Clients() {
                           }}
                         >
                           <CollapsibleTrigger asChild>
-                            <div className="flex items-center gap-3 p-4 transition-colors cursor-pointer hover:bg-[#f9f9f9]" style={{ borderBottom: '1px solid #eaeaea' }}>
+                            <div className="flex items-center gap-3 p-4 transition-all cursor-pointer card-neu-flat hover:card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                               <div className="w-4 flex items-center justify-center">
                                 {isExpanded ? (
                                   <ChevronDown className="h-4 w-4" style={{ color: 'var(--muted-foreground)' }} />
@@ -1392,7 +1500,7 @@ export default function Clients() {
                                   {client.scid || <span className="italic">Pending</span>}
                                 </div>
                                 {/* Name */}
-                                <div className="col-span-2 truncate font-medium">
+                                <div className="col-span-2 truncate font-medium" style={{ color: 'var(--foreground)' }}>
                                   {client.first_name} {client.last_name}
                                 </div>
                                 {/* Tenant */}
@@ -1431,7 +1539,7 @@ export default function Clients() {
                             </div>
                           </CollapsibleTrigger>
                           <CollapsibleContent>
-                            <div className="px-4 pb-4 pt-2 border-t" style={{ backgroundColor: '#fafafa' }}>
+                            <div className="px-4 pb-4 pt-2 border-t card-neu-flat" style={{ backgroundColor: 'var(--background)', borderTopColor: 'var(--border)', border: 'none' }}>
                               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
                                 {/* Expanded Details */}
                                 <div className="space-y-2">
@@ -1491,6 +1599,8 @@ export default function Clients() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleEditClient(client)}
+                                  className="card-neu-flat hover:card-neu [&]:shadow-none"
+                                  style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)' }}
                                 >
                                   <Edit className="h-4 w-4 mr-2" />
                                   Edit
@@ -1500,7 +1610,14 @@ export default function Clients() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      className="card-neu-flat hover:card-neu [&]:shadow-none !text-[#ff8475] hover:!text-[#ff8475] [&_svg]:!text-[#ff8475]"
+                                      style={{ 
+                                        backgroundColor: 'var(--background)', 
+                                        border: 'none', 
+                                        boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)',
+                                        color: '#ff8475',
+                                        fontWeight: 400
+                                      }}
                                     >
                                       <Trash2 className="h-4 w-4 mr-2" />
                                       Delete
@@ -1532,64 +1649,63 @@ export default function Clients() {
                       );
                     })}
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                </>
+              )}
           </CardContent>
         </Card>
 
       {/* Two-Panel Layout - Client Groups */}
       <div className="grid grid-cols-1 gap-6 mt-6">
         {/* BOTTOM PANEL: Client Groups */}
-        <Card className="flex flex-col">
-          <CardHeader className="flex-shrink-0">
+        <Card className="flex flex-col card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+          <CardHeader className="flex-shrink-0 card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center">
-                <Building2 className="w-5 h-5 mr-2" />
-                Client Groups
+              <CardTitle className="flex items-center" style={{ color: 'var(--foreground)', fontSize: '26px' }}>
+                CLIENT GROUPS
               </CardTitle>
               <Dialog open={isCreateGroupDialogOpen} onOpenChange={setIsCreateGroupDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline">
+                  <Button 
+                    variant="ghost"
+                    className="card-neu-flat hover:card-neu [&]:shadow-none"
+                    style={{ 
+                      backgroundColor: 'var(--background)', 
+                      border: 'none', 
+                      boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)' 
+                    }}
+                  >
                     <Plus className="w-4 h-4 mr-2" />
                     Create Group
                   </Button>
                 </DialogTrigger>
               </Dialog>
             </div>
-            <p className="text-sm text-gray-600 mt-1">
-              Organize clients into groups for easier management and group trips
-            </p>
           </CardHeader>
           
-          <CardContent className="flex-1 overflow-auto">
-                  {clientGroups.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500">
-                      <Building2 className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No client groups yet</h3>
-                      <p className="text-sm mb-4">Create groups to organize clients for group trips</p>
-                      <Button 
-                        onClick={() => setIsCreateGroupDialogOpen(true)}
-                        className="text-white"
-                        style={{ backgroundColor: 'var(--primary)' }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = 'var(--primary)';
-                          e.currentTarget.style.opacity = '0.9';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'var(--primary)';
-                          e.currentTarget.style.opacity = '1';
-                        }}
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Create Your First Group
-                      </Button>
-                    </div>
+          <CardContent className="flex-1 overflow-auto p-0">
+            {clientGroups.length === 0 ? (
+              <div className="text-center py-12 p-6" style={{ color: 'var(--muted-foreground)' }}>
+                <Building2 className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                <h3 className="text-lg font-medium mb-2" style={{ color: 'var(--foreground)' }}>No client groups yet</h3>
+                <p className="text-sm mb-4">Create groups to organize clients for group trips</p>
+                <Button 
+                  onClick={() => setIsCreateGroupDialogOpen(true)}
+                  className="card-neu hover:card-neu [&]:shadow-none"
+                  style={{ 
+                    backgroundColor: 'var(--background)', 
+                    border: 'none', 
+                    boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)' 
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Your First Group
+                </Button>
+              </div>
             ) : (
-              <Card>
+              <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <CardContent className="p-0">
                   {/* Header Row */}
-                  <div className="sticky top-0 z-10 font-semibold text-sm" style={{ backgroundColor: '#f4f4f4', borderBottom: '1px solid #eaeaea', color: '#1e2023' }}>
+                  <div className="sticky top-6 z-10 text-sm card-neu-flat" style={{ backgroundColor: 'var(--background)', borderBottom: '1px solid var(--border)', color: 'var(--foreground)', border: 'none', fontWeight: 400 }}>
                     <div className="flex items-center gap-3 p-4">
                       <div className="w-4" />
                       <div className="flex-1 grid grid-cols-12 gap-2 items-center">
@@ -1622,7 +1738,7 @@ export default function Clients() {
                           }}
                         >
                           <CollapsibleTrigger asChild>
-                            <div className="flex items-center gap-3 p-4 transition-colors cursor-pointer hover:bg-[#f9f9f9]" style={{ borderBottom: '1px solid #eaeaea' }}>
+                            <div className="flex items-center gap-3 p-4 transition-all cursor-pointer card-neu-flat hover:card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                               <div className="w-4 flex items-center justify-center">
                                 {isExpanded ? (
                                   <ChevronDown className="h-4 w-4" style={{ color: 'var(--muted-foreground)' }} />
@@ -1663,7 +1779,8 @@ export default function Clients() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-8 w-8 p-0"
+                                      className="h-8 w-8 p-0 card-neu-flat hover:card-neu [&]:shadow-none"
+                                      style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)' }}
                                       onClick={() => {
                                         setViewingGroup(group);
                                         setIsViewEditMembersDialogOpen(true);
@@ -1675,7 +1792,8 @@ export default function Clients() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-8 w-8 p-0"
+                                      className="h-8 w-8 p-0 card-neu-flat hover:card-neu [&]:shadow-none"
+                                      style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)' }}
                                       onClick={() => {
                                         setEditingGroup(group);
                                         setGroupFormData({
@@ -1696,25 +1814,47 @@ export default function Clients() {
                                         <Button
                                           variant="ghost"
                                           size="sm"
-                                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                          className="h-8 w-8 p-0 card-neu-flat hover:card-neu [&]:shadow-none"
+                                          style={{ 
+                                            backgroundColor: 'var(--background)', 
+                                            border: 'none', 
+                                            boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)',
+                                            color: '#ff8475',
+                                            fontWeight: 400
+                                          }}
                                           title="Delete Group"
                                         >
                                           <Trash2 className="h-4 w-4" />
                                         </Button>
                                       </AlertDialogTrigger>
-                                      <AlertDialogContent>
+                                      <AlertDialogContent className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                                         <AlertDialogHeader>
-                                          <AlertDialogTitle>Delete Group</AlertDialogTitle>
-                                          <AlertDialogDescription>
+                                          <AlertDialogTitle style={{ color: 'var(--foreground)' }}>Delete Group</AlertDialogTitle>
+                                          <AlertDialogDescription style={{ color: 'var(--muted-foreground)' }}>
                                             Are you sure you want to delete the group "{group.name}"? 
                                             This action cannot be undone.
                                           </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
-                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                          <AlertDialogCancel 
+                                            className="card-neu-flat hover:card-neu [&]:shadow-none"
+                                            style={{ 
+                                              backgroundColor: 'var(--background)', 
+                                              border: 'none', 
+                                              boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)' 
+                                            }}
+                                          >
+                                            Cancel
+                                          </AlertDialogCancel>
                                           <AlertDialogAction 
                                             onClick={() => handleDeleteGroup(group.id)}
-                                            className="bg-red-600 hover:bg-red-700"
+                                            className="card-neu hover:card-neu [&]:shadow-none"
+                                            style={{ 
+                                              backgroundColor: 'var(--background)', 
+                                              border: 'none', 
+                                              boxShadow: '0 0 8px rgba(224, 72, 80, 0.3)',
+                                              color: 'var(--cancelled)'
+                                            }}
                                           >
                                             Delete
                                           </AlertDialogAction>
@@ -1727,7 +1867,7 @@ export default function Clients() {
                             </div>
                           </CollapsibleTrigger>
                           <CollapsibleContent>
-                            <div className="px-4 pb-4 pt-2 border-t" style={{ backgroundColor: '#fafafa' }}>
+                            <div className="px-4 pb-4 pt-2 border-t card-neu-flat" style={{ backgroundColor: 'var(--background)', borderTopColor: 'var(--border)', border: 'none' }}>
                               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
                                 {/* Expanded Details */}
                                 <div className="space-y-2">
@@ -1768,6 +1908,12 @@ export default function Clients() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
+                                  className="card-neu-flat hover:card-neu [&]:shadow-none"
+                                  style={{ 
+                                    backgroundColor: 'var(--background)', 
+                                    border: 'none', 
+                                    boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)' 
+                                  }}
                                   onClick={() => {
                                     setViewingGroup(group);
                                     setIsViewEditMembersDialogOpen(true);
@@ -1779,6 +1925,12 @@ export default function Clients() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
+                                  className="card-neu-flat hover:card-neu [&]:shadow-none"
+                                  style={{ 
+                                    backgroundColor: 'var(--background)', 
+                                    border: 'none', 
+                                    boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)' 
+                                  }}
                                   onClick={() => {
                                     setEditingGroup(group);
                                     setGroupFormData({
@@ -1799,25 +1951,47 @@ export default function Clients() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      className="card-neu-flat hover:card-neu [&]:shadow-none !text-[#ff8475] hover:!text-[#ff8475] [&_svg]:!text-[#ff8475]"
+                                      style={{ 
+                                        backgroundColor: 'var(--background)', 
+                                        border: 'none', 
+                                        boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)',
+                                        color: '#ff8475',
+                                        fontWeight: 400
+                                      }}
                                     >
                                       <Trash2 className="h-4 w-4 mr-2" />
                                       Delete
                                     </Button>
                                   </AlertDialogTrigger>
-                                  <AlertDialogContent>
+                                  <AlertDialogContent className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                                     <AlertDialogHeader>
-                                      <AlertDialogTitle>Delete Group</AlertDialogTitle>
-                                      <AlertDialogDescription>
+                                      <AlertDialogTitle style={{ color: 'var(--foreground)' }}>Delete Group</AlertDialogTitle>
+                                      <AlertDialogDescription style={{ color: 'var(--muted-foreground)' }}>
                                         Are you sure you want to delete the group "{group.name}"? 
                                         This action cannot be undone.
                                       </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogCancel 
+                                        className="card-neu-flat hover:card-neu [&]:shadow-none"
+                                        style={{ 
+                                          backgroundColor: 'var(--background)', 
+                                          border: 'none', 
+                                          boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)' 
+                                        }}
+                                      >
+                                        Cancel
+                                      </AlertDialogCancel>
                                       <AlertDialogAction 
                                         onClick={() => handleDeleteGroup(group.id)}
-                                        className="bg-red-600 hover:bg-red-700"
+                                        className="card-neu hover:card-neu [&]:shadow-none"
+                                        style={{ 
+                                          backgroundColor: 'var(--background)', 
+                                          border: 'none', 
+                                          boxShadow: '0 0 8px rgba(224, 72, 80, 0.3)',
+                                          color: 'var(--cancelled)'
+                                        }}
                                       >
                                         Delete
                                       </AlertDialogAction>
@@ -1840,41 +2014,57 @@ export default function Clients() {
 
       {/* Create Client Group Dialog */}
       <Dialog open={isCreateGroupDialogOpen} onOpenChange={setIsCreateGroupDialogOpen}>
-        <DialogContent className="max-w-2xl bg-white">
+        <DialogContent className="max-w-2xl card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <DialogHeader>
-            <DialogTitle>Create Client Group</DialogTitle>
+            <DialogTitle className="text-2xl font-semibold" style={{ color: 'var(--foreground)' }}>
+              CREATE CLIENT GROUP
+            </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleCreateGroup} className="space-y-4">
-            <div>
-              <Label htmlFor="group-name">Group Name *</Label>
+          <form onSubmit={handleCreateGroup} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="group-name" className="font-medium" style={{ fontSize: '16px' }}>
+                GROUP NAME *
+              </Label>
               <Input
                 id="group-name"
                 value={groupFormData.name}
                 onChange={(e) => setGroupFormData({...groupFormData, name: e.target.value})}
                 placeholder="Enter group name"
                 required
+                className="card-neu-flat [&]:shadow-none"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               />
             </div>
             
-            <div>
-              <Label htmlFor="group-description">Description</Label>
+            <div className="space-y-2">
+              <Label htmlFor="group-description" className="font-medium" style={{ fontSize: '16px' }}>
+                DESCRIPTION
+              </Label>
               <Textarea
                 id="group-description"
                 value={groupFormData.description}
                 onChange={(e) => setGroupFormData({...groupFormData, description: e.target.value})}
                 placeholder="Enter group description"
                 rows={3}
+                className="card-neu-flat [&]:shadow-none"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               />
             </div>
             
-            <div>
-              <Label>Select Clients</Label>
-              <p className="text-sm text-gray-600 mb-3">
+            <div className="space-y-2">
+              <Label className="font-medium" style={{ fontSize: '16px' }}>
+                SELECT CLIENTS
+              </Label>
+              <p className="text-sm mb-3" style={{ color: 'var(--muted-foreground)' }}>
                 Choose clients to include in this group ({groupFormData.selectedClients.length} selected)
               </p>
-              <div className="max-h-48 overflow-y-auto border rounded-lg p-3 space-y-2">
+              <div className="max-h-48 overflow-y-auto rounded-lg p-3 space-y-2 card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 {clients.map((client) => (
-                  <div key={client.id} className="flex items-center space-x-2 p-2 rounded" style={{ '--hover-bg': 'var(--muted)' } as React.CSSProperties} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--muted)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                  <div 
+                    key={client.id} 
+                    className="flex items-center space-x-2 p-2 rounded transition-colors hover:bg-muted/20" 
+                    style={{ color: 'var(--foreground)' }}
+                  >
                     <input
                       type="checkbox"
                       id={`client-${client.id}`}
@@ -1897,10 +2087,10 @@ export default function Clients() {
                     <label htmlFor={`client-${client.id}`} className="flex-1 cursor-pointer text-sm">
                       <span className="font-medium">{client.first_name} {client.last_name}</span>
                       {client.location && (
-                        <span className="text-gray-500 ml-2">({client.location.name})</span>
+                        <span className="ml-2" style={{ color: 'var(--muted-foreground)' }}>({client.location.name})</span>
                       )}
                       {client.phone && (
-                        <span className="text-gray-500 ml-2">• {client.phone}</span>
+                        <span className="ml-2" style={{ color: 'var(--muted-foreground)' }}>• {client.phone}</span>
                       )}
                     </label>
                   </div>
@@ -1922,24 +2112,29 @@ export default function Clients() {
                     expiryOption: "never"
                   });
                 }}
+                className="card-neu-flat hover:card-neu [&]:shadow-none"
+                style={{ 
+                  backgroundColor: 'var(--background)', 
+                  border: 'none',
+                  boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                }}
               >
                 Cancel
               </Button>
               <Button 
                 type="submit" 
-                className="text-white"
-                style={{ backgroundColor: 'var(--primary)' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--primary)';
-                  e.currentTarget.style.opacity = '0.9';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--primary)';
-                  e.currentTarget.style.opacity = '1';
+                className="card-neu hover:card-neu [&]:shadow-none"
+                style={{ 
+                  backgroundColor: 'var(--background)', 
+                  border: 'none',
+                  boxShadow: '0 0 12px rgba(122, 255, 254, 0.2)',
+                  color: '#7afffe',
+                  textShadow: '0 0 8px rgba(122, 255, 254, 0.4), 0 0 12px rgba(122, 255, 254, 0.2)',
+                  fontWeight: 400
                 }}
                 disabled={!groupFormData.name.trim()}
               >
-                Create Group
+                <span>Create Group</span>
               </Button>
             </div>
           </form>
@@ -2145,16 +2340,16 @@ export default function Clients() {
 
       {/* Create Client Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" style={{ backgroundColor: 'var(--card)' }}>
-          <DialogHeader style={{ backgroundColor: 'var(--card)' }}>
-            <DialogTitle className="uppercase font-semibold" style={{ fontFamily: 'Nohemi', fontWeight: 600, color: 'var(--foreground)' }}>ADD NEW CLIENT</DialogTitle>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+          <DialogHeader style={{ backgroundColor: 'var(--background)' }}>
+            <DialogTitle className="text-2xl font-semibold" style={{ color: 'var(--foreground)' }}>ADD NEW CLIENT</DialogTitle>
           </DialogHeader>
           <Form {...createForm}>
             <form onSubmit={(e) => {
               e.preventDefault();
               console.log('🔍 Form submitted, form data:', createForm.getValues());
               createForm.handleSubmit(handleCreateClient)(e);
-            }} className="space-y-6" style={{ backgroundColor: 'var(--card)' }}>
+            }} className="space-y-6" style={{ backgroundColor: 'var(--background)' }}>
             <ComprehensiveClientForm 
               createForm={createForm}
               programs={programs || []}
@@ -2162,39 +2357,37 @@ export default function Clients() {
               selectedProgram={selectedProgram}
             />
 
-            <div className="flex justify-end space-x-2 pt-4" style={{ backgroundColor: 'var(--card)' }}>
+            <div className="flex justify-end space-x-2 pt-4" style={{ backgroundColor: 'var(--background)' }}>
               <Button 
                 type="button" 
                 variant="outline" 
                 onClick={() => setIsCreateDialogOpen(false)}
+                className="card-neu-flat hover:card-neu [&]:shadow-none"
                 style={{ 
-                  backgroundColor: 'var(--card)',
-                  color: 'var(--foreground)',
-                  borderColor: 'var(--border)'
+                  backgroundColor: 'var(--background)',
+                  border: 'none',
+                  boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--muted)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--card)'}
               >
                 Cancel
               </Button>
               <Button 
                 type="submit" 
                 disabled={createClientMutation.isPending}
-                className="text-white"
-                style={{ backgroundColor: 'var(--primary)' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--primary)';
-                  e.currentTarget.style.opacity = '0.9';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--primary)';
-                  e.currentTarget.style.opacity = '1';
+                className="card-neu hover:card-neu [&]:shadow-none"
+                style={{ 
+                  backgroundColor: 'var(--background)',
+                  border: 'none',
+                  boxShadow: '0 0 12px rgba(122, 255, 254, 0.2)',
+                  color: '#7afffe',
+                  textShadow: '0 0 8px rgba(122, 255, 254, 0.4), 0 0 12px rgba(122, 255, 254, 0.2)',
+                  fontWeight: 400
                 }}
               >
-                {createClientMutation.isPending ? "Creating..." : "Create Client"}
+                <span>{createClientMutation.isPending ? "Creating..." : "Create Client"}</span>
               </Button>
             </div>
-            </form>
+          </form>
           </Form>
         </DialogContent>
       </Dialog>
@@ -2427,6 +2620,215 @@ export default function Clients() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Duplicate Management Dialog */}
+      <Dialog open={isDuplicateDialogOpen} onOpenChange={setIsDuplicateDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">Manage Duplicate Clients</DialogTitle>
+            <p className="text-sm mt-2" style={{ color: 'var(--muted-foreground)' }}>
+              Found {duplicateGroups.length} duplicate group{duplicateGroups.length !== 1 ? 's' : ''} with {duplicateGroups.reduce((sum, group) => sum + group.length, 0)} total duplicate clients.
+            </p>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-4">
+            {/* Select All / Deselect All */}
+            <div className="flex items-center justify-between p-3 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={duplicateGroups.length > 0 && duplicateGroups.every(group => 
+                    group.every(client => selectedDuplicateClients.has(client.id))
+                  )}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      const allIds = new Set<string>();
+                      duplicateGroups.forEach(group => {
+                        group.forEach(client => allIds.add(client.id));
+                      });
+                      setSelectedDuplicateClients(allIds);
+                    } else {
+                      setSelectedDuplicateClients(new Set());
+                    }
+                  }}
+                />
+                <Label className="font-medium">Select All</Label>
+              </div>
+              <div className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                {selectedDuplicateClients.size} selected
+              </div>
+            </div>
+
+            {/* Duplicate Groups */}
+            <div className="space-y-4">
+              {duplicateGroups.length === 0 ? (
+                <div className="text-center py-8" style={{ color: 'var(--muted-foreground)' }}>
+                  <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium">No duplicates found</p>
+                  <p className="text-sm">All clients have unique names.</p>
+                </div>
+              ) : (
+                duplicateGroups.map((group, groupIndex) => {
+                  const primaryClient = group.find(c => c.scid) || group[0]; // Client with SCID or first one
+                  const hasPrimary = group.some(c => c.scid);
+                  
+                  return (
+                    <Card key={groupIndex} className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                      <CardHeader className="card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                        <CardTitle className="text-lg">
+                          {group[0].first_name} {group[0].last_name} ({group.length} duplicates)
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {group.map((client) => {
+                          const isPrimary = client.id === primaryClient.id;
+                          const isSelected = selectedDuplicateClients.has(client.id);
+                          
+                          return (
+                            <div
+                              key={client.id}
+                              className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
+                                isPrimary ? 'card-neu' : 'card-neu-flat'
+                              } ${isSelected ? 'ring-2 ring-primary' : ''}`}
+                              style={{ backgroundColor: 'var(--background)', border: 'none' }}
+                            >
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={(checked) => {
+                                  const newSelected = new Set(selectedDuplicateClients);
+                                  if (checked) {
+                                    newSelected.add(client.id);
+                                  } else {
+                                    newSelected.delete(client.id);
+                                  }
+                                  setSelectedDuplicateClients(newSelected);
+                                }}
+                              />
+                              <div className="flex-1 grid grid-cols-4 gap-4 text-sm">
+                                <div>
+                                  <div className="font-medium">{client.first_name} {client.last_name}</div>
+                                  <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                                    {client.scid ? `SCID: ${client.scid}` : 'No SCID'}
+                                  </div>
+                                </div>
+                                <div style={{ color: 'var(--muted-foreground)' }}>
+                                  {client.programs?.short_name || client.programs?.name || client.program?.short_name || client.program?.name || 'Unknown'}
+                                </div>
+                                <div style={{ color: 'var(--muted-foreground)' }}>
+                                  {format(parseISO(client.created_at), 'MMM d, yyyy')}
+                                </div>
+                                <div>
+                                  {isPrimary && hasPrimary && (
+                                    <Badge className="bg-primary text-primary-foreground">Primary (Has SCID)</Badge>
+                                  )}
+                                  {isPrimary && !hasPrimary && (
+                                    <Badge variant="outline">Primary (No SCID)</Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
+            <div className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+              {selectedDuplicateClients.size > 0 && (
+                <span>
+                  {selectedDuplicateClients.size} client{selectedDuplicateClients.size !== 1 ? 's' : ''} selected
+                </span>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsDuplicateDialogOpen(false)}
+                className="card-neu-flat hover:card-neu [&]:shadow-none"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  const clientIds = Array.from(selectedDuplicateClients);
+                  if (window.confirm(`Are you sure you want to delete ${clientIds.length} client(s)? This action cannot be undone.`)) {
+                    bulkDeleteClientsMutation.mutate(clientIds);
+                  }
+                }}
+                disabled={selectedDuplicateClients.size === 0 || bulkDeleteClientsMutation.isPending}
+                className="card-neu hover:card-neu [&]:shadow-none"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                {bulkDeleteClientsMutation.isPending ? "Deleting..." : `Delete Selected (${selectedDuplicateClients.size})`}
+              </Button>
+              <Button
+                onClick={() => {
+                  const selectedIds = Array.from(selectedDuplicateClients);
+                  
+                  // Find primary client (one with SCID) from selected clients
+                  const primaryClient = duplicateGroups
+                    .flatMap(group => group)
+                    .find(c => selectedIds.includes(c.id) && c.scid);
+                  
+                  if (!primaryClient) {
+                    toast({
+                      title: "No Primary Client Selected",
+                      description: "Please select a client with a valid SCID to merge into. The primary client must have a SCID.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+
+                  const secondaryClientIds = selectedIds.filter(id => id !== primaryClient.id);
+                  
+                  if (secondaryClientIds.length === 0) {
+                    toast({
+                      title: "No Secondary Clients Selected",
+                      description: "Please select at least one additional client to merge into the primary client.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+
+                  if (window.confirm(
+                    `Merge ${secondaryClientIds.length} client(s) into ${primaryClient.first_name} ${primaryClient.last_name} (${primaryClient.scid})? ` +
+                    `All trips and group memberships will be transferred to the primary client. This action cannot be undone.`
+                  )) {
+                    mergeClientsMutation.mutate({
+                      primaryClientId: primaryClient.id,
+                      secondaryClientIds
+                    });
+                  }
+                }}
+                disabled={selectedDuplicateClients.size < 2 || mergeClientsMutation.isPending}
+                className="card-neu hover:card-neu [&]:shadow-none"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
+              >
+                <Users className="w-4 h-4 mr-2" />
+                {mergeClientsMutation.isPending ? "Merging..." : "Merge Selected"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Client Import Dialog */}
+      <ClientImportDialog
+        open={isImportDialogOpen}
+        onOpenChange={setIsImportDialogOpen}
+        programs={programs || []}
+        onImportComplete={() => {
+          queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+        }}
+      />
     </div>
   );
 }

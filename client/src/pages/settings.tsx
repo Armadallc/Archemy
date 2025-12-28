@@ -43,6 +43,7 @@ import FeatureFlagsTab from "../components/settings/FeatureFlagsTab";
 import { ThemeSelector } from "../components/ThemeSelector";
 import { ThemePicker } from "../components/design-system/ThemePicker";
 import { IntegratedThemeEditor } from "../components/design-system/IntegratedThemeEditor";
+import { FireColorPalette, ComponentLibrary } from "../components/settings/DesignSystemSections";
 import { Flag, Palette } from "lucide-react";
 import { UserAvatar } from "../components/users/UserAvatar";
 import ContactsTab from "../components/settings/ContactsTab";
@@ -378,17 +379,18 @@ export default function Settings() {
   const ENABLE_UNIFIED_HEADER = RollbackManager.isUnifiedHeaderEnabled();
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden" style={{ padding: '24px' }}>
+    <div className="flex-1 flex flex-col overflow-hidden" style={{ padding: '24px', backgroundColor: 'var(--background)' }}>
       {/* Header - Only show if unified header is disabled (fallback) */}
       {!ENABLE_UNIFIED_HEADER && (
         <div className="flex-shrink-0 mb-6">
-          <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+          <div className="px-6 py-6 rounded-lg card-neu flex items-center justify-between" style={{ backgroundColor: 'var(--background)', border: 'none', height: '150px' }}>
             <div>
               <h1 
                 className="font-bold text-foreground" 
                 style={{ 
                   fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
-                  fontSize: '110px'
+                  fontSize: '110px',
+                  fontWeight: 700
                 }}
               >
                 settings.
@@ -417,24 +419,29 @@ export default function Settings() {
       )}
 
       {/* Tabs Content - Match header width */}
-      <div className="flex-1 overflow-auto min-h-0">
+      <div className="flex-1 overflow-auto min-h-0" style={{ overflow: 'visible' }}>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-10 h-auto p-1 gap-1">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-10 h-auto p-1 gap-1 card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           {visibleTabs.map((tab) => (
-            <TabsTrigger key={tab.id} value={tab.id} className="flex items-center justify-center space-x-1.5 px-2 py-2 text-xs sm:text-sm flex-1 min-w-0">
+            <TabsTrigger 
+              key={tab.id} 
+              value={tab.id} 
+              className="flex items-center justify-center space-x-1.5 px-2 py-2 text-xs sm:text-sm flex-1 min-w-0 data-[state=active]:card-neu-pressed"
+              style={{ backgroundColor: 'var(--background)' }}
+            >
               <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
               <span className="truncate text-center">{tab.label}</span>
             </TabsTrigger>
           ))}
         </TabsList>
 
-        <TabsContent value="corporate-client" className="space-y-6">
+        <TabsContent value="corporate-client" className="space-y-6" style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
           {user?.role === 'super_admin' ? (
             <CorporateClientCards />
           ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>Corporate Client Information</CardTitle>
+            <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+              <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                <CardTitle style={{ fontSize: '16px', fontWeight: 400 }}>CORPORATE CLIENT INFORMATION</CardTitle>
                 <CardDescription>
                   Manage your corporate client's basic information and settings.
                 </CardDescription>
@@ -458,40 +465,48 @@ export default function Settings() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="corp-name">Corporate Client Name</Label>
+                  <Label htmlFor="corp-name" className="font-medium" style={{ fontSize: '16px' }}>CORPORATE CLIENT NAME</Label>
                   <Input
                     id="corp-name"
                     value={corporateClientSettings.name}
                     onChange={(e) => setCorporateClientSettings({...corporateClientSettings, name: e.target.value})}
                     placeholder="Enter corporate client name"
+                    className="card-neu-pressed"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="corp-email">Email</Label>
+                  <Label htmlFor="corp-email" className="font-medium" style={{ fontSize: '16px' }}>EMAIL</Label>
                   <Input
                     id="corp-email"
                     type="email"
                     value={corporateClientSettings.email || ''}
                     onChange={(e) => setCorporateClientSettings({...corporateClientSettings, email: e.target.value})}
                     placeholder="contact@corporateclient.com"
+                    className="card-neu-pressed"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="corp-phone">Phone</Label>
+                  <Label htmlFor="corp-phone" className="font-medium" style={{ fontSize: '16px' }}>PHONE</Label>
                   <PhoneInput
                     id="corp-phone"
                     value={corporateClientSettings.phone || ''}
                     onChange={(value) => setCorporateClientSettings({...corporateClientSettings, phone: value})}
+                    className="card-neu-pressed"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="corp-address">Address</Label>
+                  <Label htmlFor="corp-address" className="font-medium" style={{ fontSize: '16px' }}>ADDRESS</Label>
                   <Textarea
                     id="corp-address"
                     value={corporateClientSettings.address || ''}
                     onChange={(e) => setCorporateClientSettings({...corporateClientSettings, address: e.target.value})}
                     placeholder="Enter corporate client address"
                     rows={3}
+                    className="card-neu-pressed"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   />
                 </div>
               </div>
@@ -509,6 +524,8 @@ export default function Settings() {
                 <Button
                   variant="outline"
                   onClick={() => window.location.reload()}
+                  className="card-neu-flat hover:card-neu [&]:shadow-none"
+                  style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)' }}
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Reset
@@ -516,6 +533,8 @@ export default function Settings() {
                 <Button
                   onClick={handleSaveCorporateClient}
                   disabled={saveCorporateClientMutation.isPending}
+                  className="card-neu hover:card-neu [&]:shadow-none"
+                  style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)' }}
                 >
                   <Save className="w-4 h-4 mr-2" />
                   Save Corporate Client Settings
@@ -526,20 +545,20 @@ export default function Settings() {
           )}
         </TabsContent>
 
-        <TabsContent value="program" className="space-y-6">
+        <TabsContent value="program" className="space-y-6" style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
           <ProgramCreationForm />
         </TabsContent>
 
-        <TabsContent value="vendors" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Vendor Management</CardTitle>
+        <TabsContent value="vendors" className="space-y-6" style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
+          <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+            <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+              <CardTitle style={{ fontSize: '16px', fontWeight: 400 }}>VENDOR MANAGEMENT</CardTitle>
               <CardDescription>
                 Manage vendors and supplier information for your {level} level.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Alert>
+              <Alert className="card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
                   Vendor management functionality is coming soon. This section will allow you to manage vendor information, contracts, and relationships.
@@ -549,19 +568,19 @@ export default function Settings() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="users" className="space-y-6">
+        <TabsContent value="users" className="space-y-6" style={{ boxShadow: 'none' }}>
           {(user?.role === 'super_admin' || user?.role === 'corporate_admin' || user?.role === 'program_admin') ? (
             <UsersManagement />
           ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>User Management</CardTitle>
+            <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+              <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                <CardTitle style={{ fontSize: '16px', fontWeight: 400 }}>USER MANAGEMENT</CardTitle>
                 <CardDescription>
                   Manage user roles and permissions for your {level} level.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Alert>
+                <Alert className="card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                   <Info className="h-4 w-4" />
                   <AlertDescription>
                     User management is only available to Super Admins, Corporate Admins, and Program Admins. If you need user management access, please contact your administrator.
@@ -572,19 +591,19 @@ export default function Settings() {
           )}
         </TabsContent>
 
-        <TabsContent value="tenant-roles" className="space-y-6">
+        <TabsContent value="tenant-roles" className="space-y-6" style={{ boxShadow: 'none' }}>
           {(user?.role === 'super_admin' || user?.role === 'corporate_admin') ? (
             <TenantRolesManagement />
           ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>Tenant Roles</CardTitle>
+            <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+              <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                <CardTitle style={{ fontSize: '16px', fontWeight: 400 }}>TENANT ROLES</CardTitle>
                 <CardDescription>
                   Create and manage custom roles for your corporate client.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Alert>
+                <Alert className="card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                   <Info className="h-4 w-4" />
                   <AlertDescription>
                     Tenant role management is only available to Super Admins and Corporate Admins. If you need access, please contact your administrator.
@@ -595,17 +614,17 @@ export default function Settings() {
           )}
         </TabsContent>
 
-        <TabsContent value="contacts" className="space-y-6">
+        <TabsContent value="contacts" className="space-y-6" style={{ boxShadow: 'none' }}>
           <ContactsTab />
         </TabsContent>
 
-        <TabsContent value="feature-flags" className="space-y-6">
+        <TabsContent value="feature-flags" className="space-y-6" style={{ boxShadow: 'none' }}>
           {user?.role === 'super_admin' ? (
             <FeatureFlagsTab />
           ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>Feature Flags</CardTitle>
+            <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+              <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                <CardTitle style={{ fontSize: '16px', fontWeight: 400 }}>FEATURE FLAGS</CardTitle>
                 <CardDescription>
                   Feature flags are only available to Super Admins.
                 </CardDescription>
@@ -614,91 +633,88 @@ export default function Settings() {
           )}
         </TabsContent>
 
-        <TabsContent value="notifications" className="space-y-6">
-          {/* Theme Selection - Available to all users */}
-          <ThemePicker maxThemes={4} />
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Notification Settings</CardTitle>
-              <CardDescription>
-                Configure how you receive notifications and alerts.
-              </CardDescription>
+        <TabsContent value="notifications" className="space-y-6" style={{ boxShadow: 'none' }}>
+          <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+            <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+              <CardTitle style={{ fontSize: '16px', fontWeight: 400, color: '#a5c8ca' }}>NOTIFICATION SETTINGS</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium">Email Notifications</h3>
-                    <p className="text-sm text-gray-600">Receive notifications via email</p>
+                    <h3 className="font-medium" style={{ color: '#a5c8ca' }}>Email Notifications</h3>
+                    <p className="text-sm" style={{ color: '#a5c8ca', opacity: 0.7 }}>Receive notifications via email</p>
                   </div>
                   <Switch defaultChecked />
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium">Trip Updates</h3>
-                    <p className="text-sm text-gray-600">Get notified about trip status changes</p>
+                    <h3 className="font-medium" style={{ color: '#a5c8ca' }}>Trip Updates</h3>
+                    <p className="text-sm" style={{ color: '#a5c8ca', opacity: 0.7 }}>Get notified about trip status changes</p>
                   </div>
                   <Switch defaultChecked />
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium">Driver Assignments</h3>
-                    <p className="text-sm text-gray-600">Get notified when drivers are assigned</p>
+                    <h3 className="font-medium" style={{ color: '#a5c8ca' }}>Driver Assignments</h3>
+                    <p className="text-sm" style={{ color: '#a5c8ca', opacity: 0.7 }}>Get notified when drivers are assigned</p>
                   </div>
                   <Switch defaultChecked />
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium">System Alerts</h3>
-                    <p className="text-sm text-gray-600">Receive important system notifications</p>
+                    <h3 className="font-medium" style={{ color: '#a5c8ca' }}>System Alerts</h3>
+                    <p className="text-sm" style={{ color: '#a5c8ca', opacity: 0.7 }}>Receive important system notifications</p>
                   </div>
                   <Switch defaultChecked />
                 </div>
               </div>
               
               <div className="flex justify-end">
-                <Button onClick={handleSaveSystem}>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Notification Settings
+                <Button 
+                  onClick={() => {
+                    toast({
+                      title: "Notification Settings Saved",
+                      description: "Your notification preferences have been updated.",
+                    });
+                  }}
+                  className="card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+                  style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(165, 200, 202, 0.15)' }}
+                >
+                  <Save className="w-4 h-4 mr-2" style={{ color: '#a5c8ca', textShadow: '0 0 12px rgba(165, 200, 202, 0.8), 0 0 20px rgba(165, 200, 202, 0.6), 0 0 30px rgba(165, 200, 202, 0.4)' }} />
+                  <span style={{ color: '#a5c8ca', textShadow: '0 0 12px rgba(165, 200, 202, 0.8), 0 0 20px rgba(165, 200, 202, 0.6), 0 0 30px rgba(165, 200, 202, 0.4)' }}>Save Notification Settings</span>
                 </Button>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="theme-management" className="space-y-6">
-          {user?.role === 'super_admin' ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Theme Management</CardTitle>
-                <CardDescription>
-                  Create, edit, and manage themes for the application. Super Admins can edit themes, other users can only select from available themes.
-                </CardDescription>
+        <TabsContent value="theme-management" className="space-y-6" style={{ boxShadow: 'none' }}>
+          {/* Theme Selection - Available to all users */}
+          <ThemePicker maxThemes={4} />
+          
+          {/* Fire Color Palette */}
+          <FireColorPalette />
+          
+          {/* Component Library */}
+          <ComponentLibrary />
+          
+          {user?.role === 'super_admin' && (
+            <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+              <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                <CardTitle style={{ fontSize: '16px', fontWeight: 400, color: '#a5c8ca' }}>THEME MANAGEMENT</CardTitle>
               </CardHeader>
               <CardContent>
                 <IntegratedThemeEditor />
               </CardContent>
             </Card>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>Theme Selection</CardTitle>
-                <CardDescription>
-                  Select a theme for your interface. Only Super Admins can create and edit themes.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ThemePicker />
-              </CardContent>
-            </Card>
           )}
         </TabsContent>
 
-        <TabsContent value="system" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>System Settings</CardTitle>
+        <TabsContent value="system" className="space-y-6" style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
+          <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+            <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+              <CardTitle style={{ fontSize: '16px', fontWeight: 400 }}>SYSTEM SETTINGS</CardTitle>
               <CardDescription>
                 Configure system-wide settings and preferences.
               </CardDescription>
@@ -727,60 +743,66 @@ export default function Settings() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="app-name">Application Name</Label>
+                  <Label htmlFor="app-name" className="font-medium" style={{ fontSize: '16px' }}>APPLICATION NAME</Label>
                   <Input
                     id="app-name"
                     value={systemSettings.app_name}
                     onChange={(e) => setSystemSettings({...systemSettings, app_name: e.target.value})}
+                    className="card-neu-pressed"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="support-email">Support Email</Label>
+                  <Label htmlFor="support-email" className="font-medium" style={{ fontSize: '16px' }}>SUPPORT EMAIL</Label>
                   <Input
                     id="support-email"
                     type="email"
                     value={systemSettings.support_email}
                     onChange={(e) => setSystemSettings({...systemSettings, support_email: e.target.value})}
+                    className="card-neu-pressed"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="support-phone">Support Phone</Label>
+                  <Label htmlFor="support-phone" className="font-medium" style={{ fontSize: '16px' }}>SUPPORT PHONE</Label>
                   <PhoneInput
                     id="support-phone"
                     value={systemSettings.support_phone}
                     onChange={(value) => setSystemSettings({...systemSettings, support_phone: value})}
+                    className="card-neu-pressed"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="timezone">Timezone</Label>
+                  <Label htmlFor="timezone" className="font-medium" style={{ fontSize: '16px' }}>TIMEZONE</Label>
                   <Select
                     value={systemSettings.timezone}
                     onValueChange={(value) => setSystemSettings({...systemSettings, timezone: value})}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="America/New_York">Eastern Time</SelectItem>
-                      <SelectItem value="America/Chicago">Central Time</SelectItem>
-                      <SelectItem value="America/Denver">Mountain Time</SelectItem>
-                      <SelectItem value="America/Los_Angeles">Pacific Time</SelectItem>
+                    <SelectContent className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                      <SelectItem value="America/New_York" className="hover:card-neu-flat">Eastern Time</SelectItem>
+                      <SelectItem value="America/Chicago" className="hover:card-neu-flat">Central Time</SelectItem>
+                      <SelectItem value="America/Denver" className="hover:card-neu-flat">Mountain Time</SelectItem>
+                      <SelectItem value="America/Los_Angeles" className="hover:card-neu-flat">Pacific Time</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="language">Language</Label>
+                  <Label htmlFor="language" className="font-medium" style={{ fontSize: '16px' }}>LANGUAGE</Label>
                   <Select
                     value={systemSettings.language}
                     onValueChange={(value) => setSystemSettings({...systemSettings, language: value})}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="es">Spanish</SelectItem>
-                      <SelectItem value="fr">French</SelectItem>
+                    <SelectContent className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                      <SelectItem value="en" className="hover:card-neu-flat">English</SelectItem>
+                      <SelectItem value="es" className="hover:card-neu-flat">Spanish</SelectItem>
+                      <SelectItem value="fr" className="hover:card-neu-flat">French</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -795,6 +817,8 @@ export default function Settings() {
                   <Button 
                     onClick={handleSaveSystem}
                     disabled={saveSystemMutation.isPending}
+                    className="card-neu hover:card-neu [&]:shadow-none"
+                    style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)' }}
                   >
                     <Save className="w-4 h-4 mr-2" />
                     {saveSystemMutation.isPending ? 'Saving...' : 'Save System Settings'}

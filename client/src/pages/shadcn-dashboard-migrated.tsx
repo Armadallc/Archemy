@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
+import { Switch } from "../components/ui/switch";
 import { 
   LayoutDashboard, 
   Users, 
@@ -19,7 +20,8 @@ import {
   Calendar,
   Car,
   DollarSign,
-  MapPin
+  MapPin,
+  Filter
 } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "../hooks/useAuth";
@@ -36,7 +38,6 @@ import GlobalSearch from "../components/search/GlobalSearch";
 // Import preserved widgets
 import LiveOperationsWidget from "../components/dashboard/LiveOperationsWidget";
 import FleetStatusWidget from "../components/dashboard/FleetStatusWidget";
-import QuickStatsWidget from "../components/dashboard/QuickStatsWidget";
 import InteractiveMapWidget from "../components/dashboard/InteractiveMapWidget";
 import EnhancedAnalyticsWidget from "../components/dashboard/EnhancedAnalyticsWidget";
 import TaskManagementWidget from "../components/dashboard/TaskManagementWidget";
@@ -90,11 +91,27 @@ const ShadcnHeader = ({ title, subtitle }: { title: string; subtitle?: string })
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
+    }).replace(' ', ''); // Remove space between time and AM/PM
+  };
+
+  // Format month abbreviation (3 letters, all caps)
+  const formatMonth = (date: Date) => {
+    return date.toLocaleDateString('en-US', {
+      timeZone: 'America/Denver',
+      month: 'short',
+    }).toUpperCase();
+  };
+
+  // Format day
+  const formatDay = (date: Date) => {
+    return date.toLocaleDateString('en-US', {
+      timeZone: 'America/Denver',
+      day: 'numeric',
     });
   };
 
   return (
-    <div className="px-6 py-6 flex items-center justify-between rounded-lg border backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+    <div className="px-6 py-6 flex items-center justify-between rounded-lg card-neu" style={{ backgroundColor: 'var(--background)', border: 'none', height: '150px', fontWeight: 400 }}>
       <div className="flex items-center gap-3">
         <div 
           className="flex items-center text-foreground"
@@ -104,10 +121,21 @@ const ShadcnHeader = ({ title, subtitle }: { title: string; subtitle?: string })
             fontSize: '110px',
             lineHeight: 1.15,
             letterSpacing: '-0.015em',
-            textTransform: 'none', // Don't uppercase the time
+            textTransform: 'none',
           }}
         >
-          {formatMountainTime(currentTime)}
+          <span>{formatMountainTime(currentTime)}</span>
+          <span style={{ marginLeft: '0.2em', marginRight: '0.2em' }}> </span>
+          <span 
+            style={{
+              fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
+              fontWeight: 100,
+            }}
+          >
+            {formatMonth(currentTime)}
+          </span>
+          <span style={{ marginLeft: '0.1em', marginRight: '0.1em', fontWeight: 700, fontSize: '0.25em' }}>●</span>
+          <span style={{ fontWeight: 100 }}>{formatDay(currentTime)}</span>
         </div>
       </div>
       <div className="flex items-center space-x-4">
@@ -115,7 +143,7 @@ const ShadcnHeader = ({ title, subtitle }: { title: string; subtitle?: string })
           variant="outline"
           size="sm"
           onClick={openSearch}
-          className="flex items-center space-x-2 text-foreground backdrop-blur-sm hover:opacity-80" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)', width: '200px' }}
+          className="flex items-center space-x-2 text-foreground card-neu-pressed hover:opacity-80" style={{ backgroundColor: 'var(--background)', border: 'none', width: '200px' }}
         >
           <Search className="w-4 h-4" />
           <span>Search</span>
@@ -152,6 +180,8 @@ export default function ShadcnDashboardMigrated() {
   // Feature flag check - if unified header is enabled, don't render ShadcnHeader
   const ENABLE_UNIFIED_HEADER = RollbackManager.isUnifiedHeaderEnabled();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [activityMentionsOnly, setActivityMentionsOnly] = useState(false);
+  const [activityShowFilters, setActivityShowFilters] = useState(false);
   const { level, selectedCorporateClient, selectedProgram, activeScope, activeScopeName, getFilterParams, navigateToCorporate, navigateToClient, navigateToProgram } = useHierarchy();
   
   // Get real-time dashboard data (preserving existing functionality)
@@ -294,7 +324,7 @@ export default function ShadcnDashboardMigrated() {
     console.log('🔒 SUPER ADMIN ROLE CONFIRMED - PROTECTED SECTION ACCESS');
     
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--page-background)' }}>
+      <div className="min-h-screen dark:bg-[#1e2023]" style={{ backgroundColor: 'var(--page-background)' }}>
         <div className="flex-1 flex flex-col overflow-hidden" style={{ padding: '24px' }}>
           {/* Header - Only show if unified header is disabled (fallback) */}
           {!ENABLE_UNIFIED_HEADER && (
@@ -303,11 +333,11 @@ export default function ShadcnDashboardMigrated() {
             </div>
           )}
           {/* Dashboard Content */}
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-auto" style={{ padding: '0 16px', overflowX: 'visible' }}>
           <div className="space-y-6">
-            {/* Stats Cards - Shadcn Style */}
+            {/* Stats Cards - Neumorphic Style */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" style={{ marginTop: '24px' }}>
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Total Trips</CardTitle>
                 </CardHeader>
@@ -318,7 +348,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Active Drivers</CardTitle>
                 </CardHeader>
@@ -331,7 +361,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Corporate Clients</CardTitle>
                 </CardHeader>
@@ -344,7 +374,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Programs</CardTitle>
                 </CardHeader>
@@ -357,31 +387,54 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
 
-            {/* Operations and Activity Log - Single Row, Reduced Size (40-50% smaller) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" style={{ height: '375px', position: 'relative', zIndex: 10, overflow: 'hidden' }}>
+            {/* Operations and Activity Log - Single Row, Increased Height */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" style={{ height: '600px', position: 'relative', zIndex: 10, padding: '4px' }}>
               {/* Left Side: Live Operations Widget */}
-              <div className="overflow-hidden" style={{ position: 'relative', zIndex: 10, height: '375px', maxHeight: '375px' }}>
-                <div className="shadow-xl" style={{ height: '375px', maxHeight: '375px', overflow: 'hidden' }}>
-                  <div style={{ height: '375px', maxHeight: '375px', overflow: 'hidden' }}>
-                    <LiveOperationsWidget trips={realTimeTrips} drivers={realTimeDrivers} className="max-h-[375px]" />
+              <div style={{ position: 'relative', zIndex: 10, height: '600px', maxHeight: '600px', padding: '4px' }}>
+                <div style={{ height: '600px', maxHeight: '600px' }}>
+                  <div style={{ height: '600px', maxHeight: '600px' }}>
+                    <LiveOperationsWidget trips={realTimeTrips} drivers={realTimeDrivers} className="max-h-[600px]" shadow="xl" />
                   </div>
                 </div>
               </div>
 
               {/* Right Side: Activity Log */}
-              <div className="flex flex-col overflow-hidden" style={{ position: 'relative', zIndex: 10, height: '375px', maxHeight: '375px' }}>
-                <Card className="bg-white/25 dark:bg-card/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl flex flex-col w-full h-full" style={{ height: '375px', maxHeight: '375px', paddingTop: '12px', paddingBottom: '16px', borderWidth: '1px', borderStyle: 'solid', borderColor: 'var(--color-aqua)' }}>
-                  <CardContent className="p-0 flex-1 overflow-hidden flex flex-col min-h-0">
-                    <ActivityFeed />
+              <div className="flex flex-col" style={{ position: 'relative', zIndex: 10, height: '600px', maxHeight: '600px', padding: '4px' }}>
+                <Card className="flex flex-col w-full h-full" style={{ height: '600px', maxHeight: '600px', paddingTop: '12px', paddingBottom: '16px', paddingLeft: '24px', paddingRight: '24px', backgroundColor: 'var(--background)', border: 'none', boxShadow: 'var(--shadow-drop)' }}>
+                  <CardHeader className="pb-2 flex-shrink-0">
+                    <CardTitle className="flex items-center justify-between text-base text-foreground" style={{ fontSize: '42px' }}>
+                      <span>RECENT ACTIVITY</span>
+                      <div className="flex items-center gap-3 md:gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground text-xs md:text-sm">Show mentioned only</span>
+                          <Switch 
+                            checked={activityMentionsOnly}
+                            onCheckedChange={setActivityMentionsOnly}
+                          />
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => setActivityShowFilters(!activityShowFilters)}
+                        >
+                          <Filter className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0 flex-1 flex flex-col min-h-0" style={{ overflow: 'hidden' }}>
+                    <ActivityFeed 
+                      hideHeader={true}
+                      mentionsOnly={activityMentionsOnly}
+                      onMentionsOnlyChange={setActivityMentionsOnly}
+                      showFilters={activityShowFilters}
+                      onShowFiltersChange={setActivityShowFilters}
+                    />
                   </CardContent>
                 </Card>
               </div>
             </div>
 
-            {/* Quick Stats - Full Width Row Below */}
-            <div className="mt-6" style={{ position: 'relative', zIndex: 20 }}>
-              <QuickStatsWidget trips={realTimeTrips} shadow="xl" />
-            </div>
 
             {/* Fleet Status Widget - Full Width */}
             <div className="mt-6" style={{ position: 'relative', zIndex: 30 }}>
@@ -389,35 +442,35 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
             {/* Interactive Map - Preserved */}
-            <div className="mt-6">
+            <div id="interactive-map-section" className="mt-6">
               <InteractiveMapWidget shadow="xl" />
             </div>
 
             {/* Analytics & Management - Preserved */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" style={{ padding: '8px 0', margin: '-8px 0' }}>
               <EnhancedAnalyticsWidget shadow="xl" />
               <TaskManagementWidget shadow="xl" />
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
-                <CardHeader>
-                  <CardTitle className="text-foreground">System Health</CardTitle>
+              <Card className="h-full" style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: 'var(--shadow-drop)', margin: '0px', marginTop: '0px', paddingLeft: '24px', paddingRight: '24px', paddingBottom: '24px' }}>
+                <CardHeader className="pb-2 flex-shrink-0">
+                  <CardTitle className="flex items-center justify-between text-base text-foreground" style={{ fontSize: '42px' }}>SYSTEM HEALTH</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0 flex-1 flex flex-col min-h-0" style={{ overflow: 'hidden', padding: '0px 8px', marginTop: '0' }}>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
+                    <div className="flex items-center justify-between p-3 card-neu-pressed rounded-lg" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-status-success rounded-full"></div>
                         <span className="text-sm font-medium text-status-success dark:text-status-success">Database</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
+                    <div className="flex items-center justify-between p-3 card-neu-pressed rounded-lg" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-status-success rounded-full"></div>
                         <span className="text-sm font-medium text-status-success dark:text-status-success">API</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
+                    <div className="flex items-center justify-between p-3 card-neu-pressed rounded-lg" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-status-success rounded-full"></div>
                         <span className="text-sm font-medium text-status-success dark:text-status-success">WebSocket</span>
@@ -438,18 +491,18 @@ export default function ShadcnDashboardMigrated() {
   // Corporate Admin Dashboard
   if (realTimeUserRole === "corporate_admin") {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--page-background)' }}>
+      <div className="min-h-screen dark:bg-[#1e2023]" style={{ backgroundColor: 'var(--page-background)' }}>
         <div className="flex-1 flex flex-col overflow-hidden" style={{ padding: '24px' }}>
           {/* Header - Only show if unified header is disabled (fallback) */}
           {!ENABLE_UNIFIED_HEADER && (
             <ShadcnHeader title={getRoleBasedTitle()} subtitle={`Managing ${selectedCorporateClient || "corporate"} operations`} />
           )}
           {/* Dashboard Content */}
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-auto" style={{ padding: '0 16px', overflowX: 'visible' }}>
           <div className="space-y-6">
-            {/* Stats Cards - Shadcn Style */}
+            {/* Stats Cards - Neumorphic Style */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" style={{ marginTop: '24px' }}>
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Today's Trips</CardTitle>
                 </CardHeader>
@@ -466,7 +519,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Active Drivers</CardTitle>
                 </CardHeader>
@@ -479,7 +532,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Total Clients</CardTitle>
                 </CardHeader>
@@ -490,7 +543,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Programs</CardTitle>
                 </CardHeader>
@@ -514,35 +567,35 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
             {/* Interactive Map - Preserved */}
-            <div className="mt-6">
+            <div id="interactive-map-section" className="mt-6">
               <InteractiveMapWidget shadow="xl" />
             </div>
 
             {/* Analytics & Management - Preserved */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" style={{ padding: '8px 0', margin: '-8px 0' }}>
               <EnhancedAnalyticsWidget shadow="xl" />
               <TaskManagementWidget shadow="xl" />
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
-                <CardHeader>
-                  <CardTitle className="text-foreground">System Health</CardTitle>
+              <Card className="h-full" style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: 'var(--shadow-drop)', margin: '0px', marginTop: '0px', paddingLeft: '24px', paddingRight: '24px', paddingBottom: '24px' }}>
+                <CardHeader className="pb-2 flex-shrink-0">
+                  <CardTitle className="flex items-center justify-between text-base text-foreground" style={{ fontSize: '42px' }}>SYSTEM HEALTH</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0 flex-1 flex flex-col min-h-0" style={{ overflow: 'hidden', padding: '0px 8px', marginTop: '0' }}>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
+                    <div className="flex items-center justify-between p-3 card-neu-pressed rounded-lg" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-status-success rounded-full"></div>
                         <span className="text-sm font-medium text-status-success dark:text-status-success">Database</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
+                    <div className="flex items-center justify-between p-3 card-neu-pressed rounded-lg" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-status-success rounded-full"></div>
                         <span className="text-sm font-medium text-status-success dark:text-status-success">API</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
+                    <div className="flex items-center justify-between p-3 card-neu-pressed rounded-lg" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-status-success rounded-full"></div>
                         <span className="text-sm font-medium text-status-success dark:text-status-success">WebSocket</span>
@@ -555,7 +608,7 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
             {/* Recent Activity - Preserved */}
-            <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+            <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
               <CardHeader>
                 <CardTitle className="text-foreground">Recent Activity</CardTitle>
               </CardHeader>
@@ -573,18 +626,18 @@ export default function ShadcnDashboardMigrated() {
   // Program Admin Dashboard
   if (realTimeUserRole === "program_admin") {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--page-background)' }}>
+      <div className="min-h-screen dark:bg-[#1e2023]" style={{ backgroundColor: 'var(--page-background)' }}>
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
           <ShadcnHeader title={getRoleBasedTitle()} subtitle={`Managing ${selectedProgram || "program"} operations`} />
           
           
           {/* Dashboard Content */}
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-auto" style={{ padding: '0 16px', overflowX: 'visible' }}>
           <div className="space-y-6">
-            {/* Stats Cards - Shadcn Style */}
+            {/* Stats Cards - Neumorphic Style */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Today's Trips</CardTitle>
                 </CardHeader>
@@ -601,7 +654,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Active Drivers</CardTitle>
                 </CardHeader>
@@ -614,7 +667,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Total Clients</CardTitle>
                 </CardHeader>
@@ -625,7 +678,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Revenue</CardTitle>
                 </CardHeader>
@@ -648,35 +701,35 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
             {/* Interactive Map - Preserved */}
-            <div className="mt-6">
+            <div id="interactive-map-section" className="mt-6">
               <InteractiveMapWidget shadow="xl" />
             </div>
 
             {/* Analytics & Management - Preserved */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" style={{ padding: '8px 0', margin: '-8px 0' }}>
               <EnhancedAnalyticsWidget shadow="xl" />
               <TaskManagementWidget shadow="xl" />
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
-                <CardHeader>
-                  <CardTitle className="text-foreground">System Health</CardTitle>
+              <Card className="h-full" style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: 'var(--shadow-drop)', margin: '0px', marginTop: '0px', paddingLeft: '24px', paddingRight: '24px', paddingBottom: '24px' }}>
+                <CardHeader className="pb-2 flex-shrink-0">
+                  <CardTitle className="flex items-center justify-between text-base text-foreground" style={{ fontSize: '42px' }}>SYSTEM HEALTH</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0 flex-1 flex flex-col min-h-0" style={{ overflow: 'hidden', padding: '0px 8px', marginTop: '0' }}>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
+                    <div className="flex items-center justify-between p-3 card-neu-pressed rounded-lg" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-status-success rounded-full"></div>
                         <span className="text-sm font-medium text-status-success dark:text-status-success">Database</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
+                    <div className="flex items-center justify-between p-3 card-neu-pressed rounded-lg" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-status-success rounded-full"></div>
                         <span className="text-sm font-medium text-status-success dark:text-status-success">API</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
+                    <div className="flex items-center justify-between p-3 card-neu-pressed rounded-lg" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-status-success rounded-full"></div>
                         <span className="text-sm font-medium text-status-success dark:text-status-success">WebSocket</span>
@@ -689,7 +742,7 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
             {/* Recent Activity - Preserved */}
-            <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+            <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
               <CardHeader>
                 <CardTitle className="text-foreground">Recent Activity</CardTitle>
               </CardHeader>
@@ -707,7 +760,7 @@ export default function ShadcnDashboardMigrated() {
   // Program User Dashboard
   if (realTimeUserRole === "program_user") {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--page-background)' }}>
+      <div className="min-h-screen dark:bg-[#1e2023]" style={{ backgroundColor: 'var(--page-background)' }}>
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header - Only show if unified header is disabled (fallback) */}
           {!ENABLE_UNIFIED_HEADER && (
@@ -716,11 +769,11 @@ export default function ShadcnDashboardMigrated() {
           
           
           {/* Dashboard Content */}
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-auto" style={{ padding: '0 16px', overflowX: 'visible' }}>
           <div className="space-y-6">
-            {/* Stats Cards - Shadcn Style */}
+            {/* Stats Cards - Neumorphic Style */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Today's Trips</CardTitle>
                 </CardHeader>
@@ -737,7 +790,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Active Drivers</CardTitle>
                 </CardHeader>
@@ -750,7 +803,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Total Clients</CardTitle>
                 </CardHeader>
@@ -761,7 +814,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Revenue</CardTitle>
                 </CardHeader>
@@ -784,35 +837,35 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
             {/* Interactive Map - Preserved */}
-            <div className="mt-6">
+            <div id="interactive-map-section" className="mt-6">
               <InteractiveMapWidget shadow="xl" />
             </div>
 
             {/* Analytics & Management - Preserved */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" style={{ padding: '8px 0', margin: '-8px 0' }}>
               <EnhancedAnalyticsWidget shadow="xl" />
               <TaskManagementWidget shadow="xl" />
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
-                <CardHeader>
-                  <CardTitle className="text-foreground">System Health</CardTitle>
+              <Card className="h-full" style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: 'var(--shadow-drop)', margin: '0px', marginTop: '0px', paddingLeft: '24px', paddingRight: '24px', paddingBottom: '24px' }}>
+                <CardHeader className="pb-2 flex-shrink-0">
+                  <CardTitle className="flex items-center justify-between text-base text-foreground" style={{ fontSize: '42px' }}>SYSTEM HEALTH</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0 flex-1 flex flex-col min-h-0" style={{ overflow: 'hidden', padding: '0px 8px', marginTop: '0' }}>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
+                    <div className="flex items-center justify-between p-3 card-neu-pressed rounded-lg" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-status-success rounded-full"></div>
                         <span className="text-sm font-medium text-status-success dark:text-status-success">Database</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
+                    <div className="flex items-center justify-between p-3 card-neu-pressed rounded-lg" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-status-success rounded-full"></div>
                         <span className="text-sm font-medium text-status-success dark:text-status-success">API</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
+                    <div className="flex items-center justify-between p-3 card-neu-pressed rounded-lg" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-status-success rounded-full"></div>
                         <span className="text-sm font-medium text-status-success dark:text-status-success">WebSocket</span>
@@ -833,7 +886,7 @@ export default function ShadcnDashboardMigrated() {
   // Driver Dashboard
   if (realTimeUserRole === "driver") {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--page-background)' }}>
+      <div className="min-h-screen dark:bg-[#1e2023]" style={{ backgroundColor: 'var(--page-background)' }}>
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header - Only show if unified header is disabled (fallback) */}
           {!ENABLE_UNIFIED_HEADER && (
@@ -842,14 +895,14 @@ export default function ShadcnDashboardMigrated() {
           
           
           {/* Dashboard Content */}
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-auto" style={{ padding: '0 16px', overflowX: 'visible' }}>
           <div className="space-y-6">
-            {/* Stats Cards - Shadcn Style */}
+            {/* Stats Cards - Neumorphic Style */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Today's Trips</CardTitle>
-                </CardHeader>
+                  </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-foreground">
                     {realTimeTrips?.filter((t: any) => {
@@ -863,7 +916,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Completed</CardTitle>
                   <Car className="h-4 w-4 text-foreground-secondary" />
@@ -877,7 +930,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">In Progress</CardTitle>
                   <MapPin className="h-4 w-4 text-foreground-secondary" />
@@ -891,7 +944,7 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
 
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+              <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-foreground">Rating</CardTitle>
                   <BarChart3 className="h-4 w-4 text-foreground-secondary" />
@@ -915,35 +968,35 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
             {/* Interactive Map - Preserved */}
-            <div className="mt-6">
+            <div id="interactive-map-section" className="mt-6">
               <InteractiveMapWidget shadow="xl" />
             </div>
 
             {/* Analytics & Management - Preserved */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" style={{ padding: '8px 0', margin: '-8px 0' }}>
               <EnhancedAnalyticsWidget shadow="xl" />
               <TaskManagementWidget shadow="xl" />
-              <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
-                <CardHeader>
-                  <CardTitle className="text-foreground">System Health</CardTitle>
+              <Card className="h-full" style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: 'var(--shadow-drop)', margin: '0px', marginTop: '0px', paddingLeft: '24px', paddingRight: '24px', paddingBottom: '24px' }}>
+                <CardHeader className="pb-2 flex-shrink-0">
+                  <CardTitle className="flex items-center justify-between text-base text-foreground" style={{ fontSize: '42px' }}>SYSTEM HEALTH</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0 flex-1 flex flex-col min-h-0" style={{ overflow: 'hidden', padding: '0px 8px', marginTop: '0' }}>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
+                    <div className="flex items-center justify-between p-3 card-neu-pressed rounded-lg" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-status-success rounded-full"></div>
                         <span className="text-sm font-medium text-status-success dark:text-status-success">Database</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
+                    <div className="flex items-center justify-between p-3 card-neu-pressed rounded-lg" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-status-success rounded-full"></div>
                         <span className="text-sm font-medium text-status-success dark:text-status-success">API</span>
                       </div>
                       <Badge variant="outline">Connected</Badge>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-status-success-bg dark:bg-status-success-bg rounded-lg">
+                    <div className="flex items-center justify-between p-3 card-neu-pressed rounded-lg" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-status-success rounded-full"></div>
                         <span className="text-sm font-medium text-status-success dark:text-status-success">WebSocket</span>
@@ -956,7 +1009,7 @@ export default function ShadcnDashboardMigrated() {
             </div>
 
             {/* Recent Activity - Preserved */}
-            <Card className="backdrop-blur-md shadow-xl" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderWidth: '1px' }}>
+            <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
               <CardHeader>
                 <CardTitle className="text-foreground">Recent Activity</CardTitle>
               </CardHeader>

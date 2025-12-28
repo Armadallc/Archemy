@@ -164,3 +164,4 @@ CREATE POLICY "Users can delete own service codes"
 COMMENT ON TABLE prophet_scenarios IS 'Stores Prophet calculator business scenarios per user';
 COMMENT ON TABLE prophet_facilities IS 'Stores Prophet calculator treatment facilities per user';
 COMMENT ON TABLE prophet_service_codes IS 'Stores custom service code rate overrides per user';
+

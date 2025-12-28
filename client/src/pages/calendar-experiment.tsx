@@ -145,21 +145,25 @@ export default function CalendarExperiment() {
           <div className="px-6 py-6 rounded-lg card-neu flex items-center justify-between" style={{ backgroundColor: 'var(--background)', height: '150px' }}>
             <div className="flex items-end gap-6">
             <h1 
-              className="font-bold text-foreground" 
+              className="font-bold" 
               style={{ 
                 fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
                 fontSize: '110px',
-                lineHeight: 1
+                lineHeight: 1,
+                fontWeight: 700,
+                color: '#a5c8ca'
               }}
             >
               bentobox.
             </h1>
             <div 
-              className="font-medium text-foreground"
+              className="font-medium"
               style={{ 
                 fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
                 fontSize: '48px',
-                lineHeight: 1.3
+                lineHeight: 1.3,
+                color: '#a5c8ca',
+                opacity: 0.8
               }}
             >
               {getDateRangeLabel()}
@@ -201,13 +205,15 @@ export default function CalendarExperiment() {
                     "inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-1.5 font-medium transition-all",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     activeTab === 'stage'
-                      ? "text-foreground card-neu-pressed"
-                      : "text-muted-foreground hover:text-foreground hover:card-neu"
+                      ? "card-neu-pressed"
+                      : "hover:card-neu"
                   )}
                   style={{ 
                     fontSize: '23px',
                     borderRadius: '6px',
-                    backgroundColor: activeTab === 'stage' ? 'var(--background)' : 'transparent',
+                    backgroundColor: 'var(--background)',
+                    border: 'none',
+                    color: '#a5c8ca',
                     marginLeft: '4px',
                     marginRight: '4px'
                   }}
@@ -220,13 +226,15 @@ export default function CalendarExperiment() {
                     "inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-1.5 font-medium transition-all",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     activeTab === 'builder'
-                      ? "text-foreground card-neu-pressed"
-                      : "text-muted-foreground hover:text-foreground hover:card-neu"
+                      ? "card-neu-pressed"
+                      : "hover:card-neu"
                   )}
                   style={{ 
                     fontSize: '23px',
                     borderRadius: '6px',
-                    backgroundColor: activeTab === 'builder' ? 'var(--background)' : 'transparent',
+                    backgroundColor: 'var(--background)',
+                    border: 'none',
+                    color: '#a5c8ca',
                     marginLeft: '4px',
                     marginRight: '4px'
                   }}
@@ -254,28 +262,28 @@ export default function CalendarExperiment() {
                   variant="ghost"
                   size="sm"
                   onClick={handlePrevious}
-                  className="card-neu-flat hover:card-neu"
-                  style={{ height: '32px', width: '32px', padding: 0 }}
+                  className="card-neu-flat hover:card-neu [&]:shadow-none"
+                  style={{ height: '32px', width: '32px', padding: 0, backgroundColor: 'var(--background)', border: 'none' }}
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  <ChevronLeft className="w-4 h-4" style={{ color: '#a5c8ca' }} />
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleToday}
-                  className="card-neu-flat hover:card-neu px-3"
-                  style={{ height: '32px' }}
+                  className="card-neu-flat hover:card-neu [&]:shadow-none px-3"
+                  style={{ height: '32px', backgroundColor: 'var(--background)', border: 'none' }}
                 >
-                  Today
+                  <span style={{ color: '#a5c8ca' }}>Today</span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleNext}
-                  className="card-neu-flat hover:card-neu"
-                  style={{ height: '32px', width: '32px', padding: 0 }}
+                  className="card-neu-flat hover:card-neu [&]:shadow-none"
+                  style={{ height: '32px', width: '32px', padding: 0, backgroundColor: 'var(--background)', border: 'none' }}
                 >
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="w-4 h-4" style={{ color: '#a5c8ca' }} />
                 </Button>
               </div>
               
@@ -292,45 +300,45 @@ export default function CalendarExperiment() {
                   size="sm"
                   onClick={() => setCurrentView("day")}
                   className={cn(
-                    "h-7 px-2 min-w-[32px]",
+                    "h-7 px-2 min-w-[32px] [&]:shadow-none",
                     currentView === "day" 
                       ? "card-neu-pressed" 
-                      : "hover:card-neu"
+                      : "card-neu-flat hover:card-neu"
                   )}
-                  style={{ backgroundColor: currentView === "day" ? 'var(--background)' : 'transparent' }}
+                  style={{ backgroundColor: 'var(--background)', border: 'none' }}
                 >
-                  <Calendar className="w-4 h-4" />
-                  {currentView === "day" && <span className="ml-1.5 text-xs">Day</span>}
+                  <Calendar className="w-4 h-4" style={{ color: '#a5c8ca' }} />
+                  {currentView === "day" && <span className="ml-1.5 text-xs" style={{ color: '#a5c8ca' }}>Day</span>}
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setCurrentView("week")}
                   className={cn(
-                    "h-7 px-2 min-w-[32px]",
+                    "h-7 px-2 min-w-[32px] [&]:shadow-none",
                     currentView === "week" 
                       ? "card-neu-pressed" 
-                      : "hover:card-neu"
+                      : "card-neu-flat hover:card-neu"
                   )}
-                  style={{ backgroundColor: currentView === "week" ? 'var(--background)' : 'transparent' }}
+                  style={{ backgroundColor: 'var(--background)', border: 'none' }}
                 >
-                  <LayoutGrid className="w-4 h-4" />
-                  {currentView === "week" && <span className="ml-1.5 text-xs">Week</span>}
+                  <LayoutGrid className="w-4 h-4" style={{ color: '#a5c8ca' }} />
+                  {currentView === "week" && <span className="ml-1.5 text-xs" style={{ color: '#a5c8ca' }}>Week</span>}
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setCurrentView("month")}
                   className={cn(
-                    "h-7 px-2 min-w-[32px]",
+                    "h-7 px-2 min-w-[32px] [&]:shadow-none",
                     currentView === "month" 
                       ? "card-neu-pressed" 
-                      : "hover:card-neu"
+                      : "card-neu-flat hover:card-neu"
                   )}
-                  style={{ backgroundColor: currentView === "month" ? 'var(--background)' : 'transparent' }}
+                  style={{ backgroundColor: 'var(--background)', border: 'none' }}
                 >
-                  <CalendarDays className="w-4 h-4" />
-                  {currentView === "month" && <span className="ml-1.5 text-xs">Month</span>}
+                  <CalendarDays className="w-4 h-4" style={{ color: '#a5c8ca' }} />
+                  {currentView === "month" && <span className="ml-1.5 text-xs" style={{ color: '#a5c8ca' }}>Month</span>}
                 </Button>
                 {(() => {
                   const isEnabled = FEATURE_FLAGS.FULL_CALENDAR_AGENDA_VIEW;
@@ -351,15 +359,15 @@ export default function CalendarExperiment() {
                       setCurrentView("agenda");
                     }}
                     className={cn(
-                      "h-7 px-2 min-w-[32px]",
+                      "h-7 px-2 min-w-[32px] [&]:shadow-none",
                       currentView === "agenda" 
                         ? "card-neu-pressed" 
-                        : "hover:card-neu"
+                        : "card-neu-flat hover:card-neu"
                     )}
-                    style={{ backgroundColor: currentView === "agenda" ? 'var(--background)' : 'transparent' }}
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   >
-                    <LayoutGrid className="w-4 h-4" />
-                    {currentView === "agenda" && <span className="ml-1.5 text-xs">Agenda</span>}
+                    <LayoutGrid className="w-4 h-4" style={{ color: '#a5c8ca' }} />
+                    {currentView === "agenda" && <span className="ml-1.5 text-xs" style={{ color: '#a5c8ca' }}>Agenda</span>}
                   </Button>
                 )}
               </div>
@@ -377,22 +385,22 @@ export default function CalendarExperiment() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 w-8 p-0 flex-shrink-0 card-neu-flat hover:card-neu"
-                    style={{ backgroundColor: 'var(--background)' }}
+                    className="h-8 w-8 p-0 flex-shrink-0 card-neu-flat hover:card-neu [&]:shadow-none"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   >
-                    <Settings className="w-4 h-4" />
+                    <Settings className="w-4 h-4" style={{ color: '#a5c8ca' }} />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80" align="end">
+                <PopoverContent className="w-80 card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }} align="end">
                   <div className="space-y-6">
                     <div className="space-y-6">
-                      <h4 className="font-medium text-sm">Calendar Settings</h4>
+                      <h4 className="font-medium text-sm" style={{ color: '#a5c8ca' }}>CALENDAR SETTINGS</h4>
                     </div>
                     
                     {/* Time Format Toggle */}
                     {FEATURE_FLAGS.FULL_CALENDAR_TIME_FORMAT && (
                       <div className="flex items-center justify-between">
-                        <Label htmlFor="time-format" className="text-sm">
+                        <Label htmlFor="time-format" className="text-sm" style={{ color: '#a5c8ca', opacity: 0.8 }}>
                           Use 24 hour format
                         </Label>
                         <Switch
@@ -405,7 +413,7 @@ export default function CalendarExperiment() {
                     
                     {/* Show Confirmation Dialog Toggle */}
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="confirmation-dialog" className="text-sm">
+                      <Label htmlFor="confirmation-dialog" className="text-sm" style={{ color: '#a5c8ca', opacity: 0.8 }}>
                         Show confirmation dialog on event drop
                       </Label>
                       <Switch
@@ -418,32 +426,32 @@ export default function CalendarExperiment() {
                     {/* Agenda View Group By */}
                     {FEATURE_FLAGS.FULL_CALENDAR_AGENDA_VIEW && (
                       <div className="space-y-6">
-                        <Label className="text-sm">Agenda view group by</Label>
+                        <Label className="text-sm" style={{ color: '#a5c8ca', opacity: 0.8 }}>Agenda view group by</Label>
                         <RadioGroup
                           value={agendaGroupBy}
                           onValueChange={(value) => setAgendaGroupBy(value as "date" | "color" | "staff" | "category")}
                         >
                           <div className="flex items-center space-x-6">
                             <RadioGroupItem value="date" id="group-date" />
-                            <Label htmlFor="group-date" className="text-sm font-normal cursor-pointer">
+                            <Label htmlFor="group-date" className="text-sm font-normal cursor-pointer" style={{ color: '#a5c8ca', opacity: 0.8 }}>
                               Date
                             </Label>
                           </div>
                           <div className="flex items-center space-x-6">
                             <RadioGroupItem value="color" id="group-color" />
-                            <Label htmlFor="group-color" className="text-sm font-normal cursor-pointer">
+                            <Label htmlFor="group-color" className="text-sm font-normal cursor-pointer" style={{ color: '#a5c8ca', opacity: 0.8 }}>
                               Color
                             </Label>
                           </div>
                           <div className="flex items-center space-x-6">
                             <RadioGroupItem value="staff" id="group-staff" />
-                            <Label htmlFor="group-staff" className="text-sm font-normal cursor-pointer">
+                            <Label htmlFor="group-staff" className="text-sm font-normal cursor-pointer" style={{ color: '#a5c8ca', opacity: 0.8 }}>
                               Staff
                             </Label>
                           </div>
                           <div className="flex items-center space-x-6">
                             <RadioGroupItem value="category" id="group-category" />
-                            <Label htmlFor="group-category" className="text-sm font-normal cursor-pointer">
+                            <Label htmlFor="group-category" className="text-sm font-normal cursor-pointer" style={{ color: '#a5c8ca', opacity: 0.8 }}>
                               Category
                             </Label>
                           </div>
@@ -475,28 +483,29 @@ export default function CalendarExperiment() {
               >
                 {poolDrawerOpen ? (
                   <div className="h-full flex flex-col overflow-hidden rounded-lg">
-                    <div className="p-6 flex items-center justify-between flex-shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
+                    <div className="p-6 flex items-center justify-between flex-shrink-0" style={{ borderBottom: '1px solid rgba(165, 200, 202, 0.2)' }}>
                       <button
                         className={cn(
                           "inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2.5 font-medium transition-all h-12",
                           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                          "text-foreground card-neu-pressed"
+                          "card-neu-pressed [&]:shadow-none"
                         )}
-                        style={{ fontSize: '23px', backgroundColor: 'var(--background)' }}
+                        style={{ fontSize: '23px', backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}
                       >
                         POOL
                       </button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 w-6 p-0"
+                        className="h-6 w-6 p-0 card-neu-flat hover:card-neu [&]:shadow-none"
+                        style={{ backgroundColor: 'var(--background)', border: 'none' }}
                         onClick={() => setPoolDrawerOpen(false)}
                       >
-                        <ChevronLeftIcon className="w-4 h-4" />
+                        <ChevronLeftIcon className="w-4 h-4" style={{ color: '#a5c8ca' }} />
                       </Button>
                     </div>
                     <div className="flex-1 overflow-y-auto p-6">
-                      <div className="text-xs text-muted-foreground mb-6">Drag to schedule</div>
+                      <div className="text-xs mb-6" style={{ color: '#a5c8ca', opacity: 0.7 }}>Drag to schedule</div>
                       <PoolSection onEdit={handleEditTemplate} />
                     </div>
                   </div>

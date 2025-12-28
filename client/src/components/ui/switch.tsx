@@ -26,7 +26,8 @@ const Switch = React.forwardRef<
       // Always charcoal background
       switchRef.current.style.backgroundColor = 'var(--color-charcoal, #1a1a1a)';
       // Aqua border
-      switchRef.current.style.borderColor = 'var(--color-aqua, #3bfec9)';
+      switchRef.current.style.borderColor = 'rgba(59, 254, 201, 1)';
+      switchRef.current.style.borderStyle = 'solid';
     }
   }, [checked]);
 
@@ -38,7 +39,8 @@ const Switch = React.forwardRef<
       )}
       style={{
         backgroundColor: checked ? 'var(--color-charcoal, #1a1a1a)' : 'var(--color-charcoal, #1a1a1a)', // Charcoal background always
-        borderColor: 'var(--color-aqua, #3bfec9)', // Aqua border
+        borderColor: 'rgba(59, 254, 201, 1)', // Aqua border
+        borderStyle: 'solid',
         ...style,
       }}
       checked={checked}

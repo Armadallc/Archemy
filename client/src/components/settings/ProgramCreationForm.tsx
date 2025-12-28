@@ -133,18 +133,27 @@ export default function ProgramCreationForm() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Create Programs & Locations</CardTitle>
-          <CardDescription>
-            Add new programs to corporate clients or create new locations for existing programs.
-          </CardDescription>
+      <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+        <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+          <CardTitle style={{ fontSize: '26px', fontWeight: 400 }}>NEW PROGRAMS & LOCATIONS</CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'program' | 'location')}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="program">Create Program</TabsTrigger>
-              <TabsTrigger value="location">Create Location</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 card-neu-flat p-1" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+              <TabsTrigger 
+                value="program"
+                className="data-[state=active]:card-neu-pressed"
+                style={{ backgroundColor: 'var(--background)' }}
+              >
+                NEW PROGRAM
+              </TabsTrigger>
+              <TabsTrigger 
+                value="location"
+                className="data-[state=active]:card-neu-pressed"
+                style={{ backgroundColor: 'var(--background)' }}
+              >
+                NEW LOCATION
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="program" className="mt-6">
@@ -228,51 +237,57 @@ function CreateProgramForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-4">
-        <h3 className="font-medium text-sm">Program Information</h3>
+        <h3 className="font-medium" style={{ fontSize: '26px', fontWeight: 400 }}>PROGRAM INFORMATION</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="prog-name">Program Name *</Label>
+            <Label htmlFor="prog-name" className="font-medium" style={{ fontSize: '16px', fontWeight: 400 }}>PROGRAM NAME *</Label>
             <Input
               id="prog-name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Enter program name"
               required
+              className="card-neu-pressed"
+              style={{ backgroundColor: 'var(--background)', border: 'none' }}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="prog-short-name">Short Name</Label>
+            <Label htmlFor="prog-short-name" className="font-medium" style={{ fontSize: '16px', fontWeight: 400 }}>SHORT NAME</Label>
             <Input
               id="prog-short-name"
               value={formData.short_name}
               onChange={(e) => setFormData({ ...formData, short_name: e.target.value })}
               placeholder="Enter short name"
+              className="card-neu-pressed"
+              style={{ backgroundColor: 'var(--background)', border: 'none' }}
             />
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="prog-description">Description</Label>
+          <Label htmlFor="prog-description" className="font-medium" style={{ fontSize: '16px', fontWeight: 400 }}>DESCRIPTION</Label>
           <Textarea
             id="prog-description"
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             placeholder="Enter program description"
             rows={3}
+            className="card-neu-pressed"
+            style={{ backgroundColor: 'var(--background)', border: 'none' }}
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="prog-corporate-client">Corporate Client *</Label>
+          <Label htmlFor="prog-corporate-client" className="font-medium" style={{ fontSize: '16px', fontWeight: 400 }}>TENANT *</Label>
           <Select
             value={formData.corporate_client_id}
             onValueChange={(value) => setFormData({ ...formData, corporate_client_id: value })}
             required
           >
-            <SelectTrigger>
+            <SelectTrigger className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
               <SelectValue placeholder="Select corporate client" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
               {corporateClients.map((client) => (
-                <SelectItem key={client.id} value={client.id}>
+                <SelectItem key={client.id} value={client.id} className="hover:card-neu-flat">
                   {client.name}
                 </SelectItem>
               ))}
@@ -284,24 +299,28 @@ function CreateProgramForm({
       <Separator />
 
       <div className="space-y-4">
-        <h3 className="font-medium text-sm">Contact Information</h3>
+        <h3 className="font-medium" style={{ fontSize: '26px', fontWeight: 400 }}>CONTACT</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="prog-email">Email</Label>
+            <Label htmlFor="prog-email" className="font-medium" style={{ fontSize: '16px', fontWeight: 400 }}>EMAIL</Label>
             <Input
               id="prog-email"
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               placeholder="program@example.com"
+              className="card-neu-pressed"
+              style={{ backgroundColor: 'var(--background)', border: 'none' }}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="prog-phone">Phone</Label>
+            <Label htmlFor="prog-phone" className="font-medium" style={{ fontSize: '16px', fontWeight: 400 }}>PHONE</Label>
             <PhoneInput
               id="prog-phone"
               value={formData.phone}
               onChange={(value) => setFormData({ ...formData, phone: value })}
+              className="card-neu-pressed"
+              style={{ backgroundColor: 'var(--background)', border: 'none' }}
             />
           </div>
         </div>
@@ -328,14 +347,16 @@ function CreateProgramForm({
       <Separator />
 
       <div className="space-y-4">
-        <h3 className="font-medium text-sm">Logo</h3>
+        <h3 className="font-medium" style={{ fontSize: '26px', fontWeight: 400 }}>LOGO</h3>
         <div className="space-y-2">
-          <Label htmlFor="prog-logo">Upload Logo</Label>
+          <Label htmlFor="prog-logo" className="font-medium" style={{ fontSize: '16px', fontWeight: 400 }}>UPLOAD LOGO</Label>
           <Input
             id="prog-logo"
             type="file"
             accept="image/*"
             onChange={handleLogoChange}
+            className="card-neu-pressed"
+            style={{ backgroundColor: 'var(--background)', border: 'none' }}
           />
           {logoPreview && (
             <div className="mt-2">
@@ -359,16 +380,21 @@ function CreateProgramForm({
       </div>
 
       <div className="flex justify-end">
-        <Button type="submit" disabled={isPending || !formData.corporate_client_id}>
+        <Button 
+          type="submit" 
+          disabled={isPending || !formData.corporate_client_id}
+          className="card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+          style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(165, 200, 202, 0.15)' }}
+        >
           {isPending ? (
             <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Creating...
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }} />
+              <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Creating...</span>
             </>
           ) : (
             <>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Program
+              <Plus className="h-4 w-4 mr-2" style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }} />
+              <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Create Program</span>
             </>
           )}
         </Button>
@@ -422,7 +448,7 @@ function CreateLocationForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <Alert>
+      <Alert className="card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
         <Info className="h-4 w-4" />
         <AlertDescription>
           Locations will automatically inherit their program's logo. No logo upload is needed for locations.
@@ -430,25 +456,25 @@ function CreateLocationForm({
       </Alert>
 
       <div className="space-y-4">
-        <h3 className="font-medium text-sm">Location Information</h3>
+        <h3 className="font-medium" style={{ fontSize: '16px', fontWeight: 400 }}>LOCATION INFORMATION</h3>
         <div className="space-y-2">
-          <Label htmlFor="loc-program">Program *</Label>
+          <Label htmlFor="loc-program" className="font-medium" style={{ fontSize: '16px', fontWeight: 400 }}>PROGRAM *</Label>
           <Select
             value={formData.program_id}
             onValueChange={(value) => setFormData({ ...formData, program_id: value })}
             required
           >
-            <SelectTrigger>
+            <SelectTrigger className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
               <SelectValue placeholder="Select program" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
               {Object.entries(programsByClient).map(([clientId, clientPrograms]) => (
                 <div key={clientId}>
                   <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
                     {clientPrograms[0]?.corporate_client_id || 'Unknown Client'}
                   </div>
                   {clientPrograms.map((program) => (
-                    <SelectItem key={program.id} value={program.id}>
+                    <SelectItem key={program.id} value={program.id} className="hover:card-neu-flat">
                       {program.name}
                     </SelectItem>
                   ))}
@@ -458,12 +484,14 @@ function CreateLocationForm({
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="loc-name">Location Name</Label>
+          <Label htmlFor="loc-name" className="font-medium" style={{ fontSize: '16px', fontWeight: 400 }}>LOCATION NAME</Label>
           <Input
             id="loc-name"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             placeholder="Enter location name (optional)"
+            className="card-neu-pressed"
+            style={{ backgroundColor: 'var(--background)', border: 'none' }}
           />
         </div>
         <div className="space-y-2">
@@ -485,13 +513,15 @@ function CreateLocationForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="loc-description">Description</Label>
+          <Label htmlFor="loc-description" className="font-medium" style={{ fontSize: '16px', fontWeight: 400 }}>DESCRIPTION</Label>
           <Textarea
             id="loc-description"
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             placeholder="Enter a short description of the location"
             rows={3}
+            className="card-neu-pressed"
+            style={{ backgroundColor: 'var(--background)', border: 'none' }}
           />
         </div>
       </div>
@@ -502,11 +532,16 @@ function CreateLocationForm({
           checked={formData.is_active}
           onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
         />
-        <Label htmlFor="loc-active">Active</Label>
+        <Label htmlFor="loc-active" className="font-medium" style={{ fontSize: '16px', fontWeight: 400 }}>ACTIVE</Label>
       </div>
 
       <div className="flex justify-end">
-        <Button type="submit" disabled={isPending || !formData.program_id}>
+        <Button 
+          type="submit" 
+          disabled={isPending || !formData.program_id}
+          className="card-neu hover:card-neu [&]:shadow-none"
+          style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)' }}
+        >
           {isPending ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />

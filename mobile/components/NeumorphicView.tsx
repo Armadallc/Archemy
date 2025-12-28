@@ -101,19 +101,21 @@ export default function NeumorphicView({
     borderRadius,
     // Use elevation for Android (positive for embossed, negative not supported, so use 0)
     elevation: Platform.OS === 'android' ? (isEmbossed ? 6 * intensityMultiplier : 2) : 0,
-    // iOS shadows - use the dark shadow for depth
+    // iOS shadows - use dual shadows for better neumorphic effect
     ...(Platform.OS === 'ios' && {
       shadowColor: isDark ? '#1a1c1e' : '#161B1D',
       shadowOffset: {
         width: isEmbossed ? offset : -offset,
         height: isEmbossed ? offset : -offset,
       },
-      shadowOpacity: isEmbossed ? 0.3 : 0.4,
-      shadowRadius: 12 * intensityMultiplier,
+      shadowOpacity: isEmbossed ? 0.5 : 0.6,
+      shadowRadius: 10 * intensityMultiplier,
     }),
     // Add borders to enhance the neumorphic effect
     borderWidth: 1.5,
     borderColor: getBorderColor(),
+    // Ensure shadows render properly on iOS
+    overflow: 'visible',
   };
 
   return (

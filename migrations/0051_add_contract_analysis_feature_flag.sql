@@ -68,3 +68,4 @@ COMMIT;
 --   AND program_id IS NULL 
 --   AND corporate_client_id IS NULL;
 -- ============================================================================
+

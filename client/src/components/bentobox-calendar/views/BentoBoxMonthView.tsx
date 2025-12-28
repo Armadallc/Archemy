@@ -100,9 +100,9 @@ export function BentoBoxMonthView({
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Month Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
+      <div className="flex items-center justify-between px-4 py-3 border-b card-neu-flat" style={{ backgroundColor: 'var(--background)', borderColor: 'rgba(165, 200, 202, 0.2)' }}>
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold">
+          <h2 className="text-lg font-semibold" style={{ color: '#a5c8ca' }}>
             {format(currentDate, 'MMMM yyyy')}
           </h2>
         </div>
@@ -111,11 +111,12 @@ export function BentoBoxMonthView({
       {/* Calendar Grid */}
       <div className="flex-1 overflow-auto">
         {/* Week day headers */}
-        <div className="grid grid-cols-7 border-b bg-muted/20 sticky top-0 z-10">
+        <div className="grid grid-cols-7 border-b card-neu-flat sticky top-0 z-10" style={{ backgroundColor: 'var(--background)', borderColor: 'rgba(165, 200, 202, 0.2)' }}>
           {weekDays.map((day) => (
             <div
               key={day}
-              className="p-2 text-center text-xs font-medium text-muted-foreground border-r last:border-r-0"
+              className="p-2 text-center text-xs font-medium border-r last:border-r-0"
+              style={{ color: '#a5c8ca', opacity: 0.7, borderColor: 'rgba(165, 200, 202, 0.2)' }}
             >
               {day}
             </div>
@@ -139,17 +140,24 @@ export function BentoBoxMonthView({
                     key={day.toISOString()}
                     className={cn(
                       "border-r last:border-r-0 p-1 min-h-[120px]",
-                      !isCurrentMonth && "bg-muted/10",
-                      isCurrentDay && "bg-primary/5"
+                      !isCurrentMonth && "opacity-50",
+                      isCurrentDay && "card-neu-pressed"
                     )}
+                    style={{ 
+                      backgroundColor: isCurrentDay ? 'var(--background)' : 'transparent',
+                      borderColor: 'rgba(165, 200, 202, 0.2)'
+                    }}
                   >
                     {/* Day number */}
                     <div
                       className={cn(
                         "text-xs font-medium mb-1",
-                        isCurrentDay && "text-primary font-bold",
-                        !isCurrentMonth && "text-muted-foreground"
+                        isCurrentDay && "font-bold"
                       )}
+                      style={{ 
+                        color: isCurrentDay ? '#a5c8ca' : (!isCurrentMonth ? '#a5c8ca' : '#a5c8ca'),
+                        opacity: isCurrentDay ? 1 : (!isCurrentMonth ? 0.5 : 0.8)
+                      }}
                     >
                       {format(day, 'd')}
                     </div>
@@ -184,7 +192,7 @@ export function BentoBoxMonthView({
                         );
                       })}
                       {dayEncounters.length > 3 && (
-                        <div className="text-xs text-muted-foreground px-1.5 py-0.5">
+                        <div className="text-xs px-1.5 py-0.5" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                           +{dayEncounters.length - 3} more
                         </div>
                       )}

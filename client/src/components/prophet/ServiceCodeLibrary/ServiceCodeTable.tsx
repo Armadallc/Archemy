@@ -37,37 +37,38 @@ function ServiceCodeRow({ code, onUpdate, expanded, onToggle }: ServiceCodeRowPr
   return (
     <>
       <tr 
-        className={`border-b transition-colors hover:bg-muted/50 ${isBlocked ? 'opacity-60' : ''}`}
-        style={{ borderColor: 'var(--border)' }}
+        className={`border-b transition-colors ${isBlocked ? 'opacity-60' : ''}`}
+        style={{ borderColor: 'rgba(165, 200, 202, 0.2)' }}
       >
         {/* Code */}
         <td className="px-3 py-2">
           <div className="flex items-center gap-2">
             <button 
               onClick={onToggle}
-              className="p-1 rounded hover:bg-muted"
+              className="p-1 rounded card-neu-flat hover:card-neu [&]:shadow-none"
+              style={{ backgroundColor: 'var(--background)', border: 'none' }}
             >
               {expanded ? (
-                <ChevronUp className="h-4 w-4" style={{ color: 'var(--muted-foreground)' }} />
+                <ChevronUp className="h-4 w-4" style={{ color: '#a5c8ca' }} />
               ) : (
-                <ChevronDown className="h-4 w-4" style={{ color: 'var(--muted-foreground)' }} />
+                <ChevronDown className="h-4 w-4" style={{ color: '#a5c8ca' }} />
               )}
             </button>
-            <span className="font-mono font-medium" style={{ color: 'var(--foreground)' }}>
+            <span className="font-mono font-medium" style={{ color: '#a5c8ca', opacity: 0.8 }}>
               {code.code}
             </span>
             {code.modifier && (
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="text-xs card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}>
                 {code.modifier}
               </Badge>
             )}
             {code.isCustom && (
-              <Badge variant="secondary" className="text-xs" style={{ backgroundColor: 'rgba(59, 254, 201, 0.2)', color: 'var(--color-lime)' }}>
+              <Badge variant="secondary" className="text-xs card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}>
                 Custom
               </Badge>
             )}
             {isBlocked && (
-              <Lock className="h-3 w-3" style={{ color: 'var(--status-error)' }} />
+              <Lock className="h-3 w-3" style={{ color: '#a5c8ca', opacity: 0.7 }} />
             )}
           </div>
         </td>
@@ -76,16 +77,11 @@ function ServiceCodeRow({ code, onUpdate, expanded, onToggle }: ServiceCodeRowPr
         <td className="px-3 py-2">
           <Badge 
             variant="outline" 
-            className="text-xs"
+            className="text-xs card-neu-flat"
             style={{
-              backgroundColor: code.category === 'BHST' ? 'rgba(255, 85, 93, 0.1)' :
-                              code.category === 'NMT' ? 'rgba(59, 254, 201, 0.1)' :
-                              code.category === 'NEMT' ? 'rgba(241, 254, 96, 0.1)' :
-                              'rgba(232, 255, 254, 0.1)',
-              borderColor: code.category === 'BHST' ? 'var(--primary)' :
-                           code.category === 'NMT' ? 'var(--color-lime)' :
-                           code.category === 'NEMT' ? 'var(--color-yellow)' :
-                           'var(--color-ice)',
+              backgroundColor: 'var(--background)',
+              border: 'none',
+              color: '#a5c8ca',
             }}
           >
             {code.category}
@@ -94,7 +90,7 @@ function ServiceCodeRow({ code, onUpdate, expanded, onToggle }: ServiceCodeRowPr
 
         {/* Description */}
         <td className="px-3 py-2 max-w-xs">
-          <span className="text-sm truncate block" style={{ color: 'var(--foreground)' }}>
+          <span className="text-sm truncate block" style={{ color: '#a5c8ca', opacity: 0.8 }}>
             {code.description}
           </span>
         </td>
@@ -129,15 +125,15 @@ function ServiceCodeRow({ code, onUpdate, expanded, onToggle }: ServiceCodeRowPr
               onUpdate({ rateType: nextRateType, unit: unitMap[nextRateType] });
             }}
             disabled={isBlocked}
-            className={`text-xs px-2 py-1 rounded transition-colors ${
+            className={`text-xs px-2 py-1 rounded transition-colors card-neu-flat hover:card-neu [&]:shadow-none ${
               isBlocked 
                 ? 'cursor-not-allowed opacity-50' 
-                : 'hover:bg-muted cursor-pointer'
+                : 'cursor-pointer'
             }`}
             style={{ 
-              color: 'var(--color-ice)',
-              backgroundColor: 'rgba(232, 255, 254, 0.1)',
-              border: '1px solid rgba(232, 255, 254, 0.2)',
+              backgroundColor: 'var(--background)',
+              border: 'none',
+              color: '#a5c8ca',
             }}
             title={isBlocked ? 'Blocked' : 'Click to change unit type'}
           >
@@ -156,13 +152,13 @@ function ServiceCodeRow({ code, onUpdate, expanded, onToggle }: ServiceCodeRowPr
               disabled={isBlocked}
             />
           ) : (
-            <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>—</span>
+            <span className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>—</span>
           )}
         </td>
 
         {/* Last Updated */}
         <td className="px-3 py-2">
-          <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+          <span className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>
             {new Date(code.lastUpdated).toLocaleDateString()}
           </span>
         </td>
@@ -170,17 +166,17 @@ function ServiceCodeRow({ code, onUpdate, expanded, onToggle }: ServiceCodeRowPr
 
       {/* Expanded Row */}
       {expanded && (
-        <tr style={{ backgroundColor: 'var(--muted)' }}>
+        <tr style={{ backgroundColor: 'rgba(165, 200, 202, 0.05)' }}>
           <td colSpan={7} className="px-6 py-4">
             <div className="grid grid-cols-3 gap-4">
               {/* Allowable Limits */}
               <div>
-                <h5 className="text-xs font-semibold mb-2" style={{ color: 'var(--muted-foreground)' }}>
+                <h5 className="text-xs font-semibold mb-2" style={{ color: '#a5c8ca' }}>
                   ALLOWABLE LIMITS
                 </h5>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-sm">
-                    <span style={{ color: 'var(--muted-foreground)' }}>Per Day:</span>
+                    <span style={{ color: '#a5c8ca', opacity: 0.7 }}>Per Day:</span>
                     <EditableField
                       value={code.allowable.perDay || 0}
                       onChange={(v) => onUpdate({ 
@@ -191,7 +187,7 @@ function ServiceCodeRow({ code, onUpdate, expanded, onToggle }: ServiceCodeRowPr
                     />
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span style={{ color: 'var(--muted-foreground)' }}>Per Month:</span>
+                    <span style={{ color: '#a5c8ca', opacity: 0.7 }}>Per Month:</span>
                     <EditableField
                       value={code.allowable.perMonth || 0}
                       onChange={(v) => onUpdate({ 
@@ -202,7 +198,7 @@ function ServiceCodeRow({ code, onUpdate, expanded, onToggle }: ServiceCodeRowPr
                     />
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span style={{ color: 'var(--muted-foreground)' }}>Per Year:</span>
+                    <span style={{ color: '#a5c8ca', opacity: 0.7 }}>Per Year:</span>
                     <EditableField
                       value={code.allowable.perYear || 0}
                       onChange={(v) => onUpdate({ 
@@ -217,55 +213,57 @@ function ServiceCodeRow({ code, onUpdate, expanded, onToggle }: ServiceCodeRowPr
 
               {/* Restrictions */}
               <div>
-                <h5 className="text-xs font-semibold mb-2" style={{ color: 'var(--muted-foreground)' }}>
+                <h5 className="text-xs font-semibold mb-2" style={{ color: '#a5c8ca' }}>
                   RESTRICTIONS
                 </h5>
                 {code.restrictions ? (
                   <div className="space-y-1 text-sm">
                     {code.restrictions.requiresWaiver && (
                       <div className="flex items-center gap-1">
-                        <Info className="h-3 w-3" style={{ color: 'var(--color-ice)' }} />
-                        <span style={{ color: 'var(--foreground)' }}>Requires HCBS Waiver</span>
+                        <Info className="h-3 w-3" style={{ color: '#a5c8ca' }} />
+                        <span style={{ color: '#a5c8ca', opacity: 0.8 }}>Requires HCBS Waiver</span>
                       </div>
                     )}
                     {code.restrictions.requiresCrisis && (
                       <div className="flex items-center gap-1">
-                        <AlertTriangle className="h-3 w-3" style={{ color: 'var(--status-warning)' }} />
-                        <span style={{ color: 'var(--foreground)' }}>Crisis Only</span>
+                        <AlertTriangle className="h-3 w-3" style={{ color: '#a5c8ca' }} />
+                        <span style={{ color: '#a5c8ca', opacity: 0.8 }}>Crisis Only</span>
                       </div>
                     )}
                     {code.restrictions.waiverTypes?.length && (
                       <div className="flex flex-wrap gap-1">
                         {code.restrictions.waiverTypes.map((w) => (
-                          <Badge key={w} variant="outline" className="text-xs">{w}</Badge>
+                          <Badge key={w} variant="outline" className="text-xs card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}>{w}</Badge>
                         ))}
                       </div>
                     )}
                     {code.restrictions.notes && (
-                      <p className="text-xs mt-2" style={{ color: 'var(--muted-foreground)' }}>
+                      <p className="text-xs mt-2" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                         {code.restrictions.notes}
                       </p>
                     )}
                   </div>
                 ) : (
-                  <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>None</span>
+                  <span className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>None</span>
                 )}
               </div>
 
               {/* Notes */}
               <div>
-                <h5 className="text-xs font-semibold mb-2" style={{ color: 'var(--muted-foreground)' }}>
+                <h5 className="text-xs font-semibold mb-2" style={{ color: '#a5c8ca' }}>
                   NOTES
                 </h5>
                 {code.notes ? (
-                  <p className="text-sm" style={{ color: 'var(--foreground)' }}>{code.notes}</p>
+                  <p className="text-sm" style={{ color: '#a5c8ca', opacity: 0.8 }}>{code.notes}</p>
                 ) : (
-                  <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>No notes</span>
+                  <span className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>No notes</span>
                 )}
                 {isBlocked && code.blockReason && (
-                  <div className="mt-2 p-2 rounded text-xs" style={{ 
-                    backgroundColor: 'rgba(255, 85, 93, 0.1)',
-                    color: 'var(--status-error)' 
+                  <div className="mt-2 p-2 rounded text-xs card-neu-flat" style={{ 
+                    backgroundColor: 'var(--background)',
+                    border: 'none',
+                    color: '#a5c8ca',
+                    opacity: 0.8
                   }}>
                     ⚠️ {code.blockReason}
                   </div>
@@ -326,13 +324,13 @@ export function ServiceCodeTable() {
   }, [filteredCodes]);
 
   return (
-    <Card style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
-      <CardHeader className="pb-3">
+    <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+      <CardHeader className="pb-3 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg" style={{ color: 'var(--foreground)' }}>
-            <FileCode className="h-5 w-5" style={{ color: 'var(--primary)' }} />
-            Service Codes Library
-            <Badge variant="secondary" className="ml-2">
+          <CardTitle className="flex items-center gap-2 text-lg" style={{ color: '#a5c8ca' }}>
+            <FileCode className="h-5 w-5" style={{ color: '#a5c8ca' }} />
+            SERVICE CODES LIBRARY
+            <Badge variant="secondary" className="ml-2 card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}>
               {filteredCodes.length} codes
             </Badge>
           </CardTitle>
@@ -341,18 +339,19 @@ export function ServiceCodeTable() {
               variant="outline"
               size="sm"
               onClick={resetServiceCodes}
-              className="text-xs"
+              className="text-xs card-neu-flat hover:card-neu [&]:shadow-none"
+              style={{ backgroundColor: 'var(--background)', border: 'none' }}
             >
-              <RotateCcw className="h-3 w-3 mr-1" />
-              Reset to Default
+              <RotateCcw className="h-3 w-3 mr-1" style={{ color: '#a5c8ca' }} />
+              <span style={{ color: '#a5c8ca' }}>Reset to Default</span>
             </Button>
             <Button
               size="sm"
-              className="text-xs"
-              style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
+              className="text-xs card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+              style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(165, 200, 202, 0.15)' }}
             >
-              <Plus className="h-3 w-3 mr-1" />
-              Add Code
+              <Plus className="h-3 w-3 mr-1" style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }} />
+              <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Add Code</span>
             </Button>
           </div>
         </div>
@@ -361,29 +360,30 @@ export function ServiceCodeTable() {
         {/* Filters */}
         <div className="flex items-center gap-4 mb-4">
           <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'var(--muted-foreground)' }} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: '#a5c8ca' }} />
             <Input
               placeholder="Search codes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-              style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
+              className="pl-9 card-neu-pressed"
+              style={{ backgroundColor: 'var(--background)', border: 'none' }}
             />
           </div>
           
           <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4" style={{ color: 'var(--muted-foreground)' }} />
+            <Filter className="h-4 w-4" style={{ color: '#a5c8ca' }} />
             {(['all', 'BHST', 'NEMT', 'NMT', 'Behavioral', 'Other'] as const).map((cat) => (
               <Button
                 key={cat}
                 variant={categoryFilter === cat ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setCategoryFilter(cat)}
-                className="text-xs"
-                style={categoryFilter === cat ? {
-                  backgroundColor: 'var(--primary)',
-                  color: 'var(--primary-foreground)',
-                } : {}}
+                className={`text-xs ${categoryFilter === cat ? 'card-neu-pressed' : 'card-neu-flat hover:card-neu'} [&]:shadow-none`}
+                style={{ 
+                  backgroundColor: 'var(--background)', 
+                  border: 'none',
+                  color: '#a5c8ca'
+                }}
               >
                 {cat === 'all' ? 'All' : cat}
               </Button>
@@ -394,11 +394,12 @@ export function ServiceCodeTable() {
             variant={transportOnly ? 'default' : 'outline'}
             size="sm"
             onClick={() => setTransportOnly(!transportOnly)}
-            className="text-xs"
-            style={transportOnly ? {
-              backgroundColor: 'var(--color-lime)',
-              color: 'var(--color-charcoal)',
-            } : {}}
+            className={`text-xs ${transportOnly ? 'card-neu-pressed' : 'card-neu-flat hover:card-neu'} [&]:shadow-none`}
+            style={{ 
+              backgroundColor: 'var(--background)', 
+              border: 'none',
+              color: '#a5c8ca'
+            }}
           >
             🚐 {transportOnly ? 'Transport Only' : 'All Codes'}
           </Button>
@@ -407,33 +408,38 @@ export function ServiceCodeTable() {
             variant={showBlocked ? 'secondary' : 'outline'}
             size="sm"
             onClick={() => setShowBlocked(!showBlocked)}
-            className="text-xs"
+            className={`text-xs ${showBlocked ? 'card-neu-pressed' : 'card-neu-flat hover:card-neu'} [&]:shadow-none`}
+            style={{ 
+              backgroundColor: 'var(--background)', 
+              border: 'none',
+              color: '#a5c8ca'
+            }}
           >
-            <Lock className="h-3 w-3 mr-1" />
+            <Lock className="h-3 w-3 mr-1" style={{ color: '#a5c8ca' }} />
             {showBlocked ? 'Hide Blocked' : 'Show Blocked'}
           </Button>
         </div>
 
         {/* Table */}
-        <div className="rounded-lg border overflow-hidden" style={{ borderColor: 'var(--border)' }}>
+        <div className="rounded-lg card-neu-flat overflow-hidden" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ backgroundColor: 'var(--muted)' }}>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--muted-foreground)' }}>Code</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--muted-foreground)' }}>Category</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--muted-foreground)' }}>Description</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--muted-foreground)' }}>Rate</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--muted-foreground)' }}>Unit</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--muted-foreground)' }}>Mileage</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: 'var(--muted-foreground)' }}>Updated</th>
+              <tr style={{ backgroundColor: 'var(--background)' }}>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: '#a5c8ca', opacity: 0.8 }}>Code</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: '#a5c8ca', opacity: 0.8 }}>Category</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: '#a5c8ca', opacity: 0.8 }}>Description</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: '#a5c8ca', opacity: 0.8 }}>Rate</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: '#a5c8ca', opacity: 0.8 }}>Unit</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: '#a5c8ca', opacity: 0.8 }}>Mileage</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: '#a5c8ca', opacity: 0.8 }}>Updated</th>
               </tr>
             </thead>
             <tbody>
               {Object.entries(groupedCodes).map(([category, codes]) => (
                 <React.Fragment key={category}>
-                  <tr style={{ backgroundColor: 'rgba(232, 255, 254, 0.05)' }}>
+                  <tr style={{ backgroundColor: 'rgba(165, 200, 202, 0.05)' }}>
                     <td colSpan={7} className="px-3 py-2">
-                      <span className="text-xs font-semibold" style={{ color: 'var(--color-ice)' }}>
+                      <span className="text-xs font-semibold" style={{ color: '#a5c8ca' }}>
                         {SERVICE_CATEGORY_LABELS[category as ServiceCategory] || category}
                       </span>
                     </td>
@@ -456,8 +462,8 @@ export function ServiceCodeTable() {
         {/* Empty state */}
         {filteredCodes.length === 0 && (
           <div className="text-center py-8">
-            <FileCode className="h-12 w-12 mx-auto mb-3" style={{ color: 'var(--muted-foreground)' }} />
-            <p style={{ color: 'var(--muted-foreground)' }}>No codes match your filters</p>
+            <FileCode className="h-12 w-12 mx-auto mb-3" style={{ color: '#a5c8ca', opacity: 0.7 }} />
+            <p style={{ color: '#a5c8ca', opacity: 0.7 }}>No codes match your filters</p>
           </div>
         )}
       </CardContent>

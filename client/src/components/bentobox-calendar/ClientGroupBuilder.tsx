@@ -112,32 +112,37 @@ export function ClientGroupBuilder({ onAddToTemplate, className }: ClientGroupBu
   };
 
   return (
-    <div className={cn("p-4 space-y-4 border-t", className)}>
+    <div className={cn("p-4 space-y-4 border-t card-neu-flat", className)} style={{ backgroundColor: 'var(--background)', borderColor: 'rgba(165, 200, 202, 0.2)' }}>
       <div>
-        <h3 className="text-base font-semibold mb-1">Build Client Group</h3>
-        <p className="text-xs text-muted-foreground">
+        <h3 className="text-base font-semibold mb-1" style={{ color: '#a5c8ca' }}>BUILD CLIENT GROUP</h3>
+        <p className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>
           Drag clients from library to form a group
         </p>
       </div>
 
       {/* Drop Zone */}
-      <Card>
+      <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
         <CardContent className="p-4">
           <div
             className={cn(
               "min-h-[120px] p-3 rounded-lg border-2 border-dashed transition-colors",
-              "border-muted bg-muted/20"
+              "card-neu-flat"
             )}
+            style={{ 
+              backgroundColor: 'var(--background)', 
+              borderColor: 'rgba(165, 200, 202, 0.3)',
+              borderStyle: 'dashed'
+            }}
             onDragOver={handleDragOver}
             onDrop={handleClientDrop}
           >
             <div className="flex items-center gap-2 mb-2">
-              <Users className="w-4 h-4 text-muted-foreground" />
-              <Label className="text-sm font-medium">Drop Clients Here</Label>
+              <Users className="w-4 h-4" style={{ color: '#a5c8ca', opacity: 0.7 }} />
+              <Label className="text-sm font-medium" style={{ color: '#a5c8ca', opacity: 0.8 }}>Drop Clients Here</Label>
             </div>
             
             {selectedClients.length === 0 ? (
-              <div className="text-xs text-muted-foreground text-center py-4">
+              <div className="text-xs text-center py-4" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                 Drag clients from library to build group
               </div>
             ) : (
@@ -145,15 +150,17 @@ export function ClientGroupBuilder({ onAddToTemplate, className }: ClientGroupBu
                 {selectedClients.map((client) => (
                   <div
                     key={client.id}
-                    className="flex items-center gap-2 p-2 bg-background rounded border text-sm"
+                    className="flex items-center gap-2 p-2 rounded card-neu-flat text-sm"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   >
-                    <GripVertical className="w-4 h-4 text-muted-foreground" />
-                    <span className="flex-1">{client.name}</span>
+                    <GripVertical className="w-4 h-4" style={{ color: '#a5c8ca', opacity: 0.5 }} />
+                    <span className="flex-1" style={{ color: '#a5c8ca', opacity: 0.8 }}>{client.name}</span>
                     <button
                       onClick={() => handleRemoveClient(client.id)}
-                      className="text-muted-foreground hover:text-foreground"
+                      className="card-neu-flat hover:card-neu [&]:shadow-none"
+                      style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-4 h-4" style={{ color: '#a5c8ca' }} />
                     </button>
                   </div>
                 ))}
@@ -165,14 +172,16 @@ export function ClientGroupBuilder({ onAddToTemplate, className }: ClientGroupBu
 
       {/* Group Name */}
       <div>
-        <Label htmlFor="group-name">Client Group Name (optional)</Label>
+        <Label htmlFor="group-name" style={{ color: '#a5c8ca', opacity: 0.7 }}>Client Group Name (optional)</Label>
         <Input
           id="group-name"
           value={groupName}
           onChange={(e) => setGroupName(e.target.value)}
           placeholder="e.g., Group A (auto-generated if blank when adding to template)"
+          className="card-neu-pressed"
+          style={{ backgroundColor: 'var(--background)', border: 'none' }}
         />
-        <p className="text-xs text-muted-foreground mt-1">
+        <p className="text-xs mt-1" style={{ color: '#a5c8ca', opacity: 0.7 }}>
           Leave blank when adding to template to auto-generate from template name
         </p>
       </div>
@@ -182,19 +191,21 @@ export function ClientGroupBuilder({ onAddToTemplate, className }: ClientGroupBu
         <Button
           onClick={handleAddToTemplate}
           variant="outline"
-          className="flex-1"
+          className="flex-1 card-neu-flat hover:card-neu [&]:shadow-none"
+          style={{ backgroundColor: 'var(--background)', border: 'none' }}
           disabled={selectedClients.length === 0}
         >
-          <Plus className="w-4 h-4 mr-2" />
-          Add to Template
+          <Plus className="w-4 h-4 mr-2" style={{ color: '#a5c8ca' }} />
+          <span style={{ color: '#a5c8ca' }}>Add to Template</span>
         </Button>
         <Button
           onClick={handleSaveToPool}
-          className="flex-1"
+          className="flex-1 card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+          style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(165, 200, 202, 0.15)' }}
           disabled={selectedClients.length === 0 || !groupName.trim()}
         >
-          <Save className="w-4 h-4 mr-2" />
-          Save to Pool
+          <Save className="w-4 h-4 mr-2" style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }} />
+          <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Save to Pool</span>
         </Button>
       </div>
     </div>

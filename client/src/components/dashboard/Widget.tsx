@@ -12,6 +12,7 @@ interface WidgetProps {
   loading?: boolean;
   error?: string;
   shadow?: 'sm' | 'xl';
+  titleStyle?: React.CSSProperties;
 }
 
 const sizeClasses = {
@@ -30,7 +31,8 @@ export default function Widget({
   actions,
   loading = false,
   error,
-  shadow = 'sm'
+  shadow = 'sm',
+  titleStyle
 }: WidgetProps) {
   // Override Card's default shadow-sm when shadow-xl is requested
   // The cn utility should handle class merging, but we'll explicitly set shadow-xl
@@ -42,16 +44,28 @@ export default function Widget({
   const maxHeightMatch = className?.match(/max-h-\[(\d+)px\]/);
   const maxHeight = maxHeightMatch ? `${maxHeightMatch[1]}px` : undefined;
   
+  // Use drop shadow for specific widgets (Enhanced Analytics, Fleet Map, Operations, Task Management, TRIP STATUS)
+  const useDropShadow = shadow === 'xl' && (title === 'Enhanced Analytics' || title === 'ANALYTICS' || title === 'Fleet Map' || title === 'LOCATE' || title === 'Operations' || title === 'OPERATIONS' || title === 'Task Management' || title === 'TASKS' || title === 'TRIP STATUS' || title === 'Fleet Status');
+  
   return (
     <Card 
       className={cn(
+        useDropShadow ? '' : 'card-neu',
         heightClass,
         sizeClasses[size], 
-        shadowClass, 
         className
       )}
       style={{
-        ...(shadow === 'xl' ? { boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' } : {}),
+        backgroundColor: 'var(--background)',
+        border: 'none',
+        ...(useDropShadow ? { 
+          boxShadow: 'var(--shadow-drop)',
+          margin: '0px',
+          marginTop: '0px',
+          paddingLeft: '24px',
+          paddingRight: '24px',
+          paddingBottom: '24px'
+        } : {}),
         ...(maxHeight ? { height: maxHeight, maxHeight: maxHeight, overflow: 'hidden' } : {})
       }}
     >
@@ -59,12 +73,12 @@ export default function Widget({
         <CardTitle className="flex items-center justify-between text-base">
           <div className="flex items-center space-x-2">
             {icon && <span className="text-muted-foreground">{icon}</span>}
-            <span>{title}</span>
+            <span style={titleStyle}>{title}</span>
           </div>
           {actions && <div className="flex items-center space-x-1">{actions}</div>}
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-0 flex-1 overflow-hidden flex flex-col min-h-0">
+      <CardContent className="pt-0 flex-1 flex flex-col min-h-0" style={{ overflow: 'hidden', padding: '0px 8px', marginTop: useDropShadow ? '0' : '0' }}>
         {loading ? (
           <div className="flex items-center justify-center h-32">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

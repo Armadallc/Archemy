@@ -355,31 +355,28 @@ export default function TenantRolesManagement() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
+      <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+        <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="w-5 h-5" />
-                Tenant Roles
+              <CardTitle className="flex items-center gap-2" style={{ color: '#a5c8ca' }}>
+                <Shield className="w-5 h-5" style={{ color: '#a5c8ca' }} />
+                TENANT ROLES
               </CardTitle>
-              <CardDescription>
-                Create and manage custom roles for your corporate client
-              </CardDescription>
             </div>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Role
+                <Button 
+                  className="card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+                  style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(165, 200, 202, 0.15)' }}
+                >
+                  <Plus className="w-4 h-4 mr-2" style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }} />
+                  <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Create Role</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-md card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <DialogHeader>
-                  <DialogTitle>Create Tenant Role</DialogTitle>
-                  <DialogDescription>
-                    Create a new custom role for your corporate client
-                  </DialogDescription>
+                  <DialogTitle>NEW TENANT ROLE</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
@@ -389,6 +386,8 @@ export default function TenantRolesManagement() {
                       value={createRoleData.name}
                       onChange={(e) => setCreateRoleData({ ...createRoleData, name: e.target.value })}
                       placeholder="e.g., Custom Admin"
+                      className="card-neu-pressed"
+                      style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     />
                   </div>
                   <div>
@@ -399,6 +398,8 @@ export default function TenantRolesManagement() {
                       onChange={(e) => setCreateRoleData({ ...createRoleData, description: e.target.value })}
                       placeholder="Describe this role's purpose..."
                       rows={3}
+                      className="card-neu-pressed"
+                      style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     />
                   </div>
                   <div className="flex items-center space-x-2">
@@ -410,12 +411,28 @@ export default function TenantRolesManagement() {
                     <Label htmlFor="is_active">Active</Label>
                   </div>
                   <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsCreateDialogOpen(false)}
+                      className="card-neu-flat hover:card-neu [&]:shadow-none"
+                      style={{ backgroundColor: 'var(--background)', border: 'none' }}
+                    >
                       Cancel
                     </Button>
-                    <Button onClick={handleCreateRole} disabled={createRole.isPending}>
-                      {createRole.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                      Create
+                    <Button 
+                      onClick={handleCreateRole} 
+                      disabled={createRole.isPending}
+                      className="card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+                      style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(165, 200, 202, 0.15)' }}
+                    >
+                      {createRole.isPending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }} />
+                          <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Creating...</span>
+                        </>
+                      ) : (
+                        <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Create</span>
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -426,12 +443,13 @@ export default function TenantRolesManagement() {
         <CardContent>
           <div className="space-y-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" style={{ color: '#a5c8ca' }} />
               <Input
                 placeholder="Search roles..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
+                className="pl-9 card-neu-pressed"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               />
             </div>
 
@@ -440,7 +458,7 @@ export default function TenantRolesManagement() {
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
             ) : filteredRoles.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                 {searchTerm ? "No roles found matching your search" : "No tenant roles created yet"}
               </div>
             ) : (
@@ -506,7 +524,7 @@ export default function TenantRolesManagement() {
 
       {/* Edit Role Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <DialogHeader>
             <DialogTitle>Edit Tenant Role</DialogTitle>
             <DialogDescription>
@@ -520,6 +538,8 @@ export default function TenantRolesManagement() {
                 id="edit-name"
                 value={createRoleData.name}
                 onChange={(e) => setCreateRoleData({ ...createRoleData, name: e.target.value })}
+                className="card-neu-pressed"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               />
             </div>
             <div>
@@ -529,6 +549,8 @@ export default function TenantRolesManagement() {
                 value={createRoleData.description}
                 onChange={(e) => setCreateRoleData({ ...createRoleData, description: e.target.value })}
                 rows={3}
+                className="card-neu-pressed"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               />
             </div>
             <div className="flex items-center space-x-2">
@@ -540,12 +562,28 @@ export default function TenantRolesManagement() {
               <Label htmlFor="edit-is_active">Active</Label>
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsEditDialogOpen(false)}
+                className="card-neu-flat hover:card-neu [&]:shadow-none"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
+              >
                 Cancel
               </Button>
-              <Button onClick={handleUpdateRole} disabled={updateRole.isPending}>
-                {updateRole.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Save
+              <Button 
+                onClick={handleUpdateRole} 
+                disabled={updateRole.isPending}
+                className="card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+                style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(165, 200, 202, 0.15)' }}
+              >
+                {updateRole.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }} />
+                    <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Saving...</span>
+                  </>
+                ) : (
+                  <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Save</span>
+                )}
               </Button>
             </div>
           </div>
@@ -614,7 +652,7 @@ function PermissionsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
         <DialogHeader>
           <DialogTitle>Manage Permissions: {role.name}</DialogTitle>
           <DialogDescription>
@@ -657,17 +695,33 @@ function PermissionsDialog({
           ))}
         </div>
 
-        <div className="flex justify-between items-center pt-4 border-t">
-          <div className="text-sm text-muted-foreground">
+        <div className="flex justify-between items-center pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
+          <div className="text-sm" style={{ color: '#a5c8ca', opacity: 0.7 }}>
             {selectedPermissions.size} permission{selectedPermissions.size !== 1 ? 's' : ''} selected
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+              className="card-neu-flat hover:card-neu [&]:shadow-none"
+              style={{ backgroundColor: 'var(--background)', border: 'none' }}
+            >
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={isLoading}>
-              {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Save Permissions
+            <Button 
+              onClick={handleSave} 
+              disabled={isLoading}
+              className="card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+              style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(165, 200, 202, 0.15)' }}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }} />
+                  <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Saving...</span>
+                </>
+              ) : (
+                <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Save Permissions</span>
+              )}
             </Button>
           </div>
         </div>

@@ -65,3 +65,4 @@ npm install @yassir-jeraidi/full-calendar
 - The main differences might be in styling or additional props
 - Check for any dependencies that need to be installed
 
+

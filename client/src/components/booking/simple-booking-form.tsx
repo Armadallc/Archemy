@@ -80,7 +80,7 @@ function BillingCalculationDisplay({
   if (breakdown.length === 0) return null;
 
   return (
-    <div className="mt-4 p-4 rounded-lg border" style={{ backgroundColor: 'rgba(204, 51, 171, 0.1)', borderColor: 'var(--border)' }}>
+    <div className="mt-4 p-4 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
       <h4 className="font-semibold mb-3" style={{ color: 'var(--foreground)' }}>Billing Calculation</h4>
       <div className="space-y-2 text-sm">
         {breakdown.map((item, index) => (
@@ -946,29 +946,28 @@ function SimpleBookingForm() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="w-5 h-5" />
-          Quick Booking
+    <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+      <CardHeader className="card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+        <CardTitle className="flex items-center gap-2" style={{ fontSize: '26px' }}>
+          QUICK BOOKING
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent style={{ backgroundColor: 'var(--background)' }}>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Program Selection for Super Admins */}
           {level === 'corporate' && !selectedProgram && (
             <div 
-              className="space-y-4 p-4 rounded-lg border"
+              className="space-y-4 px-6 py-4 rounded-lg card-neu-flat -mx-6 mt-6"
               style={{
-                backgroundColor: 'rgba(204, 51, 171, 0.1)',
-                borderColor: 'var(--border)'
+                backgroundColor: 'var(--background)',
+                border: 'none'
               }}
             >
-              <div className="text-sm font-medium" style={{ color: 'var(--primary)' }}>Program Selection Required</div>
+              <div className="font-medium" style={{ color: 'var(--primary)', fontSize: '16px' }}>SELECT PROGRAM *</div>
               
               {corporateClients.length > 0 && (
                 <div>
-                  <Label htmlFor="corporateClient">Corporate Client</Label>
+                  <Label htmlFor="corporateClient" className="font-medium" style={{ fontSize: '16px' }}>TENANT</Label>
                   <Select 
                     value={selectedCorporateClientLocal} 
                     onValueChange={(value) => {
@@ -976,17 +975,15 @@ function SimpleBookingForm() {
                       setSelectedProgramLocal(""); // Reset program when corporate client changes
                     }}
                   >
-                    <SelectTrigger style={{ backgroundColor: 'var(--card)' }}>
+                    <SelectTrigger className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <SelectValue placeholder="Select corporate client" />
                     </SelectTrigger>
-                    <SelectContent className="max-h-60 z-50" style={{ backgroundColor: 'var(--card)', color: 'var(--foreground)' }}>
+                    <SelectContent className="max-h-60 z-50 card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       {corporateClients.map((client: any) => (
                         <SelectItem 
                           key={client.id} 
                           value={client.id} 
-                          style={{ color: 'var(--foreground)' }}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--muted)'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                          className="hover:card-neu-flat"
                         >
                           {client.name}
                         </SelectItem>
@@ -998,22 +995,20 @@ function SimpleBookingForm() {
 
               {programs.length > 0 && (
                 <div>
-                  <Label htmlFor="program">Program</Label>
+                  <Label htmlFor="program" className="font-medium" style={{ fontSize: '16px' }}>PROGRAM</Label>
                   <Select 
                     value={selectedProgramLocal} 
                     onValueChange={setSelectedProgramLocal}
                   >
-                    <SelectTrigger style={{ backgroundColor: 'var(--card)' }}>
+                    <SelectTrigger className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <SelectValue placeholder="Select program" />
                     </SelectTrigger>
-                    <SelectContent className="max-h-60 z-50" style={{ backgroundColor: 'var(--card)', color: 'var(--foreground)' }}>
+                    <SelectContent className="max-h-60 z-50 card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       {programs.map((program: any) => (
                         <SelectItem 
                           key={program.id} 
                           value={program.id} 
-                          style={{ color: 'var(--foreground)' }}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--muted)'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                          className="hover:card-neu-flat"
                         >
                           {program.name}
                         </SelectItem>
@@ -1031,9 +1026,9 @@ function SimpleBookingForm() {
             </div>
           )}
 
-          {/* Client Selection Type */}
-          <div>
-            <Label className="text-sm font-medium">Select Clients *</Label>
+          {/* Client Selection Section */}
+          <div className="space-y-4 px-6 py-4 rounded-lg card-neu-flat -mx-6" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+            <Label className="font-medium" style={{ fontSize: '16px' }}>SELECT CLIENT/GROUP *</Label>
             <div className="flex gap-4 mt-2">
               <label className="flex items-center space-x-2">
                 <input
@@ -1056,28 +1051,25 @@ function SimpleBookingForm() {
                 <span className="text-sm">Client Group</span>
               </label>
             </div>
-          </div>
 
           {formData.selectionType === "individual" ? (
-            <div>
-              <Label>Individual Clients *</Label>
+            <div className="mt-4">
+              <Label className="font-medium" style={{ fontSize: '16px' }}>Clients *</Label>
               <div className="space-y-2">
                 {/* First client selection */}
                 <Select 
                   value={formData.clientId} 
                   onValueChange={(value) => setFormData({ ...formData, clientId: value })}
                 >
-                  <SelectTrigger style={{ backgroundColor: 'var(--card)' }}>
+                  <SelectTrigger className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                     <SelectValue placeholder="Select first client" />
                   </SelectTrigger>
-                  <SelectContent className="max-h-60 z-50" style={{ backgroundColor: 'var(--card)', color: 'var(--foreground)' }}>
+                  <SelectContent className="max-h-60 z-50 card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                     {clients.map((client: any) => (
                       <SelectItem 
                         key={client.id} 
                         value={client.id} 
-                        style={{ color: 'var(--foreground)' }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--muted)'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        className="hover:card-neu-flat"
                       >
                         {client.first_name} {client.last_name}
                       </SelectItem>
@@ -1096,17 +1088,15 @@ function SimpleBookingForm() {
                         setFormData({ ...formData, clientIds: newClientIds });
                       }}
                     >
-                      <SelectTrigger style={{ backgroundColor: 'var(--card)' }}>
+                      <SelectTrigger className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                         <SelectValue placeholder="Select additional client" />
                       </SelectTrigger>
-                      <SelectContent className="max-h-60 z-50" style={{ backgroundColor: 'var(--card)', color: 'var(--foreground)' }}>
+                      <SelectContent className="max-h-60 z-50 card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                         {clients.map((client: any) => (
                           <SelectItem 
                             key={client.id} 
                             value={client.id} 
-                            style={{ color: 'var(--foreground)' }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--muted)'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            className="hover:card-neu-flat"
                           >
                             {client.first_name} {client.last_name}
                           </SelectItem>
@@ -1121,7 +1111,8 @@ function SimpleBookingForm() {
                         const newClientIds = formData.clientIds.filter((_, i) => i !== index);
                         setFormData({ ...formData, clientIds: newClientIds });
                       }}
-                      className="px-2 py-1 h-8 w-8"
+                      className="px-2 py-1 h-8 w-8 card-neu-flat hover:card-neu [&]:shadow-none"
+                      style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)' }}
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -1135,29 +1126,28 @@ function SimpleBookingForm() {
                   onClick={() => {
                     setFormData({ ...formData, clientIds: [...formData.clientIds, ""] });
                   }}
-                  className="w-full"
+                  className="w-full card-neu-flat hover:card-neu [&]:shadow-none"
+                  style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)' }}
                   disabled={formData.clientIds.length >= 4} // Limit to 5 total clients (1 + 4 additional)
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Client ({formData.clientIds.length + 1}/5)
+                  Additional Clients ({formData.clientIds.length + 1}/5)
                 </Button>
               </div>
             </div>
           ) : (
-            <div>
+            <div className="mt-4">
               <Label htmlFor="clientGroupId">Client Group *</Label>
               <Select value={formData.clientGroupId} onValueChange={(value) => setFormData({ ...formData, clientGroupId: value })}>
-                <SelectTrigger style={{ backgroundColor: 'var(--card)' }}>
+                <SelectTrigger className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                   <SelectValue placeholder="Select client group" />
                 </SelectTrigger>
-                <SelectContent className="max-h-60 z-50" style={{ backgroundColor: 'var(--card)', color: 'var(--foreground)' }}>
+                <SelectContent className="max-h-60 z-50 card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                   {clientGroups.map((group: any) => (
                     <SelectItem 
                       key={group.id} 
                       value={group.id} 
-                      style={{ color: 'var(--foreground)' }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--muted)'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      className="hover:card-neu-flat"
                     >
                       {group.name} ({group.member_count || 0} clients)
                     </SelectItem>
@@ -1166,22 +1156,22 @@ function SimpleBookingForm() {
               </Select>
             </div>
           )}
+          </div>
 
-          <div>
-            <Label htmlFor="driverId">Driver (Optional)</Label>
+          {/* Driver Section */}
+          <div className="space-y-4 px-6 py-4 rounded-lg card-neu-flat -mx-6" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+            <Label htmlFor="driverId" className="font-normal" style={{ fontSize: '16px' }}>DRIVER (Optional)</Label>
             <Select 
               value={formData.driverId} 
               onValueChange={(value) => setFormData({ ...formData, driverId: value })}
             >
-              <SelectTrigger style={{ backgroundColor: 'var(--card)', color: 'var(--foreground)' }}>
+              <SelectTrigger className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <SelectValue placeholder="Select a driver or leave unassigned" />
               </SelectTrigger>
-              <SelectContent className="max-h-60 z-50" style={{ backgroundColor: 'var(--card)', color: 'var(--foreground)' }}>
+              <SelectContent className="max-h-60 z-50 card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                 <SelectItem 
                   value="unassigned" 
-                  style={{ color: 'var(--foreground)' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--muted)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  className="hover:card-neu-flat"
                 >
                   No driver assigned
                 </SelectItem>
@@ -1189,9 +1179,7 @@ function SimpleBookingForm() {
                   <SelectItem 
                     key={driver.id} 
                     value={driver.id}
-                    style={{ color: 'var(--foreground)' }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--muted)'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    className="hover:card-neu-flat"
                   >
                     {driver.users?.user_name || driver.user_name || 'Unknown Driver'}
                   </SelectItem>
@@ -1205,12 +1193,14 @@ function SimpleBookingForm() {
             )}
           </div>
 
+          {/* Origin/Destination Section */}
+          <div className="space-y-4 px-6 py-4 rounded-lg card-neu-flat -mx-6" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <QuickAddLocation
             value={formData.originAddress}
             onChange={(value) => setFormData({ ...formData, originAddress: value })}
             placeholder="Enter origin address"
             locationType="pickup"
-            label="Origin"
+            label="ORIGIN"
             required
             programId={effectiveProgram}
             corporateClientId={effectiveCorporateClient}
@@ -1243,7 +1233,8 @@ function SimpleBookingForm() {
                   const newStops = formData.stops.filter((_, i) => i !== index);
                   setFormData({ ...formData, stops: newStops });
                 }}
-                className="mt-8 px-2 py-1 h-8 w-8"
+                className="mt-8 px-2 py-1 h-8 w-8 card-neu-flat hover:card-neu [&]:shadow-none"
+                style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)' }}
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -1262,7 +1253,8 @@ function SimpleBookingForm() {
                   tripType: "one_way" // Disable round trip when adding stops
                 });
               }}
-              className="w-full"
+              className="w-full card-neu-flat hover:card-neu [&]:shadow-none"
+              style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)' }}
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Stop ({formData.stops.length}/8)
@@ -1274,19 +1266,24 @@ function SimpleBookingForm() {
             onChange={(value) => setFormData({ ...formData, destinationAddress: value })}
             placeholder="Enter destination address"
             locationType="dropoff"
-            label="Destination"
+            label="DESTINATION"
             required
             programId={effectiveProgram}
             corporateClientId={effectiveCorporateClient}
           />
+          </div>
 
+          {/* Date/Time/Type Section */}
+          <div className="space-y-4 px-6 py-4 rounded-lg card-neu-flat -mx-6" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="scheduledDate">Date</Label>
+              <Label htmlFor="scheduledDate" className="font-medium" style={{ fontSize: '16px' }}>DATE</Label>
               <Input
                 type="date"
                 value={formData.scheduledDate}
                 onChange={(e) => setFormData({ ...formData, scheduledDate: e.target.value })}
+                className="card-neu-flat [&]:shadow-none"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               />
             </div>
             <div>
@@ -1295,6 +1292,8 @@ function SimpleBookingForm() {
                 type="time"
                 value={formData.scheduledTime}
                 onChange={(e) => setFormData({ ...formData, scheduledTime: e.target.value })}
+                className="card-neu-flat [&]:shadow-none"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               />
             </div>
           </div>
@@ -1340,6 +1339,8 @@ function SimpleBookingForm() {
                     }
                   }}
                   placeholder="When client needs to be at appointment"
+                  className="card-neu-flat [&]:shadow-none"
+                  style={{ backgroundColor: 'var(--background)', border: 'none' }}
                 />
               </div>
             )}
@@ -1349,25 +1350,21 @@ function SimpleBookingForm() {
           {formData.stops.length === 0 && (
             <>
               <div>
-                <Label htmlFor="tripType">Trip Type</Label>
+                <Label htmlFor="tripType" className="font-medium" style={{ fontSize: '16px' }}>TYPE</Label>
                 <Select value={formData.tripType} onValueChange={(value) => setFormData({ ...formData, tripType: value })}>
-                  <SelectTrigger style={{ backgroundColor: 'var(--card)' }}>
+                  <SelectTrigger className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="max-h-60 z-50" style={{ backgroundColor: 'var(--card)', color: 'var(--foreground)' }}>
+                  <SelectContent className="max-h-60 z-50 card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                     <SelectItem 
                       value="one_way" 
-                      style={{ color: 'var(--foreground)' }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--muted)'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      className="hover:card-neu-flat"
                     >
                       One Way
                     </SelectItem>
                     <SelectItem 
                       value="round_trip" 
-                      style={{ color: 'var(--foreground)' }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--muted)'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      className="hover:card-neu-flat"
                     >
                       Round Trip
                     </SelectItem>
@@ -1383,11 +1380,14 @@ function SimpleBookingForm() {
                     value={formData.returnTime}
                     onChange={(e) => setFormData({ ...formData, returnTime: e.target.value })}
                     placeholder="Select return time"
+                    className="card-neu-flat [&]:shadow-none"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   />
                 </div>
               )}
             </>
           )}
+          </div>
 
           {/* Leg Display Section - Show when we have origin and destination */}
           {(formData.originAddress && formData.destinationAddress) && (
@@ -1440,7 +1440,7 @@ function SimpleBookingForm() {
 
               {/* Total Summary */}
               {legCalculations.some(leg => leg.estimatedMiles !== null) && (
-                <div className="p-4 rounded-lg border" style={{ backgroundColor: 'rgba(204, 51, 171, 0.1)', borderColor: 'var(--border)' }}>
+                <div className="p-4 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                   <h4 className="font-semibold mb-2" style={{ color: 'var(--foreground)' }}>Trip Summary</h4>
                   <div className="flex gap-4">
                     <div>
@@ -1467,9 +1467,9 @@ function SimpleBookingForm() {
           )}
 
           {/* Telematics Phase 1: Trip Purpose & Billing */}
-          <div className="border-t pt-4 mt-4">
-            <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--foreground)' }}>
-              Trip Purpose & Billing Information
+          <div className="space-y-4 px-6 py-4 rounded-lg card-neu-flat -mx-6 mt-4" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+            <h3 className="font-semibold mb-4" style={{ color: 'var(--foreground)', fontSize: '16px' }}>
+              PURPOSE & BILLING
             </h3>
             <TripPurposeBillingSelector
               tripPurpose={formData.tripPurpose}
@@ -1507,10 +1507,10 @@ function SimpleBookingForm() {
               {/* Recurring Trip Options */}
               {formData.isRecurring && (
                 <div 
-                  className="space-y-4 p-4 rounded-lg border"
+                  className="space-y-4 p-4 rounded-lg card-neu-flat"
                   style={{
-                    backgroundColor: 'rgba(204, 51, 171, 0.1)',
-                    borderColor: 'var(--border)'
+                    backgroundColor: 'var(--background)',
+                    border: 'none'
                   }}
                 >
                   <div>
@@ -1520,6 +1520,8 @@ function SimpleBookingForm() {
                       placeholder="e.g., Phoenix Gym, Therapy Center"
                       value={formData.tripNickname}
                       onChange={(e) => setFormData({ ...formData, tripNickname: e.target.value })}
+                      className="card-neu-flat [&]:shadow-none"
+                      style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     />
                     <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>Optional: Give this recurring trip an easy-to-identify name</p>
                   </div>
@@ -1527,27 +1529,23 @@ function SimpleBookingForm() {
                   <div>
                     <Label htmlFor="frequency">Frequency *</Label>
                     <Select value={formData.frequency} onValueChange={(value) => setFormData({ ...formData, frequency: value })}>
-                      <SelectTrigger style={{ backgroundColor: 'var(--card)' }}>
-                        <SelectValue placeholder="Select frequency" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-60 z-50" style={{ backgroundColor: 'var(--card)', color: 'var(--foreground)' }}>
-                        <SelectItem 
-                          value="weekly" 
-                          style={{ color: 'var(--foreground)' }}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--muted)'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        >
-                          Weekly
-                        </SelectItem>
-                        <SelectItem 
-                          value="monthly" 
-                          style={{ color: 'var(--foreground)' }}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--muted)'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        >
-                          Monthly
-                        </SelectItem>
-                      </SelectContent>
+                    <SelectTrigger className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                      <SelectValue placeholder="Select frequency" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60 z-50 card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                      <SelectItem 
+                        value="weekly" 
+                        className="hover:card-neu-flat"
+                      >
+                        Weekly
+                      </SelectItem>
+                      <SelectItem 
+                        value="monthly" 
+                        className="hover:card-neu-flat"
+                      >
+                        Monthly
+                      </SelectItem>
+                    </SelectContent>
                     </Select>
                   </div>
 
@@ -1582,6 +1580,8 @@ function SimpleBookingForm() {
                       value={formData.duration}
                       onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 4 })}
                       placeholder="4"
+                      className="card-neu-flat [&]:shadow-none"
+                      style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     />
                   </div>
                 </div>
@@ -1651,7 +1651,8 @@ function SimpleBookingForm() {
                         placeholder="Specify other special requirement"
                         value={formData.specialRequirementOther}
                         onChange={(e) => setFormData({ ...formData, specialRequirementOther: e.target.value })}
-                        className="ml-6"
+                        className="ml-6 card-neu-flat [&]:shadow-none"
+                        style={{ backgroundColor: 'var(--background)', border: 'none' }}
                       />
                     )}
                   </div>
@@ -1667,16 +1668,20 @@ function SimpleBookingForm() {
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               placeholder="Enter any additional notes..."
               rows={3}
+              className="card-neu-flat [&]:shadow-none"
+              style={{ backgroundColor: 'var(--background)', border: 'none' }}
             />
           </div>
 
           <Button 
             type="submit" 
-            className="w-full"
+            className="w-full card-neu hover:card-neu [&]:shadow-none"
+            style={{ backgroundColor: 'var(--background)', border: 'none', fontSize: '26px', boxShadow: '0 0 12px rgba(122, 255, 254, 0.2)' }}
             disabled={createTripMutation.isPending}
           >
-            <Clock className="w-4 h-4 mr-2" />
-            {createTripMutation.isPending ? "Scheduling..." : (formData.isRecurring ? "Schedule Recurring Trip" : "Schedule Trip")}
+            <span style={{ textShadow: '0 0 8px rgba(122, 255, 254, 0.4), 0 0 12px rgba(122, 255, 254, 0.2)' }}>
+              {createTripMutation.isPending ? "Scheduling..." : "BOOK IT!"}
+            </span>
           </Button>
         </form>
       </CardContent>

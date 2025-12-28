@@ -157,7 +157,8 @@ export default function AdvancedFilters({
             placeholder={filter.placeholder}
             value={filterState[filter.key] || ''}
             onChange={(e) => handleFilterChange(filter.key, e.target.value)}
-            className="w-full"
+            className="w-full card-neu-flat [&]:shadow-none"
+            style={{ backgroundColor: 'var(--background)', border: 'none' }}
           />
         );
 
@@ -167,12 +168,22 @@ export default function AdvancedFilters({
             value={filterState[filter.key] || ''}
             onValueChange={(value) => handleFilterChange(filter.key, value)}
           >
-            <SelectTrigger>
+            <SelectTrigger 
+              className="card-neu-flat hover:card-neu [&]:shadow-none"
+              style={{ backgroundColor: 'var(--background)', border: 'none' }}
+            >
               <SelectValue placeholder={filter.placeholder || `Select ${filter.label}`} />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent 
+              className="card-neu [&]:shadow-none"
+              style={{ backgroundColor: 'var(--background)', border: 'none' }}
+            >
               {filter.options?.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
+                <SelectItem 
+                  key={option.value} 
+                  value={option.value}
+                  className="hover:card-neu-flat"
+                >
                   {option.label}
                 </SelectItem>
               ))}
@@ -210,7 +221,8 @@ export default function AdvancedFilters({
             type="date"
             value={filterState[filter.key] || ''}
             onChange={(e) => handleFilterChange(filter.key, e.target.value)}
-            className="w-full"
+            className="w-full card-neu-flat [&]:shadow-none"
+            style={{ backgroundColor: 'var(--background)', border: 'none' }}
           />
         );
 
@@ -231,7 +243,7 @@ export default function AdvancedFilters({
   return (
     <div className={`space-y-4 ${className}`}>
       {/* Search and Filter Bar */}
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2 flex-1">
         {showSearch && (
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -239,14 +251,19 @@ export default function AdvancedFilters({
               placeholder={searchPlaceholder}
               value={searchTerm}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="pl-10"
+              className="pl-10 card-neu-flat [&]:shadow-none"
+              style={{ backgroundColor: 'var(--background)', border: 'none' }}
             />
           </div>
         )}
 
         <Popover open={isOpen} onOpenChange={setIsOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="flex items-center space-x-2">
+            <Button 
+              variant="outline" 
+              className="flex items-center space-x-2 card-neu-flat hover:card-neu [&]:shadow-none"
+              style={{ backgroundColor: 'var(--background)', border: 'none' }}
+            >
               <Filter className="h-4 w-4" />
               <span>Filters</span>
               {activeFilters.length > 0 && (
@@ -257,8 +274,12 @@ export default function AdvancedFilters({
               <ChevronDown className="h-4 w-4" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80" align="start">
-            <Card>
+          <PopoverContent 
+            className="w-80 card-neu [&]:shadow-none" 
+            align="start"
+            style={{ backgroundColor: 'var(--background)', border: 'none' }}
+          >
+            <Card className="card-neu [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg">Advanced Filters</CardTitle>
               </CardHeader>
@@ -279,7 +300,8 @@ export default function AdvancedFilters({
                     variant="outline"
                     size="sm"
                     onClick={handleReset}
-                    className="flex items-center space-x-2"
+                    className="flex items-center space-x-2 card-neu-flat hover:card-neu [&]:shadow-none"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   >
                     <RotateCcw className="h-4 w-4" />
                     <span>Reset</span>
@@ -287,6 +309,8 @@ export default function AdvancedFilters({
                   <Button
                     size="sm"
                     onClick={() => setIsOpen(false)}
+                    className="card-neu hover:card-neu [&]:shadow-none"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   >
                     Apply Filters
                   </Button>
@@ -301,12 +325,22 @@ export default function AdvancedFilters({
             value={sortState?.key || ''}
             onValueChange={handleSortChange}
           >
-            <SelectTrigger className="w-40">
+            <SelectTrigger 
+              className="w-40 card-neu-flat hover:card-neu [&]:shadow-none"
+              style={{ backgroundColor: 'var(--background)', border: 'none' }}
+            >
               <SelectValue placeholder="Sort by..." />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent 
+              className="card-neu [&]:shadow-none"
+              style={{ backgroundColor: 'var(--background)', border: 'none' }}
+            >
               {sortOptions.map((option) => (
-                <SelectItem key={option.key} value={option.key}>
+                <SelectItem 
+                  key={option.key} 
+                  value={option.key}
+                  className="hover:card-neu-flat"
+                >
                   <div className="flex items-center space-x-2">
                     {option.direction === 'asc' ? (
                       <SortAsc className="h-4 w-4" />

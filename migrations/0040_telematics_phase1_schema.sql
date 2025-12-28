@@ -117,3 +117,4 @@ AND column_name = 'trip_purpose';
 SELECT 'Telematics Phase 1 schema migration completed successfully!' as status;
 
 
+

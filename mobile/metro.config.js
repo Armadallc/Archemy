@@ -23,5 +23,8 @@ config.resolver.extraNodeModules = {
 // Add source extensions
 config.resolver.sourceExts = [...config.resolver.sourceExts, 'ts', 'tsx'];
 
+// Add CSS to asset extensions
+config.resolver.assetExts = [...(config.resolver.assetExts || []), 'css'];
+
 module.exports = config;
 

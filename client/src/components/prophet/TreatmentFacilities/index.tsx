@@ -67,9 +67,9 @@ export function TreatmentFacilitiesManager() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
-          <Building2 className="h-5 w-5" style={{ color: 'var(--primary)' }} />
-          Treatment Facilities
+        <h3 className="text-lg font-semibold flex items-center gap-2" style={{ color: '#a5c8ca' }}>
+          <Building2 className="h-5 w-5" style={{ color: '#a5c8ca' }} />
+          TREATMENT FACILITIES
         </h3>
       </div>
 
@@ -90,67 +90,64 @@ export function TreatmentFacilitiesManager() {
 
       {/* Combined Analysis */}
       {facilities.length > 0 && (
-        <Card style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--muted-foreground)' }}>
+        <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+          <CardHeader className="pb-2 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+            <CardTitle className="text-sm font-semibold flex items-center gap-2" style={{ color: '#a5c8ca' }}>
               📊 COMBINED ANALYSIS
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-5 gap-4">
-              <div className="text-center p-3 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
-                <Users className="h-5 w-5 mx-auto mb-1" style={{ color: 'var(--color-lime)' }} />
-                <div className="text-xl font-bold" style={{ color: 'var(--foreground)' }}>
+              <div className="text-center p-3 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                <Users className="h-5 w-5 mx-auto mb-1" style={{ color: '#a5c8ca' }} />
+                <div className="text-xl font-bold" style={{ color: '#a5c8ca' }}>
                   {totalClients}
                 </div>
-                <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                   Total Clients
                 </div>
               </div>
 
-              <div className="text-center p-3 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
-                <FileCheck className="h-5 w-5 mx-auto mb-1" style={{ color: 'var(--color-ice)' }} />
-                <div className="text-xl font-bold" style={{ color: 'var(--foreground)' }}>
+              <div className="text-center p-3 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                <FileCheck className="h-5 w-5 mx-auto mb-1" style={{ color: '#a5c8ca' }} />
+                <div className="text-xl font-bold" style={{ color: '#a5c8ca' }}>
                   {totalWithWaivers}
                 </div>
-                <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                   With Waivers ({waiverPercentage}%)
                 </div>
               </div>
 
-              <div className="text-center p-3 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
-                <Car className="h-5 w-5 mx-auto mb-1" style={{ color: 'var(--color-coral)' }} />
-                <div className="text-xl font-bold" style={{ color: 'var(--foreground)' }}>
+              <div className="text-center p-3 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                <Car className="h-5 w-5 mx-auto mb-1" style={{ color: '#a5c8ca' }} />
+                <div className="text-xl font-bold" style={{ color: '#a5c8ca' }}>
                   {totalWeeklyTrips}
                 </div>
-                <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                   Weekly Trips
                 </div>
               </div>
 
-              <div className="text-center p-3 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
-                <DollarSign className="h-5 w-5 mx-auto mb-1" style={{ color: 'var(--status-success)' }} />
-                <div className="text-xl font-bold" style={{ color: 'var(--status-success)' }}>
+              <div className="text-center p-3 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                <DollarSign className="h-5 w-5 mx-auto mb-1" style={{ color: '#a5c8ca' }} />
+                <div className="text-xl font-bold" style={{ color: '#a5c8ca' }}>
                   ${totalMonthlyRevenue.toLocaleString()}
                 </div>
-                <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                   Est. Monthly Revenue
                 </div>
               </div>
 
-              <div className="text-center p-3 rounded-lg border-2" style={{ 
-                backgroundColor: totalMonthlyRevenue > 0 ? 'rgba(59, 254, 201, 0.1)' : 'var(--muted)',
-                borderColor: totalMonthlyRevenue > 0 ? 'var(--color-lime)' : 'var(--border)',
+              <div className="text-center p-3 rounded-lg border-2 card-neu-pressed" style={{ 
+                backgroundColor: 'var(--background)',
+                borderColor: '#a5c8ca',
+                boxShadow: 'var(--shadow-neu-pressed)'
               }}>
-                <TrendingUp className="h-5 w-5 mx-auto mb-1" style={{ 
-                  color: totalMonthlyRevenue > 0 ? 'var(--color-lime)' : 'var(--muted-foreground)' 
-                }} />
-                <div className="text-xl font-bold" style={{ 
-                  color: totalMonthlyRevenue > 0 ? 'var(--color-lime)' : 'var(--muted-foreground)' 
-                }}>
+                <TrendingUp className="h-5 w-5 mx-auto mb-1" style={{ color: '#a5c8ca' }} />
+                <div className="text-xl font-bold" style={{ color: '#a5c8ca' }}>
                   {totalMonthlyRevenue > 0 ? 'Active' : '—'}
                 </div>
-                <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                   {facilities.length} Facility Contracts
                 </div>
               </div>

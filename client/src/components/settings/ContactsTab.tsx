@@ -64,6 +64,15 @@ interface ContactFilters {
   alphabetical?: 'asc' | 'desc';
 }
 
+// Format role name for UI display (remove underscores, capitalize)
+const formatRoleName = (role: string | null | undefined): string => {
+  if (!role) return '-';
+  return role
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
 export default function ContactsTab() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -239,14 +248,11 @@ export default function ContactsTab() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
+      <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+        <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Contacts Directory</CardTitle>
-              <CardDescription>
-                Your personal phone book. Add contacts or sync tenant users automatically.
-              </CardDescription>
+              <CardTitle style={{ color: '#a5c8ca' }}>CONTACTS DIRECTORY</CardTitle>
             </div>
             <div className="flex gap-2">
               <Button
@@ -254,16 +260,20 @@ export default function ContactsTab() {
                 size="sm"
                 onClick={() => syncTenantMutation.mutate()}
                 disabled={syncTenantMutation.isPending}
+                className="card-neu-flat hover:card-neu [&]:shadow-none"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               >
-                <RefreshCw className={`w-4 h-4 mr-2 ${syncTenantMutation.isPending ? 'animate-spin' : ''}`} />
-                Sync Tenant Users
+                <RefreshCw className={`w-4 h-4 mr-2 ${syncTenantMutation.isPending ? 'animate-spin' : ''}`} style={{ color: '#a5c8ca' }} />
+                <span style={{ color: '#a5c8ca' }}>Sync Tenant Users</span>
               </Button>
               <Button
                 size="sm"
                 onClick={() => setIsAddDialogOpen(true)}
+                className="card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+                style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(165, 200, 202, 0.15)' }}
               >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Contact
+                <Plus className="w-4 h-4 mr-2" style={{ color: '#a5c8ca', textShadow: '0 0 12px rgba(165, 200, 202, 0.8), 0 0 20px rgba(165, 200, 202, 0.6), 0 0 30px rgba(165, 200, 202, 0.4)' }} />
+                <span style={{ color: '#a5c8ca', textShadow: '0 0 12px rgba(165, 200, 202, 0.8), 0 0 20px rgba(165, 200, 202, 0.6), 0 0 30px rgba(165, 200, 202, 0.4)' }}>Add Contact</span>
               </Button>
             </div>
           </div>
@@ -275,12 +285,13 @@ export default function ContactsTab() {
               {/* Search */}
               <div className="flex-1 min-w-[200px]">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" style={{ color: '#a5c8ca' }} />
                   <Input
                     placeholder="Search contacts..."
                     value={searchTerm}
                     onChange={(e) => handleSearch(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 card-neu-pressed"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   />
                 </div>
               </div>
@@ -290,7 +301,7 @@ export default function ContactsTab() {
                 value={filters.category_id || "all"}
                 onValueChange={(value) => handleFilterChange('category_id', value === "all" ? undefined : value)}
               >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[180px] card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
@@ -308,14 +319,14 @@ export default function ContactsTab() {
                 value={filters.role || "all"}
                 onValueChange={(value) => handleFilterChange('role', value === "all" ? undefined : value)}
               >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[180px] card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                   <SelectValue placeholder="All Roles" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Roles</SelectItem>
                   {uniqueRoles.filter(role => role).map((role) => (
                     <SelectItem key={role} value={role}>
-                      {role}
+                      {formatRoleName(role)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -326,7 +337,7 @@ export default function ContactsTab() {
                 value={filters.program_id || "all"}
                 onValueChange={(value) => handleFilterChange('program_id', value === "all" ? undefined : value)}
               >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[180px] card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                   <SelectValue placeholder="All Programs" />
                 </SelectTrigger>
                 <SelectContent>
@@ -344,10 +355,11 @@ export default function ContactsTab() {
                 variant="outline"
                 size="sm"
                 onClick={handleAlphabeticalSort}
-                className="w-[140px]"
+                className="w-[140px] card-neu-flat hover:card-neu [&]:shadow-none"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               >
-                <ArrowUpDown className="w-4 h-4 mr-2" />
-                {filters.alphabetical === 'asc' ? 'A-Z' : filters.alphabetical === 'desc' ? 'Z-A' : 'Sort'}
+                <ArrowUpDown className="w-4 h-4 mr-2" style={{ color: '#a5c8ca' }} />
+                <span style={{ color: '#a5c8ca' }}>{filters.alphabetical === 'asc' ? 'A-Z' : filters.alphabetical === 'desc' ? 'Z-A' : 'Sort'}</span>
               </Button>
             </div>
           </div>
@@ -355,16 +367,16 @@ export default function ContactsTab() {
           {/* Table */}
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
+              <RefreshCw className="w-6 h-6 animate-spin" style={{ color: '#a5c8ca' }} />
             </div>
           ) : contacts.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
+            <div className="text-center py-12" style={{ color: '#a5c8ca', opacity: 0.7 }}>
+              <Users className="w-12 h-12 mx-auto mb-4" style={{ color: '#a5c8ca', opacity: 0.5 }} />
               <p>No contacts found.</p>
               <p className="text-sm mt-2">Click "Add Contact" to create your first contact, or "Sync Tenant Users" to auto-populate.</p>
             </div>
           ) : (
-            <div className="border rounded-lg overflow-hidden">
+            <div className="card-neu-flat rounded-lg overflow-hidden" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -401,7 +413,7 @@ export default function ContactsTab() {
                       <TableCell>{contact.last_name}</TableCell>
                       <TableCell>{contact.corporate_client_name || '-'}</TableCell>
                       <TableCell>{contact.program_name || '-'}</TableCell>
-                      <TableCell>{contact.role || '-'}</TableCell>
+                      <TableCell>{formatRoleName(contact.role)}</TableCell>
                       <TableCell>{contact.phone || '-'}</TableCell>
                       <TableCell>{contact.email || '-'}</TableCell>
                       <TableCell>
@@ -580,12 +592,9 @@ function ContactFormDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
         <DialogHeader>
-          <DialogTitle>{contact ? 'Edit Contact' : 'Add New Contact'}</DialogTitle>
-          <DialogDescription>
-            {contact ? 'Update contact information' : 'Add a new contact to your personal directory'}
-          </DialogDescription>
+          <DialogTitle>{contact ? 'EDIT CONTACT' : 'ADD NEW CONTACT'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -596,6 +605,8 @@ function ContactFormDialog({
                 value={formData.first_name}
                 onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
                 required
+                className="card-neu-pressed"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               />
             </div>
             <div className="space-y-2">
@@ -605,6 +616,8 @@ function ContactFormDialog({
                 value={formData.last_name}
                 onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
                 required
+                className="card-neu-pressed"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               />
             </div>
           </div>
@@ -617,6 +630,8 @@ function ContactFormDialog({
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="card-neu-pressed"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               />
             </div>
             <div className="space-y-2">
@@ -625,6 +640,8 @@ function ContactFormDialog({
                 id="phone"
                 value={formData.phone}
                 onChange={(value) => setFormData({ ...formData, phone: value })}
+                className="card-neu-pressed"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               />
             </div>
           </div>
@@ -636,6 +653,8 @@ function ContactFormDialog({
               value={formData.organization}
               onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
               placeholder="For external contacts"
+              className="card-neu-pressed"
+              style={{ backgroundColor: 'var(--background)', border: 'none' }}
             />
           </div>
 
@@ -646,6 +665,8 @@ function ContactFormDialog({
               value={formData.role}
               onChange={(e) => setFormData({ ...formData, role: e.target.value })}
               placeholder="e.g., Case Manager, Therapist, etc."
+              className="card-neu-pressed"
+              style={{ backgroundColor: 'var(--background)', border: 'none' }}
             />
           </div>
 
@@ -656,7 +677,7 @@ function ContactFormDialog({
                 value={formData.category_id || undefined}
                 onValueChange={(value) => setFormData({ ...formData, category_id: value || '', category_custom_text: '' })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -676,6 +697,8 @@ function ContactFormDialog({
                   value={formData.category_custom_text}
                   onChange={(e) => setFormData({ ...formData, category_custom_text: e.target.value })}
                   placeholder="Enter custom category description"
+                  className="card-neu-pressed"
+                  style={{ backgroundColor: 'var(--background)', border: 'none' }}
                 />
               </div>
             )}
@@ -688,7 +711,7 @@ function ContactFormDialog({
                 value={formData.program_id || undefined}
                 onValueChange={(value) => setFormData({ ...formData, program_id: value || '' })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                   <SelectValue placeholder="Select program" />
                 </SelectTrigger>
                 <SelectContent>
@@ -706,7 +729,7 @@ function ContactFormDialog({
                 value={formData.location_id || undefined}
                 onValueChange={(value) => setFormData({ ...formData, location_id: value || '' })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                   <SelectValue placeholder="Select location" />
                 </SelectTrigger>
                 <SelectContent>
@@ -730,6 +753,8 @@ function ContactFormDialog({
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               placeholder="Personal notes about this contact"
               rows={3}
+              className="card-neu-pressed"
+              style={{ backgroundColor: 'var(--background)', border: 'none' }}
             />
           </div>
 
@@ -739,11 +764,24 @@ function ContactFormDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isPending}
+              className="card-neu-flat hover:card-neu [&]:shadow-none"
+              style={{ backgroundColor: 'var(--background)', border: 'none' }}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? 'Saving...' : contact ? 'Update Contact' : 'Create Contact'}
+            <Button 
+              type="submit" 
+              disabled={isPending}
+              className="card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+              style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(165, 200, 202, 0.15)' }}
+            >
+              {isPending ? (
+                <span style={{ color: '#a5c8ca', textShadow: '0 0 12px rgba(165, 200, 202, 0.8), 0 0 20px rgba(165, 200, 202, 0.6), 0 0 30px rgba(165, 200, 202, 0.4)' }}>Saving...</span>
+              ) : (
+                <span style={{ color: '#a5c8ca', textShadow: '0 0 12px rgba(165, 200, 202, 0.8), 0 0 20px rgba(165, 200, 202, 0.6), 0 0 30px rgba(165, 200, 202, 0.4)' }}>
+                  {contact ? 'Update Contact' : 'Create Contact'}
+                </span>
+              )}
             </Button>
           </DialogFooter>
         </form>

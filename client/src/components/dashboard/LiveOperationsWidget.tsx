@@ -15,9 +15,10 @@ interface LiveOperationsWidgetProps {
   className?: string;
   trips?: any[];
   drivers?: any[];
+  shadow?: 'sm' | 'xl';
 }
 
-export default function LiveOperationsWidget({ className, trips: propTrips, drivers: propDrivers }: LiveOperationsWidgetProps) {
+export default function LiveOperationsWidget({ className, trips: propTrips, drivers: propDrivers, shadow }: LiveOperationsWidgetProps) {
   // Use props if provided, otherwise fall back to hooks
   const { data: hookTrips, isLoading: tripsLoading, error: tripsError } = useLiveTrips();
   const { data: hookDrivers, isLoading: driversLoading, error: driversError } = useLiveDrivers();
@@ -34,7 +35,8 @@ export default function LiveOperationsWidget({ className, trips: propTrips, driv
     if (trip.is_group_trip && trip.client_groups) {
       return trip.client_groups.name;
     } else if (trip.is_group_trip && trip.client_group_id) {
-      return `Group Trip (${trip.client_group_id.slice(0, 8)}...)`;
+      // For group trips without a name, show generic name without ID
+      return 'Group Trip';
     } else if (trip.client) {
       return `${trip.client.first_name || ''} ${trip.client.last_name || ''}`.trim() || 'Unknown Client';
     } else if (trip.client_id) {
@@ -248,28 +250,46 @@ export default function LiveOperationsWidget({ className, trips: propTrips, driv
 
   return (
     <Widget
-      title="Operations"
+      title="OPERATIONS"
       size="large"
       className={cn("max-h-full overflow-hidden", className)}
       loading={isLoading}
       error={hasError ? 'Failed to load live data' : undefined}
+      shadow={shadow}
+      titleStyle={{ fontSize: '42px' }}
       actions={
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              const mapSection = document.getElementById('interactive-map-section');
+              if (mapSection) {
+                mapSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }}
+          >
             <MapPin className="h-4 w-4 mr-1" />
             View Map
           </Button>
         </div>
       }
     >
-      <div className="space-y-2 overflow-y-auto" style={{ maxHeight: 'calc(375px - 80px)', height: 'auto' }}>
+      <div className="space-y-2 overflow-y-auto" style={{ maxHeight: 'calc(600px - 80px)', height: 'auto', padding: '8px', margin: '-4px' }}>
         {/* Section 1: Today's Trips */}
         <div>
           <h4 className="text-sm font-medium text-muted-foreground mb-3">Today's Trips</h4>
           <div className="space-y-2">
             {todaysTrips.length > 0 ? (
               todaysTrips.map((trip: any) => (
-                <div key={trip.id} className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--gray-1)' }}>
+                <div 
+                  key={trip.id} 
+                  className="flex items-center justify-between p-3 rounded-lg card-neu-pressed" 
+                  style={{ 
+                    backgroundColor: 'var(--background)', 
+                    border: 'none'
+                  }}
+                >
                   <div className="flex items-center space-x-3">
                     <div className={`w-3 h-3 rounded-full ${getStatusColor(trip.status)}`} style={trip.status === 'completed' ? { backgroundColor: 'var(--completed)' } : getStatusColorStyle(trip.status)} />
                     <div>

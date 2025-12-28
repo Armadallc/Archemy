@@ -1183,17 +1183,22 @@ export function IntegratedThemeEditor({ onThemeSaved }: IntegratedThemeEditorPro
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Theme Editor</h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h2 className="text-2xl font-bold" style={{ color: '#a5c8ca' }}>THEME EDITOR</h2>
+          <p className="text-sm mt-1" style={{ color: '#a5c8ca', opacity: 0.7 }}>
             {editingTheme 
               ? `Editing: ${editingTheme.name}` 
               : 'Create a new theme with both light and dark modes'}
           </p>
         </div>
         {isSuperAdmin && (
-          <Button variant="outline" onClick={handleNewTheme}>
-            <Plus className="w-4 h-4 mr-2" />
-            New Theme
+          <Button 
+            variant="outline" 
+            onClick={handleNewTheme}
+            className="card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+            style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(165, 200, 202, 0.15)' }}
+          >
+            <Plus className="w-4 h-4 mr-2" style={{ color: '#a5c8ca', textShadow: '0 0 12px rgba(165, 200, 202, 0.8), 0 0 20px rgba(165, 200, 202, 0.6), 0 0 30px rgba(165, 200, 202, 0.4)' }} />
+            <span style={{ color: '#a5c8ca', textShadow: '0 0 12px rgba(165, 200, 202, 0.8), 0 0 20px rgba(165, 200, 202, 0.6), 0 0 30px rgba(165, 200, 202, 0.4)' }}>New Theme</span>
           </Button>
         )}
       </div>
@@ -1202,30 +1207,27 @@ export function IntegratedThemeEditor({ onThemeSaved }: IntegratedThemeEditorPro
         {/* Left Column: Theme Management & Info */}
         <div className="lg:col-span-1 space-y-4">
           {/* Theme Info Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">
-                {editingTheme ? 'Edit Theme' : 'Create New Theme'}
+          <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+            <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+              <CardTitle className="text-lg" style={{ color: '#a5c8ca' }}>
+                {editingTheme ? 'EDIT THEME' : 'CREATE NEW THEME'}
               </CardTitle>
-              <CardDescription>
-                {editingTheme 
-                  ? 'Update this theme\'s light and dark modes'
-                  : 'A theme includes both light and dark mode configurations'}
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="theme-name">Theme Name *</Label>
+                <Label htmlFor="theme-name" style={{ color: '#a5c8ca', opacity: 0.8 }}>Theme Name *</Label>
                 <Input
                   id="theme-name"
                   value={themeName}
                   onChange={(e) => setThemeName(e.target.value)}
                   placeholder="e.g., Corporate Blue"
                   disabled={!isSuperAdmin}
+                  className="card-neu-pressed"
+                  style={{ backgroundColor: 'var(--background)', border: 'none' }}
                 />
               </div>
               <div>
-                <Label htmlFor="theme-description">Description</Label>
+                <Label htmlFor="theme-description" style={{ color: '#a5c8ca', opacity: 0.8 }}>Description</Label>
                 <Textarea
                   id="theme-description"
                   value={themeDescription}
@@ -1233,35 +1235,37 @@ export function IntegratedThemeEditor({ onThemeSaved }: IntegratedThemeEditorPro
                   placeholder="Optional description..."
                   rows={3}
                   disabled={!isSuperAdmin}
+                  className="card-neu-pressed"
+                  style={{ backgroundColor: 'var(--background)', border: 'none' }}
                 />
               </div>
               
               {editingTheme && (
-                <div className="pt-4 border-t">
-                  <div className="text-sm font-medium mb-2">Theme Status</div>
-                  <Badge variant={editingTheme.is_active ? 'default' : 'secondary'}>
+                <div className="pt-4 border-t" style={{ borderColor: 'rgba(165, 200, 202, 0.2)' }}>
+                  <div className="text-sm font-medium mb-2" style={{ color: '#a5c8ca', opacity: 0.8 }}>Theme Status</div>
+                  <Badge variant={editingTheme.is_active ? 'default' : 'secondary'} style={{ backgroundColor: editingTheme.is_active ? '#a5c8ca' : 'rgba(165, 200, 202, 0.2)', color: editingTheme.is_active ? 'var(--background)' : '#a5c8ca' }}>
                     {editingTheme.is_active ? 'Active' : 'Inactive'}
                   </Badge>
                 </div>
               )}
 
-              <Separator />
+              <Separator style={{ backgroundColor: 'rgba(165, 200, 202, 0.2)' }} />
 
               <div className="space-y-2">
-                <div className="text-sm font-medium">Editing Mode</div>
+                <div className="text-sm font-medium" style={{ color: '#a5c8ca', opacity: 0.8 }}>Editing Mode</div>
                 <Tabs value={activeEditingMode} onValueChange={(v) => setActiveEditingMode(v as 'light' | 'dark')}>
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="light" className="flex items-center gap-2">
+                  <TabsList className="grid w-full grid-cols-2 card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                    <TabsTrigger value="light" className="flex items-center gap-2" style={{ color: '#a5c8ca' }}>
                       <Sun className="w-4 h-4" />
                       Light
                     </TabsTrigger>
-                    <TabsTrigger value="dark" className="flex items-center gap-2">
+                    <TabsTrigger value="dark" className="flex items-center gap-2" style={{ color: '#a5c8ca' }}>
                       <Moon className="w-4 h-4" />
                       Dark
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                   Currently editing: <strong>{activeEditingMode === 'light' ? 'Light' : 'Dark'}</strong> mode
                 </p>
               </div>
@@ -1270,14 +1274,22 @@ export function IntegratedThemeEditor({ onThemeSaved }: IntegratedThemeEditorPro
                 <Button
                   onClick={handleSaveTheme}
                   disabled={saveThemeMutation.isPending || !themeName.trim()}
-                  className="w-full"
+                  className="w-full card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+                  style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(165, 200, 202, 0.15)' }}
                 >
-                  <Save className="w-4 h-4 mr-2" />
-                  {saveThemeMutation.isPending 
-                    ? 'Saving...' 
-                    : editingTheme 
-                      ? 'Update Theme' 
-                      : 'Create Theme'}
+                  {saveThemeMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" style={{ color: '#a5c8ca', textShadow: '0 0 12px rgba(165, 200, 202, 0.8), 0 0 20px rgba(165, 200, 202, 0.6), 0 0 30px rgba(165, 200, 202, 0.4)' }} />
+                      <span style={{ color: '#a5c8ca', textShadow: '0 0 12px rgba(165, 200, 202, 0.8), 0 0 20px rgba(165, 200, 202, 0.6), 0 0 30px rgba(165, 200, 202, 0.4)' }}>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" style={{ color: '#a5c8ca', textShadow: '0 0 12px rgba(165, 200, 202, 0.8), 0 0 20px rgba(165, 200, 202, 0.6), 0 0 30px rgba(165, 200, 202, 0.4)' }} />
+                      <span style={{ color: '#a5c8ca', textShadow: '0 0 12px rgba(165, 200, 202, 0.8), 0 0 20px rgba(165, 200, 202, 0.6), 0 0 30px rgba(165, 200, 202, 0.4)' }}>
+                        {editingTheme ? 'Update Theme' : 'Create Theme'}
+                      </span>
+                    </>
+                  )}
                 </Button>
               )}
             </CardContent>
@@ -1285,31 +1297,32 @@ export function IntegratedThemeEditor({ onThemeSaved }: IntegratedThemeEditorPro
 
           {/* Saved Themes List */}
           {isSuperAdmin && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Saved Themes</CardTitle>
-                <CardDescription>
+            <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+              <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                <CardTitle className="text-lg" style={{ color: '#a5c8ca' }}>SAVED THEMES</CardTitle>
+                <p className="text-sm" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                   {themes.filter(t => t.is_active).length} / 4 active
-                </CardDescription>
+                </p>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   {isLoading ? (
-                    <div className="text-sm text-muted-foreground">Loading...</div>
+                    <div className="text-sm" style={{ color: '#a5c8ca', opacity: 0.7 }}>Loading...</div>
                   ) : (() => {
                     // Only show active themes in the UI
                     const activeThemes = themes.filter(t => t.is_active);
                     return activeThemes.length === 0 ? (
-                      <div className="text-sm text-muted-foreground">No active themes. Create a new theme to get started.</div>
+                      <div className="text-sm" style={{ color: '#a5c8ca', opacity: 0.7 }}>No active themes. Create a new theme to get started.</div>
                     ) : (
                       activeThemes.map((theme) => (
                       <div
                         key={theme.id}
-                        className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                        className={`p-3 rounded-lg cursor-pointer transition-colors ${
                           editingTheme?.id === theme.id
-                            ? 'border-primary bg-primary/5'
-                            : 'border-border hover:bg-muted/50'
+                            ? 'card-neu-pressed'
+                            : 'card-neu-flat hover:card-neu'
                         }`}
+                        style={{ backgroundColor: 'var(--background)', border: 'none' }}
                         onClick={() => {
                           setEditingTheme(theme);
                           setThemeName(theme.name);
@@ -1318,9 +1331,9 @@ export function IntegratedThemeEditor({ onThemeSaved }: IntegratedThemeEditorPro
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
-                            <div className="font-medium text-sm">{theme.name}</div>
+                            <div className="font-medium text-sm" style={{ color: '#a5c8ca' }}>{theme.name}</div>
                             {theme.description && (
-                              <div className="text-xs text-muted-foreground mt-1">
+                              <div className="text-xs mt-1" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                                 {theme.description}
                               </div>
                             )}
@@ -1334,8 +1347,10 @@ export function IntegratedThemeEditor({ onThemeSaved }: IntegratedThemeEditorPro
                               e.stopPropagation();
                               handleLoadTheme(theme, 'light');
                             }}
+                            className="card-neu-flat hover:card-neu [&]:shadow-none"
+                            style={{ backgroundColor: 'var(--background)', border: 'none' }}
                           >
-                            Load Light
+                            <span style={{ color: '#a5c8ca' }}>Load Light</span>
                           </Button>
                           <Button
                             size="sm"
@@ -1344,8 +1359,10 @@ export function IntegratedThemeEditor({ onThemeSaved }: IntegratedThemeEditorPro
                               e.stopPropagation();
                               handleLoadTheme(theme, 'dark');
                             }}
+                            className="card-neu-flat hover:card-neu [&]:shadow-none"
+                            style={{ backgroundColor: 'var(--background)', border: 'none' }}
                           >
-                            Load Dark
+                            <span style={{ color: '#a5c8ca' }}>Load Dark</span>
                           </Button>
                           <Button
                             size="sm"
@@ -1360,8 +1377,10 @@ export function IntegratedThemeEditor({ onThemeSaved }: IntegratedThemeEditorPro
                               }
                             }}
                             disabled={toggleThemeActiveMutation.isPending}
+                            className="card-neu-flat hover:card-neu [&]:shadow-none"
+                            style={{ backgroundColor: 'var(--background)', border: 'none' }}
                           >
-                            Deactivate
+                            <span style={{ color: '#a5c8ca' }}>Deactivate</span>
                           </Button>
                           <Button
                             size="sm"
@@ -1373,8 +1392,10 @@ export function IntegratedThemeEditor({ onThemeSaved }: IntegratedThemeEditorPro
                               }
                             }}
                             disabled={deleteThemeMutation.isPending}
+                            className="card-neu hover:card-neu [&]:shadow-none"
+                            style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(220, 38, 38, 0.15)' }}
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-3 h-3" style={{ color: '#dc2626' }} />
                           </Button>
                         </div>
                       </div>
@@ -1389,26 +1410,25 @@ export function IntegratedThemeEditor({ onThemeSaved }: IntegratedThemeEditorPro
         {/* Right Column: Live Preview & Editor */}
         <div className="lg:col-span-2 space-y-4">
           {/* Live Preview - Both Modes Side by Side */}
-          <Card>
-            <CardHeader>
+          <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+            <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Eye className="w-5 h-5" />
-                    Live Preview
+                  <CardTitle className="text-lg flex items-center gap-2" style={{ color: '#a5c8ca' }}>
+                    <Eye className="w-5 h-5" style={{ color: '#a5c8ca' }} />
+                    LIVE PREVIEW
                   </CardTitle>
-                  <CardDescription>
-                    Preview how your theme looks in both light and dark modes
-                  </CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setPreviewMode(previewMode === 'light' ? 'dark' : 'light')}
+                    className="card-neu-flat hover:card-neu [&]:shadow-none"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
                   >
-                    {previewMode === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-                    Switch Preview
+                    {previewMode === 'light' ? <Moon className="w-4 h-4" style={{ color: '#a5c8ca' }} /> : <Sun className="w-4 h-4" style={{ color: '#a5c8ca' }} />}
+                    <span style={{ color: '#a5c8ca' }}>Switch Preview</span>
                   </Button>
                 </div>
               </div>
@@ -1423,12 +1443,12 @@ export function IntegratedThemeEditor({ onThemeSaved }: IntegratedThemeEditorPro
           </Card>
 
           {/* Fire Theme Editor - Color Picker */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Color Configuration</CardTitle>
-              <CardDescription>
+          <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+            <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+              <CardTitle className="text-lg" style={{ color: '#a5c8ca' }}>COLOR CONFIGURATION</CardTitle>
+              <p className="text-sm mt-1" style={{ color: '#a5c8ca', opacity: 0.7 }}>
                 Editing <strong>{activeEditingMode === 'light' ? 'Light' : 'Dark'}</strong> mode colors
-              </CardDescription>
+              </p>
             </CardHeader>
             <CardContent>
               {/* Fire Theme Panel Content - without presets */}
@@ -1468,10 +1488,13 @@ function ColorSwatch({
       onClick={onClick}
       className={`
         w-8 h-8 rounded-md border-2 transition-all
-        ${isSelected ? "border-foreground ring-2 ring-foreground ring-offset-2 ring-offset-background" : "border-transparent"}
-        hover:scale-110
+        ${isSelected ? "card-neu-pressed" : "card-neu-flat hover:card-neu"}
       `}
-      style={{ backgroundColor: hex }}
+      style={{ 
+        backgroundColor: hex,
+        border: isSelected ? '2px solid #a5c8ca' : '2px solid rgba(165, 200, 202, 0.3)',
+        boxShadow: isSelected ? 'var(--shadow-neu-pressed)' : 'var(--shadow-neu-flat)'
+      }}
       title={color}
     />
   );
@@ -1489,7 +1512,7 @@ function ButtonStyleSelector({
 }) {
   return (
     <div className="flex items-center justify-between py-2">
-      <span className="text-sm font-medium">Button Style</span>
+      <span className="text-sm font-medium" style={{ color: '#a5c8ca', opacity: 0.8 }}>Button Style</span>
       <div className="flex gap-1">
         {options.map((style) => (
           <button
@@ -1498,9 +1521,15 @@ function ButtonStyleSelector({
             className={`
               px-3 py-1 text-xs rounded-md transition-all capitalize
               ${value === style 
-                ? "bg-foreground text-background" 
-                : "bg-muted hover:bg-muted/80"}
+                ? "card-neu-pressed" 
+                : "card-neu-flat hover:card-neu"}
             `}
+            style={{ 
+              backgroundColor: 'var(--background)',
+              border: 'none',
+              color: '#a5c8ca',
+              boxShadow: value === style ? 'var(--shadow-neu-pressed)' : 'var(--shadow-neu-flat)'
+            }}
           >
             {style}
           </button>
@@ -1522,7 +1551,7 @@ function BorderWeightSelector({
 }) {
   return (
     <div className="flex items-center justify-between py-2">
-      <span className="text-sm font-medium">Border Weight</span>
+      <span className="text-sm font-medium" style={{ color: '#a5c8ca', opacity: 0.8 }}>Border Weight</span>
       <div className="flex gap-1">
         {options.map((weight) => (
           <button
@@ -1531,9 +1560,15 @@ function BorderWeightSelector({
             className={`
               px-3 py-1 text-xs rounded-md transition-all capitalize
               ${value === weight 
-                ? "bg-foreground text-background" 
-                : "bg-muted hover:bg-muted/80"}
+                ? "card-neu-pressed" 
+                : "card-neu-flat hover:card-neu"}
             `}
+            style={{ 
+              backgroundColor: 'var(--background)',
+              border: 'none',
+              color: '#a5c8ca',
+              boxShadow: value === weight ? 'var(--shadow-neu-pressed)' : 'var(--shadow-neu-flat)'
+            }}
           >
             {weight}
           </button>
@@ -1557,7 +1592,7 @@ function SlotSelector({
 }) {
   return (
     <div className="flex items-center justify-between py-2">
-      <span className="text-sm font-medium">{label}</span>
+      <span className="text-sm font-medium" style={{ color: '#a5c8ca', opacity: 0.8 }}>{label}</span>
       <div className="flex gap-1">
         {(Object.keys(palette) as string[]).map((colorKey) => (
           <ColorSwatch
@@ -1608,8 +1643,8 @@ function FireThemeEditorContent({
   return (
     <div className="space-y-4">
       {/* Primary Colors */}
-      <div className="space-y-1 border-t border-border pt-4">
-        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+      <div className="space-y-1 border-t pt-4" style={{ borderColor: 'rgba(165, 200, 202, 0.2)' }}>
+        <div className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#a5c8ca', opacity: 0.7 }}>
           Primary Colors
         </div>
         <SlotSelector
@@ -1621,8 +1656,8 @@ function FireThemeEditorContent({
       </div>
 
       {/* Surface & Layout Colors */}
-      <div className="space-y-1 border-t border-border pt-4">
-        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+      <div className="space-y-1 border-t pt-4" style={{ borderColor: 'rgba(165, 200, 202, 0.2)' }}>
+        <div className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#a5c8ca', opacity: 0.7 }}>
           Surfaces & Layout
         </div>
         <SlotSelector
@@ -1677,8 +1712,8 @@ function FireThemeEditorContent({
       </div>
 
       {/* Button Controls */}
-      <div className="space-y-1 border-t border-border pt-4">
-        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+      <div className="space-y-1 border-t pt-4" style={{ borderColor: 'rgba(165, 200, 202, 0.2)' }}>
+        <div className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#a5c8ca', opacity: 0.7 }}>
           Buttons
         </div>
         <ButtonStyleSelector
@@ -1713,8 +1748,8 @@ function FireThemeEditorContent({
       </div>
 
       {/* Border Controls */}
-      <div className="space-y-1 border-t border-border pt-4">
-        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+      <div className="space-y-1 border-t pt-4" style={{ borderColor: 'rgba(165, 200, 202, 0.2)' }}>
+        <div className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#a5c8ca', opacity: 0.7 }}>
           Borders
         </div>
         <BorderWeightSelector
@@ -1739,7 +1774,7 @@ function ThemeLivePreview({
 }) {
   if (!fireTheme || !fireTheme.light || !fireTheme.dark) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
+      <div className="text-center py-8" style={{ color: '#a5c8ca', opacity: 0.7 }}>
         <p>Loading preview...</p>
       </div>
     );
@@ -1749,8 +1784,8 @@ function ThemeLivePreview({
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* Light Mode Preview */}
       <div className="space-y-2">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <Sun className="w-4 h-4" />
+        <div className="flex items-center gap-2 text-sm font-medium" style={{ color: '#a5c8ca' }}>
+          <Sun className="w-4 h-4" style={{ color: '#a5c8ca' }} />
           Light Mode
         </div>
         <div 
@@ -1847,8 +1882,8 @@ function ThemeLivePreview({
 
       {/* Dark Mode Preview */}
       <div className="space-y-2">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <Moon className="w-4 h-4" />
+        <div className="flex items-center gap-2 text-sm font-medium" style={{ color: '#a5c8ca' }}>
+          <Moon className="w-4 h-4" style={{ color: '#a5c8ca' }} />
           Dark Mode
         </div>
         <div 

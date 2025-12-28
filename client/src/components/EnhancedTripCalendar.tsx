@@ -41,6 +41,7 @@ import { apiRequest } from "../lib/queryClient";
 import { useAuth } from "../hooks/useAuth";
 import { useHierarchy } from "../hooks/useHierarchy";
 import { CalendarContext, useCalendarContext } from "./event-calendar/calendar-context";
+import { cn } from "../lib/utils";
 
 interface Trip {
   id: string;
@@ -69,6 +70,7 @@ interface Trip {
   driver?: {
     user_id: string;
   };
+  trip_purpose?: string | null;
 }
 
 type ViewMode = 'today' | 'week' | 'month';
@@ -134,8 +136,8 @@ const getTripDisplayName = (trip: Trip, getClientName: (id: string) => string): 
   if (trip.is_group_trip && trip.client_groups) {
     return trip.client_groups.name;
   } else if (trip.is_group_trip && trip.client_group_id) {
-    // For group trips, show a more descriptive name
-    return `Group Trip (${trip.client_group_id.slice(0, 8)}...)`;
+    // For group trips without a name, show generic name without ID
+    return 'Group Trip';
   } else if (trip.client) {
     return `${trip.client.first_name} ${trip.client.last_name}`;
   } else if (trip.client_id) {
@@ -332,6 +334,14 @@ export default function EnhancedTripCalendar() {
 
   const dateRange = getDateRange();
   const days = eachDayOfInterval(dateRange);
+  
+  // Group days into weeks for month view (matching bentobox structure)
+  const weeks: Date[][] = [];
+  if (viewMode === 'month') {
+    for (let i = 0; i < days.length; i += 7) {
+      weeks.push(days.slice(i, i + 7));
+    }
+  }
 
   const getTripsForDate = (date: Date) => {
     return trips.filter((trip: Trip) => {
@@ -438,31 +448,22 @@ export default function EnhancedTripCalendar() {
   }
 
   return (
-    <Card className="flex-1 flex flex-col overflow-hidden min-h-0" style={{ display: 'flex', flexDirection: 'column', flex: '1 1 0%', minHeight: 0 }}>
-      <CardHeader>
+    <div 
+      className="flex-1 flex flex-col overflow-hidden min-h-0 card-glow-border rounded-lg h-full" 
+      style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        flex: '1 1 0%', 
+        minHeight: 0,
+        height: '100%',
+        backgroundColor: '#26282b',
+        borderColor: 'var(--border)'
+      }}
+    >
+      <div className="flex flex-col space-y-1.5 p-6" style={{ backgroundColor: 'var(--background)' }}>
         {/* Header Content */}
         <div className="flex flex-col gap-6">
-          {/* Row 1: Trip Status Legend */}
-          <div className="flex items-center justify-end">
-            <div className="flex items-center gap-6">
-              {Object.entries({
-                scheduled: statusColors.scheduledValue,
-                in_progress: statusColors.in_progressValue,
-                completed: statusColors.completedValue,
-                cancelled: statusColors.cancelledValue,
-              }).map(([status, color]) => (
-                <div key={status} className="flex items-center gap-2">
-                  <div 
-                    className="w-3 h-3 rounded-full" 
-                    style={{ backgroundColor: color }}
-                  />
-                  <span className="text-xs capitalize text-foreground">{status.replace('_', ' ')}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Row 2: Month/Year Title, Navigation Buttons, and View Mode Select */}
+          {/* Month/Year Title, Navigation Buttons, and View Mode Select */}
           <div className="flex items-center justify-between w-full pb-0">
             {/* Month/Year Title - positioned just to the right of mini calendar */}
             <h1 
@@ -476,49 +477,119 @@ export default function EnhancedTripCalendar() {
             </h1>
             
             {/* Navigation Buttons and View Mode Select */}
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigateDate('prev')}
-                className="flex items-center gap-1"
+            <div 
+              className="flex items-center gap-4 flex-shrink min-w-0 rounded-md overflow-visible"
+              style={{
+                height: '93px',
+                borderRadius: '6px',
+                paddingLeft: '16px',
+                paddingRight: '16px',
+                paddingTop: '12px',
+                paddingBottom: '12px',
+                backgroundColor: 'var(--background)',
+                boxShadow: '4px 4px 8px rgba(30, 32, 35, 0.6), -4px -4px 8px rgba(255, 255, 255, 0.05)'
+              }}
+            >
+              {/* Date Navigation */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigateDate('prev')}
+                  className="card-neu-flat hover:card-neu [&]:shadow-none"
+                  style={{ 
+                    height: '32px', 
+                    width: '32px', 
+                    padding: 0,
+                    backgroundColor: 'var(--background)',
+                    border: 'none',
+                    boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                  }}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCurrentDate(new Date())}
+                  className="card-neu-flat hover:card-neu [&]:shadow-none px-3"
+                  style={{ 
+                    height: '32px',
+                    backgroundColor: 'var(--background)',
+                    border: 'none',
+                    boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                  }}
+                >
+                  Today
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigateDate('next')}
+                  className="card-neu-flat hover:card-neu [&]:shadow-none"
+                  style={{ 
+                    height: '32px', 
+                    width: '32px', 
+                    padding: 0,
+                    backgroundColor: 'var(--background)',
+                    border: 'none',
+                    boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                  }}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              {/* View Mode Toggle */}
+              <div 
+                className="flex items-center gap-1 rounded-md card-neu-flat p-1 flex-shrink-0"
+                style={{
+                  backgroundColor: 'var(--background)',
+                  height: '32px'
+                }}
               >
-                <ChevronLeft className="h-4 w-4" />
-                Prev
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentDate(new Date())}
-                className="flex items-center gap-1"
-              >
-                Today
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigateDate('next')}
-                className="flex items-center gap-1"
-              >
-                Next
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Select value={viewMode} onValueChange={(value: ViewMode) => setViewMode(value)}>
-                <SelectTrigger className="w-24">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="today">Today</SelectItem>
-                  <SelectItem value="week">Week</SelectItem>
-                  <SelectItem value="month">Month</SelectItem>
-                </SelectContent>
-              </Select>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setViewMode('today')}
+                  className={cn("h-7 px-2 min-w-[32px] [&]:shadow-none", viewMode === 'today' ? 'card-neu-pressed' : 'hover:card-neu')}
+                  style={{ 
+                    backgroundColor: viewMode === 'today' ? 'var(--background)' : 'transparent',
+                    border: 'none',
+                    boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                  }}
+                >
+                  <span className="text-xs">Today</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setViewMode('week')}
+                  className={cn("h-7 px-2 min-w-[32px] [&]:shadow-none", viewMode === 'week' ? 'card-neu-pressed' : 'hover:card-neu')}
+                  style={{ 
+                    backgroundColor: viewMode === 'week' ? 'var(--background)' : 'transparent',
+                    border: 'none',
+                    boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)'
+                  }}
+                >
+                  <span className="text-xs">Week</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setViewMode('month')}
+                  className={cn("h-7 px-2 min-w-[32px]", viewMode === 'month' ? 'card-neu-pressed' : 'hover:card-neu')}
+                  style={{ backgroundColor: viewMode === 'month' ? 'var(--background)' : 'transparent' }}
+                >
+                  <span className="text-xs">Month</span>
+                </Button>
+              </div>
             </div>
           </div>
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="flex-1 overflow-hidden min-h-0" style={{ display: 'flex', flexDirection: 'column', flex: '1 1 0%', minHeight: 0 }}>
+      <div className="flex-1 overflow-hidden min-h-0 px-6 pt-0 pb-6" style={{ display: 'flex', flexDirection: 'column', flex: '1 1 0%', minHeight: 0, backgroundColor: 'var(--background)' }}>
         {viewMode === 'today' ? (
           <div className="space-y-6">
             <div className="text-sm mb-6" style={{ color: 'var(--muted-foreground)' }}>
@@ -589,11 +660,11 @@ export default function EnhancedTripCalendar() {
             )}
           </div>
         ) : viewMode === 'week' ? (
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full" style={{ backgroundColor: '#1e2023' }}>
             {/* Week header */}
-            <div className="flex border-b" style={{ backgroundColor: '#292929', borderColor: 'var(--border)' }}>
+            <div className="flex border-b" style={{ backgroundColor: '#1e2023', borderColor: 'var(--border)' }}>
               {/* Time column header - matches time column width */}
-              <div className="w-12 sm:w-16 border-r" style={{ borderColor: 'var(--border)' }}></div>
+              <div className="w-12 sm:w-16 border-r" style={{ borderColor: 'var(--border)', backgroundColor: '#1e2023' }}></div>
               {/* Days header - matches the 7-column grid below */}
               <div className="flex-1 grid grid-cols-7 gap-px" style={{ backgroundColor: 'var(--border)' }}>
                 {days.slice(0, 7).map(day => {
@@ -603,11 +674,11 @@ export default function EnhancedTripCalendar() {
                       key={day.toISOString()} 
                       className="p-2 text-center"
                       style={isDayToday ? {
-                        backgroundColor: "#292929",
+                        backgroundColor: "#1e2023",
                         color: "var(--color-coral)",
                       } : {
                         borderColor: 'var(--border)',
-                        backgroundColor: '#343434',
+                        backgroundColor: '#26282b',
                         color: 'var(--foreground)',
                       }}
                     >
@@ -637,7 +708,7 @@ export default function EnhancedTripCalendar() {
               </div>
               
               {/* Days grid */}
-              <div className="flex-1 grid grid-cols-7 gap-px" style={{ backgroundColor: 'var(--card)' }}>
+              <div className="flex-1 grid grid-cols-7 gap-px" style={{ backgroundColor: '#1e2023' }}>
                 {days.slice(0, 7).map(day => {
                   const dayTrips = getTripsForDate(day);
                   const isDayToday = isToday(day);
@@ -646,7 +717,7 @@ export default function EnhancedTripCalendar() {
                     <div 
                       key={day.toISOString()} 
                       className="relative"
-                      style={{ backgroundColor: 'var(--card)' }}
+                      style={{ backgroundColor: '#1e2023' }}
                     >
                       {/* Time slots */}
                       {Array.from({ length: 17 }, (_, i) => i + 6).map((hour) => (
@@ -695,91 +766,106 @@ export default function EnhancedTripCalendar() {
             </div>
           </div>
         ) : (
-          <div className="flex-1 flex flex-col overflow-hidden min-h-0" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            <div className="flex-1 grid grid-cols-7 gap-px rounded-lg overflow-hidden" style={{ backgroundColor: 'var(--border)', display: 'grid', height: '100%' }}>
-              {/* Header row */}
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="p-2 text-center text-sm font-medium" style={{ backgroundColor: 'var(--color-charcoal)', color: 'var(--foreground)', border: '1px solid var(--border)' }}>
-                  {day}
-                </div>
-              ))}
-              
-              {/* Calendar days */}
-              {days.map(day => {
-              const dayTrips = getTripsForDate(day);
-              const isCurrentMonth = viewMode === 'month' ? isSameMonth(day, currentDate) : true;
-              const isDayToday = isToday(day);
-              
-              return (
-                <div 
-                  key={day.toISOString()} 
-                  className="p-2 relative flex-1"
-                  style={isDayToday && isCurrentMonth ? {
-                    border: '1px solid var(--border)',
-                    backgroundColor: 'var(--background)',
-                    color: 'var(--color-coral)',
-                    minHeight: '100px',
-                  } : {
-                    border: '1px solid var(--border)',
-                    backgroundColor: 'var(--background)',
-                    color: isCurrentMonth ? 'var(--foreground)' : 'var(--muted-foreground)',
-                    minHeight: '100px',
-                  }}
-                >
-                  <div 
-                    className="text-sm font-medium mb-1"
-                    style={isDayToday && isCurrentMonth ? {
-                      color: 'var(--color-coral)',
-                      fontWeight: 'bold',
-                    } : {
-                      color: isCurrentMonth ? 'var(--foreground)' : 'var(--muted-foreground)',
-                      fontWeight: 'normal',
-                    }}
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0 bg-background" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            {/* Calendar Grid - Matching bentobox structure */}
+            <div className="flex-1 overflow-auto">
+              {/* Week day headers - Matching bentobox */}
+              <div className="grid grid-cols-7 border-b bg-muted/20 sticky top-0 z-10">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                  <div
+                    key={day}
+                    className="p-2 text-center text-xs font-medium text-muted-foreground border-r last:border-r-0"
                   >
-                    {format(day, 'd')}
+                    {day}
                   </div>
-                  
-                  <div 
-                    className="space-y-1 overflow-y-auto relative"
-                    style={{ 
-                      maxHeight: '120px',
-                      scrollbarWidth: 'thin',
-                      scrollbarColor: 'var(--muted-foreground) transparent'
-                    }}
+                ))}
+              </div>
+
+              {/* Calendar weeks - Matching bentobox */}
+              <div className="flex flex-col">
+                {weeks.map((week, weekIndex) => (
+                  <div
+                    key={weekIndex}
+                    className="grid grid-cols-7 border-b last:border-b-0 flex-1 min-h-[120px]"
                   >
-                    {dayTrips.map((trip: Trip) => (
-                      <TripHoverCard key={trip.id} trip={trip}>
+                    {week.map((day, dayIndex) => {
+                      const dayTrips = getTripsForDate(day);
+                      const isCurrentMonth = isSameMonth(day, currentDate);
+                      const isDayToday = isToday(day);
+                      
+                      return (
                         <div
-                          className={`text-xs p-1 rounded truncate cursor-pointer hover:opacity-80 transition-opacity ${
-                            !isCurrentMonth ? 'opacity-60' : ''
-                          }`}
-                          style={{ 
-                            backgroundColor: getTripColor(trip),
-                            color: getContrastTextColor(getTripColor(trip))
-                          }}
+                          key={day.toISOString()}
+                          className={cn(
+                            "border-r last:border-r-0 p-1 min-h-[120px]",
+                            !isCurrentMonth && "bg-muted/10",
+                            isDayToday && "bg-primary/5"
+                          )}
                         >
-                          {format(parseISO(trip.scheduled_pickup_time), 'h:mm a')} {getTripDisplayName(trip, getClientName)}
+                          {/* Day number - Matching bentobox */}
+                          <div
+                            className={cn(
+                              "text-xs font-medium mb-1",
+                              !isCurrentMonth && "text-muted-foreground"
+                            )}
+                            style={isDayToday ? {
+                              color: '#ff8475',
+                              fontWeight: 'bold',
+                              textShadow: '0 0 8px rgba(255, 132, 117, 0.5), 0 0 12px rgba(255, 132, 117, 0.3)'
+                            } : {}}
+                          >
+                            {format(day, 'd')}
+                          </div>
+
+                          {/* Trips for this day - Matching bentobox spacing */}
+                          <div className="space-y-0.5">
+                            {dayTrips.slice(0, 3).map((trip: Trip) => (
+                              <TripHoverCard key={trip.id} trip={trip}>
+                                <div
+                                  className={cn(
+                                    "text-xs px-1.5 py-0.5 rounded cursor-pointer",
+                                    "hover:opacity-80 transition-opacity",
+                                    !isCurrentMonth && "opacity-60",
+                                    "flex items-center justify-between gap-1"
+                                  )}
+                                  style={{ 
+                                    backgroundColor: getTripColor(trip),
+                                    color: getContrastTextColor(getTripColor(trip))
+                                  }}
+                                >
+                                  <div className="font-medium truncate flex-1 min-w-0">
+                                    {format(parseISO(trip.scheduled_pickup_time), 'h:mm a')} {getTripDisplayName(trip, getClientName)}
+                                  </div>
+                                  {trip.trip_purpose && (
+                                    <span 
+                                      className="text-[10px] px-1 py-0.5 rounded flex-shrink-0"
+                                      style={{
+                                        backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                                        color: getContrastTextColor(getTripColor(trip))
+                                      }}
+                                    >
+                                      {trip.trip_purpose}
+                                    </span>
+                                  )}
+                                </div>
+                              </TripHoverCard>
+                            ))}
+                            {dayTrips.length > 3 && (
+                              <div className="text-xs text-muted-foreground px-1.5 py-0.5">
+                                +{dayTrips.length - 3} more
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </TripHoverCard>
-                    ))}
-                    {dayTrips.length > 3 && (
-                      <div 
-                        className="text-xs px-1 py-0.5 flex items-center gap-1" 
-                        style={{ color: 'var(--muted-foreground)' }}
-                        title="Scroll down to see more trips"
-                      >
-                        <span>See More</span>
-                        <ChevronDown size={12} />
-                      </div>
-                    )}
+                      );
+                    })}
                   </div>
-                </div>
-              );
-            })}
+                ))}
+              </div>
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

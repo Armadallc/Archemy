@@ -55,48 +55,49 @@ export function CostStructureManager() {
   return (
     <div className="space-y-6">
       {/* Summary Header */}
-      <Card style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
+      <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
         <CardContent className="py-4">
           <div className="grid grid-cols-4 gap-4">
-            <div className="text-center p-3 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
+            <div className="text-center p-3 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
               <div className="flex items-center justify-center mb-1">
-                <Calculator className="h-5 w-5" style={{ color: 'var(--color-ice)' }} />
+                <Calculator className="h-5 w-5" style={{ color: '#a5c8ca' }} />
               </div>
-              <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Fixed/Month</div>
-              <div className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>
+              <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Fixed/Month</div>
+              <div className="text-lg font-bold" style={{ color: '#a5c8ca' }}>
                 ${totalFixed.toLocaleString('en-US', { minimumFractionDigits: 2 })}
               </div>
             </div>
             
-            <div className="text-center p-3 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
+            <div className="text-center p-3 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
               <div className="flex items-center justify-center mb-1">
-                <DollarSign className="h-5 w-5" style={{ color: 'var(--color-lime)' }} />
+                <DollarSign className="h-5 w-5" style={{ color: '#a5c8ca' }} />
               </div>
-              <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Variable/Mile</div>
-              <div className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>
+              <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Variable/Mile</div>
+              <div className="text-lg font-bold" style={{ color: '#a5c8ca' }}>
                 ${totalPerMile.toFixed(3)}
               </div>
             </div>
 
-            <div className="text-center p-3 rounded-lg" style={{ backgroundColor: 'var(--muted)' }}>
+            <div className="text-center p-3 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
               <div className="flex items-center justify-center mb-1">
-                <TrendingUp className="h-5 w-5" style={{ color: 'var(--color-coral)' }} />
+                <TrendingUp className="h-5 w-5" style={{ color: '#a5c8ca' }} />
               </div>
-              <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Staffing/Month</div>
-              <div className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>
+              <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Staffing/Month</div>
+              <div className="text-lg font-bold" style={{ color: '#a5c8ca' }}>
                 ${totalStaffing.toLocaleString('en-US', { minimumFractionDigits: 2 })}
               </div>
             </div>
 
-            <div className="text-center p-3 rounded-lg border-2" style={{ 
-              backgroundColor: 'rgba(255, 85, 93, 0.1)', 
-              borderColor: 'var(--primary)' 
+            <div className="text-center p-3 rounded-lg card-neu-pressed border-2" style={{ 
+              backgroundColor: 'var(--background)', 
+              borderColor: '#a5c8ca',
+              boxShadow: 'var(--shadow-neu-pressed)'
             }}>
               <div className="flex items-center justify-center mb-1">
-                <TrendingDown className="h-5 w-5" style={{ color: 'var(--primary)' }} />
+                <TrendingDown className="h-5 w-5" style={{ color: '#a5c8ca' }} />
               </div>
-              <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Total Overhead</div>
-              <div className="text-lg font-bold" style={{ color: 'var(--primary)' }}>
+              <div className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>Total Overhead</div>
+              <div className="text-lg font-bold" style={{ color: '#a5c8ca' }}>
                 ${monthlyOverhead.toLocaleString('en-US', { minimumFractionDigits: 2 })}
               </div>
             </div>

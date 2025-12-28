@@ -138,7 +138,7 @@ export function AddressInput({
   return (
     <div className={cn("space-y-3", className)}>
       {showLabel && (
-        <Label className={required ? "after:content-['*'] after:ml-0.5 after:text-red-500" : ""}>
+        <Label className={required ? "after:content-['*'] after:ml-0.5 after:text-red-500 font-medium" : "font-medium"} style={{ fontSize: '16px' }}>
           {label}
         </Label>
       )}
@@ -155,7 +155,8 @@ export function AddressInput({
           placeholder={streetPlaceholder}
           required={required}
           disabled={disabled}
-          className="mt-1"
+          className="mt-1 card-neu-pressed"
+          style={{ backgroundColor: 'var(--background)', border: 'none' }}
         />
       </div>
 
@@ -173,7 +174,8 @@ export function AddressInput({
             placeholder={cityPlaceholder}
             required={required}
             disabled={disabled}
-            className="mt-1"
+            className="mt-1 card-neu-pressed"
+          style={{ backgroundColor: 'var(--background)', border: 'none' }}
           />
         </div>
 
@@ -189,9 +191,9 @@ export function AddressInput({
             placeholder={statePlaceholder}
             required={required}
             disabled={disabled}
-            className="mt-1 uppercase"
+            className="mt-1 uppercase card-neu-pressed"
             maxLength={2}
-            style={{ textTransform: 'uppercase' }}
+            style={{ textTransform: 'uppercase', backgroundColor: 'var(--background)', border: 'none' }}
           />
           {stateError && (
             <p className="text-xs text-red-500 mt-1">{stateError}</p>
@@ -209,7 +211,8 @@ export function AddressInput({
             onChange={(e) => handleFieldChange('zip', e.target.value)}
             placeholder={zipPlaceholder}
             disabled={disabled}
-            className="mt-1"
+            className="mt-1 card-neu-pressed"
+          style={{ backgroundColor: 'var(--background)', border: 'none' }}
             maxLength={5}
             pattern="[0-9]{5}"
           />
@@ -235,4 +238,5 @@ export function AddressInput({
 }
 
 export default AddressInput;
+
 
