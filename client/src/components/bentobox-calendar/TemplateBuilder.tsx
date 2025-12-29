@@ -333,7 +333,7 @@ export function TemplateBuilder({ className, onClientGroupAdded }: TemplateBuild
   };
 
   return (
-    <div className={cn("p-4 space-y-4 overflow-y-auto", className)}>
+    <div className={cn("p-4 space-y-4", className)} style={{ paddingBottom: '16px' }}>
       <div>
         <h3 className="text-lg font-semibold mb-2" style={{ color: '#a5c8ca' }}>BUILD ENCOUNTER TEMPLATE</h3>
         <p className="text-sm" style={{ color: '#a5c8ca', opacity: 0.7 }}>
@@ -437,20 +437,22 @@ export function TemplateBuilder({ className, onClientGroupAdded }: TemplateBuild
       </div>
 
       {/* Save Button */}
-      <Button
-        onClick={handleSaveTemplate}
-        className="w-full card-neu hover:card-neu [&]:shadow-none btn-text-glow"
-        style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(165, 200, 202, 0.15)' }}
-        disabled={
-          !templateName.trim() ||
-          !currentTemplate.activity ||
-          !currentTemplate.duration ||
-          (currentTemplate.staff?.length || 0) === 0
-        }
-      >
-        <Save className="w-4 h-4 mr-2" style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }} />
-        <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Save Template & Add to Pool</span>
-      </Button>
+      <div style={{ marginTop: '16px', marginBottom: '0' }}>
+        <Button
+          onClick={handleSaveTemplate}
+          className="w-full card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+          style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(165, 200, 202, 0.15)' }}
+          disabled={
+            !templateName.trim() ||
+            !currentTemplate.activity ||
+            !currentTemplate.duration ||
+            (currentTemplate.staff?.length || 0) === 0
+          }
+        >
+          <Save className="w-4 h-4 mr-2" style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }} />
+          <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Save Template & Add to Pool</span>
+        </Button>
+      </div>
     </div>
   );
 }

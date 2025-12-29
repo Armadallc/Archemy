@@ -497,14 +497,22 @@ export const enhancedTripsStorage = {
   },
 
   async createTrip(trip: Omit<EnhancedTrip, 'id' | 'created_at' | 'updated_at'>) {
+    const now = new Date().toISOString();
+    const insertData: any = {
+      ...trip,
+      id: `trip_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      created_at: now,
+      updated_at: now
+    };
+    
+    // Set updated_by to match created_by on initial creation
+    if (insertData.created_by && !insertData.updated_by) {
+      insertData.updated_by = insertData.created_by;
+    }
+    
     const { data, error } = await supabase
       .from('trips')
-      .insert({
-        ...trip,
-        id: `trip_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
+      .insert(insertData)
       .select()
       .single();
     
@@ -513,12 +521,14 @@ export const enhancedTripsStorage = {
   },
 
   async updateTrip(id: string, updates: Partial<EnhancedTrip>) {
+    const updateData: any = {
+      ...updates,
+      updated_at: new Date().toISOString()
+    };
+    
     const { data, error } = await supabase
       .from('trips')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();

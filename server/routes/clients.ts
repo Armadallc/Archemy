@@ -8,6 +8,7 @@ import {
 import { requirePermission } from "../auth";
 import { PERMISSIONS } from "../permissions";
 import { clientsStorage, clientGroupsStorage } from "../minimal-supabase";
+import { upload, processClientAvatarToSupabase, deleteFileFromSupabase } from "../upload";
 
 const router = express.Router();
 
@@ -407,6 +408,143 @@ router.post("/import", requireSupabaseAuth, requireSupabaseRole(['super_admin', 
     console.error("Error importing clients:", error);
     res.status(500).json({ 
       message: error.message || "Failed to import clients" 
+    });
+  }
+});
+
+// ============================================================================
+// CLIENT AVATAR ROUTES
+// ============================================================================
+
+/**
+ * POST /api/clients/:id/avatar
+ * Upload client avatar
+ * Access: super_admin, corporate_admin, program_admin, program_user
+ */
+router.post("/:id/avatar", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin', 'program_user']), upload.single('avatar'), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    console.log('📤 Client avatar upload request received');
+    const { id } = req.params;
+    console.log('👤 Client ID:', id);
+    console.log('📁 File received:', req.file ? {
+      fieldname: req.file.fieldname,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size
+    } : 'NO FILE');
+    
+    // Check authentication
+    if (!req.user) {
+      console.error('❌ No user in request');
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    console.log('✅ Authenticated user:', req.user.userId, req.user.role);
+
+    // Check if file was uploaded
+    if (!req.file) {
+      console.error('❌ No file in request');
+      return res.status(400).json({ message: "No file provided" });
+    }
+
+    console.log('📥 Processing file...');
+
+    // Get current client to check for existing avatar
+    const currentClient = await clientsStorage.getClient(id);
+    if (!currentClient) {
+      console.error('❌ Client not found:', id);
+      return res.status(404).json({ message: "Client not found" });
+    }
+
+    console.log('👤 Current client found:', currentClient.first_name, currentClient.last_name);
+    console.log('🖼️ Current avatar URL:', currentClient.avatar_url);
+
+    // Delete old avatar if it exists (from Supabase Storage)
+    if (currentClient.avatar_url) {
+      try {
+        console.log('🗑️ Deleting old avatar...');
+        await deleteFileFromSupabase(currentClient.avatar_url);
+        console.log('✅ Old avatar deleted');
+      } catch (error) {
+        console.error('⚠️ Error deleting old avatar (continuing):', error);
+        // Continue even if deletion fails
+      }
+    }
+
+    // Process and upload new avatar to Supabase Storage
+    console.log('🔄 Processing and uploading avatar to Supabase...');
+    const avatarUrl = await processClientAvatarToSupabase(req.file.buffer, id);
+    console.log('✅ Avatar uploaded to Supabase:', avatarUrl);
+
+    // Update client record with new avatar URL
+    console.log('💾 Updating client record...');
+    const updatedClient = await clientsStorage.updateClient(id, {
+      avatar_url: avatarUrl,
+      updated_at: new Date().toISOString()
+    });
+    console.log('✅ Client record updated');
+
+    res.json({
+      success: true,
+      avatar_url: avatarUrl,
+      client: updatedClient
+    });
+  } catch (error: any) {
+    console.error("❌ Error uploading client avatar:", error);
+    console.error("Error stack:", error.stack);
+    res.status(500).json({ 
+      message: "Failed to upload client avatar",
+      error: error.message 
+    });
+  }
+});
+
+/**
+ * DELETE /api/clients/:id/avatar
+ * Delete client avatar
+ * Access: super_admin, corporate_admin, program_admin, program_user
+ */
+router.delete("/:id/avatar", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin', 'program_user']), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check authentication
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    // Get current client
+    const currentClient = await clientsStorage.getClient(id);
+    if (!currentClient) {
+      return res.status(404).json({ message: "Client not found" });
+    }
+
+    // Delete avatar from Supabase Storage if it exists
+    if (currentClient.avatar_url) {
+      try {
+        await deleteFileFromSupabase(currentClient.avatar_url);
+      } catch (error) {
+        console.error('Error deleting avatar:', error);
+        // Continue even if deletion fails
+      }
+    }
+
+    // Update client record to remove avatar URL
+    const updatedClient = await clientsStorage.updateClient(id, {
+      avatar_url: null,
+      updated_at: new Date().toISOString()
+    });
+
+    res.json({
+      success: true,
+      message: "Client avatar deleted successfully",
+      client: updatedClient
+    });
+  } catch (error: any) {
+    console.error("Error deleting client avatar:", error);
+    res.status(500).json({ 
+      message: "Failed to delete client avatar",
+      error: error.message 
     });
   }
 });

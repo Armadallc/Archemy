@@ -417,9 +417,21 @@ export const useBentoBoxStore = create<BentoBoxState & BentoBoxActions>()(
       
       updateScheduledEncounter: (id, updates) => {
         set((state) => ({
-          scheduledEncounters: state.scheduledEncounters.map((e) =>
-            e.id === id ? { ...e, ...updates } : e
-          ),
+          scheduledEncounters: state.scheduledEncounters.map((e) => {
+            if (e.id !== id) return e;
+            
+            // If start or end time is being updated, reset status to 'scheduled' (unless cancelled)
+            const isTimeUpdate = 'start' in updates || 'end' in updates;
+            const shouldResetStatus = isTimeUpdate && 
+              e.status !== 'cancelled' && 
+              !('status' in updates); // Don't override if status is explicitly set
+            
+            return {
+              ...e,
+              ...updates,
+              ...(shouldResetStatus && { status: 'scheduled' as const }),
+            };
+          }),
         }));
       },
       

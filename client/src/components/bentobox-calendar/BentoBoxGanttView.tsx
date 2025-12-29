@@ -34,6 +34,16 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
   const [scrollPosition, setScrollPosition] = useState(0);
   const [draggedOverSlot, setDraggedOverSlot] = useState<{ day: Date; hour: number; minutes?: number } | null>(null);
   const [draggedEncounter, setDraggedEncounter] = useState<ScheduledEncounter | null>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // Update current time every minute to trigger status updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+    
+    return () => clearInterval(interval);
+  }, []);
   // Fixed pixels per minute: 96px per hour = 1.6px per minute
   const pixelsPerMinute = 96 / 60; // 1.6px per minute (matches full-calendar reference)
   const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
@@ -150,6 +160,48 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
     });
   };
 
+  // Calculate encounter status based on current time
+  const getEncounterStatus = (encounter: ScheduledEncounter): "scheduled" | "in-progress" | "completed" | "cancelled" => {
+    // If manually cancelled, always return cancelled
+    if (encounter.status === 'cancelled') {
+      return 'cancelled';
+    }
+    
+    const now = currentTime; // Use state variable that updates every minute
+    const start = new Date(encounter.start);
+    const end = new Date(encounter.end);
+    
+    // If current time is before start: scheduled
+    if (now < start) {
+      return 'scheduled';
+    }
+    
+    // If current time is between start and end: in-progress
+    if (now >= start && now < end) {
+      return 'in-progress';
+    }
+    
+    // If current time is after end: completed
+    if (now >= end) {
+      return 'completed';
+    }
+    
+    // Default to scheduled
+    return 'scheduled';
+  };
+
+  // Get status-based color classes (replacing FireColor system)
+  const getStatusColorClasses = (status: "scheduled" | "in-progress" | "completed" | "cancelled") => {
+    const statusColorMap = {
+      scheduled: 'bg-[#7afffe]/20 text-[#7afffe] border-l-4 border-[#7afffe] hover:bg-[#7afffe]/30',
+      'in-progress': 'bg-[#f1fe60]/20 text-[#f1fe60] border-l-4 border-[#f1fe60] hover:bg-[#f1fe60]/30',
+      completed: 'bg-[#3bfec9]/20 text-[#3bfec9] border-l-4 border-[#3bfec9] hover:bg-[#3bfec9]/30',
+      cancelled: 'bg-[#e04850]/20 text-[#e04850] border-l-4 border-[#e04850] hover:bg-[#e04850]/30',
+    };
+    return statusColorMap[status] || statusColorMap.scheduled;
+  };
+
+  // Legacy function for backwards compatibility (if needed)
   const getColorClasses = (color: FireColor) => {
     const colorMap: Record<FireColor, string> = {
       coral: 'bg-[#ff8475]/20 text-[#ff8475] border-l-4 border-[#ff8475] hover:bg-[#ff8475]/30',
@@ -321,9 +373,13 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
     }
     
     // Update encounter temporarily for visual feedback
+    // When resizing, reset status to 'scheduled' (unless it was cancelled)
+    const newStatus = encounter.status === 'cancelled' ? 'cancelled' : 'scheduled';
+    
     updateScheduledEncounter(encounter.id, {
       start: newStart,
       end: newEnd,
+      status: newStatus,
     });
   }, [resizingEncounter, pixelsPerMinute, updateScheduledEncounter]);
 
@@ -357,24 +413,38 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
   }, [resizingEncounter, handleResizeMove, handleResizeEnd]);
 
   // Helper function to calculate precise time from mouse position
-  const calculateTimeFromPosition = (e: React.DragEvent, hour: number): number => {
+  // For dropping: only allows 30-minute intervals (0 or 30 minutes)
+  // For adjusting: allows 15-minute increments (handled separately in resize logic)
+  const calculateTimeFromPosition = (e: React.DragEvent, hour: number, isDrop: boolean = true): number => {
     const target = e.currentTarget as HTMLElement;
     const rect = target.getBoundingClientRect();
+    
+    // Get mouse position relative to the time slot element
+    // Use clientY for absolute position, subtract rect.top for relative position
     const y = e.clientY - rect.top;
     const hourHeight = rect.height; // Height of the hour slot (96px)
     
+    // Ensure y is within bounds
+    const clampedY = Math.max(0, Math.min(hourHeight, y));
+    
     // Calculate fractional hour (0.0 to 1.0)
-    const fractionalHour = Math.max(0, Math.min(1, y / hourHeight));
+    const fractionalHour = clampedY / hourHeight;
     
-    // Snap to 15-minute intervals (0, 15, 30, 45)
-    let minutes = 0;
-    if (fractionalHour < 0.125) minutes = 0;
-    else if (fractionalHour < 0.375) minutes = 15;
-    else if (fractionalHour < 0.625) minutes = 30;
-    else if (fractionalHour < 0.875) minutes = 45;
-    else minutes = 60; // Top of next hour
+    // Calculate exact minutes from fractional hour
+    const exactMinutes = fractionalHour * 60;
     
-    return minutes;
+    if (isDrop) {
+      // For dropping: only snap to 30-minute intervals (0 or 30 minutes)
+      // Snap to nearest 30-minute mark
+      const snappedMinutes = Math.round(exactMinutes / 30) * 30;
+      // Clamp to valid range (0 or 30, where 60 means next hour at 0)
+      return snappedMinutes >= 60 ? 0 : Math.max(0, Math.min(30, snappedMinutes));
+    } else {
+      // For adjusting: allow 15-minute increments (0, 15, 30, 45)
+      const snappedMinutes = Math.round(exactMinutes / 15) * 15;
+      // Clamp to valid range (0-60, where 60 means next hour)
+      return Math.max(0, Math.min(60, snappedMinutes));
+    }
   };
 
   const handleTimeSlotDragOver = (e: React.DragEvent, day: Date, hour: number) => {
@@ -382,7 +452,8 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
     e.dataTransfer.dropEffect = 'move';
     
     // Calculate precise minutes from mouse position
-    const minutes = calculateTimeFromPosition(e, hour);
+    // For drag over preview: show 30-minute snap (0 or 30)
+    const minutes = calculateTimeFromPosition(e, hour, true);
     
     setDraggedOverSlot({ day, hour, minutes });
   };
@@ -391,9 +462,11 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
     e.preventDefault();
     
     // Calculate precise minutes from mouse position
-    const minutes = calculateTimeFromPosition(e, hour);
+    // For dropping: only allow 30-minute intervals (0 or 30)
+    const minutes = calculateTimeFromPosition(e, hour, true);
     
     // Handle hour overflow (if minutes = 60, move to next hour)
+    // Note: With 30-minute snap, minutes will be 0 or 30, never 60
     let finalHour = hour;
     let finalMinutes = minutes;
     if (minutes >= 60) {
@@ -466,10 +539,14 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
         const newStart = setMinutes(setHours(day, finalHour), finalMinutes);
         const newEnd = new Date(newStart.getTime() + duration);
 
+        // When moving an encounter, reset status to 'scheduled' (unless it was cancelled)
+        const newStatus = encounter.status === 'cancelled' ? 'cancelled' : 'scheduled';
+
         // Update the encounter
         updateScheduledEncounter(payload.encounterId, {
           start: newStart,
           end: newEnd,
+          status: newStatus,
         });
       }
     } catch (error) {
@@ -966,13 +1043,16 @@ export function BentoBoxGanttView({ currentDate, onDateChange, onEdit }: BentoBo
                     
                     const isResizing = resizingEncounter?.encounter.id === encounter.id;
                     
+                    // Calculate current status based on time
+                    const currentStatus = getEncounterStatus(encounter);
+                    
                     return (
                       <HoverCard key={encounter.id}>
                         <HoverCardTrigger asChild>
                           <div
                             className={cn(
                               "absolute rounded-md text-xs card-neu group",
-                              getColorClasses(encounter.color as FireColor),
+                              getStatusColorClasses(currentStatus),
                               isDragging && "opacity-50",
                               isResizing && "ring-2 ring-primary ring-offset-1"
                             )}

@@ -14,7 +14,7 @@ const ToastViewport = React.forwardRef<
   <ToastPrimitives.Viewport
     ref={ref}
     className={cn(
-      "fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]",
+      "fixed left-1/2 top-1/2 z-[100] flex w-full -translate-x-1/2 -translate-y-1/2 items-center justify-center p-0",
       className
     )}
     {...props}
@@ -23,14 +23,13 @@ const ToastViewport = React.forwardRef<
 ToastViewport.displayName = ToastPrimitives.Viewport.displayName
 
 const toastVariants = cva(
-  "group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-6 pr-8 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-bottom-full",
+  "group pointer-events-auto relative flex items-center justify-center overflow-visible transition-all data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:duration-300 data-[state=closed]:duration-200",
   {
     variants: {
       variant: {
-        default: "border bg-background text-foreground",
-        destructive:
-          "destructive border-destructive bg-destructive text-destructive-foreground",
-        success: "border-[#7afffe] bg-[#7afffe]/20 text-[#7afffe]",
+        default: "text-foreground",
+        destructive: "text-[var(--cancelled)]",
+        success: "text-[var(--completed)]",
       },
     },
     defaultVariants: {
@@ -44,20 +43,41 @@ const Toast = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> &
     VariantProps<typeof toastVariants>
 >(({ className, variant, ...props }, ref) => {
+  // Get status colors for text glow
+  const getTextShadow = () => {
+    if (variant === "success") {
+      // Completed status color: #3bfec9
+      return "0 0 20px rgba(59, 254, 201, 0.8), 0 0 40px rgba(59, 254, 201, 0.6), 0 0 60px rgba(59, 254, 201, 0.4)";
+    } else if (variant === "destructive") {
+      // Cancelled/Error status color: var(--cancelled) which is var(--color-coral-dark) = #e04850
+      return "0 0 20px rgba(224, 72, 80, 0.8), 0 0 40px rgba(224, 72, 80, 0.6), 0 0 60px rgba(224, 72, 80, 0.4)";
+    }
+    return "0 0 20px rgba(165, 200, 202, 0.8), 0 0 40px rgba(165, 200, 202, 0.6), 0 0 60px rgba(165, 200, 202, 0.4)";
+  };
+
+  const getTextColor = () => {
+    if (variant === "success") {
+      return "var(--completed)"; // #3bfec9
+    } else if (variant === "destructive") {
+      return "var(--cancelled)"; // #e04850
+    }
+    return "var(--foreground)";
+  };
+
   return (
     <ToastPrimitives.Root
       ref={ref}
       className={cn(toastVariants({ variant }), className)}
-      style={
-        variant === "success"
-          ? {
-              backgroundColor: "rgba(122, 255, 254, 0.1)",
-              borderColor: "#7afffe",
-              color: "#7afffe",
-              boxShadow: "0 0 10px rgba(122, 255, 254, 0.5), 0 0 20px rgba(122, 255, 254, 0.3), 0 0 30px rgba(122, 255, 254, 0.2), inset 0 0 10px rgba(122, 255, 254, 0.1)",
-            }
-          : undefined
-      }
+      style={{
+        backgroundColor: "transparent",
+        border: "none",
+        boxShadow: "none",
+        color: getTextColor(),
+        textShadow: getTextShadow(),
+        fontSize: "26px",
+        fontWeight: "600",
+        padding: 0,
+      }}
       {...props}
     />
   )
@@ -86,7 +106,7 @@ const ToastClose = React.forwardRef<
   <ToastPrimitives.Close
     ref={ref}
     className={cn(
-      "absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 group-[.destructive]:text-red-300 group-[.destructive]:hover:text-red-50 group-[.destructive]:focus:ring-red-400 group-[.destructive]:focus:ring-offset-red-600",
+      "hidden", // Hide close button for center-screen notifications
       className
     )}
     toast-close=""

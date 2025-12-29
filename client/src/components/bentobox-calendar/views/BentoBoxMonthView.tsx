@@ -5,7 +5,7 @@
  * Shows a full month grid with encounters displayed as blocks
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   format, 
   startOfMonth, 
@@ -35,6 +35,16 @@ export function BentoBoxMonthView({
   onEncounterClick 
 }: BentoBoxMonthViewProps) {
   const { scheduledEncounters, timeFormat, selectedStaffFilters, library } = useBentoBoxStore();
+  const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // Update current time every minute to trigger status updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // Only render if feature flag is enabled
   if (!FEATURE_FLAGS.FULL_CALENDAR_MONTH_VIEW) {
@@ -82,7 +92,34 @@ export function BentoBoxMonthView({
     return format(date, 'h:mm a');
   };
 
-  // Get color classes for encounter
+  // Calculate encounter status based on current time
+  const getEncounterStatus = (encounter: ScheduledEncounter): "scheduled" | "in-progress" | "completed" | "cancelled" => {
+    if (encounter.status === 'cancelled') {
+      return 'cancelled';
+    }
+    
+    const now = currentTime; // Use state variable that updates every minute
+    const start = new Date(encounter.start);
+    const end = new Date(encounter.end);
+    
+    if (now < start) return 'scheduled';
+    if (now >= start && now < end) return 'in-progress';
+    if (now >= end) return 'completed';
+    return 'scheduled';
+  };
+
+  // Get status-based color classes
+  const getStatusColorClasses = (status: "scheduled" | "in-progress" | "completed" | "cancelled") => {
+    const statusColorMap = {
+      scheduled: 'bg-[#7afffe]/20 text-[#7afffe] border-l-2 border-[#7afffe]',
+      'in-progress': 'bg-[#f1fe60]/20 text-[#f1fe60] border-l-2 border-[#f1fe60]',
+      completed: 'bg-[#3bfec9]/20 text-[#3bfec9] border-l-2 border-[#3bfec9]',
+      cancelled: 'bg-[#e04850]/20 text-[#e04850] border-l-2 border-[#e04850]',
+    };
+    return statusColorMap[status] || statusColorMap.scheduled;
+  };
+
+  // Legacy function for backwards compatibility
   const getColorClasses = (color: FireColor) => {
     const colorMap: Record<FireColor, string> = {
       coral: 'bg-[#ff8475]/20 text-[#ff8475] border-l-2 border-[#ff8475]',
@@ -171,6 +208,8 @@ export function BentoBoxMonthView({
                           (endTime.getTime() - startTime.getTime()) / (1000 * 60)
                         );
 
+                        const currentStatus = getEncounterStatus(encounter);
+                        
                         return (
                           <div
                             key={encounter.id}
@@ -178,7 +217,7 @@ export function BentoBoxMonthView({
                             className={cn(
                               "text-xs px-1.5 py-0.5 rounded cursor-pointer truncate",
                               "hover:opacity-80 transition-opacity",
-                              getColorClasses(encounter.color)
+                              getStatusColorClasses(currentStatus)
                             )}
                             title={`${encounter.title} - ${formatTime(startTime)} - ${formatTime(endTime)}`}
                           >

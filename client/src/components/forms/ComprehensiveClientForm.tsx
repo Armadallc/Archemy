@@ -21,13 +21,15 @@ interface ClientFormProps {
   programs: any[];
   locations: any[];
   selectedProgram: string | null;
+  clientId?: string; // Optional client ID for edit mode
 }
 
 export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
   createForm,
   programs,
   locations,
-  selectedProgram
+  selectedProgram,
+  clientId
 }) => {
   const { user } = useAuth();
   const { level, selectedCorporateClient, activeScope } = useHierarchy();
@@ -175,56 +177,80 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
     setIsUploadingAvatar(true);
 
     try {
-      // Upload to Supabase Storage using the file storage API
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('category', 'other'); // Using 'other' category for client avatars
-      if (selectedProgramId) {
-        formData.append('programId', selectedProgramId);
-      }
-
       // Get auth token for fetch request
       const { supabase: supabaseClient } = await import("../../lib/supabase");
       const { data: { session } } = await supabaseClient.auth.getSession();
       const authToken = session?.access_token || localStorage.getItem('auth_token') || localStorage.getItem('authToken');
       
-      // Use fetch directly for FormData (apiRequest doesn't handle FormData)
       const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8081';
-      const response = await fetch(`${apiBaseUrl}/api/files/upload`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${authToken || ''}`
-        },
-        body: formData
-      });
+      let avatarUrl: string;
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: response.statusText }));
-        throw new Error(errorData.error || `Upload failed: ${response.statusText}`);
-      }
+      // If we have a clientId (edit mode), use the dedicated avatar endpoint
+      if (clientId) {
+        const formData = new FormData();
+        formData.append('avatar', file);
 
-      const data = await response.json();
-
-      if (data.success && data.fileMetadata) {
-        // Construct public URL from Supabase Storage
-        // Format: https://[project-ref].supabase.co/storage/v1/object/public/[bucket]/[path]
-        const { data: urlData } = supabaseClient.storage
-          .from(data.fileMetadata.bucket_id)
-          .getPublicUrl(data.fileMetadata.file_path);
-        
-        const avatarUrl = urlData.publicUrl;
-        createForm.setValue("avatar_url", avatarUrl, { shouldValidate: false });
-        
-        // Update preview to show the uploaded image
-        setAvatarPreview(avatarUrl);
-        
-        toast({
-          title: "Photo Uploaded",
-          description: "Client photo has been uploaded successfully."
+        const response = await fetch(`${apiBaseUrl}/api/clients/${clientId}/avatar`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authToken || ''}`
+          },
+          body: formData
         });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: response.statusText }));
+          throw new Error(errorData.message || errorData.error || `Upload failed: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        avatarUrl = data.avatar_url;
       } else {
-        throw new Error(data.error || 'Upload failed');
+        // For create mode, use the generic file upload endpoint
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('category', 'other'); // Using 'other' category for client avatars
+        if (selectedProgramId) {
+          formData.append('programId', selectedProgramId);
+        }
+
+        const response = await fetch(`${apiBaseUrl}/api/files/upload`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authToken || ''}`
+          },
+          body: formData
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: response.statusText }));
+          throw new Error(errorData.error || `Upload failed: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (data.success && data.fileMetadata) {
+          // Construct public URL from Supabase Storage
+          const { data: urlData } = supabaseClient.storage
+            .from(data.fileMetadata.bucket_id)
+            .getPublicUrl(data.fileMetadata.file_path);
+          
+          avatarUrl = urlData.publicUrl;
+        } else {
+          throw new Error(data.error || 'Upload failed');
+        }
       }
+
+      // Update form with avatar URL
+      createForm.setValue("avatar_url", avatarUrl, { shouldValidate: false });
+      
+      // Update preview to show the uploaded image
+      setAvatarPreview(avatarUrl);
+      
+      toast({
+        title: "Photo Uploaded",
+        description: "Client photo has been uploaded successfully."
+      });
     } catch (error: any) {
       console.error('Avatar upload error:', error);
       toast({
@@ -369,7 +395,7 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
             <FormField
               control={createForm.control}
               name="corporate_client_id"
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <FormItem>
                   <FormLabel className="font-medium" style={{ fontSize: '16px' }}>
                     {user?.role === 'super_admin' ? 'CORPORATE CLIENT / TENANT *' : 'TENANT *'}
@@ -396,6 +422,10 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
                           : []
                       }
                       className="mt-1"
+                      style={fieldState.error ? {
+                        border: '2px solid var(--cancelled)',
+                        boxShadow: '0 0 8px rgba(224, 72, 80, 0.3)'
+                      } : undefined}
                     />
                   </FormControl>
                   <FormMessage />
@@ -418,7 +448,7 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
           <FormField
             control={createForm.control}
             name="program_id"
-            render={({ field }) => (
+            render={({ field, fieldState }) => (
               <FormItem>
                 <FormLabel className="font-medium" style={{ fontSize: '16px' }}>PROGRAM *</FormLabel>
                 <FormControl>
@@ -432,6 +462,10 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
                     }))}
                     className="mt-1"
                     disabled={needsTenantSelector && !selectedTenantId}
+                    style={fieldState.error ? {
+                      border: '2px solid var(--cancelled)',
+                      boxShadow: '0 0 8px rgba(224, 72, 80, 0.3)'
+                    } : undefined}
                   />
                 </FormControl>
                 <FormMessage />
@@ -446,7 +480,7 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
           <FormField
             control={createForm.control}
             name="location_id"
-            render={({ field }) => (
+            render={({ field, fieldState }) => (
               <FormItem>
                   <FormLabel className="font-medium" style={{ fontSize: '16px' }}>LOCATION</FormLabel>
                 <FormControl>
@@ -460,6 +494,10 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
                     }))}
                     className="mt-1"
                     disabled={!selectedProgramId}
+                    style={fieldState.error ? {
+                      border: '2px solid var(--cancelled)',
+                      boxShadow: '0 0 8px rgba(224, 72, 80, 0.3)'
+                    } : undefined}
                   />
                 </FormControl>
                 <FormMessage />
@@ -480,11 +518,20 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
             <FormField
               control={createForm.control}
               name="first_name"
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <FormItem>
                   <FormLabel className="font-medium" style={{ fontSize: '16px' }}>FIRST NAME *</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter first name" className="mt-1 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }} {...field} />
+                    <Input 
+                      placeholder="Enter first name" 
+                      className="mt-1 card-neu-flat [&]:shadow-none" 
+                      style={{ 
+                        backgroundColor: 'var(--background)', 
+                        border: fieldState.error ? '2px solid var(--cancelled)' : 'none',
+                        boxShadow: fieldState.error ? '0 0 8px rgba(224, 72, 80, 0.3)' : undefined
+                      }} 
+                      {...field} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -493,11 +540,20 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
             <FormField
               control={createForm.control}
               name="last_name"
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <FormItem>
                   <FormLabel className="font-medium" style={{ fontSize: '16px' }}>LAST NAME *</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter last name" className="mt-1 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }} {...field} />
+                    <Input 
+                      placeholder="Enter last name" 
+                      className="mt-1 card-neu-flat [&]:shadow-none" 
+                      style={{ 
+                        backgroundColor: 'var(--background)', 
+                        border: fieldState.error ? '2px solid var(--cancelled)' : 'none',
+                        boxShadow: fieldState.error ? '0 0 8px rgba(224, 72, 80, 0.3)' : undefined
+                      }} 
+                      {...field} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -508,7 +564,7 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
             <FormField
               control={createForm.control}
               name="phone_type"
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <FormItem>
                   <FormLabel className="font-medium" style={{ fontSize: '16px' }}>PHONE TYPE</FormLabel>
                   <FormControl>
@@ -521,6 +577,10 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
                         { value: "Home", label: "Home" }
                       ]}
                       className="mt-1"
+                      style={fieldState.error ? {
+                        border: '2px solid var(--cancelled)',
+                        boxShadow: '0 0 8px rgba(224, 72, 80, 0.3)'
+                      } : undefined}
                     />
                   </FormControl>
                   <FormMessage />
@@ -530,7 +590,7 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
             <FormField
               control={createForm.control}
               name="phone"
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <FormItem>
                   <FormLabel className="font-medium" style={{ fontSize: '16px' }}>PHONE</FormLabel>
                   <FormControl>
@@ -538,7 +598,11 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
                       value={field.value || ''}
                       onChange={field.onChange}
                       className="mt-1 card-neu-flat [&]:shadow-none"
-                      style={{ backgroundColor: 'var(--background)', border: 'none' }}
+                      style={{ 
+                        backgroundColor: 'var(--background)', 
+                        border: fieldState.error ? '2px solid var(--cancelled)' : 'none',
+                        boxShadow: fieldState.error ? '0 0 8px rgba(224, 72, 80, 0.3)' : undefined
+                      }}
                     />
                   </FormControl>
                   <FormMessage />
@@ -548,11 +612,21 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
             <FormField
               control={createForm.control}
               name="email"
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <FormItem>
                   <FormLabel className="font-medium" style={{ fontSize: '16px' }}>EMAIL</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="client@email.com" className="mt-1 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }} {...field} />
+                    <Input 
+                      type="email" 
+                      placeholder="client@email.com" 
+                      className="mt-1 card-neu-flat [&]:shadow-none" 
+                      style={{ 
+                        backgroundColor: 'var(--background)', 
+                        border: fieldState.error ? '2px solid var(--cancelled)' : 'none',
+                        boxShadow: fieldState.error ? '0 0 8px rgba(224, 72, 80, 0.3)' : undefined
+                      }} 
+                      {...field} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -561,28 +635,53 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
             <FormField
               control={createForm.control}
               name="pin"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-medium" style={{ fontSize: '16px' }}>4-DIGIT PIN</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="text" 
-                      placeholder="1234" 
-                      className="mt-1 card-neu-flat [&]:shadow-none" 
-                      style={{ backgroundColor: 'var(--background)', border: 'none' }}
-                      maxLength={4}
-                      {...field}
-                      onChange={(e) => {
-                        // Only allow digits
-                        const value = e.target.value.replace(/\D/g, '');
-                        field.onChange(value);
-                      }}
-                    />
-                  </FormControl>
-                  <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>Give this PIN to the client for notification signup</p>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field, fieldState }) => {
+                const hasExistingPin = createForm.watch('pin_hash');
+                return (
+                  <FormItem>
+                    <div className="flex items-center justify-between">
+                      <FormLabel className="font-medium" style={{ fontSize: '16px' }}>
+                        4-DIGIT PIN {hasExistingPin && <span className="text-xs font-normal" style={{ color: 'var(--muted-foreground)' }}>(Update)</span>}
+                      </FormLabel>
+                      {hasExistingPin && (
+                        <span className="text-xs px-2 py-1 rounded card-neu-flat" style={{ 
+                          color: '#a5c8ca', 
+                          backgroundColor: 'var(--background)',
+                          fontSize: '11px',
+                          fontWeight: 500
+                        }}>
+                          PIN EXISTS
+                        </span>
+                      )}
+                    </div>
+                    <FormControl>
+                      <Input 
+                        type="text" 
+                        placeholder={hasExistingPin ? "Enter new 4-digit PIN" : "1234"} 
+                        className="mt-1 card-neu-flat [&]:shadow-none" 
+                        style={{ 
+                          backgroundColor: 'var(--background)', 
+                          border: fieldState.error ? '2px solid var(--cancelled)' : 'none',
+                          boxShadow: fieldState.error ? '0 0 8px rgba(224, 72, 80, 0.3)' : undefined
+                        }}
+                        maxLength={4}
+                        {...field}
+                        onChange={(e) => {
+                          // Only allow digits
+                          const value = e.target.value.replace(/\D/g, '');
+                          field.onChange(value);
+                        }}
+                      />
+                    </FormControl>
+                    <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>
+                      {hasExistingPin 
+                        ? "A PIN is already set for this client. Enter a new 4-digit PIN to update it, or leave blank to keep the existing PIN." 
+                        : "Give this PIN to the client for notification signup"}
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
           </div>
           <FormField
@@ -638,7 +737,7 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
             <FormField
               control={createForm.control}
               name="birth_sex"
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <FormItem>
                   <FormLabel className="font-medium" style={{ fontSize: '16px' }}>BIRTH SEX</FormLabel>
                   <FormControl>
@@ -646,6 +745,12 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
                       onValueChange={field.onChange}
                       value={field.value}
                       className="flex items-center gap-6 mt-1"
+                      style={fieldState.error ? {
+                        outline: '2px solid var(--cancelled)',
+                        outlineOffset: '2px',
+                        borderRadius: '4px',
+                        padding: '4px'
+                      } : undefined}
                     >
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="Male" id="male" />
@@ -664,11 +769,20 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
             <FormField
               control={createForm.control}
               name="date_of_birth"
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <FormItem>
                   <FormLabel className="font-medium" style={{ fontSize: '16px' }}>DATE OF BIRTH</FormLabel>
                   <FormControl>
-                    <Input type="date" className="mt-1 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }} {...field} />
+                    <Input 
+                      type="date" 
+                      className="mt-1 card-neu-flat [&]:shadow-none" 
+                      style={{ 
+                        backgroundColor: 'var(--background)', 
+                        border: fieldState.error ? '2px solid var(--cancelled)' : 'none',
+                        boxShadow: fieldState.error ? '0 0 8px rgba(224, 72, 80, 0.3)' : undefined
+                      }} 
+                      {...field} 
+                    />
                   </FormControl>
                   {calculatedAge !== null && (
                     <p className="text-sm mt-1" style={{ color: 'var(--muted-foreground)' }}>
@@ -696,11 +810,20 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
             <FormField
               control={createForm.control}
               name="race"
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <FormItem>
                   <FormLabel className="font-medium" style={{ fontSize: '16px' }}>RACE</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter race" className="mt-1 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }} {...field} />
+                    <Input 
+                      placeholder="Enter race" 
+                      className="mt-1 card-neu-flat [&]:shadow-none" 
+                      style={{ 
+                        backgroundColor: 'var(--background)', 
+                        border: fieldState.error ? '2px solid var(--cancelled)' : 'none',
+                        boxShadow: fieldState.error ? '0 0 8px rgba(224, 72, 80, 0.3)' : undefined
+                      }} 
+                      {...field} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -710,7 +833,45 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
         </div>
       </div>
 
-      {/* 4. Program Contacts Section */}
+      {/* 4. Emergency Contact Section */}
+      <div className="pt-4 px-6 py-4 rounded-lg card-neu-flat -mx-6" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+        <h4 className="font-medium mb-3" style={{ fontSize: '16px', color: 'var(--foreground)' }}>EMERGENCY CONTACT</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={createForm.control}
+            name="emergency_contact_name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-medium" style={{ fontSize: '16px' }}>EMERGENCY CONTACT NAME</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter emergency contact name" className="mt-1 card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }} {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={createForm.control}
+            name="emergency_contact_phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-medium" style={{ fontSize: '16px' }}>EMERGENCY CONTACT PHONE</FormLabel>
+                <FormControl>
+                  <PhoneInput
+                    value={field.value || ''}
+                    onChange={field.onChange}
+                    className="mt-1 card-neu-flat [&]:shadow-none"
+                    style={{ backgroundColor: 'var(--background)', border: 'none' }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+      </div>
+
+      {/* 5. Program Contacts Section */}
       <div className="pt-4 px-6 py-4 rounded-lg card-neu-flat -mx-6" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
         <h4 className="font-medium mb-3" style={{ fontSize: '16px', color: 'var(--foreground)' }}>PROGRAM CONTACTS</h4>
         <div className="space-y-4">
@@ -858,7 +1019,7 @@ export const ComprehensiveClientForm: React.FC<ClientFormProps> = ({
         </div>
       </div>
 
-      {/* 5. Transport Requirements Section */}
+      {/* 6. Transport Requirements Section */}
       <div className="pt-4 px-6 py-4 rounded-lg card-neu-flat -mx-6" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
         <h4 className="font-medium mb-3" style={{ fontSize: '16px', color: 'var(--foreground)' }}>TRANSPORT REQUIREMENTS</h4>
         

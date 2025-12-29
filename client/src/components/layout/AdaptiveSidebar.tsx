@@ -414,7 +414,7 @@ export default function AdaptiveSidebar({
       id: "insights",
       label: "Insights",
       icon: BarChart3,
-      requiredAnyPermission: ["view_analytics", "view_telematics"],
+      requiredAnyPermission: ["view_analytics"],
       hideForRoles: ["program_user", "driver"],
       items: [
         { 
@@ -422,13 +422,6 @@ export default function AdaptiveSidebar({
           label: "Analytics", 
           icon: BarChart3, 
           permissions: "view_analytics",
-          roles: ["super_admin", "corporate_admin"]
-        },
-        { 
-          path: "/telematics", 
-          label: "Telematics", 
-          icon: Activity, 
-          permissions: "view_telematics",
           roles: ["super_admin", "corporate_admin"]
         }
       ]

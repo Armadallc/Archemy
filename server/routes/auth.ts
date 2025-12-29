@@ -69,7 +69,8 @@ router.post("/login", async (req, res) => {
         primary_program_id,
         corporate_client_id,
         avatar_url,
-        is_active
+        is_active,
+        display_id
       `)
       .eq('auth_user_id', data.user.id)
       .single();
@@ -121,6 +122,7 @@ router.get("/user", requireSupabaseAuth, async (req: SupabaseAuthenticatedReques
         corporate_client_id,
         avatar_url,
         is_active,
+        display_id,
         created_at,
         updated_at
       `)

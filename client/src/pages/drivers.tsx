@@ -38,6 +38,7 @@ interface Driver {
   email?: string;
   primary_program_id?: string;
   program_id?: string; // Driver table has program_id
+  display_id?: string | null;
   program?: { id: string; name: string; corporate_client_id?: string };
   corporate_client?: { id: string; name: string };
   users?: {
@@ -49,6 +50,7 @@ interface Driver {
     primary_program_id?: string;
     avatar_url?: string;
     phone?: string;
+    display_id?: string | null;
   };
   authorized_programs?: string[];
   license_number: string;
@@ -875,12 +877,11 @@ export default function Drivers() {
                   Avatar
                 </div>
                 <div 
-                  className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-all select-none card-neu-flat hover:card-neu px-2 py-1 rounded"
+                  className="col-span-1 flex items-center select-none card-neu-flat px-2 py-1 rounded text-xs font-medium"
                   style={{ backgroundColor: 'var(--background)', border: 'none' }}
-                  onClick={() => handleSort('user_id')}
-                  title="Click to sort by Driver ID"
+                  title="Display ID"
                 >
-                  Driver ID{getSortIcon('user_id')}
+                  Display ID
                 </div>
                 <div 
                   className="col-span-2 flex items-center cursor-pointer hover:opacity-70 transition-all select-none card-neu-flat hover:card-neu px-2 py-1 rounded"
@@ -1016,14 +1017,14 @@ export default function Drivers() {
                               email: driver.email || driver.users?.email,
                               first_name: driver.first_name || driver.users?.first_name,
                               last_name: driver.last_name || driver.users?.last_name,
-                              avatar_url: driver.users?.avatar_url,
+                              avatar_url: driver.avatar_url || driver.users?.avatar_url,
                             }}
                             size="sm"
                           />
                         </div>
-                        {/* Driver ID */}
-                        <div className="col-span-1 font-mono text-xs truncate" style={{ color: 'var(--muted-foreground)' }}>
-                          {driver.user_id}
+                        {/* Display ID */}
+                        <div className="col-span-1 font-mono text-xs truncate font-medium" style={{ color: 'var(--accent)' }}>
+                          {driver.display_id || driver.user_id}
                         </div>
                         {/* Full Name */}
                         <div className="col-span-2 truncate" style={{ color: 'var(--foreground)' }}>
@@ -1069,10 +1070,13 @@ export default function Drivers() {
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
                         <div className="space-y-2">
                           <div>
-                            <strong>Driver ID:</strong> {driver.id}
+                            <strong>Display ID:</strong> <span className="font-mono text-xs" style={{ color: 'var(--accent)' }}>{driver.display_id || 'N/A'}</span>
                           </div>
                           <div>
-                            <strong>User ID:</strong> {driver.user_id}
+                            <strong>Driver ID:</strong> <span className="font-mono text-xs">{driver.id}</span>
+                          </div>
+                          <div>
+                            <strong>User ID:</strong> <span className="font-mono text-xs">{driver.user_id}</span>
                           </div>
                           <div>
                             <strong>Email:</strong> {driver.email || driver.users?.email || 'N/A'}

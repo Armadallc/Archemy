@@ -606,10 +606,10 @@ export default function CalendarExperiment() {
                   </div>
                 ) : (
                   <>
-                    <div className="flex-1 overflow-y-auto min-h-0">
+                    <div className="flex-shrink-0 overflow-visible" style={{ paddingBottom: '0' }}>
                       <TemplateBuilder />
                     </div>
-                    <div className="flex-shrink-0 border-t bg-background">
+                    <div className="flex-shrink-0 border-t bg-background" style={{ marginTop: '0' }}>
                       <ClientGroupBuilder 
                         onAddToTemplate={(group) => {
                           // Get template builder instance and add group

@@ -186,6 +186,60 @@ export async function processAvatarToSupabase(buffer: Buffer, userId: string): P
 }
 
 /**
+ * Process and upload client avatar to Supabase Storage
+ */
+export async function processClientAvatarToSupabase(buffer: Buffer, clientId: string): Promise<string> {
+  console.log('🖼️ Processing avatar for client:', clientId);
+  console.log('📦 Buffer size:', buffer.length, 'bytes');
+  
+  try {
+    // Process image with Sharp
+    console.log('🔄 Processing image with Sharp...');
+    const processedBuffer = await sharp(buffer)
+      .resize(150, 150, { 
+        fit: 'cover',
+        position: 'center'
+      })
+      .webp({ quality: 85 })
+      .toBuffer();
+    
+    console.log('✅ Image processed. New size:', processedBuffer.length, 'bytes');
+
+    // Generate file path
+    const filename = `avatar-${clientId}-${nanoid()}.webp`;
+    const filePath = `clients/${clientId}/${filename}`;
+    console.log('📁 File path:', filePath);
+
+    // Upload to Supabase Storage
+    console.log('☁️ Uploading to Supabase Storage bucket "avatars"...');
+    const { data, error } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, processedBuffer, {
+        contentType: 'image/webp',
+        upsert: true
+      });
+
+    if (error) {
+      console.error('❌ Supabase Storage upload error:', error);
+      throw new Error(`Failed to upload avatar to Supabase Storage: ${error.message}`);
+    }
+
+    console.log('✅ File uploaded to Supabase Storage:', data?.path);
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(filePath);
+
+    console.log('🔗 Public URL:', urlData.publicUrl);
+    return urlData.publicUrl;
+  } catch (error: any) {
+    console.error('❌ Error in processClientAvatarToSupabase:', error);
+    throw error;
+  }
+}
+
+/**
  * Process and upload corporate client logo to Supabase Storage
  */
 export async function processCorporateLogoToSupabase(buffer: Buffer, corporateClientId: string): Promise<string> {

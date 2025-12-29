@@ -13,6 +13,7 @@ export interface UserSearchResult {
   corporate_client_id?: string | null;
   avatar_url?: string | null;
   is_active?: boolean;
+  display_id?: string | null;
   displayName: string;
   programName?: string;
   corporateClientName?: string;
