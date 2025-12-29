@@ -40,6 +40,7 @@ interface User {
   last_name?: string;
   phone?: string;
   is_active: boolean;
+  display_id?: string | null;
   created_at: string;
   updated_at: string;
   
@@ -371,6 +372,7 @@ export default function Users() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Display ID</TableHead>
                   <TableHead>User</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Role</TableHead>
@@ -383,6 +385,11 @@ export default function Users() {
               <TableBody>
                 {filteredUsers.map((user) => (
                   <TableRow key={user.user_id}>
+                    <TableCell>
+                      <div className="font-mono text-sm font-medium" style={{ color: 'var(--accent)' }}>
+                        {user.display_id || 'N/A'}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center">
                         <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center mr-3">

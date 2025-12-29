@@ -672,8 +672,8 @@ export default function FrequentLocationsPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto" style={{ borderColor: 'var(--blue-9)' }}></div>
-          <p className="mt-2 text-gray-500">Loading frequent locations...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto" style={{ borderColor: '#a5c8ca' }}></div>
+          <p className="mt-2" style={{ color: '#a5c8ca', opacity: 0.7 }}>Loading frequent locations...</p>
         </div>
       </div>
     );
@@ -683,8 +683,8 @@ export default function FrequentLocationsPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <p className="text-red-500">Error loading frequent locations</p>
-          <p className="text-sm text-gray-500 mt-1">Please try refreshing the page</p>
+          <p style={{ color: '#a5c8ca', opacity: 0.7 }}>Error loading frequent locations</p>
+          <p className="text-sm mt-1" style={{ color: '#a5c8ca', opacity: 0.7 }}>Please try refreshing the page</p>
         </div>
       </div>
     );
@@ -698,13 +698,15 @@ export default function FrequentLocationsPage() {
       {/* Header - Only show if unified header is disabled (fallback) */}
       {!ENABLE_UNIFIED_HEADER && (
         <div>
-          <div className="px-6 py-6 rounded-lg border backdrop-blur-md shadow-xl flex items-center justify-between" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', height: '150px' }}>
+          <div className="px-6 py-6 rounded-lg card-neu flex items-center justify-between" style={{ backgroundColor: 'var(--background)', border: 'none', height: '150px', boxShadow: '8px 8px 16px 0px rgba(30, 32, 35, 0.6), -8px -8px 16px 0px rgba(30, 32, 35, 0.05)' }}>
             <div>
               <h1 
                 className="font-bold text-foreground" 
                 style={{ 
                   fontFamily: "'Nohemi', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
-                  fontSize: '110px'
+                  fontSize: '110px',
+                  fontWeight: 700,
+                  color: '#a5c8ca'
                 }}
               >
                 quick locations.
@@ -719,17 +721,23 @@ export default function FrequentLocationsPage() {
                   variant="outline" 
                   onClick={handleSyncServiceLocations}
                   disabled={syncMutation.isPending}
+                  className="card-neu-flat hover:card-neu-pressed"
+                  style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}
                 >
                   {syncMutation.isPending ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 mr-2" style={{ borderColor: 'var(--blue-9)' }}></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 mr-2" style={{ borderColor: '#a5c8ca' }}></div>
                   ) : (
-                    <RefreshCw className="h-4 w-4 mr-2" />
+                    <RefreshCw className="h-4 w-4 mr-2" style={{ color: '#a5c8ca' }} />
                   )}
-                  Sync Service Locations
+                  <span style={{ color: '#a5c8ca' }}>Sync Service Locations</span>
                 </Button>
-                <Button onClick={() => setIsCreateDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Location
+                <Button 
+                  onClick={() => setIsCreateDialogOpen(true)}
+                  className="card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+                  style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 12px rgba(165, 200, 202, 0.3), 0 0 20px rgba(165, 200, 202, 0.15)', color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}
+                >
+                  <Plus className="h-4 w-4 mr-2" style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }} />
+                  <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Add Location</span>
                 </Button>
               </div>
             </div>
@@ -738,16 +746,16 @@ export default function FrequentLocationsPage() {
       )}
 
       {/* Filters */}
-      <Card>
+      <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
         <CardContent className="p-6">
           <div className="space-y-4">
             {/* Hierarchy Filters - Role-based */}
             {(user?.role === 'super_admin' || user?.role === 'corporate_admin' || user?.role === 'program_admin' || user?.role === 'program_user') && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 border-b" style={{ borderColor: 'var(--border)' }}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 border-b" style={{ borderColor: 'rgba(165, 200, 202, 0.2)' }}>
                 {/* Corporate Client Filter - Super Admin only */}
                 {user?.role === 'super_admin' && (
                   <div>
-                    <Label htmlFor="corporate-client-filter" className="text-sm font-medium">Corporate Client</Label>
+                    <Label htmlFor="corporate-client-filter" className="text-sm font-medium" style={{ color: '#a5c8ca' }}>Corporate Client</Label>
                     <Select 
                       value={filterCorporateClient} 
                       onValueChange={(value) => {
@@ -756,7 +764,7 @@ export default function FrequentLocationsPage() {
                         setFilterLocation('all'); // Reset location when corporate client changes
                       }}
                     >
-                      <SelectTrigger className="mt-1 h-10">
+                      <SelectTrigger className="mt-1 h-10 card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                         <SelectValue placeholder="All Corporate Clients" />
                       </SelectTrigger>
                       <SelectContent>
@@ -772,7 +780,7 @@ export default function FrequentLocationsPage() {
                 {/* Program Filter - Super Admin, Corporate Admin, Program Admin */}
                 {(user?.role === 'super_admin' || user?.role === 'corporate_admin' || user?.role === 'program_admin') && (
                   <div>
-                    <Label htmlFor="program-filter" className="text-sm font-medium">Program</Label>
+                    <Label htmlFor="program-filter" className="text-sm font-medium" style={{ color: '#a5c8ca' }}>Program</Label>
                     <Select 
                       value={filterProgram} 
                       onValueChange={(value) => {
@@ -780,7 +788,7 @@ export default function FrequentLocationsPage() {
                         setFilterLocation('all'); // Reset location when program changes
                       }}
                     >
-                      <SelectTrigger className="mt-1 h-10">
+                      <SelectTrigger className="mt-1 h-10 card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                         <SelectValue placeholder="All Programs" />
                       </SelectTrigger>
                       <SelectContent>
@@ -796,12 +804,12 @@ export default function FrequentLocationsPage() {
                 {/* Location Filter - All roles */}
                 {(user?.role === 'super_admin' || user?.role === 'corporate_admin' || user?.role === 'program_admin' || user?.role === 'program_user') && (
                   <div>
-                    <Label htmlFor="location-filter" className="text-sm font-medium">Location</Label>
+                    <Label htmlFor="location-filter" className="text-sm font-medium" style={{ color: '#a5c8ca' }}>Location</Label>
                     <Select 
                       value={filterLocation} 
                       onValueChange={setFilterLocation}
                     >
-                      <SelectTrigger className="mt-1 h-10">
+                      <SelectTrigger className="mt-1 h-10 card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                         <SelectValue placeholder={user?.role === 'program_user' ? "Your Location" : "All Locations"} />
                       </SelectTrigger>
                       <SelectContent>
@@ -820,28 +828,29 @@ export default function FrequentLocationsPage() {
             <div className="flex items-end gap-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
                 <div>
-                  <Label htmlFor="search" className="text-sm font-medium">Search</Label>
+                  <Label htmlFor="search" className="text-sm font-medium" style={{ color: '#a5c8ca' }}>Search</Label>
                   <div className="relative mt-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style={{ color: '#a5c8ca', opacity: 0.7 }} />
                     <Input
                       ref={searchInputRef}
                       id="search"
                       placeholder="Search locations..."
                       value={searchTerm}
                       onChange={handleSearchChange}
-                      className="pl-10 h-10"
+                      className="pl-10 h-10 card-neu-pressed"
+                      style={{ backgroundColor: 'var(--background)', border: 'none' }}
                     />
                     {isTyping && (
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2" style={{ borderColor: 'var(--blue-9)' }}></div>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2" style={{ borderColor: '#a5c8ca' }}></div>
                       </div>
                     )}
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="location-type" className="text-sm font-medium">Location Type</Label>
+                  <Label htmlFor="location-type" className="text-sm font-medium" style={{ color: '#a5c8ca' }}>Location Type</Label>
                   <Select value={locationTypeFilter} onValueChange={setLocationTypeFilter}>
-                    <SelectTrigger className="mt-1 h-10">
+                    <SelectTrigger className="mt-1 h-10 card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <SelectValue placeholder="All location types" />
                     </SelectTrigger>
                     <SelectContent>
@@ -856,9 +865,9 @@ export default function FrequentLocationsPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="status-filter" className="text-sm font-medium">Status</Label>
+                  <Label htmlFor="status-filter" className="text-sm font-medium" style={{ color: '#a5c8ca' }}>Status</Label>
                   <Select value="all" onValueChange={() => {}}>
-                    <SelectTrigger className="mt-1 h-10">
+                    <SelectTrigger className="mt-1 h-10 card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <SelectValue placeholder="All statuses" />
                     </SelectTrigger>
                     <SelectContent>
@@ -870,13 +879,19 @@ export default function FrequentLocationsPage() {
                 </div>
               </div>
               <div className="flex-shrink-0">
-                <Button variant="outline" size="sm" className="h-10" onClick={() => {
-                  setSearchTerm('');
-                  setLocationTypeFilter('all');
-                  setFilterCorporateClient('all');
-                  setFilterProgram('all');
-                  setFilterLocation('all');
-                }}>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-10 card-neu-flat hover:card-neu-pressed"
+                  style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}
+                  onClick={() => {
+                    setSearchTerm('');
+                    setLocationTypeFilter('all');
+                    setFilterCorporateClient('all');
+                    setFilterProgram('all');
+                    setFilterLocation('all');
+                  }}
+                >
                   Clear
                 </Button>
               </div>
@@ -887,21 +902,19 @@ export default function FrequentLocationsPage() {
 
       {/* Bulk Actions Toolbar */}
       {selectedLocations.size > 0 && (
-        <Card className="border" style={{ borderColor: 'var(--blue-7)', backgroundColor: 'rgba(124, 173, 197, 0.1)', borderWidth: '1px', borderStyle: 'solid' }}>
+        <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Badge variant="default" className="text-sm">
+                <Badge variant="default" className="text-sm card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}>
                   {selectedLocations.size} location{selectedLocations.size !== 1 ? 's' : ''} selected
                 </Badge>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={clearSelection}
-                  className="transition-colors"
-                  style={{ color: 'var(--gray-9)' }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = 'var(--gray-12)'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = 'var(--gray-9)'}
+                  className="card-neu-flat hover:card-neu-pressed"
+                  style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}
                 >
                   Clear Selection
                 </Button>
@@ -912,6 +925,8 @@ export default function FrequentLocationsPage() {
                   size="sm"
                   onClick={handleBulkToggleActive}
                   disabled={deleteMutation.isPending || updateMutation.isPending}
+                  className="card-neu-flat hover:card-neu-pressed"
+                  style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}
                 >
                   {filteredLocations.filter(l => selectedLocations.has(l.id)).every(l => l.is_active)
                     ? 'Deactivate Selected'
@@ -923,23 +938,26 @@ export default function FrequentLocationsPage() {
                       variant="destructive"
                       size="sm"
                       disabled={deleteMutation.isPending || updateMutation.isPending}
+                      className="card-neu-flat hover:card-neu-pressed"
+                      style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}
                     >
-                      <Trash2 className="h-4 w-4 mr-2" />
+                      <Trash2 className="h-4 w-4 mr-2" style={{ color: '#a5c8ca' }} />
                       Delete Selected
                     </Button>
                   </AlertDialogTrigger>
-                  <AlertDialogContent>
+                  <AlertDialogContent className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Selected Locations</AlertDialogTitle>
-                      <AlertDialogDescription>
+                      <AlertDialogTitle style={{ color: '#a5c8ca' }}>Delete Selected Locations</AlertDialogTitle>
+                      <AlertDialogDescription style={{ color: '#a5c8ca', opacity: 0.7 }}>
                         Are you sure you want to delete {selectedLocations.size} location{selectedLocations.size !== 1 ? 's' : ''}? This action cannot be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel className="card-neu-flat hover:card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}>Cancel</AlertDialogCancel>
                       <AlertDialogAction 
                         onClick={handleBulkDelete}
-                        className="bg-red-600 hover:bg-red-700"
+                        className="card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+                        style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 12px rgba(165, 200, 202, 0.3), 0 0 20px rgba(165, 200, 202, 0.15)', color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}
                       >
                         Delete {selectedLocations.size} location{selectedLocations.size !== 1 ? 's' : ''}
                       </AlertDialogAction>
@@ -953,14 +971,14 @@ export default function FrequentLocationsPage() {
       )}
 
       {/* Hierarchical Tag-Based View */}
-      <Card>
-        <CardHeader>
+      <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+        <CardHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-lg uppercase" style={{ fontFamily: 'Nohemi', fontWeight: 600 }}>Frequent Locations</CardTitle>
+              <CardTitle className="text-lg uppercase" style={{ fontFamily: 'Nohemi', fontWeight: 600, color: '#a5c8ca' }}>Frequent Locations</CardTitle>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-sm">
+              <Badge variant="outline" className="text-sm card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}>
                 {filteredLocations.length} locations
               </Badge>
             </div>
@@ -1008,39 +1026,34 @@ export default function FrequentLocationsPage() {
                 const isTagFullySelected = tagSelectedIds.length > 0 && tagSelectedIds.every(id => selectedLocations.has(id));
                 
                 return (
-                  <AccordionItem key={tag} value={tag} className="border-b last:border-b-0" style={{ borderColor: 'var(--border)', borderWidth: 'var(--border-weight, 1px)', borderStyle: 'solid', marginTop: '16px', marginBottom: '16px', marginLeft: '16px', marginRight: '16px', borderRadius: '10px' }}>
+                  <AccordionItem key={tag} value={tag} className="border-b last:border-b-0" style={{ border: 'none', marginTop: '16px', marginBottom: '16px', marginLeft: '16px', marginRight: '16px' }}>
                     {/* Tag Header - Accordion Trigger */}
                     <AccordionTrigger 
-                      className="px-6 py-4 hover:no-underline"
+                      className="px-6 py-4 hover:no-underline card-neu-flat"
                       style={{ 
-                        backgroundColor: 'var(--color-charcoal)',
-                        borderColor: 'var(--border)',
-                        borderWidth: 'var(--border-weight, 1px)',
-                        borderStyle: 'solid',
+                        backgroundColor: 'var(--background)',
+                        border: 'none',
                         borderRadius: '10px'
                       }}
                     >
                       <div className="flex items-center gap-3 flex-1" style={{ justifyContent: 'flex-start', alignItems: 'flex-start' }}>
                         <div className="flex items-center gap-2">
-                          <h3 className="" style={{ fontFamily: 'Nohemi', fontWeight: 500, color: 'var(--gray-12)' }}>{tagConfig?.label || tag}</h3>
+                          <IconComponent className="h-4 w-4" style={{ color: '#a5c8ca', opacity: 0.7 }} />
+                          <h3 className="" style={{ fontFamily: 'Nohemi', fontWeight: 500, color: '#a5c8ca' }}>{tagConfig?.label || tag}</h3>
                           <Badge 
                             variant="outline" 
-                            className="text-xs"
+                            className="text-xs card-neu-flat"
                             style={{
-                              position: 'absolute',
-                              justifyContent: 'center',
-                              alignItems: 'flex-end',
-                              ...(tagConfig && tagConfig.color === '' 
-                                ? { backgroundColor: 'rgba(124, 173, 197, 0.2)', color: 'var(--blue-11)' }
-                                : tagConfig?.color 
-                                  ? {} 
-                                  : { backgroundColor: 'var(--gray-2)', color: 'var(--gray-11)' })
+                              backgroundColor: 'var(--background)',
+                              border: 'none',
+                              color: '#a5c8ca',
+                              opacity: 0.8
                             }}
                           >
                             {filteredTagLocations.length} location{filteredTagLocations.length !== 1 ? 's' : ''}
                           </Badge>
                           {tagSelectedCount > 0 && (
-                            <Badge variant="secondary" className="text-xs">
+                            <Badge variant="secondary" className="text-xs card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}>
                               {tagSelectedCount} selected
                             </Badge>
                           )}
@@ -1050,9 +1063,9 @@ export default function FrequentLocationsPage() {
 
                     {/* Locations in this tag - Accordion Content */}
                     <AccordionContent>
-                      <div className="divide-y" style={{ borderColor: 'var(--border)', marginTop: '16px', marginLeft: '16px', marginRight: '16px', paddingTop: '10px', backgroundColor: 'var(--card)' }}>
+                      <div className="space-y-2" style={{ marginTop: '16px', marginLeft: '16px', marginRight: '16px', paddingTop: '10px' }}>
                         {filteredTagLocations.length === 0 ? (
-                          <div className="px-6 py-8 text-center text-gray-500 text-sm" style={{ backgroundColor: 'var(--page-background)' }}>
+                          <div className="px-6 py-8 text-center text-sm card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca', opacity: 0.7 }}>
                             No locations in this category
                           </div>
                         ) : (
@@ -1061,28 +1074,12 @@ export default function FrequentLocationsPage() {
                           return (
                             <div 
                               key={location.id} 
-                              className="px-6 py-4 transition-colors"
+                              className={`px-6 py-4 transition-colors ${isSelected ? 'card-neu-pressed' : 'card-neu-flat'} hover:card-neu-pressed`}
                               style={{
-                                backgroundColor: 'var(--gray-2)',
-                                marginTop: '10px',
-                                paddingTop: '24px',
-                                paddingBottom: '24px',
-                                marginLeft: '16px',
-                                marginRight: '16px',
+                                backgroundColor: 'var(--background)',
+                                border: 'none',
                                 borderRadius: '10px',
-                                borderWidth: '1px',
-                                borderColor: 'var(--border)',
-                                ...(isSelected ? { borderLeft: '4px solid var(--blue-9)' } : {})
-                              }}
-                              onMouseEnter={(e) => {
-                                if (!isSelected) {
-                                  e.currentTarget.style.backgroundColor = 'var(--gray-2)';
-                                }
-                              }}
-                              onMouseLeave={(e) => {
-                                if (!isSelected) {
-                                  e.currentTarget.style.backgroundColor = 'var(--page-background)';
-                                }
+                                ...(isSelected ? { borderLeft: '4px solid #a5c8ca' } : {})
                               }}
                             >
                               <div className="flex items-center justify-between">
@@ -1096,67 +1093,70 @@ export default function FrequentLocationsPage() {
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
-                                      <div className="font-medium truncate" style={{ color: 'var(--gray-12)' }}>{location.name}</div>
+                                      <div className="font-medium truncate" style={{ color: '#a5c8ca' }}>{location.name}</div>
                                       {location.is_service_location && (
-                                        <Badge variant="outline" className="text-xs" style={{ backgroundColor: 'rgba(124, 173, 197, 0.2)', color: 'var(--blue-11)' }}>
+                                        <Badge variant="outline" className="text-xs card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca', opacity: 0.8 }}>
                                           Service Location
                                         </Badge>
                                       )}
                                     </div>
-                                    <div className="text-sm text-gray-500 truncate">{location.full_address}</div>
+                                    <div className="text-sm truncate" style={{ color: '#a5c8ca', opacity: 0.7 }}>{location.full_address}</div>
                                     {location.description && (
-                                      <div className="text-xs text-gray-400 truncate">{location.description}</div>
+                                      <div className="text-xs truncate" style={{ color: '#a5c8ca', opacity: 0.6 }}>{location.description}</div>
                                     )}
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-4">
                                   <div className="flex items-center gap-1">
-                                    <span className="text-sm font-medium" style={{ color: 'var(--gray-12)' }}>{location.usage_count}</span>
-                                    <span className="text-xs text-gray-500">uses</span>
+                                    <span className="text-sm font-medium" style={{ color: '#a5c8ca' }}>{location.usage_count}</span>
+                                    <span className="text-xs" style={{ color: '#a5c8ca', opacity: 0.7 }}>uses</span>
                                   </div>
                                   <Badge 
                                     variant={location.is_active ? "default" : "secondary"}
-                                    className="text-xs"
+                                    className="text-xs card-neu-flat"
+                                    style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}
                                   >
                                     {location.is_active ? 'Active' : 'Inactive'}
                                   </Badge>
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                        <MoreHorizontal className="h-4 w-4" />
+                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 card-neu-flat hover:card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                                        <MoreHorizontal className="h-4 w-4" style={{ color: '#a5c8ca' }} />
                                       </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem onClick={() => handleEdit(location)}>
-                                        <Edit className="h-4 w-4 mr-2" />
+                                    <DropdownMenuContent align="end" className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                                      <DropdownMenuItem onClick={() => handleEdit(location)} className="hover:card-neu-pressed" style={{ color: '#a5c8ca' }}>
+                                        <Edit className="h-4 w-4 mr-2" style={{ color: '#a5c8ca' }} />
                                         Edit
                                       </DropdownMenuItem>
-                                      <DropdownMenuItem onClick={() => handleIncrementUsage(location.id)}>
-                                        <MapPin className="h-4 w-4 mr-2" />
+                                      <DropdownMenuItem onClick={() => handleIncrementUsage(location.id)} className="hover:card-neu-pressed" style={{ color: '#a5c8ca' }}>
+                                        <MapPin className="h-4 w-4 mr-2" style={{ color: '#a5c8ca' }} />
                                         Mark as Used
                                       </DropdownMenuItem>
                                       <AlertDialog>
                                         <AlertDialogTrigger asChild>
                                           <DropdownMenuItem 
                                             onSelect={(e) => e.preventDefault()}
-                                            className="text-red-600"
+                                            className="hover:card-neu-pressed"
+                                            style={{ color: '#a5c8ca' }}
                                           >
-                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            <Trash2 className="h-4 w-4 mr-2" style={{ color: '#a5c8ca' }} />
                                             Delete
                                           </DropdownMenuItem>
                                         </AlertDialogTrigger>
-                                        <AlertDialogContent>
+                                        <AlertDialogContent className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                                           <AlertDialogHeader>
-                                            <AlertDialogTitle>Delete Location</AlertDialogTitle>
-                                            <AlertDialogDescription>
+                                            <AlertDialogTitle style={{ color: '#a5c8ca' }}>Delete Location</AlertDialogTitle>
+                                            <AlertDialogDescription style={{ color: '#a5c8ca', opacity: 0.7 }}>
                                               Are you sure you want to delete "{location.name}"? This action cannot be undone.
                                             </AlertDialogDescription>
                                           </AlertDialogHeader>
                                           <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogCancel className="card-neu-flat hover:card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}>Cancel</AlertDialogCancel>
                                             <AlertDialogAction 
                                               onClick={() => handleDelete(location.id)}
-                                              className="bg-red-600 hover:bg-red-700"
+                                              className="card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+                                              style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 12px rgba(165, 200, 202, 0.3), 0 0 20px rgba(165, 200, 202, 0.15)', color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}
                                             >
                                               Delete
                                             </AlertDialogAction>
@@ -1336,27 +1336,27 @@ function CreateLocationDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Add Frequent Location</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="max-w-2xl card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+        <DialogHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+          <DialogTitle style={{ color: '#a5c8ca' }}>ADD FREQUENT LOCATION</DialogTitle>
+          <DialogDescription style={{ color: '#a5c8ca', opacity: 0.7 }}>
             Add a new location to your frequent locations list for quick trip creation.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Hierarchy Selection for Super Admin */}
           {user?.role === 'super_admin' && (
-            <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
-              <h4 className="font-medium text-sm">Assign to Hierarchy</h4>
+            <div className="space-y-4 p-4 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+              <h4 className="font-medium text-sm" style={{ color: '#a5c8ca' }}>Assign to Hierarchy</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="corp-client-select">Corporate Client *</Label>
+                  <Label htmlFor="corp-client-select" style={{ color: '#a5c8ca', opacity: 0.7 }}>Corporate Client *</Label>
                   <Select
                     value={formData.corporate_client_id}
                     onValueChange={(value) => setFormData({ ...formData, corporate_client_id: value })}
                     required
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <SelectValue placeholder="Select corporate client" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1369,14 +1369,14 @@ function CreateLocationDialog({
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="program-select">Program *</Label>
+                  <Label htmlFor="program-select" style={{ color: '#a5c8ca', opacity: 0.7 }}>Program *</Label>
                   <Select
                     value={formData.program_id}
                     onValueChange={(value) => setFormData({ ...formData, program_id: value })}
                     disabled={!formData.corporate_client_id}
                     required
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <SelectValue placeholder={formData.corporate_client_id ? "Select program" : "Select corporate client first"} />
                     </SelectTrigger>
                     <SelectContent>
@@ -1389,13 +1389,13 @@ function CreateLocationDialog({
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="location-select">Location</Label>
+                  <Label htmlFor="location-select" style={{ color: '#a5c8ca', opacity: 0.7 }}>Location</Label>
                   <Select
                     value={formData.location_id}
                     onValueChange={(value) => setFormData({ ...formData, location_id: value })}
                     disabled={!formData.program_id}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                       <SelectValue placeholder={formData.program_id ? "Select location (optional)" : "Select program first"} />
                     </SelectTrigger>
                     <SelectContent>
@@ -1413,21 +1413,23 @@ function CreateLocationDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="name">Name *</Label>
+              <Label htmlFor="name" style={{ color: '#a5c8ca', opacity: 0.7 }}>Name *</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
+                className="card-neu-pressed"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               />
             </div>
             <div>
-              <Label htmlFor="location_type">Type *</Label>
+              <Label htmlFor="location_type" style={{ color: '#a5c8ca', opacity: 0.7 }}>Type *</Label>
               <Select
                 value={formData.location_type}
                 onValueChange={(value) => setFormData({ ...formData, location_type: value as any })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1443,62 +1445,80 @@ function CreateLocationDialog({
           </div>
 
           <div>
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description" style={{ color: '#a5c8ca', opacity: 0.7 }}>Description</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Optional description..."
+              className="card-neu-pressed"
+              style={{ backgroundColor: 'var(--background)', border: 'none' }}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="street_address">Street Address *</Label>
+              <Label htmlFor="street_address" style={{ color: '#a5c8ca', opacity: 0.7 }}>Street Address *</Label>
               <Input
                 id="street_address"
                 value={formData.street_address}
                 onChange={(e) => setFormData({ ...formData, street_address: e.target.value })}
                 required
+                className="card-neu-pressed"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               />
             </div>
             <div>
-              <Label htmlFor="city">City *</Label>
+              <Label htmlFor="city" style={{ color: '#a5c8ca', opacity: 0.7 }}>City *</Label>
               <Input
                 id="city"
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                 required
+                className="card-neu-pressed"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               />
             </div>
             <div>
-              <Label htmlFor="state">State *</Label>
+              <Label htmlFor="state" style={{ color: '#a5c8ca', opacity: 0.7 }}>State *</Label>
               <Input
                 id="state"
                 value={formData.state}
                 onChange={(e) => setFormData({ ...formData, state: e.target.value })}
                 required
+                className="card-neu-pressed"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               />
             </div>
             <div>
-              <Label htmlFor="zip_code">ZIP Code</Label>
+              <Label htmlFor="zip_code" style={{ color: '#a5c8ca', opacity: 0.7 }}>ZIP Code</Label>
               <Input
                 id="zip_code"
                 value={formData.zip_code}
                 onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })}
+                className="card-neu-pressed"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               />
             </div>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+              className="card-neu-flat hover:card-neu-pressed"
+              style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}
+            >
               Cancel
             </Button>
             <Button 
               type="submit"
               disabled={user?.role === 'super_admin' && (!formData.corporate_client_id || !formData.program_id)}
+              className="card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+              style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 12px rgba(165, 200, 202, 0.3), 0 0 20px rgba(165, 200, 202, 0.15)', color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}
             >
-              Add Location
+              <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Add Location</span>
             </Button>
           </DialogFooter>
         </form>
@@ -1791,31 +1811,33 @@ function EditLocationDialog({
         }
       }}
     >
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Edit Frequent Location</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="max-w-2xl card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+        <DialogHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+          <DialogTitle style={{ color: '#a5c8ca' }}>EDIT FREQUENT LOCATION</DialogTitle>
+          <DialogDescription style={{ color: '#a5c8ca', opacity: 0.7 }}>
             Update the location details below.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="edit-name">Name *</Label>
+              <Label htmlFor="edit-name" style={{ color: '#a5c8ca', opacity: 0.7 }}>Name *</Label>
               <Input
                 id="edit-name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
+                className="card-neu-pressed"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               />
             </div>
             <div>
-              <Label htmlFor="edit-location_type">Type *</Label>
+              <Label htmlFor="edit-location_type" style={{ color: '#a5c8ca', opacity: 0.7 }}>Type *</Label>
               <Select
                 value={formData.location_type}
                 onValueChange={(value) => setFormData({ ...formData, location_type: value as any })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="card-neu-pressed" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1831,58 +1853,80 @@ function EditLocationDialog({
           </div>
 
           <div>
-            <Label htmlFor="edit-description">Description</Label>
+            <Label htmlFor="edit-description" style={{ color: '#a5c8ca', opacity: 0.7 }}>Description</Label>
             <Textarea
               id="edit-description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Optional description..."
+              className="card-neu-pressed"
+              style={{ backgroundColor: 'var(--background)', border: 'none' }}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="edit-street_address">Street Address *</Label>
+              <Label htmlFor="edit-street_address" style={{ color: '#a5c8ca', opacity: 0.7 }}>Street Address *</Label>
               <Input
                 id="edit-street_address"
                 value={formData.street_address}
                 onChange={(e) => setFormData({ ...formData, street_address: e.target.value })}
                 required
+                className="card-neu-pressed"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               />
             </div>
             <div>
-              <Label htmlFor="edit-city">City *</Label>
+              <Label htmlFor="edit-city" style={{ color: '#a5c8ca', opacity: 0.7 }}>City *</Label>
               <Input
                 id="edit-city"
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                 required
+                className="card-neu-pressed"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               />
             </div>
             <div>
-              <Label htmlFor="edit-state">State *</Label>
+              <Label htmlFor="edit-state" style={{ color: '#a5c8ca', opacity: 0.7 }}>State *</Label>
               <Input
                 id="edit-state"
                 value={formData.state}
                 onChange={(e) => setFormData({ ...formData, state: e.target.value })}
                 required
+                className="card-neu-pressed"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               />
             </div>
             <div>
-              <Label htmlFor="edit-zip_code">ZIP Code</Label>
+              <Label htmlFor="edit-zip_code" style={{ color: '#a5c8ca', opacity: 0.7 }}>ZIP Code</Label>
               <Input
                 id="edit-zip_code"
                 value={formData.zip_code}
                 onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })}
+                className="card-neu-pressed"
+                style={{ backgroundColor: 'var(--background)', border: 'none' }}
               />
             </div>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleCancel}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleCancel}
+              className="card-neu-flat hover:card-neu-pressed"
+              style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}
+            >
               Cancel
             </Button>
-            <Button type="submit">Update Location</Button>
+            <Button 
+              type="submit"
+              className="card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+              style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 12px rgba(165, 200, 202, 0.3), 0 0 20px rgba(165, 200, 202, 0.15)', color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}
+            >
+              <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Update Location</span>
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

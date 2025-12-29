@@ -64,8 +64,9 @@ import DesignSystem from "../../pages/design-system";
 // DesignSystemDemo removed - consolidated into DesignSystem page
 const ScratchPage = lazy(() => import("../../pages/scratch"));
 const TypographyTest = lazy(() => import("../../pages/typography-test"));
-const Analytics = lazy(() => import("../../pages/analytics"));
-const Telematics = lazy(() => import("../../pages/telematics"));
+// Temporarily remove lazy loading to fix Fast Refresh issue in Cursor browser
+import AnalyticsComponent from "../../pages/analytics";
+const Analytics = AnalyticsComponent;
 const ProphetPage = lazy(() => import("../../pages/prophet"));
 const ActivityFeedPage = lazy(() => import("../../pages/activity-feed"));
 const KanbanPage = lazy(() => import("../../pages/kanban"));
@@ -420,7 +421,7 @@ export default function MainLayout({
                 <Analytics />
               </Route>
               <Route path="/telematics">
-                <Telematics />
+                <Analytics />
               </Route>
               <Route path="/prophet">
                 <ProphetPage />

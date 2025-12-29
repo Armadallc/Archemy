@@ -89,7 +89,7 @@ FormItem.displayName = "FormItem"
 const FormLabel = React.forwardRef<
   React.ElementRef<typeof LabelPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
->(({ className, ...props }, ref) => {
+>(({ className, children, ...props }, ref) => {
   const { error, formItemId } = useFormField()
 
   return (
@@ -97,8 +97,14 @@ const FormLabel = React.forwardRef<
       ref={ref}
       className={cn(error && "text-destructive", className)}
       htmlFor={formItemId}
+      style={error ? { color: 'var(--cancelled)' } : undefined}
       {...props}
-    />
+    >
+      {children}
+      {error && (
+        <span className="ml-1" style={{ color: 'var(--cancelled)', fontWeight: 'bold' }}>*</span>
+      )}
+    </Label>
   )
 })
 FormLabel.displayName = "FormLabel"
@@ -158,10 +164,19 @@ const FormMessage = React.forwardRef<
     <p
       ref={ref}
       id={formMessageId}
-      className={cn("text-sm font-medium text-destructive", className)}
+      className={cn("text-sm font-medium", className)}
+      style={{ 
+        color: 'var(--cancelled)', 
+        fontWeight: 600,
+        marginTop: '4px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '4px'
+      }}
       {...props}
     >
-      {body}
+      <span style={{ fontSize: '14px' }}>⚠️</span>
+      <span>{body}</span>
     </p>
   )
 })

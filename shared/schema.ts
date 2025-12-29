@@ -161,6 +161,7 @@ export const users = pgTable("users", {
   corporate_client_id: varchar("corporate_client_id", { length: 50 }).references(() => corporateClients.id, { onDelete: 'set null' }),
   tenant_role_id: varchar("tenant_role_id", { length: 50 }).references(() => tenantRoles.id, { onDelete: 'set null' }),
   active_tenant_id: varchar("active_tenant_id", { length: 50 }).references(() => corporateClients.id, { onDelete: 'set null' }),
+  display_id: varchar("display_id", { length: 20 }), // Human-readable display ID (e.g., MON-CAD-001)
   avatar_url: text("avatar_url"),
   phone: varchar("phone", { length: 20 }),
   first_name: varchar("first_name", { length: 255 }),
@@ -197,6 +198,8 @@ export const clients = pgTable("clients", {
   medical_conditions: text("medical_conditions"),
   special_requirements: text("special_requirements"),
   billing_pin: varchar("billing_pin", { length: 10 }),
+  room_number: varchar("room_number", { length: 50 }), // e.g., "1A", "6B"
+  bed_number: varchar("bed_number", { length: 50 }), // e.g., "1", "2", "1 top", "2 bottom"
   is_active: boolean("is_active").default(true),
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
@@ -303,6 +306,7 @@ export const drivers = pgTable("drivers", {
   license_number: varchar("license_number", { length: 50 }).notNull(),
   license_expiry: date("license_expiry"),
   vehicle_info: text("vehicle_info"),
+  display_id: varchar("display_id", { length: 20 }), // Human-readable display ID (e.g., DRV-MON-001)
   is_active: boolean("is_active").default(true),
   is_available: boolean("is_available").default(false), // Location sharing availability toggle - drivers must explicitly enable
   created_at: timestamp("created_at").defaultNow(),
@@ -320,6 +324,7 @@ export const vehicles = pgTable("vehicles", {
   color: varchar("color", { length: 50 }),
   vehicle_type: varchar("vehicle_type", { length: 50 }),
   capacity: integer("capacity"),
+  display_id: varchar("display_id", { length: 20 }), // Human-readable display ID (e.g., MON-BUS-001)
   status: vehicleStatusEnum("status").default('active'),
   is_active: boolean("is_active").default(true),
   created_at: timestamp("created_at").defaultNow(),
@@ -400,7 +405,9 @@ export const trips = pgTable("trips", {
   wait_time_stopped_at: timestamp("wait_time_stopped_at"),
   // Telematics Phase 1: HCBS Waiver
   hcbs_waiver_verified: boolean("hcbs_waiver_verified").default(false),
+  created_by: varchar("created_by", { length: 50 }).references(() => users.user_id, { onDelete: 'set null' }),
   created_at: timestamp("created_at").defaultNow(),
+  updated_by: varchar("updated_by", { length: 50 }).references(() => users.user_id, { onDelete: 'set null' }),
   updated_at: timestamp("updated_at").defaultNow(),
 });
 
@@ -679,6 +686,122 @@ export const userTodos = pgTable("user_todos", {
   completed_at: timestamp("completed_at"),
 });
 
+// ============================================================================
+// PROGRAM MANAGEMENT TABLES
+// ============================================================================
+
+// Program Licensures Table
+export const programLicensures = pgTable("program_licensures", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()::text`),
+  program_id: varchar("program_id", { length: 50 }).notNull().references(() => programs.id, { onDelete: 'cascade' }),
+  corporate_client_id: varchar("corporate_client_id", { length: 50 }).references(() => corporateClients.id, { onDelete: 'cascade' }),
+  license_type: varchar("license_type", { length: 255 }).notNull(),
+  license_number: varchar("license_number", { length: 255 }).notNull(),
+  issuing_authority: varchar("issuing_authority", { length: 255 }),
+  issue_date: date("issue_date"),
+  expiry_date: date("expiry_date").notNull(),
+  renewal_reminder_days: integer("renewal_reminder_days").default(30),
+  notes: text("notes"),
+  is_active: boolean("is_active").default(true),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+  created_by: varchar("created_by", { length: 50 }).references(() => users.user_id, { onDelete: 'set null' }),
+  updated_by: varchar("updated_by", { length: 50 }).references(() => users.user_id, { onDelete: 'set null' }),
+});
+
+// Staff Certifications Table
+export const staffCertifications = pgTable("staff_certifications", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()::text`),
+  program_id: varchar("program_id", { length: 50 }).notNull().references(() => programs.id, { onDelete: 'cascade' }),
+  corporate_client_id: varchar("corporate_client_id", { length: 50 }).references(() => corporateClients.id, { onDelete: 'cascade' }),
+  staff_member_id: varchar("staff_member_id", { length: 50 }).notNull().references(() => users.user_id, { onDelete: 'cascade' }),
+  certification_type: varchar("certification_type", { length: 100 }).notNull(),
+  certification_name: varchar("certification_name", { length: 255 }).notNull(),
+  issuing_organization: varchar("issuing_organization", { length: 255 }),
+  certificate_number: varchar("certificate_number", { length: 255 }),
+  issue_date: date("issue_date"),
+  expiry_date: date("expiry_date").notNull(),
+  notes: text("notes"),
+  is_active: boolean("is_active").default(true),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+  created_by: varchar("created_by", { length: 50 }).references(() => users.user_id, { onDelete: 'set null' }),
+  updated_by: varchar("updated_by", { length: 50 }).references(() => users.user_id, { onDelete: 'set null' }),
+});
+
+// Program Forms Table
+export const programForms = pgTable("program_forms", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()::text`),
+  program_id: varchar("program_id", { length: 50 }).notNull().references(() => programs.id, { onDelete: 'cascade' }),
+  corporate_client_id: varchar("corporate_client_id", { length: 50 }).references(() => corporateClients.id, { onDelete: 'cascade' }),
+  form_name: varchar("form_name", { length: 255 }).notNull(),
+  form_type: varchar("form_type", { length: 100 }).notNull(),
+  description: text("description"),
+  version: varchar("version", { length: 50 }).default('1.0'),
+  document_url: text("document_url"),
+  file_path: text("file_path"),
+  is_active: boolean("is_active").default(true),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+  created_by: varchar("created_by", { length: 50 }).references(() => users.user_id, { onDelete: 'set null' }),
+  updated_by: varchar("updated_by", { length: 50 }).references(() => users.user_id, { onDelete: 'set null' }),
+});
+
+// Program Curriculum Table
+export const programCurriculum = pgTable("program_curriculum", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()::text`),
+  program_id: varchar("program_id", { length: 50 }).notNull().references(() => programs.id, { onDelete: 'cascade' }),
+  corporate_client_id: varchar("corporate_client_id", { length: 50 }).references(() => corporateClients.id, { onDelete: 'cascade' }),
+  title: varchar("title", { length: 255 }).notNull(),
+  category: varchar("category", { length: 100 }).notNull(),
+  description: text("description"),
+  document_url: text("document_url"),
+  file_path: text("file_path"),
+  version: varchar("version", { length: 50 }).default('1.0'),
+  is_active: boolean("is_active").default(true),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+  created_by: varchar("created_by", { length: 50 }).references(() => users.user_id, { onDelete: 'set null' }),
+  updated_by: varchar("updated_by", { length: 50 }).references(() => users.user_id, { onDelete: 'set null' }),
+});
+
+// Program Onboarding Items Table
+export const programOnboardingItems = pgTable("program_onboarding_items", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()::text`),
+  program_id: varchar("program_id", { length: 50 }).notNull().references(() => programs.id, { onDelete: 'cascade' }),
+  corporate_client_id: varchar("corporate_client_id", { length: 50 }).references(() => corporateClients.id, { onDelete: 'cascade' }),
+  item_type: varchar("item_type", { length: 100 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  document_url: text("document_url"),
+  file_path: text("file_path"),
+  target_audience: varchar("target_audience", { length: 50 }).notNull().default('both'),
+  is_required: boolean("is_required").default(true),
+  is_active: boolean("is_active").default(true),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+  created_by: varchar("created_by", { length: 50 }).references(() => users.user_id, { onDelete: 'set null' }),
+  updated_by: varchar("updated_by", { length: 50 }).references(() => users.user_id, { onDelete: 'set null' }),
+});
+
+// Location Room/Bed Inventory Table
+export const locationRoomBeds = pgTable("location_room_beds", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()::text`),
+  location_id: varchar("location_id", { length: 50 }).notNull().references(() => locations.id, { onDelete: 'cascade' }),
+  room_number: varchar("room_number", { length: 50 }).notNull(), // e.g., "1A", "6B"
+  bed_number: varchar("bed_number", { length: 50 }).notNull(), // e.g., "1", "2", "1 top", "2 bottom"
+  bed_label: varchar("bed_label", { length: 100 }), // Optional human-readable label like "Bed 1 (Top Bunk)"
+  bed_type: varchar("bed_type", { length: 50 }), // e.g., "single", "bunk_top", "bunk_bottom", "twin", "full"
+  is_occupied: boolean("is_occupied").default(false),
+  assigned_client_id: uuid("assigned_client_id").references(() => clients.id, { onDelete: 'set null' }),
+  notes: text("notes"), // For special arrangements or notes
+  is_active: boolean("is_active").default(true),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+  created_by: varchar("created_by", { length: 50 }).references(() => users.user_id, { onDelete: 'set null' }),
+  updated_by: varchar("updated_by", { length: 50 }).references(() => users.user_id, { onDelete: 'set null' }),
+});
+
 // Comments Table
 export const comments = pgTable("comments", {
   id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()::text`),
@@ -861,6 +984,12 @@ export const insertTaskSchema = createInsertSchema(tasks);
 export const insertCommentSchema = createInsertSchema(comments);
 export const insertNoteSchema = createInsertSchema(notes);
 export const insertUserTodoSchema = createInsertSchema(userTodos);
+export const insertProgramLicensureSchema = createInsertSchema(programLicensures);
+export const insertStaffCertificationSchema = createInsertSchema(staffCertifications);
+export const insertProgramFormSchema = createInsertSchema(programForms);
+export const insertProgramCurriculumSchema = createInsertSchema(programCurriculum);
+export const insertProgramOnboardingItemSchema = createInsertSchema(programOnboardingItems);
+export const insertLocationRoomBedSchema = createInsertSchema(locationRoomBeds);
 
 // ============================================================================
 // SELECT SCHEMAS (Zod validation)
@@ -897,6 +1026,12 @@ export const selectTaskSchema = createSelectSchema(tasks);
 export const selectCommentSchema = createSelectSchema(comments);
 export const selectNoteSchema = createSelectSchema(notes);
 export const selectUserTodoSchema = createSelectSchema(userTodos);
+export const selectProgramLicensureSchema = createSelectSchema(programLicensures);
+export const selectStaffCertificationSchema = createSelectSchema(staffCertifications);
+export const selectProgramFormSchema = createSelectSchema(programForms);
+export const selectProgramCurriculumSchema = createSelectSchema(programCurriculum);
+export const selectProgramOnboardingItemSchema = createSelectSchema(programOnboardingItems);
+export const selectLocationRoomBedSchema = createSelectSchema(locationRoomBeds);
 
 // ============================================================================
 // SELECT TYPES (TypeScript types)
@@ -940,6 +1075,18 @@ export type Note = typeof notes.$inferSelect;
 export type InsertNote = typeof notes.$inferInsert;
 export type UserTodo = typeof userTodos.$inferSelect;
 export type InsertUserTodo = typeof userTodos.$inferInsert;
+export type ProgramLicensure = typeof programLicensures.$inferSelect;
+export type InsertProgramLicensure = typeof programLicensures.$inferInsert;
+export type StaffCertification = typeof staffCertifications.$inferSelect;
+export type InsertStaffCertification = typeof staffCertifications.$inferInsert;
+export type ProgramForm = typeof programForms.$inferSelect;
+export type InsertProgramForm = typeof programForms.$inferInsert;
+export type ProgramCurriculum = typeof programCurriculum.$inferSelect;
+export type InsertProgramCurriculum = typeof programCurriculum.$inferInsert;
+export type ProgramOnboardingItem = typeof programOnboardingItems.$inferSelect;
+export type InsertProgramOnboardingItem = typeof programOnboardingItems.$inferInsert;
+export type LocationRoomBed = typeof locationRoomBeds.$inferSelect;
+export type InsertLocationRoomBed = typeof locationRoomBeds.$inferInsert;
 export type KanbanBoard = typeof kanbanBoards.$inferSelect;
 export type InsertKanbanBoard = typeof kanbanBoards.$inferInsert;
 export type KanbanColumn = typeof kanbanColumns.$inferSelect;
@@ -982,3 +1129,9 @@ export type InsertTask = typeof insertTaskSchema._type;
 export type InsertComment = typeof insertCommentSchema._type;
 export type InsertNote = typeof insertNoteSchema._type;
 export type InsertUserTodo = typeof insertUserTodoSchema._type;
+export type InsertProgramLicensure = typeof insertProgramLicensureSchema._type;
+export type InsertStaffCertification = typeof insertStaffCertificationSchema._type;
+export type InsertProgramForm = typeof insertProgramFormSchema._type;
+export type InsertProgramCurriculum = typeof insertProgramCurriculumSchema._type;
+export type InsertProgramOnboardingItem = typeof insertProgramOnboardingItemSchema._type;
+export type InsertLocationRoomBed = typeof insertLocationRoomBedSchema._type;

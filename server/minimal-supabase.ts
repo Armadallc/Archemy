@@ -407,6 +407,19 @@ export const locationsStorage = {
       `)
       .eq('is_active', true);
     if (error) throw error;
+    
+    // Get client counts for all locations
+    if (data && data.length > 0) {
+      const locationIds = data.map((loc: any) => loc.id);
+      const clientCounts = await this.getClientCountsByLocations(locationIds);
+      
+      // Merge client counts into location data
+      return data.map((location: any) => ({
+        ...location,
+        client_count: clientCounts[location.id] || 0
+      }));
+    }
+    
     return data || [];
   },
 
@@ -427,6 +440,16 @@ export const locationsStorage = {
       .eq('id', id)
       .single();
     if (error && error.code !== 'PGRST116') throw error;
+    
+    // Get client count for this location
+    if (data) {
+      const clientCounts = await this.getClientCountsByLocations([id]);
+      return {
+        ...data,
+        client_count: clientCounts[id] || 0
+      };
+    }
+    
     return data;
   },
 
@@ -453,7 +476,52 @@ export const locationsStorage = {
     
     const { data, error } = await query;
     if (error) throw error;
+    
+    // Get client counts for all locations
+    if (data && data.length > 0) {
+      const locationIds = data.map(loc => loc.id);
+      const clientCounts = await this.getClientCountsByLocations(locationIds);
+      
+      // Merge client counts into location data
+      return data.map((location: any) => ({
+        ...location,
+        client_count: clientCounts[location.id] || 0
+      }));
+    }
+    
     return data || [];
+  },
+
+  async getClientCountsByLocations(locationIds: string[]): Promise<Record<string, number>> {
+    if (!locationIds || locationIds.length === 0) {
+      return {};
+    }
+
+    // Get client counts grouped by location_id
+    const { data, error } = await supabase
+      .from('clients')
+      .select('location_id')
+      .in('location_id', locationIds)
+      .eq('is_active', true);
+
+    if (error) {
+      console.error('Error fetching client counts:', error);
+      return {};
+    }
+
+    // Count clients per location
+    const counts: Record<string, number> = {};
+    locationIds.forEach(id => counts[id] = 0); // Initialize all to 0
+    
+    if (data) {
+      data.forEach((client: any) => {
+        if (client.location_id) {
+          counts[client.location_id] = (counts[client.location_id] || 0) + 1;
+        }
+      });
+    }
+
+    return counts;
   },
 
   async getLocationsByCorporateClient(corporateClientId: string) {
@@ -491,6 +559,19 @@ export const locationsStorage = {
       .in('program_id', programIds)
       .eq('is_active', true);
     if (error) throw error;
+    
+    // Get client counts for all locations
+    if (data && data.length > 0) {
+      const locationIds = data.map((loc: any) => loc.id);
+      const clientCounts = await this.getClientCountsByLocations(locationIds);
+      
+      // Merge client counts into location data
+      return data.map((location: any) => ({
+        ...location,
+        client_count: clientCounts[location.id] || 0
+      }));
+    }
+    
     return data || [];
   },
 
@@ -931,6 +1012,10 @@ export const driversStorage = {
           user_id,
           user_name,
           email,
+          first_name,
+          last_name,
+          avatar_url,
+          phone,
           role,
           primary_program_id,
           programs:primary_program_id (
@@ -990,6 +1075,10 @@ export const driversStorage = {
           user_id,
           user_name,
           email,
+          first_name,
+          last_name,
+          avatar_url,
+          phone,
           role,
           primary_program_id,
           programs:primary_program_id (
@@ -1017,6 +1106,10 @@ export const driversStorage = {
           user_id,
           user_name,
           email,
+          first_name,
+          last_name,
+          avatar_url,
+          phone,
           role,
           primary_program_id,
           programs:primary_program_id (
@@ -1066,6 +1159,10 @@ export const driversStorage = {
           user_id,
           user_name,
           email,
+          first_name,
+          last_name,
+          avatar_url,
+          phone,
           role,
           primary_program_id,
           authorized_programs,
@@ -1868,6 +1965,14 @@ export const tripsStorage = {
           reference_id,
           name,
           description
+        ),
+        created_by_user:created_by (
+          user_id,
+          user_name
+        ),
+        updated_by_user:updated_by (
+          user_id,
+          user_name
         )
       `);
     if (error) throw error;
@@ -1934,6 +2039,14 @@ export const tripsStorage = {
           reference_id,
           name,
           description
+        ),
+        created_by_user:created_by (
+          user_id,
+          user_name
+        ),
+        updated_by_user:updated_by (
+          user_id,
+          user_name
         )
       `)
       .eq('id', id)
@@ -1985,6 +2098,14 @@ export const tripsStorage = {
           reference_id,
           name,
           description
+        ),
+        created_by_user:created_by (
+          user_id,
+          user_name
+        ),
+        updated_by_user:updated_by (
+          user_id,
+          user_name
         )
       `)
       .eq('program_id', programId);
@@ -2050,6 +2171,14 @@ export const tripsStorage = {
           reference_id,
           name,
           description
+        ),
+        created_by_user:created_by (
+          user_id,
+          user_name
+        ),
+        updated_by_user:updated_by (
+          user_id,
+          user_name
         )
       `)
       .eq('driver_id', driverId);
@@ -2134,6 +2263,14 @@ export const tripsStorage = {
           reference_id,
           name,
           description
+        ),
+        created_by_user:created_by (
+          user_id,
+          user_name
+        ),
+        updated_by_user:updated_by (
+          user_id,
+          user_name
         )
       `)
       .in('program_id', programIds)
@@ -2262,6 +2399,25 @@ export const tripsStorage = {
       cleanTrip.stops = [];
     }
     
+    // Set created_by and created_at if not already set
+    if (!cleanTrip.created_at) {
+      cleanTrip.created_at = new Date().toISOString();
+    }
+    // created_by should be set by the endpoint, but ensure it's not empty
+    if (cleanTrip.created_by === '' || cleanTrip.created_by === null) {
+      delete cleanTrip.created_by;
+    }
+    // Set updated_by and updated_at to match created values on initial creation
+    if (!cleanTrip.updated_at) {
+      cleanTrip.updated_at = cleanTrip.created_at;
+    }
+    if (!cleanTrip.updated_by && cleanTrip.created_by) {
+      cleanTrip.updated_by = cleanTrip.created_by;
+    }
+    if (cleanTrip.updated_by === '' || cleanTrip.updated_by === null) {
+      delete cleanTrip.updated_by;
+    }
+    
     console.log(`Inserting trip with keys:`, Object.keys(cleanTrip));
     console.log(`client_id in cleanTrip:`, cleanTrip.client_id);
     console.log(`client_group_id in cleanTrip:`, cleanTrip.client_group_id);
@@ -2339,7 +2495,17 @@ export const tripsStorage = {
   },
 
   async updateTrip(id: string, updates: any) {
-    const { data, error } = await supabase.from('trips').update(updates).eq('id', id).select().single();
+    // Set updated_at if not already set
+    const cleanUpdates = { ...updates };
+    if (!cleanUpdates.updated_at) {
+      cleanUpdates.updated_at = new Date().toISOString();
+    }
+    // updated_by should be set by the endpoint, but ensure it's not empty
+    if (cleanUpdates.updated_by === '' || cleanUpdates.updated_by === null) {
+      delete cleanUpdates.updated_by;
+    }
+    
+    const { data, error } = await supabase.from('trips').update(cleanUpdates).eq('id', id).select().single();
     if (error) throw error;
     return data;
   },
@@ -2712,6 +2878,833 @@ export const clientGroupsStorage = {
 // ============================================================================
 // All legacy organization-based compatibility has been removed as the frontend
 // has been fully migrated to the new hierarchical system (corporate_clients → programs → locations)
+
+// ============================================================================
+// PROGRAM MANAGEMENT STORAGE
+// ============================================================================
+
+// Program Licensures Storage
+export const programLicensuresStorage = {
+  async getLicensuresByProgram(programId: string) {
+    const { data, error } = await supabase
+      .from('program_licensures')
+      .select(`
+        *,
+        programs:program_id (
+          id,
+          name
+        ),
+        corporate_clients:corporate_client_id (
+          id,
+          name
+        ),
+        created_by_user:created_by (
+          user_id,
+          user_name,
+          first_name,
+          last_name
+        ),
+        updated_by_user:updated_by (
+          user_id,
+          user_name,
+          first_name,
+          last_name
+        )
+      `)
+      .eq('program_id', programId)
+      .eq('is_active', true)
+      .order('expiry_date', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getLicensure(id: string) {
+    const { data, error } = await supabase
+      .from('program_licensures')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  async createLicensure(licensure: any, userId: string) {
+    const { data, error } = await supabase
+      .from('program_licensures')
+      .insert({
+        ...licensure,
+        created_by: userId,
+        updated_by: userId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async updateLicensure(id: string, updates: any, userId: string) {
+    const { data, error } = await supabase
+      .from('program_licensures')
+      .update({
+        ...updates,
+        updated_by: userId,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async deleteLicensure(id: string) {
+    const { data, error } = await supabase
+      .from('program_licensures')
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+};
+
+// Staff Certifications Storage
+export const staffCertificationsStorage = {
+  async getCertificationsByProgram(programId: string) {
+    const { data, error } = await supabase
+      .from('staff_certifications')
+      .select(`
+        *,
+        programs:program_id (
+          id,
+          name
+        ),
+        corporate_clients:corporate_client_id (
+          id,
+          name
+        ),
+        staff_member:staff_member_id (
+          user_id,
+          user_name,
+          first_name,
+          last_name,
+          email
+        ),
+        created_by_user:created_by (
+          user_id,
+          user_name,
+          first_name,
+          last_name
+        ),
+        updated_by_user:updated_by (
+          user_id,
+          user_name,
+          first_name,
+          last_name
+        )
+      `)
+      .eq('program_id', programId)
+      .eq('is_active', true)
+      .order('expiry_date', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getCertification(id: string) {
+    const { data, error } = await supabase
+      .from('staff_certifications')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  async createCertification(certification: any, userId: string) {
+    const { data, error } = await supabase
+      .from('staff_certifications')
+      .insert({
+        ...certification,
+        created_by: userId,
+        updated_by: userId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async updateCertification(id: string, updates: any, userId: string) {
+    const { data, error } = await supabase
+      .from('staff_certifications')
+      .update({
+        ...updates,
+        updated_by: userId,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async deleteCertification(id: string) {
+    const { data, error } = await supabase
+      .from('staff_certifications')
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+};
+
+// Program Forms Storage
+export const programFormsStorage = {
+  async getFormsByProgram(programId: string) {
+    const { data, error } = await supabase
+      .from('program_forms')
+      .select(`
+        *,
+        programs:program_id (
+          id,
+          name
+        ),
+        corporate_clients:corporate_client_id (
+          id,
+          name
+        ),
+        created_by_user:created_by (
+          user_id,
+          user_name,
+          first_name,
+          last_name
+        ),
+        updated_by_user:updated_by (
+          user_id,
+          user_name,
+          first_name,
+          last_name
+        )
+      `)
+      .eq('program_id', programId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getForm(id: string) {
+    const { data, error } = await supabase
+      .from('program_forms')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  async createForm(form: any, userId: string) {
+    const { data, error } = await supabase
+      .from('program_forms')
+      .insert({
+        ...form,
+        created_by: userId,
+        updated_by: userId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async updateForm(id: string, updates: any, userId: string) {
+    const { data, error } = await supabase
+      .from('program_forms')
+      .update({
+        ...updates,
+        updated_by: userId,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async deleteForm(id: string) {
+    const { data, error } = await supabase
+      .from('program_forms')
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+};
+
+// Program Curriculum Storage
+export const programCurriculumStorage = {
+  async getCurriculumByProgram(programId: string) {
+    const { data, error } = await supabase
+      .from('program_curriculum')
+      .select(`
+        *,
+        programs:program_id (
+          id,
+          name
+        ),
+        corporate_clients:corporate_client_id (
+          id,
+          name
+        ),
+        created_by_user:created_by (
+          user_id,
+          user_name,
+          first_name,
+          last_name
+        ),
+        updated_by_user:updated_by (
+          user_id,
+          user_name,
+          first_name,
+          last_name
+        )
+      `)
+      .eq('program_id', programId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getCurriculumItem(id: string) {
+    const { data, error } = await supabase
+      .from('program_curriculum')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  async createCurriculumItem(item: any, userId: string) {
+    const { data, error } = await supabase
+      .from('program_curriculum')
+      .insert({
+        ...item,
+        created_by: userId,
+        updated_by: userId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async updateCurriculumItem(id: string, updates: any, userId: string) {
+    const { data, error } = await supabase
+      .from('program_curriculum')
+      .update({
+        ...updates,
+        updated_by: userId,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async deleteCurriculumItem(id: string) {
+    const { data, error } = await supabase
+      .from('program_curriculum')
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+};
+
+// Program Onboarding Items Storage
+export const programOnboardingItemsStorage = {
+  async getOnboardingItemsByProgram(programId: string) {
+    const { data, error } = await supabase
+      .from('program_onboarding_items')
+      .select(`
+        *,
+        programs:program_id (
+          id,
+          name
+        ),
+        corporate_clients:corporate_client_id (
+          id,
+          name
+        ),
+        created_by_user:created_by (
+          user_id,
+          user_name,
+          first_name,
+          last_name
+        ),
+        updated_by_user:updated_by (
+          user_id,
+          user_name,
+          first_name,
+          last_name
+        )
+      `)
+      .eq('program_id', programId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getOnboardingItem(id: string) {
+    const { data, error } = await supabase
+      .from('program_onboarding_items')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  async createOnboardingItem(item: any, userId: string) {
+    const { data, error } = await supabase
+      .from('program_onboarding_items')
+      .insert({
+        ...item,
+        created_by: userId,
+        updated_by: userId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async updateOnboardingItem(id: string, updates: any, userId: string) {
+    const { data, error } = await supabase
+      .from('program_onboarding_items')
+      .update({
+        ...updates,
+        updated_by: userId,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async deleteOnboardingItem(id: string) {
+    const { data, error } = await supabase
+      .from('program_onboarding_items')
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+};
+
+// ============================================================================
+// TASKS MANAGEMENT
+// ============================================================================
+
+export const tasksStorage = {
+  async getTasksByProgram(programId: string, filters?: { status?: string; priority?: string }) {
+    try {
+      let query = supabase
+        .from('tasks')
+        .select(`
+          *,
+          assigned_to_user:users!fk_tasks_assigned_to (
+            user_id,
+            user_name,
+            first_name,
+            last_name,
+            email
+          ),
+          created_by_user:users!fk_tasks_created_by (
+            user_id,
+            user_name,
+            first_name,
+            last_name,
+            email
+          ),
+          programs:program_id (
+            id,
+            name
+          ),
+          corporate_clients:corporate_client_id (
+            id,
+            name
+          )
+        `)
+        .eq('program_id', programId)
+        .order('created_at', { ascending: false });
+
+      if (filters?.status) {
+        query = query.eq('status', filters.status);
+      }
+      if (filters?.priority) {
+        query = query.eq('priority', filters.priority);
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        console.error('❌ Error fetching tasks by program:', error);
+        throw error;
+      }
+      return data || [];
+    } catch (error: any) {
+      console.error('❌ Error in getTasksByProgram:', error);
+      throw error;
+    }
+  },
+
+  async getTask(id: string) {
+    const { data, error } = await supabase
+      .from('tasks')
+      .select(`
+        *,
+        assigned_to_user:users!fk_tasks_assigned_to (
+          user_id,
+          user_name,
+          first_name,
+          last_name,
+          email
+        ),
+        created_by_user:users!fk_tasks_created_by (
+          user_id,
+          user_name,
+          first_name,
+          last_name,
+          email
+        ),
+        programs:program_id (
+          id,
+          name
+        ),
+        corporate_clients:corporate_client_id (
+          id,
+          name
+        )
+      `)
+      .eq('id', id)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  async createTask(task: any, userId: string) {
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert({
+        ...task,
+        created_by: userId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select(`
+        *,
+        assigned_to_user:users!fk_tasks_assigned_to (
+          user_id,
+          user_name,
+          first_name,
+          last_name,
+          email
+        ),
+        created_by_user:users!fk_tasks_created_by (
+          user_id,
+          user_name,
+          first_name,
+          last_name,
+          email
+        )
+      `)
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async updateTask(id: string, updates: any) {
+    const { data, error } = await supabase
+      .from('tasks')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select(`
+        *,
+        assigned_to_user:users!fk_tasks_assigned_to (
+          user_id,
+          user_name,
+          first_name,
+          last_name,
+          email
+        ),
+        created_by_user:users!fk_tasks_created_by (
+          user_id,
+          user_name,
+          first_name,
+          last_name,
+          email
+        )
+      `)
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async deleteTask(id: string) {
+    const { data, error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+};
+
+// ============================================================================
+// LOCATION ROOM/BED MANAGEMENT
+// ============================================================================
+
+export const locationRoomBedsStorage = {
+  async getRoomBedsByLocation(locationId: string) {
+    const { data, error } = await supabase
+      .from('location_room_beds')
+      .select(`
+        *,
+        assigned_client:assigned_client_id (
+          id,
+          first_name,
+          last_name,
+          scid
+        ),
+        locations:location_id (
+          id,
+          name
+        ),
+        created_by_user:created_by (
+          user_id,
+          user_name,
+          first_name,
+          last_name
+        ),
+        updated_by_user:updated_by (
+          user_id,
+          user_name,
+          first_name,
+          last_name
+        )
+      `)
+      .eq('location_id', locationId)
+      .eq('is_active', true)
+      .order('room_number', { ascending: true })
+      .order('bed_number', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getRoomBed(id: string) {
+    const { data, error } = await supabase
+      .from('location_room_beds')
+      .select(`
+        *,
+        assigned_client:assigned_client_id (
+          id,
+          first_name,
+          last_name,
+          scid
+        ),
+        locations:location_id (
+          id,
+          name
+        )
+      `)
+      .eq('id', id)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  async createRoomBed(roomBed: any, userId: string) {
+    const { data, error } = await supabase
+      .from('location_room_beds')
+      .insert({
+        ...roomBed,
+        created_by: userId,
+        updated_by: userId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select(`
+        *,
+        assigned_client:assigned_client_id (
+          id,
+          first_name,
+          last_name,
+          scid
+        )
+      `)
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async updateRoomBed(id: string, updates: any, userId: string) {
+    const { data, error } = await supabase
+      .from('location_room_beds')
+      .update({
+        ...updates,
+        updated_by: userId,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select(`
+        *,
+        assigned_client:assigned_client_id (
+          id,
+          first_name,
+          last_name,
+          scid
+        )
+      `)
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async deleteRoomBed(id: string) {
+    const { data, error } = await supabase
+      .from('location_room_beds')
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async assignClientToBed(bedId: string, clientId: string, userId: string) {
+    // First, unassign client from any other bed in the same location
+    const bed = await this.getRoomBed(bedId);
+    if (!bed) throw new Error('Bed not found');
+
+    // Unassign from other beds in the same location
+    await supabase
+      .from('location_room_beds')
+      .update({ 
+        assigned_client_id: null, 
+        is_occupied: false,
+        updated_by: userId,
+        updated_at: new Date().toISOString()
+      })
+      .eq('location_id', bed.location_id)
+      .eq('assigned_client_id', clientId);
+
+    // Update client's room/bed assignment
+    await supabase
+      .from('clients')
+      .update({
+        room_number: bed.room_number,
+        bed_number: bed.bed_number,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', clientId);
+
+    // Assign client to the bed
+    return await this.updateRoomBed(bedId, {
+      assigned_client_id: clientId,
+      is_occupied: true
+    }, userId);
+  },
+
+  async unassignClientFromBed(bedId: string, userId: string) {
+    const bed = await this.getRoomBed(bedId);
+    if (!bed) throw new Error('Bed not found');
+
+    if (bed.assigned_client_id) {
+      // Remove room/bed assignment from client
+      await supabase
+        .from('clients')
+        .update({
+          room_number: null,
+          bed_number: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', bed.assigned_client_id);
+    }
+
+    // Unassign from bed
+    return await this.updateRoomBed(bedId, {
+      assigned_client_id: null,
+      is_occupied: false
+    }, userId);
+  },
+
+  async getAvailableBeds(locationId: string) {
+    const { data, error } = await supabase
+      .from('location_room_beds')
+      .select('*')
+      .eq('location_id', locationId)
+      .eq('is_active', true)
+      .eq('is_occupied', false)
+      .order('room_number', { ascending: true })
+      .order('bed_number', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getOccupiedBeds(locationId: string) {
+    const { data, error } = await supabase
+      .from('location_room_beds')
+      .select(`
+        *,
+        assigned_client:assigned_client_id (
+          id,
+          first_name,
+          last_name,
+          scid
+        )
+      `)
+      .eq('location_id', locationId)
+      .eq('is_active', true)
+      .eq('is_occupied', true)
+      .order('room_number', { ascending: true })
+      .order('bed_number', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  }
+};
 
 // ============================================================================
 // PERMISSION SYSTEM INITIALIZATION

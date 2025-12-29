@@ -7,6 +7,7 @@
 4. [Current Styling System](#current-styling-system)
 5. [Streamlined Theming Process](#streamlined-theming-process)
 6. [File Locations Reference](#file-locations-reference)
+7. [Recent Updates & New Features](#-recent-updates--new-features)
 
 ---
 
@@ -62,6 +63,46 @@ HALCYON is a comprehensive transportation management platform designed for organ
 - Universal calendar system
 - Trip scheduling and conflicts
 - Recurring trip patterns
+- BentoBox calendar with multiple view modes (Month, Agenda, Stage & Calendar)
+- Template builder and client group builder
+- Library section for reusable templates
+
+#### 8. **Team Management** (NEW)
+- **Programs Management** (`/team/programs`)
+  - Overview, Census, and Staff tabs
+  - **Licensures**: Track program-level licenses with expiry dates and renewal reminders
+  - **Certifications**: Manage staff certifications with expiry tracking
+  - **Forms**: Document management with file upload support
+  - **Tasks**: Task management with status, priority, and assignment tracking
+  - **Scheduling**: Driver availability and schedule viewing
+  - **Curriculum**: Training curriculum management with document uploads
+  - **Onboarding**: Onboarding checklist items with document attachments
+- **Locations Management** (`/team/locations`)
+  - Overview, Census, and Staff tabs
+  - **Room & Bed Assignments**: Complete room/bed inventory management
+    - Custom room/bed numbering (e.g., "1A", "6B", "1 top", "2 bottom")
+    - Bed types (single, twin, full, queen, king, bunk_top, bunk_bottom, other)
+    - Client assignment to specific rooms and beds
+    - Visual occupancy indicators and summary statistics
+    - Automatic client table updates when assignments change
+- **Staff Management** (`/team/staff`)
+  - Staff directory and management
+- **Client Census** (`/team/client-census`)
+  - Comprehensive client census tracking
+  - Demographics and statistics
+  - Room/bed assignment display
+
+#### 9. **Trip Tracking & Audit Trail**
+- `created_by` and `updated_by` fields on trips
+- `created_at` and `updated_at` timestamps
+- User attribution for trip creation and updates
+- Display in expanded trip view
+
+#### 10. **File Upload & Document Management**
+- File upload support for program forms, curriculum, and onboarding documents
+- Supabase Storage integration
+- File metadata tracking
+- Document URL management
 
 ---
 
@@ -116,6 +157,7 @@ HALCYON is a comprehensive transportation management platform designed for organ
 - **Testing**: Vitest, Playwright
 - **Linting**: TypeScript ESLint
 - **Database Migrations**: Drizzle Kit + SQL migrations
+- **File Upload**: Multer for multipart/form-data handling
 
 ---
 
@@ -149,7 +191,16 @@ HALCYON/
 │   ├── schema.ts        # Drizzle schema
 │   └── design-tokens/   # Shared design tokens
 │
-└── migrations/          # SQL database migrations
+├── migrations/          # SQL database migrations
+│   ├── 0060_add_trip_created_by_updated_by.sql
+│   ├── 0061_create_program_management_tables.sql
+│   └── 0062_add_room_bed_assignment_management.sql
+│
+└── server/
+    ├── file-storage-helpers.ts  # File upload utilities
+    └── routes/
+        ├── program-management.ts  # Program management API
+        └── location-room-beds.ts  # Room/bed assignment API
 ```
 
 ### **Data Flow**
@@ -161,6 +212,45 @@ HALCYON/
 ---
 
 ## 🎨 Current Styling System
+
+### **Design Philosophy: Neumorphic Design**
+
+HALCYON uses a **neumorphic design system** with soft shadows, subtle depth, and a cohesive color palette. The primary accent color is `#a5c8ca` (a soft teal/cyan), which is used throughout the application for interactive elements, icons, and highlights.
+
+### **Neumorphic CSS Classes**
+
+The application uses custom Tailwind classes for neumorphic effects:
+
+- **`card-neu`**: Standard neumorphic card with soft shadow (uses `--shadow-neu-raised`)
+- **`card-neu-flat`**: Flatter neumorphic effect for subtle depth (uses `--shadow-neu-flat`)
+- **`card-neu-pressed`**: Pressed/inward shadow effect for inputs and active states (uses `--shadow-neu-pressed`)
+- **`btn-text-glow`**: Text glow effect for buttons using the accent color (`#a5c8ca`)
+
+These classes are defined in `client/src/index.css` and work with the CSS variable system.
+
+### **Neumorphic Shadow Variables**
+
+The neumorphic design uses specific shadow variables defined in `client/src/index.css`:
+
+- **`--shadow-neu-flat`**: Subtle shadow for flat surfaces
+- **`--shadow-neu-raised`**: Standard raised shadow for cards
+- **`--shadow-neu-pressed`**: Inward shadow for pressed/active states
+- **`--shadow-neu-subtle`**: Very subtle shadow for minimal depth
+
+These shadows create the soft, extruded/inset appearance characteristic of neumorphic design.
+
+### **Accent Color Usage**
+
+The primary accent color `#a5c8ca` (soft teal/cyan) is used throughout the application for:
+- Interactive elements (buttons, links)
+- Icons and iconography
+- Text highlights and emphasis
+- Border accents
+- Text glow effects on hover
+- Status indicators and badges
+- Loading spinners and progress indicators
+
+This color is defined as `--color-aqua` in the CSS variables and is consistently applied across all Team Management pages and components.
 
 ### **Architecture: CSS Variables + Tailwind + Design Tokens**
 
@@ -469,13 +559,73 @@ theme: {
 
 ### **Component Styling**
 - Components use Tailwind classes: `bg-background`, `text-foreground`, etc.
+- Neumorphic classes: `card-neu`, `card-neu-flat`, `card-neu-pressed`, `btn-text-glow`
 - Inline styles can use: `style={{ color: 'var(--primary)' }}`
 - Mobile uses: `style={{ color: theme.colors.primary }}`
+
+### **Team Management Pages**
+- `client/src/pages/team/programs.tsx` - Programs management page
+- `client/src/pages/team/locations.tsx` - Locations management page (includes RoomBedAssignmentsTab)
+- `client/src/pages/team/staff.tsx` - Staff management page
+- `client/src/pages/team/client-census.tsx` - Client census page
+
+### **Program Management Components**
+- All tabs are defined within `client/src/pages/team/programs.tsx`:
+  - `LicensuresTab` - License tracking
+  - `CertificationsTab` - Staff certification tracking
+  - `FormsTab` - Form document management with file upload
+  - `TasksTab` - Task management
+  - `SchedulingTab` - Driver schedule viewing
+  - `CurriculumTab` - Training curriculum with file upload
+  - `OnboardingTab` - Onboarding checklist with file upload
+
+### **Room/Bed Assignment Component**
+- `RoomBedAssignmentsTab` - Defined in `client/src/pages/team/locations.tsx`
+- Handles room/bed inventory and client assignments
 
 ### **Fonts**
 - Font files: `public/fonts/*.woff2`
 - Font declarations: `client/src/index.css` (font-face rules)
 - Font family variable: `--font-sans: Nohemi, sans-serif`
+
+### **Backend API Routes**
+- `server/routes/program-management.ts` - Program management API endpoints
+- `server/routes/location-room-beds.ts` - Room/bed assignment API endpoints
+- `server/routes/index.ts` - Route registration
+
+### **Storage Functions**
+- `server/minimal-supabase.ts` - Contains all storage functions:
+  - `programLicensuresStorage` - License CRUD operations
+  - `staffCertificationsStorage` - Certification CRUD operations
+  - `programFormsStorage` - Form document CRUD operations
+  - `programCurriculumStorage` - Curriculum CRUD operations
+  - `programOnboardingItemsStorage` - Onboarding item CRUD operations
+  - `tasksStorage` - Task CRUD operations
+  - `locationRoomBedsStorage` - Room/bed inventory and assignment operations
+
+### **File Storage**
+- `server/file-storage-helpers.ts` - File upload utilities
+- Supabase Storage buckets:
+  - `program-documents` - For program forms, curriculum, and onboarding documents
+  - `avatars` - User profile pictures
+  - `trip-documents` - Trip-related documents
+
+### **Database Schema**
+- `shared/schema.ts` - Drizzle ORM schema definitions:
+  - `program_licensures` table
+  - `staff_certifications` table
+  - `program_forms` table
+  - `program_curriculum` table
+  - `program_onboarding_items` table
+  - `tasks` table
+  - `location_room_beds` table
+  - Updated `clients` table (room_number, bed_number fields)
+  - Updated `trips` table (created_by, updated_by fields)
+
+### **Migrations**
+- `migrations/0060_add_trip_created_by_updated_by.sql` - Trip audit trail
+- `migrations/0061_create_program_management_tables.sql` - Program management tables
+- `migrations/0062_add_room_bed_assignment_management.sql` - Room/bed assignment system
 
 ---
 
@@ -503,7 +653,173 @@ theme: {
 
 ---
 
-**Last Updated**: 2025-01-18
+---
+
+## 🆕 Recent Updates & New Features
+
+### **Team Management System** (2025-01-XX)
+
+#### **Programs Page** (`/team/programs`)
+A comprehensive program management interface with multiple tabs:
+
+- **Overview Tab**: Program summary, statistics, and key metrics
+- **Census Tab**: Client and staff census data for the program
+- **Staff Tab**: Staff directory organized by role
+- **Licensures Tab**: 
+  - Track program-level licenses (e.g., state licenses, certifications)
+  - Expiry date tracking with renewal reminders
+  - License number and issuing authority management
+  - Notes and documentation
+- **Certifications Tab**:
+  - Staff certification tracking
+  - Expiry date monitoring
+  - Certification type and number management
+  - Automatic expiry alerts
+- **Forms Tab**:
+  - Document management for program forms
+  - File upload support (PDF, DOC, images)
+  - Form versioning and organization
+  - Document URL storage in Supabase Storage
+- **Tasks Tab**:
+  - Task management with status tracking (pending, in-progress, completed, cancelled)
+  - Priority levels (low, medium, high, urgent)
+  - Assignment to staff members
+  - Due date tracking
+  - Full CRUD operations
+- **Scheduling Tab**:
+  - Driver availability viewing
+  - Weekly schedule overview
+  - Day-by-day breakdown per driver
+  - Integration with driver schedules API
+- **Curriculum Tab**:
+  - Training curriculum management
+  - Document uploads for training materials
+  - Curriculum organization and versioning
+- **Onboarding Tab**:
+  - Onboarding checklist items
+  - Document attachments for onboarding materials
+  - Checklist completion tracking
+
+#### **Locations Page** (`/team/locations`)
+Location-specific management with tabs:
+
+- **Overview Tab**: Location summary and statistics
+- **Census Tab**: Client and staff census for the location
+- **Staff Tab**: Staff assigned to the location's program
+- **Room & Bed Assignments Tab** (NEW):
+  - **Room/Bed Inventory Management**:
+    - Custom room numbering (e.g., "1A", "6B", "Room 10")
+    - Flexible bed numbering (e.g., "1", "2", "1 top", "2 bottom", "Bed 1")
+    - Bed types: single, twin, full, queen, king, bunk_top, bunk_bottom, other
+    - Bed labels (e.g., "Window Side", "Door Side")
+    - Notes per bed
+  - **Client Assignment**:
+    - Assign clients to specific rooms and beds
+    - Automatic update of `clients.room_number` and `clients.bed_number`
+    - Visual occupancy indicators (available/occupied)
+    - Unassign clients from beds
+  - **Summary Statistics**:
+    - Total rooms count
+    - Total beds count
+    - Available beds count
+    - Occupied beds count
+  - **Organization**:
+    - Beds grouped by room number
+    - Visual cards for each bed with status badges
+    - Quick actions (Edit, Assign, Unassign, Delete)
+
+#### **Staff Page** (`/team/staff`)
+- Staff directory and management
+- Role-based organization
+- Search and filtering
+
+#### **Client Census Page** (`/team/client-census`)
+- Comprehensive client census tracking
+- Demographics and statistics
+- Room/bed assignment display
+- Client status tracking
+
+### **Database Schema Updates**
+
+#### **Trips Table** (Migration 0060)
+- Added `created_by` (VARCHAR, references users.user_id)
+- Added `updated_by` (VARCHAR, references users.user_id)
+- Automatic tracking of who created/updated trips
+- Display in trip views
+
+#### **Program Management Tables** (Migration 0061)
+- **`program_licensures`**: Program-level license tracking
+- **`staff_certifications`**: Staff certification management
+- **`program_forms`**: Form document management
+- **`program_curriculum`**: Training curriculum items
+- **`program_onboarding_items`**: Onboarding checklist items
+- **`tasks`**: Task management (status, priority, assignment, due dates)
+
+#### **Room/Bed Assignment Tables** (Migration 0062)
+- **`clients` table updates**:
+  - Added `room_number` (VARCHAR(50))
+  - Added `bed_number` (VARCHAR(50))
+- **`location_room_beds` table** (NEW):
+  - `id`, `location_id`, `room_number`, `bed_number`
+  - `bed_label`, `bed_type` (enum), `notes`
+  - `client_id` (assigned client), `is_occupied`, `is_active`
+  - `created_by`, `updated_by`, `created_at`, `updated_at`
+  - Unique constraint on (location_id, room_number, bed_number)
+
+### **API Endpoints**
+
+#### **Program Management** (`/api/program-management/*`)
+- `GET/POST/PATCH/DELETE /licensures/program/:programId`
+- `GET/POST/PATCH/DELETE /certifications/program/:programId`
+- `GET/POST/PATCH/DELETE /forms/program/:programId`
+- `POST /forms/:id/upload-document` (file upload)
+- `GET/POST/PATCH/DELETE /tasks/program/:programId`
+- `GET/POST/PATCH/DELETE /curriculum/program/:programId`
+- `POST /curriculum/:id/upload-document` (file upload)
+- `GET/POST/PATCH/DELETE /onboarding/program/:programId`
+- `POST /onboarding/:id/upload-document` (file upload)
+
+#### **Location Room/Beds** (`/api/location-room-beds/*`)
+- `GET /location/:locationId` - Get all room/beds for a location
+- `GET /:id` - Get single room/bed
+- `POST /` - Create new room/bed
+- `PATCH /:id` - Update room/bed
+- `DELETE /:id` - Delete room/bed
+- `POST /:id/assign` - Assign client to bed
+- `POST /:id/unassign` - Unassign client from bed
+- `GET /location/:locationId/available` - Get available beds
+- `GET /location/:locationId/occupied` - Get occupied beds
+
+### **File Upload System**
+
+- **Storage**: Supabase Storage buckets
+- **Categories**: 
+  - `program_form` → `program-documents` bucket
+  - `program_curriculum` → `program-documents` bucket
+  - `program_onboarding` → `program-documents` bucket
+- **Upload Handler**: `server/file-storage-helpers.ts`
+- **File Size Limit**: 50MB per file
+- **Supported Formats**: PDF, DOC, DOCX, images (JPEG, PNG, etc.)
+
+### **Styling Updates**
+
+#### **Neumorphic Design System**
+- Applied throughout all new Team Management pages
+- Consistent use of `#a5c8ca` accent color
+- Soft shadows and depth effects
+- Text glow effects on interactive elements
+- Card-based layouts with neumorphic styling
+
+#### **Component Styling**
+- All new components use neumorphic classes
+- Consistent button styling with accent color
+- Input fields with pressed neumorphic effect
+- Dialog and modal styling updated
+- Table styling consistent
+
+---
+
+**Last Updated**: 2025-01-28
 **Maintained By**: HALCYON Development Team
 
 
