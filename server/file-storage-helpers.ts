@@ -50,6 +50,9 @@ export type FileCategory =
   | 'user_avatar'
   | 'corporate_logo'
   | 'program_logo'
+  | 'program_form'
+  | 'program_curriculum'
+  | 'program_onboarding'
   | 'other';
 
 export interface UploadFileParams {

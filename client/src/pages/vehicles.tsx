@@ -32,6 +32,7 @@ interface Vehicle {
   vehicle_type: 'sedan' | 'suv' | 'van' | 'bus' | 'wheelchair_accessible';
   fuel_type: 'gasoline' | 'diesel' | 'electric' | 'hybrid';
   is_active: boolean;
+  display_id?: string | null;
   current_driver_id?: string;
   notes?: string;
   created_at: string;
@@ -781,6 +782,13 @@ export default function Vehicles() {
                   <div className="w-4" />
                   <div className="flex-1 grid grid-cols-12 gap-2 items-center">
                     <div 
+                      className="col-span-1 flex items-center select-none card-neu-flat px-2 py-1 rounded text-left text-xs font-medium"
+                      style={{ backgroundColor: 'var(--background)', border: 'none' }}
+                      title="Display ID"
+                    >
+                      Display ID
+                    </div>
+                    <div 
                       className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-all select-none card-neu-flat hover:card-neu px-2 py-1 rounded text-left"
                       style={{ backgroundColor: 'var(--background)', border: 'none' }}
                       onClick={() => handleSort('vehicle')}
@@ -895,6 +903,10 @@ export default function Vehicles() {
                           )}
                         </div>
                         <div className="flex-1 grid grid-cols-12 gap-2 items-center text-sm">
+                          {/* Display ID */}
+                          <div className="col-span-1 font-mono text-xs truncate font-medium" style={{ color: 'var(--accent)' }}>
+                            {vehicle.display_id || 'N/A'}
+                          </div>
                           {/* Vehicle */}
                           <div className="col-span-1 truncate text-sm text-left" style={{ color: 'var(--foreground)' }}>
                             <div className="font-medium">{vehicle.make} {vehicle.model}</div>
@@ -939,6 +951,9 @@ export default function Vehicles() {
                       <div className="px-4 pb-4 pt-2 border-t card-neu-flat" style={{ backgroundColor: 'var(--background)', borderTopColor: 'var(--border)', border: 'none' }}>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
                           <div className="space-y-2">
+                            <div>
+                              <strong>Display ID:</strong> <span className="font-mono text-xs font-medium" style={{ color: 'var(--accent)' }}>{vehicle.display_id || 'N/A'}</span>
+                            </div>
                             <div>
                               <strong>Vehicle ID:</strong> <span className="font-mono text-xs">{vehicle.id}</span>
                             </div>

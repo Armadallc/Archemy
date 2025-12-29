@@ -217,6 +217,7 @@ export async function findUsers(query: string, options: UserSearchOptions): Prom
       corporate_client_id: user.corporate_client_id || (corporateClient?.id || null),
       avatar_url: user.avatar_url,
       is_active: user.is_active,
+      display_id: user.display_id,
       displayName,
       programName: program?.name,
       corporateClientName: corporateClient?.name,
@@ -269,6 +270,7 @@ export async function getUserById(userId: string, currentUserId: string): Promis
         corporate_client_id,
         avatar_url,
         is_active,
+        display_id,
         programs:primary_program_id (
           id,
           name,
@@ -328,6 +330,7 @@ export async function getUserById(userId: string, currentUserId: string): Promis
       corporate_client_id: user.corporate_client_id || (corporateClient?.id || null),
       avatar_url: user.avatar_url,
       is_active: user.is_active,
+      display_id: user.display_id,
       displayName,
       programName: program?.name,
       corporateClientName: corporateClient?.name,

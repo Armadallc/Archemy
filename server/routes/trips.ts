@@ -260,6 +260,7 @@ router.post("/recurring-trips", requireSupabaseAuth, requireSupabaseRole(['super
     tripData.trip_category_id = trip_category_id || undefined;
     tripData.recurring_end_date = endDate.toISOString().split('T')[0]; // Store as DATE
     tripData.is_group_trip = is_group_trip || false;
+    tripData.created_by = req.user?.userId || null;
 
     // Build pattern object
     const pattern = {
@@ -394,7 +395,13 @@ router.post("/", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corpo
       });
     }
 
-    const trip = await tripsStorage.createTrip(req.body);
+    // Set created_by from authenticated user
+    const tripData = {
+      ...req.body,
+      created_by: req.user?.userId || null
+    };
+
+    const trip = await tripsStorage.createTrip(tripData);
     
     // Prepare notification targets
     let driverUserId: string | undefined;
@@ -770,7 +777,11 @@ router.patch("/:id", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'c
       // Apply any other updates if provided
       let finalTrip = trip;
       if (Object.keys(otherUpdates).length > 0) {
-        finalTrip = await tripsStorage.updateTrip(id, otherUpdates);
+        const updatesWithUser = {
+          ...otherUpdates,
+          updated_by: req.user?.userId || null
+        };
+        finalTrip = await tripsStorage.updateTrip(id, updatesWithUser);
       }
       
       // Update driverUserId if trip's driver changed
@@ -869,7 +880,12 @@ router.patch("/:id", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'c
       res.json(finalTrip);
     } else {
       // For non-status updates, use the regular update method
-      const trip = await tripsStorage.updateTrip(id, updates);
+      // Set updated_by from authenticated user
+      const updatesWithUser = {
+        ...updates,
+        updated_by: req.user?.userId || null
+      };
+      const trip = await tripsStorage.updateTrip(id, updatesWithUser);
       
       // Update driverUserId if trip's driver changed
       if (trip.driver_id && trip.driver_id !== previousDriverId) {

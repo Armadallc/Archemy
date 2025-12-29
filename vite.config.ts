@@ -17,6 +17,11 @@ export default defineConfig({
     react({
       // Ensure proper JSX runtime and Fast Refresh
       jsxRuntime: 'automatic',
+      // Make Fast Refresh more lenient to prevent breaking the app
+      fastRefresh: true,
+      babel: {
+        plugins: [],
+      },
     }),
     runtimeErrorOverlay(),
     serviceWorkerPlugin(), // Serve service worker with correct MIME type

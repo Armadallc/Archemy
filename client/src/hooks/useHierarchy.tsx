@@ -1,3 +1,4 @@
+/* @refresh reload */
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from './useAuth';
@@ -488,6 +489,7 @@ export function HierarchyProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// Custom hook to access hierarchy context
 export function useHierarchy() {
   const context = useContext(HierarchyContext);
   if (context === undefined) {
@@ -495,5 +497,4 @@ export function useHierarchy() {
   }
   return context;
 }
-
 

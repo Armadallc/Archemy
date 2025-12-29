@@ -14,6 +14,7 @@ import { Separator } from "../components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../components/ui/collapsible";
+import { Avatar, AvatarImage, AvatarFallback } from "../components/ui/avatar";
 import { Checkbox } from "../components/ui/checkbox";
 import { useToast } from "../hooks/use-toast";
 import { useAuth } from "../hooks/useAuth";
@@ -22,9 +23,9 @@ import { usePageAccess } from "../hooks/use-page-access";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Search, Edit, Trash2, Phone, Mail, MapPin, Users, Building2, Calendar, UserPlus, UserMinus, Filter, Download, Upload, AlertTriangle, ArrowLeft, User, Heart, Shield, Star, UserCheck, ChevronDown, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Phone, Mail, MapPin, Users, Building2, Calendar, UserPlus, UserMinus, Filter, Download, Upload, AlertTriangle, ArrowLeft, User, Heart, Shield, Star, UserCheck, ChevronDown, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, ChevronsUpDown, ChevronsDownUp, Loader2 } from "lucide-react";
 import { PhoneInput } from "../components/ui/phone-input";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, differenceInYears } from "date-fns";
 import { apiRequest } from "../lib/queryClient";
 import ExportButton from "../components/export/ExportButton";
 import { ComprehensiveClientForm } from "../components/forms/ComprehensiveClientForm";
@@ -32,13 +33,25 @@ import { RollbackManager } from "../utils/rollback-manager";
 import { HeaderScopeSelector } from "../components/HeaderScopeSelector";
 import { ClientImportDialog } from "../components/import/ClientImportDialog";
 
+// Helper function to calculate age from date of birth
+const calculateAge = (dateOfBirth: string | null | undefined): number | null => {
+  if (!dateOfBirth) return null;
+  try {
+    const birthDate = parseISO(dateOfBirth);
+    const today = new Date();
+    return differenceInYears(today, birthDate);
+  } catch (error) {
+    return null;
+  }
+};
+
 // Zod schema for client validation
 const clientFormSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
   last_name: z.string().min(1, "Last name is required"),
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
   phone: z.string().optional(),
-  phone_type: z.enum(["Mobile", "Home"]).optional(),
+  phone_type: z.enum(["Mobile", "Home"]).optional().nullable(),
   corporate_client_id: z.string().optional(), // Optional - only required in Global View
   program_id: z.string().min(1, "Program is required"),
   location_id: z.string().optional(),
@@ -46,7 +59,7 @@ const clientFormSchema = z.object({
   address: z.string().optional(),
   use_location_address: z.boolean().default(false),
   date_of_birth: z.string().optional(),
-  birth_sex: z.enum(["Male", "Female"]).optional(),
+  birth_sex: z.enum(["Male", "Female"]).optional().nullable(),
   age: z.coerce.number().optional().or(z.literal("")),
   race: z.string().optional(),
   avatar_url: z.string().optional(),
@@ -55,7 +68,10 @@ const clientFormSchema = z.object({
   medical_conditions: z.string().optional(),
   special_requirements: z.string().optional(),
   billing_pin: z.string().optional(),
-  pin: z.string().regex(/^\d{4}$/, "PIN must be exactly 4 digits").optional(),
+  pin: z.string().refine(
+    (val) => val === "" || val === undefined || /^\d{4}$/.test(val),
+    { message: "PIN must be exactly 4 digits or empty" }
+  ).optional(),
   medical_notes: z.string().optional(),
   mobility_requirements: z.string().optional(),
   // New fields for program contacts
@@ -75,6 +91,7 @@ const clientFormSchema = z.object({
   communication_custom_notes: z.record(z.string()).optional(),
   preferred_driver_request: z.string().optional(),
   other_preferences: z.string().optional(),
+  pin_hash: z.string().optional(), // Used to check if PIN exists (not editable)
 });
 
 type ClientFormData = z.infer<typeof clientFormSchema>;
@@ -101,6 +118,7 @@ interface Client {
   special_requirements?: string;
   billing_pin?: string;
   pin?: string;
+  pin_hash?: string; // Hashed PIN - used to check if PIN exists
   medical_notes?: string;
   mobility_requirements?: string;
   is_active: boolean;
@@ -122,7 +140,11 @@ interface Client {
     id: string;
     name: string;
     short_name?: string;
-    corporate_client_id: string;
+    corporate_client_id?: string;
+    corporate_clients?: {
+      id: string;
+      name: string;
+    };
     corporateClient?: {
       id: string;
       name: string;
@@ -175,6 +197,7 @@ const initialFormData: ClientFormData = {
   communication_custom_notes: {},
   preferred_driver_request: "",
   other_preferences: "",
+  pin_hash: undefined,
 };
 
 // Status color definitions
@@ -519,12 +542,38 @@ export default function Clients() {
       setIsEditDialogOpen(false);
       setEditingClient(null);
       setFormData(initialFormData);
+      editForm.reset(initialFormData);
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
     },
-    onError: () => {
+    onError: (error: any) => {
+      // Extract error message from API response
+      let errorMessage = "Failed to update client. Please try again.";
+      
+      if (error?.message) {
+        // Try to parse JSON error message
+        try {
+          const errorData = JSON.parse(error.message.split(': ')[1] || error.message);
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData.error) {
+            errorMessage = errorData.error;
+          } else if (typeof errorData === 'string') {
+            errorMessage = errorData;
+          }
+        } catch {
+          // If not JSON, use the error message directly
+          const messageParts = error.message.split(': ');
+          if (messageParts.length > 1) {
+            errorMessage = messageParts.slice(1).join(': ');
+          } else {
+            errorMessage = error.message;
+          }
+        }
+      }
+      
       toast({
-        title: "Error",
-        description: "Failed to update client. Please try again.",
+        title: "Update Failed",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -889,105 +938,185 @@ export default function Clients() {
     createClientMutation.mutate(finalFormData);
   };
 
-  const handleUpdateClient = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleUpdateClient = (data: ClientFormData) => {
+    if (!editingClient) {
+      console.error('❌ No editing client set');
+      return;
+    }
+    
+    console.log('🔍 handleUpdateClient called');
+    console.log('🔍 Form data received:', data);
+    console.log('🔍 Editing client ID:', editingClient.id);
+    console.log('🔍 Form state:', {
+      isValid: editForm.formState.isValid,
+      errors: editForm.formState.errors,
+      touchedFields: editForm.formState.touchedFields,
+      dirtyFields: editForm.formState.dirtyFields
+    });
+    
+    // Collect all validation errors
+    const errors: string[] = [];
     
     // Enhanced validation for updates
-    if (!formData.first_name.trim()) {
+    if (!data.first_name?.trim()) {
+      errors.push("First name is required");
+      console.error('❌ Validation failed: First name is empty');
+    }
+    
+    if (!data.last_name?.trim()) {
+      errors.push("Last name is required");
+      console.error('❌ Validation failed: Last name is empty');
+    }
+    
+    if (!data.program_id) {
+      errors.push("Program selection is required");
+      console.error('❌ Validation failed: Program ID is missing. Value:', data.program_id);
+    }
+    
+    // Validate PIN if provided
+    if (data.pin && data.pin.length > 0 && !/^\d{4}$/.test(data.pin)) {
+      errors.push("PIN must be exactly 4 digits");
+      console.error('❌ Validation failed: PIN format invalid. Value:', data.pin);
+    }
+    
+    // Validate email format if provided
+    if (data.email && data.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+      errors.push("Please enter a valid email address");
+      console.error('❌ Validation failed: Email format invalid. Value:', data.email);
+    }
+    
+    // Validate phone if provided
+    if (data.phone && data.phone.trim() && data.phone.replace(/\D/g, '').length < 10) {
+      errors.push("Please enter a valid phone number");
+      console.error('❌ Validation failed: Phone format invalid. Value:', data.phone);
+    }
+    
+    // If there are validation errors, show them and prevent submission
+    if (errors.length > 0) {
+      console.error('❌ Validation errors found:', errors);
       toast({
-        title: "Missing Information",
-        description: "Please enter the client's first name.",
+        title: "Validation Error",
+        description: errors.join(". "),
         variant: "destructive",
       });
       return;
     }
     
-    if (!formData.last_name.trim()) {
-      toast({
-        title: "Missing Information", 
-        description: "Please enter the client's last name.",
-        variant: "destructive",
-      });
-      return;
-    }
+    console.log('✅ Validation passed, proceeding with update');
     
-    if (!formData.program_id) {
-      toast({
-        title: "Missing Information",
-        description: "Please select a program for this client.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Define valid client table fields (from database schema)
+    const validClientFields = [
+      'first_name', 'last_name', 'program_id', 'location_id',
+      'phone', 'phone_type', 'email', 'address', 'use_location_address',
+      'date_of_birth', 'birth_sex', 'age', 'race', 'avatar_url',
+      'emergency_contact_name', 'emergency_contact_phone',
+      'medical_conditions', 'special_requirements', 'billing_pin', 'pin',
+      'medical_notes', 'mobility_requirements', 'is_active'
+    ];
     
-    if (editingClient) {
-      // Define valid client table fields (from database schema)
-      const validClientFields = [
-        'first_name', 'last_name', 'program_id', 'location_id',
-        'phone', 'phone_type', 'email', 'address', 'use_location_address',
-        'date_of_birth', 'birth_sex', 'age', 'race', 'avatar_url',
-        'emergency_contact_name', 'emergency_contact_phone',
-        'medical_conditions', 'special_requirements', 'billing_pin', 'pin',
-        'medical_notes', 'mobility_requirements', 'is_active'
-      ];
-      
-      // Clean up form data: only include valid database fields
-      const cleanedUpdates: any = {};
-      Object.keys(formData).forEach((key) => {
-        // Only include fields that exist in the database schema
-        if (!validClientFields.includes(key)) {
-          return; // Skip fields like program_contacts, mobility_requirement_ids, etc.
-        }
-        
-        const value = (formData as any)[key];
-        // Special handling for PIN - always include if provided (even if empty string, we want to allow clearing it)
-        if (key === 'pin') {
-          if (value !== undefined && value !== null && value !== '') {
-            cleanedUpdates[key] = value;
-          }
-          return; // Skip the rest of the logic for PIN
-        }
-        // Keep boolean false, numbers, and non-empty strings
-        if (value !== undefined && value !== null && value !== '') {
-          cleanedUpdates[key] = value;
-        } else if (typeof value === 'boolean') {
-          // Keep boolean values even if false
-          cleanedUpdates[key] = value;
-        } else if (typeof value === 'number') {
-          // Keep number values even if 0
-          cleanedUpdates[key] = value;
-        }
-      });
-      
-      // Ensure program_id is always included if it exists
-      if (formData.program_id) {
-        cleanedUpdates.program_id = formData.program_id;
+    // Clean up form data: only include valid database fields
+    const cleanedUpdates: any = {};
+    Object.keys(data).forEach((key) => {
+      // Only include fields that exist in the database schema
+      if (!validClientFields.includes(key)) {
+        return; // Skip fields like program_contacts, mobility_requirement_ids, etc.
       }
       
-      console.log('🔍 Sending client update:', cleanedUpdates);
-      console.log('🔍 PIN in updates:', cleanedUpdates.pin ? 'YES' : 'NO');
-      
-      updateClientMutation.mutate({
-        id: editingClient.id,
-        updates: cleanedUpdates,
-      });
+      const value = (data as any)[key];
+      // Special handling for PIN - always include if provided (even if empty string, we want to allow clearing it)
+      if (key === 'pin') {
+        if (value !== undefined && value !== null && value !== '') {
+          cleanedUpdates[key] = value;
+        }
+        return; // Skip the rest of the logic for PIN
+      }
+      // Special handling for optional enum fields - allow null/undefined (don't include in update if null/undefined)
+      if (key === 'phone_type' || key === 'birth_sex') {
+        // Only include if it has a value (not null or undefined)
+        if (value !== undefined && value !== null) {
+          cleanedUpdates[key] = value;
+        }
+        return; // Skip the rest of the logic for these fields
+      }
+      // Keep boolean false, numbers, and non-empty strings
+      if (value !== undefined && value !== null && value !== '') {
+        cleanedUpdates[key] = value;
+      } else if (typeof value === 'boolean') {
+        // Keep boolean values even if false
+        cleanedUpdates[key] = value;
+      } else if (typeof value === 'number') {
+        // Keep number values even if 0
+        cleanedUpdates[key] = value;
+      }
+    });
+    
+    // Ensure program_id is always included if it exists
+    if (data.program_id) {
+      cleanedUpdates.program_id = data.program_id;
     }
+    
+    // Calculate age from date_of_birth if provided
+    if (data.date_of_birth) {
+      const age = calculateAge(data.date_of_birth);
+      if (age !== null) {
+        cleanedUpdates.age = age;
+      }
+    }
+    
+    console.log('🔍 Sending client update:', cleanedUpdates);
+    console.log('🔍 PIN in updates:', cleanedUpdates.pin ? 'YES' : 'NO');
+    
+    updateClientMutation.mutate({
+      id: editingClient.id,
+      updates: cleanedUpdates,
+    });
   };
 
-  const handleEditClient = (client: Client) => {
+  const handleEditClient = async (client: Client) => {
     setEditingClient(client);
-    setFormData({
+    
+    // Extract corporate_client_id from nested program data
+    // Try multiple paths to find the corporate client ID
+    let corporateClientId = 
+      (client as any).corporate_client_id ||
+      client.programs?.corporate_clients?.id ||
+      client.programs?.corporateClient?.id ||
+      client.programs?.corporate_client_id ||
+      client.program?.corporateClient?.id ||
+      client.program?.corporate_clients?.id ||
+      client.program?.corporate_client_id ||
+      "";
+    
+    // If still not found, try to get it from the programs list
+    if (!corporateClientId && client.program_id && programs) {
+      // Find the program in the programs list to get corporate_client_id
+      const program = programs.find((p: any) => p.id === client.program_id);
+      if (program) {
+        corporateClientId = 
+          program.corporate_client_id ||
+          program.corporate_clients?.id ||
+          program.corporateClient?.id ||
+          "";
+      }
+    }
+    
+    // PIN is hashed in the database (pin_hash), so we can't retrieve the original value
+    // Leave it empty but the user can set a new PIN if needed
+    // Note: If pin_hash exists, we could show a placeholder, but for security we don't display it
+    
+    // Populate editForm with client data
+    editForm.reset({
       first_name: client.first_name,
       last_name: client.last_name,
       phone: client.phone || "",
-      phone_type: client.phone_type as "Mobile" | "Home" | undefined,
+      phone_type: (client.phone_type as "Mobile" | "Home" | undefined) || undefined,
       email: client.email || "",
       program_id: client.program_id,
       location_id: client.location_id || "",
       address: client.address || "",
-      use_location_address: client.use_location_address || false,
+      use_location_address: client.use_location_address ?? false, // Use nullish coalescing to preserve false values
       date_of_birth: client.date_of_birth || "",
-      birth_sex: client.birth_sex as "Male" | "Female" | undefined,
+      birth_sex: (client.birth_sex as "Male" | "Female" | undefined) || undefined,
       age: client.age,
       race: client.race || "",
       avatar_url: client.avatar_url || "",
@@ -996,7 +1125,8 @@ export default function Clients() {
       medical_conditions: client.medical_conditions || "",
       special_requirements: client.special_requirements || "",
       billing_pin: client.billing_pin || "",
-      pin: "", // PIN is not stored in plain text, so we leave it empty for editing
+      pin: "", // PIN is hashed (pin_hash) in database, cannot retrieve original value for security
+      // Note: If client.pin_hash exists, a PIN is set but we can't display it
       medical_notes: client.medical_notes || "",
       mobility_requirements: client.mobility_requirements || "",
       is_active: client.is_active,
@@ -1007,8 +1137,11 @@ export default function Clients() {
       special_custom_notes: {},
       communication_need_ids: [],
       communication_custom_notes: {},
-      preferred_driver_request: "",
-      other_preferences: "",
+      preferred_driver_request: client.preferred_driver_request || "",
+      other_preferences: client.other_preferences || "",
+      corporate_client_id: corporateClientId,
+      // Include pin_hash to check if PIN exists (for display purposes only)
+      pin_hash: (client as any).pin_hash || undefined,
     });
     setIsEditDialogOpen(true);
   };
@@ -1406,7 +1539,10 @@ export default function Clients() {
                 <div className="sticky top-6 z-10 text-sm card-neu-flat" style={{ backgroundColor: 'var(--background)', borderBottom: '1px solid var(--border)', color: 'var(--foreground)', border: 'none', fontWeight: 400 }}>
                   <div className="flex items-center gap-3 p-4">
                       <div className="w-4" />
-                      <div className="flex-1 grid grid-cols-12 gap-2 items-center">
+                      <div className="flex-1 grid gap-2 items-center" style={{ gridTemplateColumns: 'repeat(13, minmax(0, 1fr))' }}>
+                        <div className="col-span-1 flex items-center justify-center">
+                          {/* Photo column header - no sorting */}
+                        </div>
                         <div 
                           className="col-span-1 flex items-center cursor-pointer hover:opacity-70 transition-all select-none card-neu-flat hover:card-neu px-2 py-1 rounded"
                           onClick={() => handleSort('scid')}
@@ -1494,7 +1630,29 @@ export default function Clients() {
                                   <ChevronRight className="h-4 w-4" style={{ color: 'var(--muted-foreground)' }} />
                                 )}
                               </div>
-                              <div className="flex-1 grid grid-cols-12 gap-2 items-center">
+                              <div className="flex-1 grid gap-2 items-center" style={{ gridTemplateColumns: 'repeat(13, minmax(0, 1fr))' }}>
+                                {/* Client Photo */}
+                                <div className="col-span-1 flex items-center justify-center">
+                                  <Avatar className="w-10 h-10 border-2" style={{ borderColor: 'var(--border)', boxShadow: '0 0 8px rgba(165, 200, 202, 0.2)' }}>
+                                    {client.avatar_url && (
+                                      <AvatarImage 
+                                        src={client.avatar_url} 
+                                        alt={`${client.first_name} ${client.last_name}`}
+                                        className="object-cover"
+                                      />
+                                    )}
+                                    <AvatarFallback 
+                                      className="text-xs font-medium"
+                                      style={{ 
+                                        backgroundColor: 'var(--muted)', 
+                                        color: 'var(--muted-foreground)'
+                                      }}
+                                    >
+                                      {client.first_name?.[0]?.toUpperCase() || '?'}
+                                      {client.last_name?.[0]?.toUpperCase() || ''}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                </div>
                                 {/* SCID */}
                                 <div className="col-span-1 font-mono text-xs truncate" style={{ color: 'var(--muted-foreground)' }}>
                                   {client.scid || <span className="italic">Pending</span>}
@@ -1561,7 +1719,10 @@ export default function Clients() {
                                     <strong>Birth Sex:</strong> {client.birth_sex || 'N/A'}
                                   </div>
                                   <div>
-                                    <strong>Age:</strong> {client.age || 'N/A'}
+                                    <strong>Age:</strong> {(() => {
+                                      const age = calculateAge(client.date_of_birth);
+                                      return age !== null ? `${age} ${age === 1 ? 'year' : 'years'}` : 'N/A';
+                                    })()}
                                   </div>
                                   <div>
                                     <strong>Race:</strong> {client.race || 'N/A'}
@@ -2394,230 +2555,150 @@ export default function Clients() {
 
       {/* Edit Client Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Client</DialogTitle>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+          <DialogHeader className="card-neu-flat [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+            <DialogTitle style={{ color: '#a5c8ca' }}>EDIT CLIENT</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleUpdateClient} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-first_name" className="text-sm font-medium">First Name *</Label>
-                <Input
-                  id="edit-first_name"
-                  value={formData.first_name}
-                  onChange={(e) => setFormData({...formData, first_name: e.target.value})}
-                  placeholder="Enter first name"
-                  className="mt-1"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-last_name" className="text-sm font-medium">Last Name *</Label>
-                <Input
-                  id="edit-last_name"
-                  value={formData.last_name}
-                  onChange={(e) => setFormData({...formData, last_name: e.target.value})}
-                  placeholder="Enter last name"
-                  className="mt-1"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-phone">Phone</Label>
-                <PhoneInput
-                  id="edit-phone"
-                  value={formData.phone}
-                  onChange={(value) => setFormData({...formData, phone: value})}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-email">Email</Label>
-                <Input
-                  id="edit-email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="edit-address">Address</Label>
-              <Textarea
-                id="edit-address"
-                value={formData.address}
-                onChange={(e) => setFormData({...formData, address: e.target.value})}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-date_of_birth">Date of Birth</Label>
-                <Input
-                  id="edit-date_of_birth"
-                  type="date"
-                  value={formData.date_of_birth}
-                  onChange={(e) => setFormData({...formData, date_of_birth: e.target.value})}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-billing_pin">Billing PIN</Label>
-                <Input
-                  id="edit-billing_pin"
-                  value={formData.billing_pin}
-                  onChange={(e) => setFormData({...formData, billing_pin: e.target.value})}
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="edit-pin">4-Digit PIN (for notifications)</Label>
-              <Input
-                id="edit-pin"
-                type="text"
-                maxLength={4}
-                value={formData.pin}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, ''); // Only allow digits
-                  if (value.length <= 4) {
-                    setFormData({...formData, pin: value});
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit((data) => {
+              // React Hook Form validation will run first
+              // If validation passes, handleUpdateClient will be called
+              handleUpdateClient(data);
+            }, (errors) => {
+              // This callback runs if React Hook Form validation fails
+              console.error('❌ Form validation errors:', errors);
+              console.error('❌ Form values:', editForm.getValues());
+              console.error('❌ Form errors object:', JSON.stringify(errors, null, 2));
+              
+              // Trigger validation to show errors in form fields
+              editForm.trigger();
+              
+              // Collect all field errors with user-friendly field names
+              const fieldNameMap: Record<string, string> = {
+                first_name: "First Name",
+                last_name: "Last Name",
+                program_id: "Program",
+                corporate_client_id: "Tenant",
+                location_id: "Location",
+                email: "Email",
+                phone: "Phone",
+                pin: "PIN",
+                date_of_birth: "Date of Birth",
+                birth_sex: "Birth Sex",
+                race: "Race",
+                emergency_contact_name: "Emergency Contact Name",
+                emergency_contact_phone: "Emergency Contact Phone",
+                program_contacts: "Program Contacts",
+              };
+              
+              const fieldErrors: string[] = [];
+              const firstErrorField = Object.keys(errors)[0];
+              
+              // Helper function to extract error messages from nested structures
+              const extractErrorMessages = (error: any, fieldName: string, path: string = ''): void => {
+                if (error?.message) {
+                  const displayName = fieldNameMap[fieldName] || fieldName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                  const fullPath = path ? `${displayName} > ${path}` : displayName;
+                  fieldErrors.push(`${fullPath}: ${error.message}`);
+                }
+                
+                // Handle nested errors (like array fields)
+                if (error?._errors && Array.isArray(error._errors)) {
+                  error._errors.forEach((err: any, index: number) => {
+                    if (err?.message) {
+                      const displayName = fieldNameMap[fieldName] || fieldName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                      fieldErrors.push(`${displayName} [Item ${index + 1}]: ${err.message}`);
+                    }
+                  });
+                }
+                
+                // Handle nested object errors
+                if (typeof error === 'object' && error !== null) {
+                  Object.keys(error).forEach((key) => {
+                    if (key !== 'message' && key !== '_errors') {
+                      extractErrorMessages(error[key], fieldName, key);
+                    }
+                  });
+                }
+              };
+              
+              Object.keys(errors).forEach((fieldName) => {
+                const error = errors[fieldName as keyof typeof errors];
+                extractErrorMessages(error, fieldName);
+              });
+              
+              // Scroll to first error field
+              if (firstErrorField) {
+                setTimeout(() => {
+                  const errorElement = document.querySelector(`[name="${firstErrorField}"]`) || 
+                                      document.querySelector(`[id*="${firstErrorField}"]`) ||
+                                      document.querySelector(`[aria-describedby*="${firstErrorField}"]`);
+                  if (errorElement) {
+                    errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    (errorElement as HTMLElement).focus();
+                  } else {
+                    console.warn(`⚠️ Could not find element for field: ${firstErrorField}`);
                   }
-                }}
-                placeholder="1111"
+                }, 100);
+              }
+              
+              // Show validation errors with detailed information
+              if (fieldErrors.length > 0) {
+                console.error('❌ Validation errors found:', fieldErrors);
+                toast({
+                  title: "Form Validation Error",
+                  description: `Please fix the following: ${fieldErrors.join('. ')}`,
+                  variant: "destructive",
+                });
+              } else {
+                console.warn('⚠️ Validation failed but no error messages found');
+                toast({
+                  title: "Form Validation Error",
+                  description: "Please check all required fields and try again. Check the console for details.",
+                  variant: "destructive",
+                });
+              }
+            })} className="space-y-6" style={{ backgroundColor: 'var(--background)' }}>
+              <ComprehensiveClientForm 
+                createForm={editForm}
+                programs={programs || []}
+                locations={locations || []}
+                selectedProgram={selectedProgram}
+                clientId={editingClient?.id}
               />
-              <p className="text-xs text-gray-500 mt-1">Give this PIN to the client for notification signup</p>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-emergency_contact_name">Emergency Contact Name</Label>
-                <Input
-                  id="edit-emergency_contact_name"
-                  value={formData.emergency_contact_name}
-                  onChange={(e) => setFormData({...formData, emergency_contact_name: e.target.value})}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-emergency_contact_phone">Emergency Contact Phone</Label>
-                <PhoneInput
-                  id="edit-emergency_contact_phone"
-                  value={formData.emergency_contact_phone}
-                  onChange={(value) => setFormData({...formData, emergency_contact_phone: value})}
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="edit-medical_conditions">Medical Conditions</Label>
-              <Textarea
-                id="edit-medical_conditions"
-                value={formData.medical_conditions}
-                onChange={(e) => setFormData({...formData, medical_conditions: e.target.value})}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="edit-special_requirements">Special Requirements</Label>
-              <Textarea
-                id="edit-special_requirements"
-                value={formData.special_requirements}
-                onChange={(e) => setFormData({...formData, special_requirements: e.target.value})}
-                placeholder="Accessibility needs, special equipment, etc."
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="edit-medical_notes">Trip Notes</Label>
-              <Textarea
-                id="edit-medical_notes"
-                value={formData.medical_notes}
-                onChange={(e) => setFormData({...formData, medical_notes: e.target.value})}
-                placeholder="Notes for drivers about this client (pickup instructions, special needs, etc.)"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="edit-mobility_requirements">Mobility Requirements</Label>
-              <Textarea
-                id="edit-mobility_requirements"
-                value={formData.mobility_requirements}
-                onChange={(e) => setFormData({...formData, mobility_requirements: e.target.value})}
-                placeholder="Wheelchair, walker, assistance needed, etc."
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-location_id">Location</Label>
-                <Select 
-                  value={formData.location_id} 
-                  onValueChange={(value) => setFormData({...formData, location_id: value})}
+              <div className="flex justify-end space-x-2 pt-4" style={{ backgroundColor: 'var(--background)' }}>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsEditDialogOpen(false);
+                    setEditingClient(null);
+                    editForm.reset(initialFormData);
+                  }}
+                  className="card-neu-flat hover:card-neu-pressed"
+                  style={{ backgroundColor: 'var(--background)', border: 'none', color: '#a5c8ca' }}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select location" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {locations.map((location: any) => (
-                      <SelectItem key={location.id} value={location.id}>
-                        {location.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="edit-program_id">Program</Label>
-                <Select 
-                  value={formData.program_id} 
-                  onValueChange={(value) => setFormData({...formData, program_id: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select program" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {programs?.map((program: any) => (
-                      <SelectItem key={program.id} value={program.id}>
-                        {program.name} ({program.corporateClient?.name || 'Unknown Client'})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => {
-                  setIsEditDialogOpen(false);
-                  setEditingClient(null);
-                  setFormData(initialFormData);
-                }}
-              >
-                Cancel
-              </Button>
+                  Cancel
+                </Button>
               <Button 
                 type="submit" 
                 disabled={updateClientMutation.isPending}
-                className="text-white"
-                style={{ backgroundColor: 'var(--primary)' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--primary)';
-                  e.currentTarget.style.opacity = '0.9';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--primary)';
-                  e.currentTarget.style.opacity = '1';
-                }}
+                className="card-neu hover:card-neu [&]:shadow-none btn-text-glow"
+                style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(165, 200, 202, 0.15)' }}
               >
-                {updateClientMutation.isPending ? "Updating..." : "Update Client"}
+                {updateClientMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }} />
+                    <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Updating...</span>
+                  </>
+                ) : (
+                  <span style={{ color: '#a5c8ca', textShadow: '0 0 8px rgba(165, 200, 202, 0.4), 0 0 12px rgba(165, 200, 202, 0.2)' }}>Update Client</span>
+                )}
               </Button>
-            </div>
-          </form>
+              </div>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
 

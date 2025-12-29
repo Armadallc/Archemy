@@ -1425,12 +1425,16 @@ export default function HierarchicalTripsPage() {
                                 <strong>Reference ID:</strong> <span className="font-mono text-xs">{trip.client_group.reference_id}</span>
                               </div>
                             )}
-                            <div>
-                              <strong>Created By:</strong> {trip.created_by_user?.user_name || trip.created_by || 'N/A'} at {format(parseISO(trip.created_at), 'MMM d, yyyy h:mm a')}
-                            </div>
-                            <div>
-                              <strong>Updated By:</strong> {trip.updated_by_user?.user_name || trip.updated_by || 'N/A'} at {format(parseISO(trip.updated_at), 'MMM d, yyyy h:mm a')}
-                            </div>
+                            {trip.created_by && (
+                              <div>
+                                <strong style={{ color: '#a5c8ca' }}>Created By:</strong> <span style={{ color: '#a5c8ca', opacity: 0.8 }}>{trip.created_by_user?.user_name || trip.created_by || 'N/A'}</span> <span style={{ color: '#a5c8ca', opacity: 0.7 }}>at {format(parseISO(trip.created_at), 'MMM d, yyyy h:mm a')}</span>
+                              </div>
+                            )}
+                            {trip.updated_by && trip.updated_at && trip.updated_at !== trip.created_at && (
+                              <div>
+                                <strong style={{ color: '#a5c8ca' }}>Updated By:</strong> <span style={{ color: '#a5c8ca', opacity: 0.8 }}>{trip.updated_by_user?.user_name || trip.updated_by || 'N/A'}</span> <span style={{ color: '#a5c8ca', opacity: 0.7 }}>at {format(parseISO(trip.updated_at), 'MMM d, yyyy h:mm a')}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
