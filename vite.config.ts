@@ -4,26 +4,26 @@ import path from "path";
 import { serviceWorkerPlugin } from "./vite-plugin-service-worker";
 
 export default defineConfig({
-    // Disable source maps in dev mode to prevent duplicate file entries in DevTools
-    // This ensures each file only appears once in the Sources panel
-    css: {
-      devSourcemap: false,
-    },
-    esbuild: {
-      sourcemap: false,
-    },
-    plugins: [
-      react({
-        // Ensure proper JSX runtime and Fast Refresh
-        jsxRuntime: 'automatic',
-        // Make Fast Refresh more lenient to prevent breaking the app
-        fastRefresh: true,
-        babel: {
-          plugins: [],
-        },
-      }),
-      serviceWorkerPlugin(), // Serve service worker with correct MIME type
-    ],
+  // Disable source maps in dev mode to prevent duplicate file entries in DevTools
+  // This ensures each file only appears once in the Sources panel
+  css: {
+    devSourcemap: false,
+  },
+  esbuild: {
+    sourcemap: false,
+  },
+  plugins: [
+    react({
+      // Ensure proper JSX runtime and Fast Refresh
+      jsxRuntime: 'automatic',
+      // Make Fast Refresh more lenient to prevent breaking the app
+      fastRefresh: true,
+      babel: {
+        plugins: [],
+      },
+    }),
+    serviceWorkerPlugin(), // Serve service worker with correct MIME type
+  ],
   optimizeDeps: {
     include: [
       'react', 
