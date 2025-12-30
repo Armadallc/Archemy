@@ -690,14 +690,58 @@ export default function ShadcnDashboardMigrated() {
               </Card>
             </div>
 
-            {/* Live Operations Widgets - Preserved */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="col-span-full">
-                <LiveOperationsWidget trips={realTimeTrips} drivers={realTimeDrivers} />
+            {/* Operations and Activity Log - Single Row, Increased Height */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" style={{ height: '600px', position: 'relative', zIndex: 10, padding: '4px' }}>
+              {/* Left Side: Live Operations Widget */}
+              <div style={{ position: 'relative', zIndex: 10, height: '600px', maxHeight: '600px', padding: '4px' }}>
+                <div style={{ height: '600px', maxHeight: '600px' }}>
+                  <div style={{ height: '600px', maxHeight: '600px' }}>
+                    <LiveOperationsWidget trips={realTimeTrips} drivers={realTimeDrivers} className="max-h-[600px]" shadow="xl" />
+                  </div>
+                </div>
               </div>
-              <div className="col-span-full">
-                <FleetStatusWidget drivers={realTimeDrivers} trips={realTimeTrips} />
+
+              {/* Right Side: Activity Log */}
+              <div className="flex flex-col" style={{ position: 'relative', zIndex: 10, height: '600px', maxHeight: '600px', padding: '4px' }}>
+                <Card className="flex flex-col w-full h-full" style={{ height: '600px', maxHeight: '600px', paddingTop: '12px', paddingBottom: '16px', paddingLeft: '24px', paddingRight: '24px', backgroundColor: 'var(--background)', border: 'none', boxShadow: 'var(--shadow-drop)' }}>
+                  <CardHeader className="pb-2 flex-shrink-0">
+                    <CardTitle className="flex items-center justify-between text-base text-foreground" style={{ fontSize: '42px' }}>
+                      <span>RECENT ACTIVITY</span>
+                      <div className="flex items-center gap-3 md:gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground text-xs md:text-sm">Show mentioned only</span>
+                          <Switch 
+                            checked={activityMentionsOnly}
+                            onCheckedChange={setActivityMentionsOnly}
+                          />
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => setActivityShowFilters(!activityShowFilters)}
+                        >
+                          <Filter className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0 flex-1 flex flex-col min-h-0" style={{ overflow: 'hidden' }}>
+                    <ActivityFeed 
+                      hideHeader={true}
+                      mentionsOnly={activityMentionsOnly}
+                      onMentionsOnlyChange={setActivityMentionsOnly}
+                      showFilters={activityShowFilters}
+                      onShowFiltersChange={setActivityShowFilters}
+                    />
+                  </CardContent>
+                </Card>
               </div>
+            </div>
+
+
+            {/* Fleet Status Widget - Full Width */}
+            <div className="mt-6" style={{ position: 'relative', zIndex: 30 }}>
+              <FleetStatusWidget drivers={realTimeDrivers} trips={realTimeTrips} shadow="xl" />
             </div>
 
             {/* Interactive Map - Preserved */}
@@ -740,16 +784,6 @@ export default function ShadcnDashboardMigrated() {
                 </CardContent>
               </Card>
             </div>
-
-            {/* Recent Activity - Preserved */}
-            <Card className="card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
-              <CardHeader>
-                <CardTitle className="text-foreground">Recent Activity</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ActivityFeed />
-              </CardContent>
-            </Card>
           </div>
         </div>
         </div>

@@ -16,8 +16,9 @@ if (Platform.OS !== 'web') {
 // Production: Use Render backend URL (e.g., https://halcyon-backend.onrender.com)
 // Development: Use localhost for web, local IP for physical devices/simulators
 // Backend API runs on port 8081 locally, Render uses port 443 (HTTPS)
+// For ngrok HTTPS testing: Use backend ngrok URL (https://5b3352e68162.ngrok-free.app)
 const API_BASE_URL = Platform.OS === 'web' 
-  ? (process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8081')
+  ? (process.env.EXPO_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'https://5b3352e68162.ngrok-free.app' : 'http://localhost:8081'))
   : (process.env.EXPO_PUBLIC_API_URL || (__DEV__ ? 'http://192.168.12.227:8081' : 'https://halcyon-backend.onrender.com'));
 
 interface Trip {

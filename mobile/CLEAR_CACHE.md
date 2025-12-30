@@ -53,3 +53,5 @@ After clearing cache, the MessageComponent should:
 - ✅ Only show delete option via long-press → action sheet
 - ✅ Have no swipe functionality for messages
 
+
+

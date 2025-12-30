@@ -66,3 +66,5 @@ npm install @yassir-jeraidi/full-calendar
 - Check for any dependencies that need to be installed
 
 
+
+

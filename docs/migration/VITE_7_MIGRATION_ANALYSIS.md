@@ -32,8 +32,6 @@
 ### Current Vite Config (`vite.config.ts`)
 - ✅ Uses `defineConfig` (compatible)
 - ✅ Uses `@vitejs/plugin-react` (needs version check)
-- ✅ Uses `@replit/vite-plugin-cartographer` (conditional, needs compatibility check)
-- ✅ Uses `@replit/vite-plugin-runtime-error-modal` (needs compatibility check)
 - ✅ Uses `import.meta.dirname` (ESM - compatible)
 - ✅ Uses path aliases (compatible)
 - ✅ Uses `server.fs.strict` (compatible)
@@ -71,8 +69,6 @@
 
 ### 6. **Plugin Compatibility**
 - **@vitejs/plugin-react:** Version 4.7.0 installed, needs Vite 7 compatible version
-- **@replit/vite-plugin-cartographer:** Unknown compatibility (conditional usage)
-- **@replit/vite-plugin-runtime-error-modal:** Unknown compatibility
 
 ---
 
@@ -90,8 +86,6 @@ esbuild: 0.25.0 → (updated via vite)
 ```bash
 # Verified compatible:
 @vitejs/plugin-react: 4.3.2 → 5.1.0 (✅ Supports Vite 7.0.0+)
-@replit/vite-plugin-cartographer: 0.2.7 → (⚠️ Unknown, but conditional usage)
-@replit/vite-plugin-runtime-error-modal: 0.0.3 → (⚠️ Unknown, but conditional usage)
 ```
 
 ### 3. TypeScript Config
@@ -101,11 +95,6 @@ esbuild: 0.25.0 → (updated via vite)
 ---
 
 ## ⚠️ Potential Issues & Risks
-
-### High Risk
-1. **@replit Plugins Compatibility**
-   - Unknown if `@replit/vite-plugin-cartographer` and `@replit/vite-plugin-runtime-error-modal` support Vite 7
-   - **Mitigation:** These are conditional (only in Replit environment), may not affect local dev
 
 ### Medium Risk
 1. **Browser Compatibility**
@@ -141,12 +130,6 @@ npm audit fix --force
 ```bash
 # Update to Vite 7 compatible version (verified compatible)
 npm install @vitejs/plugin-react@latest --save-dev
-
-# Replit plugins (conditional - only used in Replit environment)
-# These may not need updates if not used locally
-# Test first, then update if needed:
-npm install @replit/vite-plugin-cartographer@latest --save-dev
-npm install @replit/vite-plugin-runtime-error-modal@latest --save-dev
 ```
 
 ### Step 4: Test Build
@@ -209,7 +192,6 @@ npm install
 | @vitejs/plugin-react | 4.7.0 | 5.1.0 | ✅ Compatible (supports Vite 7) |
 | drizzle-kit | 0.30.6 | 0.31.6 | ⚠️ Minor upgrade |
 | esbuild | 0.25.0 | ? | ✅ Auto-updated |
-| @replit plugins | 0.2.7/0.0.3 | ? | ⚠️ Unknown |
 
 ---
 
@@ -228,7 +210,6 @@ npm install
 2. ✅ Project structure is ESM-ready
 3. ✅ No legacy Sass usage
 4. ✅ Git backup available for quick rollback
-5. ✅ Replit plugins are conditional (may not affect local dev)
 
 **Risk Level:** Medium (due to plugin unknowns, but reversible)
 

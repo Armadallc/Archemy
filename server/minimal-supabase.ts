@@ -2505,7 +2505,27 @@ export const tripsStorage = {
       delete cleanUpdates.updated_by;
     }
     
-    const { data, error } = await supabase.from('trips').update(cleanUpdates).eq('id', id).select().single();
+    // Always ensure updated_at is set (even if updates don't include it)
+    if (!cleanUpdates.updated_at) {
+      cleanUpdates.updated_at = new Date().toISOString();
+    }
+    
+    const { data, error } = await supabase
+      .from('trips')
+      .update(cleanUpdates)
+      .eq('id', id)
+      .select(`
+        *,
+        created_by_user:created_by (
+          user_id,
+          user_name
+        ),
+        updated_by_user:updated_by (
+          user_id,
+          user_name
+        )
+      `)
+      .single();
     if (error) throw error;
     return data;
   },

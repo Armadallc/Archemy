@@ -2,6 +2,7 @@
  * Trip Status Transition Validator
  * 
  * Validates that trip status transitions follow the proper workflow:
+ * - order → scheduled, cancelled (driver confirms or declines)
  * - scheduled → confirmed, in_progress, cancelled, no_show
  * - confirmed → in_progress, cancelled, no_show
  * - in_progress → completed, cancelled
@@ -10,7 +11,7 @@
  * - no_show → (no transitions allowed)
  */
 
-export type TripStatus = 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'no_show';
+export type TripStatus = 'order' | 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'no_show';
 
 export interface StatusTransition {
   from: TripStatus;
@@ -24,6 +25,7 @@ export interface StatusTransition {
  * Key: current status, Value: array of allowed next statuses
  */
 const VALID_TRANSITIONS: Record<TripStatus, TripStatus[]> = {
+  order: ['scheduled', 'cancelled'], // Order can be confirmed (scheduled) or declined/cancelled
   scheduled: ['confirmed', 'in_progress', 'cancelled', 'no_show'], // Allow direct start from scheduled
   confirmed: ['in_progress', 'cancelled', 'no_show'],
   in_progress: ['completed', 'cancelled'],

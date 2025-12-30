@@ -775,6 +775,11 @@ export const enhancedTripsStorage = {
       updated_at: new Date().toISOString()
     };
     
+    // Set updated_by from options if provided
+    if (options?.userId) {
+      updates.updated_by = options.userId;
+    }
+    
     // Set timestamps (manual takes precedence over auto-set)
     if (actualTimes?.pickup) updates.actual_pickup_time = actualTimes.pickup;
     if (actualTimes?.dropoff) updates.actual_dropoff_time = actualTimes.dropoff;

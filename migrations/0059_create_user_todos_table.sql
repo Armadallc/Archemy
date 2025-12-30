@@ -49,3 +49,5 @@ COMMENT ON COLUMN user_todos.is_completed IS 'Whether the todo is completed';
 COMMENT ON COLUMN user_todos.priority IS 'Priority level: low, medium, or high';
 COMMENT ON COLUMN user_todos.position IS 'Ordering position for drag-and-drop';
 
+
+

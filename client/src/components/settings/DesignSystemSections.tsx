@@ -140,6 +140,7 @@ export function FireColorPalette() {
             <div className="space-y-3 card-neu-flat rounded-lg p-4" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
               <h4 className="font-medium mb-3" style={{ color: '#a5c8ca' }}>Status Colors</h4>
               {[
+                { cssVar: '--order', value: '#F59E0B', label: 'Order' },
                 { cssVar: '--scheduled', value: '#7afffe', label: 'Scheduled' },
                 { cssVar: '--in-progress', value: '#f1fe60', label: 'In Progress' },
                 { cssVar: '--completed', value: '#3bfec9', label: 'Completed' },

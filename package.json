@@ -133,8 +133,6 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",
-    "@replit/vite-plugin-cartographer": "^0.2.7",
-    "@replit/vite-plugin-runtime-error-modal": "^0.0.3",
     "@tailwindcss/typography": "^0.5.15",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",

@@ -34,6 +34,7 @@ export const tripTypeEnum = pgEnum('trip_type', [
 ]);
 
 export const tripStatusEnum = pgEnum('trip_status', [
+  'order',
   'scheduled',
   'confirmed',
   'in_progress',
@@ -390,7 +391,7 @@ export const trips = pgTable("trips", {
   actual_pickup_time: timestamp("actual_pickup_time"),
   actual_dropoff_time: timestamp("actual_dropoff_time"),
   passenger_count: integer("passenger_count").default(1),
-  status: tripStatusEnum("status").default('scheduled'),
+  status: tripStatusEnum("status").default('order'),
   special_requirements: text("special_requirements"),
   notes: text("notes"),
   // Telematics Phase 1: Trip Purpose & Billing

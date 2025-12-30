@@ -17,3 +17,5 @@ COMMENT ON COLUMN trips.stops IS 'Array of intermediate stop addresses for multi
 CREATE INDEX IF NOT EXISTS idx_trips_stops ON trips USING GIN (stops);
 
 
+
+

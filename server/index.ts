@@ -26,7 +26,7 @@ if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
 
 const app = express();
 
-// Dynamic CORS configuration for Replit deployments
+// Dynamic CORS configuration
 // Handle OPTIONS requests FIRST, before any other middleware
 app.options('*', (req, res) => {
   try {
@@ -63,6 +63,17 @@ app.options('*', (req, res) => {
       return res.sendStatus(200);
     }
     
+    // Always allow ngrok domains (for HTTPS development/testing)
+    if (origin && (origin.includes('.ngrok-free.app') || origin.includes('.ngrok.io'))) {
+      console.log('✅ Allowing ngrok origin:', origin);
+      res.header('Access-Control-Allow-Origin', origin);
+      res.header('Access-Control-Allow-Credentials', 'true');
+      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+      res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control');
+      res.header('Vary', 'Origin');
+      return res.sendStatus(200);
+    }
+    
     // Always allow localhost origins (for development, even in production deployments)
     if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.startsWith('http://192.168.') || origin.startsWith('exp://'))) {
       console.log('✅ Allowing localhost/development origin:', origin);
@@ -77,7 +88,6 @@ app.options('*', (req, res) => {
     const allowedOrigins = isProduction 
       ? [
           `https://${host}`, // Current domain
-          process.env.REPLIT_DOMAIN,
           ...(host ? [`https://${host}`] : []),
           // Allow specific Vercel domains from environment variable
           ...(process.env.VERCEL_DOMAIN ? [`https://${process.env.VERCEL_DOMAIN}`] : []),
@@ -111,6 +121,46 @@ app.use((req, res, next) => {
   const host = req.get('host');
   const isProduction = process.env.NODE_ENV === 'production';
   
+  // Debug logging for ALL requests with origin (not just ngrok)
+  if (origin) {
+    console.log('🔍 [CORS] Request:', req.method, req.path, 'origin:', origin);
+  }
+  
+  // Set up CORS header interceptor EARLY (before any early returns)
+  // This ensures headers are correct for all responses, including OPTIONS
+  if (origin && origin.includes('ngrok')) {
+    const originalEnd = res.end;
+    const originalSend = res.send;
+    const originalJson = res.json;
+    
+    const fixCorsHeaders = () => {
+      const finalOrigin = res.getHeader('Access-Control-Allow-Origin');
+      const finalCreds = res.getHeader('Access-Control-Allow-Credentials');
+      if (finalOrigin === '*' || (finalOrigin === undefined && origin)) {
+        console.error('❌ [CORS] WILDCARD/MISSING ORIGIN! Fixing... Expected:', origin, 'Got:', finalOrigin);
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+      } else if (req.method === 'OPTIONS' || req.method === 'GET' || req.method === 'POST') {
+        console.log('✅ [CORS] Headers correct for', req.method, req.path, 'origin:', finalOrigin);
+      }
+    };
+    
+    res.end = function(chunk, encoding, callback) {
+      fixCorsHeaders();
+      return originalEnd.call(this, chunk, encoding, callback);
+    };
+    
+    res.send = function(body) {
+      fixCorsHeaders();
+      return originalSend.call(this, body);
+    };
+    
+    res.json = function(body) {
+      fixCorsHeaders();
+      return originalJson.call(this, body);
+    };
+  }
+  
   // Always allow Vercel domains (check first, before other logic)
   if (origin && origin.includes('.vercel.app')) {
     res.header('Access-Control-Allow-Origin', origin);
@@ -125,6 +175,31 @@ app.use((req, res, next) => {
     return next();
   }
   
+  // Always allow ngrok domains (for HTTPS development/testing)
+  // Check for ngrok domains BEFORE other logic to ensure it's caught
+  if (origin && (origin.includes('.ngrok-free.app') || origin.includes('.ngrok.io') || origin.includes('ngrok'))) {
+    console.log('✅ [CORS] Allowing ngrok origin:', origin, 'method:', req.method, 'path:', req.path);
+    // Explicitly set the origin (never use wildcard)
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control');
+    res.setHeader('Vary', 'Origin');
+    // Verify the header was set correctly
+    const setOrigin = res.getHeader('Access-Control-Allow-Origin');
+    if (setOrigin !== origin) {
+      console.error('❌ [CORS] Header mismatch! Expected:', origin, 'Got:', setOrigin);
+    }
+    
+    // For OPTIONS requests, send response immediately
+    // The interceptor (set up above) will verify/fix headers before sending
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
+    
+    return next();
+  }
+  
   // Always allow localhost origins (for development, even in production deployments)
   if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.startsWith('http://192.168.') || origin.startsWith('exp://'))) {
     console.log('✅ Allowing localhost/development origin:', origin);
@@ -133,11 +208,9 @@ app.use((req, res, next) => {
     return next();
   }
   
-  // Auto-detect Replit domain and allow it
   const allowedOrigins = isProduction 
     ? [
         `https://${host}`, // Current domain
-        process.env.REPLIT_DOMAIN,
         ...(host ? [`https://${host}`] : []),
         // Allow specific Vercel domains from environment variable
         ...(process.env.VERCEL_DOMAIN ? [`https://${process.env.VERCEL_DOMAIN}`] : []),
@@ -146,18 +219,37 @@ app.use((req, res, next) => {
       ].filter(Boolean)
     : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5177', 'http://localhost:8081', 'http://localhost:8082', 'http://localhost:19006', 'http://192.168.12.215:8082', 'exp://192.168.12.215:8082'];
   
+  // Log the origin for debugging
+  if (origin && !origin.includes('.vercel.app') && !origin.includes('.onrender.com') && !origin.includes('ngrok') && !origin.includes('localhost') && !origin.includes('127.0.0.1') && !origin.startsWith('http://192.168.') && !origin.startsWith('exp://')) {
+    console.log('🔍 [CORS] Unmatched origin:', origin, 'host:', host, 'isProduction:', isProduction);
+  }
+  
   if (origin && allowedOrigins.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
   } else if (!origin && !isProduction) {
     res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
   } else if (!origin && isProduction && host) {
     res.header('Access-Control-Allow-Origin', `https://${host}`);
+  } else if (origin) {
+    // If we have an origin but it doesn't match, don't set a wildcard
+    // Just log it and continue (browser will block, but that's better than wildcard)
+    console.log('⚠️ [CORS] Origin not allowed:', origin);
   }
   
-  res.header('Access-Control-Allow-Credentials', 'true');
+  // NEVER set wildcard when credentials are enabled
+  // Only set credentials if we have a specific origin set
+  const allowedOrigin = res.getHeader('Access-Control-Allow-Origin');
+  if (allowedOrigin && allowedOrigin !== '*') {
+    res.header('Access-Control-Allow-Credentials', 'true');
+  }
+  
+  // Always set methods and headers (these don't conflict with credentials)
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control');
   res.header('Vary', 'Origin');
+  
+  // Note: CORS header interceptor for ngrok is set up early (at the start of this middleware)
+  // This ensures it runs for all responses, including OPTIONS
   
   next();
 });

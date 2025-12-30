@@ -1,9 +1,7 @@
 // Frontend environment configuration for new architectural blueprint
 const NODE_ENV = import.meta.env.NODE_ENV || 'development';
-// Check if we're on the production domain
-const isOnProductionDomain = window.location.hostname.includes('replit.app');
 // Use actual environment instead of forcing production
-const isProduction = NODE_ENV === 'production' || isOnProductionDomain;
+const isProduction = NODE_ENV === 'production';
 const isDevelopment = !isProduction;
 
 // Corporate Clients Configuration
@@ -121,7 +119,8 @@ export const VEHICLE_TYPES = [
 
 // Trip status configuration
 export const TRIP_STATUSES = [
-  { id: 'scheduled', name: 'Scheduled', color: '#3B82F6', description: 'Trip is scheduled but not confirmed' },
+  { id: 'order', name: 'Order', color: '#F59E0B', description: 'Trip order pending driver confirmation' },
+  { id: 'scheduled', name: 'Scheduled', color: '#3B82F6', description: 'Trip is scheduled and confirmed' },
   { id: 'confirmed', name: 'Confirmed', color: '#10B981', description: 'Trip is confirmed and ready' },
   { id: 'in_progress', name: 'In Progress', color: '#F59E0B', description: 'Trip is currently in progress' },
   { id: 'completed', name: 'Completed', color: '#059669', description: 'Trip has been completed' },

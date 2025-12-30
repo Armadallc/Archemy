@@ -229,3 +229,5 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 -- Old address fields remain for backward compatibility during migration
 
 
+
+

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel, SelectSeparator } from "../ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Textarea } from "../ui/textarea";
 import { Checkbox } from "../ui/checkbox";
@@ -170,7 +170,9 @@ function SimpleBookingForm() {
     tripCode: "",
     tripModifier: "",
     appointmentTime: "",
-    hasAppointmentTime: false // Checkbox state for appointment time
+    hasAppointmentTime: false, // Checkbox state for appointment time
+    // User tagging for notifications
+    taggedUserIds: [] as string[] // Array of user IDs to tag for notifications
   });
 
   // State for leg calculations
@@ -321,6 +323,32 @@ function SimpleBookingForm() {
       }
     }
   }, [level, selectedProgram, programs, selectedProgramLocal, user]);
+
+  // Fetch users for tagging (same program) - includes staff and client notification users
+  const { data: taggableUsers = [] } = useQuery({
+    queryKey: ["/api/users/program", effectiveProgram],
+    queryFn: async () => {
+      if (!effectiveProgram) return [];
+      const response = await apiRequest("GET", `/api/users/program/${effectiveProgram}`);
+      return await response.json();
+    },
+    enabled: !!effectiveProgram,
+  });
+  
+  // Separate staff and clients from taggableUsers
+  const superAdmins = React.useMemo(() => {
+    return taggableUsers.filter((u: any) => u.role === 'super_admin');
+  }, [taggableUsers]);
+  
+  const staffUsers = React.useMemo(() => {
+    return taggableUsers.filter((u: any) => 
+      u.role && ['corporate_admin', 'program_admin', 'program_user', 'driver'].includes(u.role)
+    );
+  }, [taggableUsers]);
+  
+  const clientUsers = React.useMemo(() => {
+    return taggableUsers.filter((u: any) => u.role === 'client_user');
+  }, [taggableUsers]);
 
   // Fetch clients based on current hierarchy level
   const { data: clients = [] } = useQuery({
@@ -621,6 +649,8 @@ function SimpleBookingForm() {
         apiData.trip_modifier = tripData.tripModifier || null;
         // Only set appointment_time if checkbox is checked
         apiData.appointment_time = tripData.hasAppointmentTime && tripData.appointmentTime ? tripData.appointmentTime : null;
+        // User tagging for notifications
+        apiData.tagged_user_ids = tripData.taggedUserIds || [];
         
         // Debug: Log what we're sending
         console.log('🔍 [Frontend] Sending recurring trip request:', {
@@ -662,7 +692,7 @@ function SimpleBookingForm() {
               scheduled_return_time: scheduledReturnTime,
               passenger_count: 1,
               is_group_trip: false,
-              status: "scheduled",
+              // status defaults to 'order' in database
               special_requirements: formatSpecialRequirements(tripData.specialRequirementIds, tripData.specialRequirementOther),
               notes: tripData.notes || null,
               // Telematics Phase 1 fields
@@ -671,6 +701,8 @@ function SimpleBookingForm() {
               trip_modifier: tripData.tripModifier || null,
               // Only set appointment_time if checkbox is checked
               appointment_time: tripData.hasAppointmentTime && tripData.appointmentTime ? tripData.appointmentTime : null,
+              // User tagging for notifications
+              tagged_user_ids: tripData.taggedUserIds || [],
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             };
@@ -703,7 +735,7 @@ function SimpleBookingForm() {
             scheduled_return_time: scheduledReturnTime,
             passenger_count: clientGroups.find((g: { id: string; member_count?: number }) => g.id === tripData.clientGroupId)?.member_count || 1,
             is_group_trip: true,
-            status: "scheduled",
+            // status defaults to 'order' in database
             special_requirements: formatSpecialRequirements(tripData.specialRequirementIds, tripData.specialRequirementOther),
             notes: tripData.notes || null,
             // Telematics Phase 1 fields
@@ -712,6 +744,8 @@ function SimpleBookingForm() {
             trip_modifier: tripData.tripModifier || null,
             // Only set appointment_time if checkbox is checked
             appointment_time: tripData.hasAppointmentTime && tripData.appointmentTime ? tripData.appointmentTime : null,
+            // User tagging for notifications
+            tagged_user_ids: tripData.taggedUserIds || [],
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };
@@ -759,7 +793,8 @@ function SimpleBookingForm() {
         tripCode: "",
         tripModifier: "",
         appointmentTime: "",
-        hasAppointmentTime: false
+        hasAppointmentTime: false,
+        taggedUserIds: []
       });
       queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
       if (formData.isRecurring) {
@@ -1160,7 +1195,10 @@ function SimpleBookingForm() {
 
           {/* Driver Section */}
           <div className="space-y-4 px-6 py-4 rounded-lg card-neu-flat -mx-6" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
-            <Label htmlFor="driverId" className="font-normal" style={{ fontSize: '16px' }}>DRIVER (Optional)</Label>
+            <Label htmlFor="driverId" className="font-normal" style={{ fontSize: '16px' }}>REQUEST DRIVER (Optional)</Label>
+            <p className="text-sm text-muted-foreground mb-2" style={{ fontSize: '14px', opacity: 0.7 }}>
+              If no driver is requested, a super admin will be notified to assign a driver and confirm the trip.
+            </p>
             <Select 
               value={formData.driverId} 
               onValueChange={(value) => setFormData({ ...formData, driverId: value })}
@@ -1673,13 +1711,183 @@ function SimpleBookingForm() {
             />
           </div>
 
+          {/* User Tagging for Notifications */}
+          <div className="space-y-4 px-6 py-4 rounded-lg card-neu-flat -mx-6" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+            <Label className="font-medium" style={{ fontSize: '16px' }}>TAG USERS FOR NOTIFICATIONS (Optional)</Label>
+            <p className="text-sm text-muted-foreground mb-2" style={{ fontSize: '14px', opacity: 0.7 }}>
+              Select users who should receive notifications about this trip's status updates
+            </p>
+            
+            <div className="space-y-2">
+              {formData.taggedUserIds.map((userId, index) => {
+                // Find tagged user (could be staff or client notification user)
+                const taggedUser = taggableUsers.find((u: any) => u.user_id === userId);
+                
+                return (
+                  <div key={index} className="flex items-center gap-2">
+                    <Select
+                      value={userId}
+                      onValueChange={(value) => {
+                        const newTaggedUserIds = [...formData.taggedUserIds];
+                        newTaggedUserIds[index] = value;
+                        setFormData({ ...formData, taggedUserIds: newTaggedUserIds });
+                      }}
+                    >
+                      <SelectTrigger className="card-neu-flat [&]:shadow-none flex-1" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                        <SelectValue placeholder="Select user to tag" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-60 z-50 card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                        {(() => {
+                          const items: React.ReactNode[] = [];
+                          
+                          // Filter super admins (exclude current user and already tagged users)
+                          const filteredSuperAdmins = superAdmins.filter(
+                            (u: any) => u.user_id !== user?.userId && (!formData.taggedUserIds.includes(u.user_id) || u.user_id === userId)
+                          );
+                          
+                          // Filter staff users (exclude current user and already tagged users)
+                          const filteredStaff = staffUsers.filter(
+                            (u: any) => u.user_id !== user?.userId && (!formData.taggedUserIds.includes(u.user_id) || u.user_id === userId)
+                          );
+                          
+                          // Filter client users (exclude already tagged users)
+                          const filteredClients = clientUsers.filter(
+                            (u: any) => !formData.taggedUserIds.includes(u.user_id) || u.user_id === userId
+                          );
+                          
+                          // Super Admins Section (at the top)
+                          if (filteredSuperAdmins.length > 0) {
+                            items.push(
+                              <SelectGroup key="group-super-admins">
+                                <SelectLabel className="px-2 py-1.5 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)', opacity: 0.8 }}>
+                                  Super Admins
+                                </SelectLabel>
+                                {filteredSuperAdmins.map((u: any) => {
+                                  const displayName = u.first_name && u.last_name 
+                                    ? `${u.first_name} ${u.last_name}`
+                                    : u.user_name || u.email;
+                                  return (
+                                    <SelectItem 
+                                      key={u.user_id} 
+                                      value={u.user_id}
+                                      className="hover:card-neu-flat"
+                                    >
+                                      {displayName}
+                                    </SelectItem>
+                                  );
+                                })}
+                              </SelectGroup>
+                            );
+                          }
+                          
+                          // Staff Section
+                          if (filteredStaff.length > 0) {
+                            if (filteredSuperAdmins.length > 0) {
+                              items.push(<SelectSeparator key="separator-staff" />);
+                            }
+                            items.push(
+                              <SelectGroup key="group-staff">
+                                <SelectLabel className="px-2 py-1.5 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)', opacity: 0.8 }}>
+                                  Staff
+                                </SelectLabel>
+                                {filteredStaff.map((u: any) => {
+                                  const displayName = u.first_name && u.last_name 
+                                    ? `${u.first_name} ${u.last_name}`
+                                    : u.user_name || u.email;
+                                  return (
+                                    <SelectItem 
+                                      key={u.user_id} 
+                                      value={u.user_id}
+                                      className="hover:card-neu-flat"
+                                    >
+                                      {displayName}
+                                    </SelectItem>
+                                  );
+                                })}
+                              </SelectGroup>
+                            );
+                          }
+                          
+                          // Clients Section
+                          if (filteredClients.length > 0) {
+                            if (filteredSuperAdmins.length > 0 || filteredStaff.length > 0) {
+                              items.push(<SelectSeparator key="separator-clients" />);
+                            }
+                            items.push(
+                              <SelectGroup key="group-clients">
+                                <SelectLabel className="px-2 py-1.5 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)', opacity: 0.8 }}>
+                                  Clients
+                                </SelectLabel>
+                                {filteredClients.map((u: any) => {
+                                  // Client users have first_name and last_name in user_name or separate fields
+                                  const displayName = u.first_name && u.last_name 
+                                    ? `${u.first_name} ${u.last_name}`
+                                    : u.user_name || u.email;
+                                  return (
+                                    <SelectItem 
+                                      key={u.user_id} 
+                                      value={u.user_id}
+                                      className="hover:card-neu-flat"
+                                    >
+                                      {displayName}
+                                    </SelectItem>
+                                  );
+                                })}
+                              </SelectGroup>
+                            );
+                          }
+                          
+                          return items;
+                        })()}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const newTaggedUserIds = formData.taggedUserIds.filter((_, i) => i !== index);
+                        setFormData({ ...formData, taggedUserIds: newTaggedUserIds });
+                      }}
+                      className="px-2 py-1 h-8 w-8 card-neu-flat hover:card-neu [&]:shadow-none"
+                      style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)' }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                );
+              })}
+              
+              {/* Add user button */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setFormData({ ...formData, taggedUserIds: [...formData.taggedUserIds, ""] });
+                }}
+                className="w-full card-neu-flat hover:card-neu [&]:shadow-none"
+                style={{ backgroundColor: 'var(--background)', border: 'none', boxShadow: '0 0 8px rgba(122, 255, 254, 0.15)' }}
+                disabled={formData.taggedUserIds.length >= 10 || taggableUsers.length === 0}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Tag User ({formData.taggedUserIds.length}/10)
+              </Button>
+            </div>
+            
+            {taggableUsers.length === 0 && effectiveProgram && (
+              <p className="text-sm mt-1" style={{ color: 'var(--muted-foreground)' }}>
+                No staff or clients available to tag in this program.
+              </p>
+            )}
+          </div>
+
           <Button 
             type="submit" 
             className="w-full card-neu hover:card-neu [&]:shadow-none"
             style={{ backgroundColor: 'var(--background)', border: 'none', fontSize: '26px', boxShadow: '0 0 12px rgba(122, 255, 254, 0.2)' }}
             disabled={createTripMutation.isPending}
           >
-            <span style={{ textShadow: '0 0 8px rgba(122, 255, 254, 0.4), 0 0 12px rgba(122, 255, 254, 0.2)' }}>
+            <span style={{ color: '#7afffe', textShadow: '0 0 8px rgba(122, 255, 254, 0.4), 0 0 12px rgba(122, 255, 254, 0.2)' }}>
               {createTripMutation.isPending ? "Scheduling..." : "BOOK IT!"}
             </span>
           </Button>

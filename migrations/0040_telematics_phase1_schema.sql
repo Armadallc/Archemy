@@ -118,3 +118,5 @@ SELECT 'Telematics Phase 1 schema migration completed successfully!' as status;
 
 
 
+
+

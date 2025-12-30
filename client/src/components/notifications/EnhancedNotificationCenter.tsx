@@ -204,6 +204,17 @@ function EnhancedNotificationCenterComponent({ className }: EnhancedNotification
         });
         
         console.log('✅ trip_update notification added');
+      } else if (message.type === 'trip_tagged') {
+        const trip = message.data;
+        const clientName = trip.clientName || 'Unknown Client';
+        addNotification({
+          type: 'info',
+          title: 'You\'ve been tagged in a trip',
+          message: `You've been tagged to receive notifications for ${clientName}'s trip`,
+          category: 'trip',
+          priority: 'medium',
+          data: trip
+        });
       } else if (message.type === 'driver_update') {
         addNotification({
           type: 'info',
@@ -517,34 +528,34 @@ function EnhancedNotificationCenterComponent({ className }: EnhancedNotification
     <>
       {/* Backdrop to close on outside click */}
       <div 
-        className="fixed inset-0 z-[99998] bg-black/20" 
+        className="fixed inset-0 z-[99998] bg-black/10 backdrop-blur-sm" 
         onClick={() => setIsOpen(false)}
       />
       {/* Notification panel */}
-      <div className="fixed right-4 top-20 w-96 max-h-[calc(100vh-6rem)] bg-background border border-border rounded-lg shadow-2xl z-[99999] flex flex-col" style={{ zIndex: 99999 }}>
-          <Card className="border-0 shadow-none bg-background flex flex-col h-full">
-            <CardHeader className="pb-3 border-b border-border flex-shrink-0">
+      <div className="fixed right-4 top-20 w-96 max-h-[calc(100vh-6rem)] card-neu z-[99999] flex flex-col" style={{ zIndex: 99999, backgroundColor: 'var(--background)', border: 'none', boxShadow: 'var(--shadow-drop)' }}>
+          <Card className="border-0 shadow-none flex flex-col h-full card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+            <CardHeader className="pb-3 border-b flex-shrink-0 card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none', borderBottom: '1px solid var(--border-muted)' }}>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg text-foreground">Notifications</CardTitle>
                 <div className="flex items-center space-x-2">
-                  <Button variant="ghost" size="sm" onClick={markAllAsRead} className="text-muted-foreground hover:text-foreground">
+                  <Button variant="ghost" size="sm" onClick={markAllAsRead} className="text-muted-foreground hover:text-foreground card-neu-flat hover:card-neu [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                     Mark All Read
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => setIsOpen(false)} className="text-muted-foreground hover:text-foreground">
+                  <Button variant="ghost" size="sm" onClick={() => setIsOpen(false)} className="text-muted-foreground hover:text-foreground card-neu-flat hover:card-neu [&]:shadow-none" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
             </CardHeader>
 
-            <CardContent className="p-0 flex-1 overflow-hidden flex flex-col">
+            <CardContent className="p-0 flex-1 overflow-hidden flex flex-col" style={{ backgroundColor: 'var(--background)' }}>
               <Tabs defaultValue="notifications" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="notifications">Notifications</TabsTrigger>
-                  <TabsTrigger value="settings">Settings</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none', margin: '12px', marginBottom: '0' }}>
+                  <TabsTrigger value="notifications" className="card-neu-flat hover:card-neu data-[state=active]:card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>Notifications</TabsTrigger>
+                  <TabsTrigger value="settings" className="card-neu-flat hover:card-neu data-[state=active]:card-neu" style={{ backgroundColor: 'var(--background)', border: 'none' }}>Settings</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="notifications" className="space-y-4 p-4">
+                <TabsContent value="notifications" className="space-y-4 p-4" style={{ backgroundColor: 'var(--background)' }}>
                   {/* Search and Filters */}
                   <div className="space-y-3">
                     <div className="relative">
@@ -553,7 +564,8 @@ function EnhancedNotificationCenterComponent({ className }: EnhancedNotification
                         placeholder="Search notifications..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 bg-background border-border"
+                        className="pl-10 card-neu-flat [&]:shadow-none"
+                        style={{ backgroundColor: 'var(--background)', border: 'none' }}
                       />
                     </div>
 
@@ -561,7 +573,8 @@ function EnhancedNotificationCenterComponent({ className }: EnhancedNotification
                       <select
                         value={selectedCategory}
                         onChange={(e) => setSelectedCategory(e.target.value)}
-                        className="flex-1 px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="flex-1 px-3 py-2 rounded-md card-neu-flat text-foreground text-sm focus:outline-none [&]:shadow-none"
+                        style={{ backgroundColor: 'var(--background)', border: 'none' }}
                       >
                         <option value="all">All Categories</option>
                         <option value="trip">Trips</option>
@@ -575,7 +588,8 @@ function EnhancedNotificationCenterComponent({ className }: EnhancedNotification
                       <select
                         value={selectedPriority}
                         onChange={(e) => setSelectedPriority(e.target.value)}
-                        className="flex-1 px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="flex-1 px-3 py-2 rounded-md card-neu-flat text-foreground text-sm focus:outline-none [&]:shadow-none"
+                        style={{ backgroundColor: 'var(--background)', border: 'none' }}
                       >
                         <option value="all">All Priorities</option>
                         <option value="urgent">Urgent</option>
@@ -596,11 +610,12 @@ function EnhancedNotificationCenterComponent({ className }: EnhancedNotification
                       filteredNotifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                          className={`p-3 rounded-lg cursor-pointer transition-all ${
                             notification.read 
-                              ? 'bg-muted/50 border-border hover:bg-muted' 
-                              : 'bg-primary/10 border-primary/20 hover:bg-primary/20'
-                          }`}
+                              ? 'card-neu-flat hover:card-neu' 
+                              : 'card-neu hover:card-neu'
+                          } [&]:shadow-none`}
+                          style={{ backgroundColor: 'var(--background)', border: 'none' }}
                           onClick={() => markAsRead(notification.id)}
                         >
                           <div className="flex items-start space-x-3">
@@ -638,7 +653,8 @@ function EnhancedNotificationCenterComponent({ className }: EnhancedNotification
                                     e.stopPropagation();
                                     removeNotification(notification.id);
                                   }}
-                                  className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                                  className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground card-neu-flat hover:card-neu [&]:shadow-none"
+                                  style={{ backgroundColor: 'var(--background)', border: 'none' }}
                                 >
                                   <X className="h-3 w-3" />
                                 </Button>
@@ -651,17 +667,17 @@ function EnhancedNotificationCenterComponent({ className }: EnhancedNotification
                   </div>
                 </TabsContent>
 
-                <TabsContent value="settings" className="space-y-4 p-4">
+                <TabsContent value="settings" className="space-y-4 p-4" style={{ backgroundColor: 'var(--background)' }}>
                   <div className="space-y-6">
                     {/* Category Preferences */}
                     <div>
-                      <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">
+                      <h4 className="text-sm font-medium text-foreground mb-3">
                         Notification Categories
                       </h4>
                       <div className="space-y-2">
                         {Object.entries(preferences.categories).map(([category, enabled]) => (
-                          <div key={category} className="flex items-center justify-between">
-                            <span className="text-sm text-gray-700 dark:text-gray-300 capitalize">
+                          <div key={category} className="flex items-center justify-between p-2 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                            <span className="text-sm text-foreground capitalize">
                               {category}
                             </span>
                             <Switch
@@ -680,7 +696,7 @@ function EnhancedNotificationCenterComponent({ className }: EnhancedNotification
                       </h4>
                       <div className="space-y-2">
                         {Object.entries(preferences.priorities).map(([priority, enabled]) => (
-                          <div key={priority} className="flex items-center justify-between">
+                          <div key={priority} className="flex items-center justify-between p-2 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                             <span className="text-sm text-foreground capitalize">
                               {priority}
                             </span>
@@ -700,7 +716,7 @@ function EnhancedNotificationCenterComponent({ className }: EnhancedNotification
                       </h4>
                       <div className="space-y-2">
                         {Object.entries(preferences.channels).map(([channel, enabled]) => (
-                          <div key={channel} className="flex items-center justify-between">
+                          <div key={channel} className="flex items-center justify-between p-2 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
                             <span className="text-sm text-foreground capitalize">
                               {channel === 'inApp' ? 'In-App' : channel.toUpperCase()}
                             </span>
@@ -715,12 +731,12 @@ function EnhancedNotificationCenterComponent({ className }: EnhancedNotification
 
                     {/* Quiet Hours */}
                     <div>
-                      <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">
+                      <h4 className="text-sm font-medium text-foreground mb-3">
                         Quiet Hours
                       </h4>
                       <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                        <div className="flex items-center justify-between p-2 rounded-lg card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                          <span className="text-sm text-foreground">
                             Enable Quiet Hours
                           </span>
                           <Switch
@@ -737,7 +753,8 @@ function EnhancedNotificationCenterComponent({ className }: EnhancedNotification
                                 type="time"
                                 value={preferences.quietHours.start}
                                 onChange={(e) => updatePreferences('quietHours', { ...preferences.quietHours, start: e.target.value })}
-                                className="w-full px-2 py-1 border border-border rounded text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                                className="w-full px-2 py-1 rounded text-sm card-neu-flat text-foreground focus:outline-none [&]:shadow-none"
+                                style={{ backgroundColor: 'var(--background)', border: 'none' }}
                               />
                             </div>
                             <div>
@@ -746,7 +763,8 @@ function EnhancedNotificationCenterComponent({ className }: EnhancedNotification
                                 type="time"
                                 value={preferences.quietHours.end}
                                 onChange={(e) => updatePreferences('quietHours', { ...preferences.quietHours, end: e.target.value })}
-                                className="w-full px-2 py-1 border border-border rounded text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                                className="w-full px-2 py-1 rounded text-sm card-neu-flat text-foreground focus:outline-none [&]:shadow-none"
+                                style={{ backgroundColor: 'var(--background)', border: 'none' }}
                               />
                             </div>
                           </div>
@@ -768,8 +786,8 @@ function EnhancedNotificationCenterComponent({ className }: EnhancedNotification
         variant="ghost"
         size="sm"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative"
-        style={{ backgroundColor: 'var(--muted)' }}
+        className="relative card-neu-flat hover:card-neu [&]:shadow-none"
+        style={{ backgroundColor: 'var(--background)', border: 'none' }}
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (

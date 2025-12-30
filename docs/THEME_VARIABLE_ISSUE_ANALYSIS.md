@@ -148,3 +148,5 @@ Use `@media (prefers-color-scheme: dark)` to define dark mode variables, though 
 - Text colors use `var(--foreground)` which should adapt to theme, but may need verification
 - Badge component uses `variant="outline"` to avoid default primary styles
 
+
+

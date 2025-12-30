@@ -31,9 +31,12 @@ class WebSocketService {
     // Use environment variable or default to Render backend
     // Production: Use Render WebSocket URL (wss:// for secure WebSocket)
     // Development: Use localhost or local IP
+    // For ngrok HTTPS testing: Use backend ngrok URL (wss://5b3352e68162.ngrok-free.app)
     const wsBaseUrl = process.env.EXPO_PUBLIC_WS_URL || 
       (__DEV__ 
-        ? (Platform.OS === 'web' ? 'ws://localhost:8081' : 'ws://192.168.12.227:8081')
+        ? (Platform.OS === 'web' 
+          ? (typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss://5b3352e68162.ngrok-free.app' : 'ws://localhost:8081')
+          : 'ws://192.168.12.227:8081')
         : 'wss://halcyon-backend.onrender.com');
     this.url = `${wsBaseUrl}/ws`;
   }

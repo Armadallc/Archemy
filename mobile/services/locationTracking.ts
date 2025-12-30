@@ -37,6 +37,7 @@ class LocationTrackingService {
   async initialize(userId: string): Promise<boolean> {
     try {
       console.log('📍 LocationTrackingService.initialize called for userId:', userId);
+      console.log('📍 Platform:', Platform.OS);
       
       // First, get the driver ID from the user ID
       const driverId = await this.getDriverIdFromUserId(userId);
@@ -49,36 +50,63 @@ class LocationTrackingService {
       console.log('✅ Driver ID found:', driverId);
 
       // Check current permission status first
-      const { status: currentStatus } = await Location.getForegroundPermissionsAsync();
-      console.log('📍 Current location permission status:', currentStatus);
+      let currentStatus;
+      try {
+        const permissionResult = await Location.getForegroundPermissionsAsync();
+        currentStatus = permissionResult.status;
+        console.log('📍 Current location permission status:', currentStatus);
+      } catch (permError) {
+        console.error('❌ Error checking location permissions:', permError);
+        currentStatus = 'undetermined';
+      }
       
       // Request location permissions (will show prompt if not already granted)
       console.log('📍 Requesting location permissions...');
-      const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
-      console.log('📍 Location permission status after request:', foregroundStatus);
+      let foregroundStatus;
+      try {
+        const requestResult = await Location.requestForegroundPermissionsAsync();
+        foregroundStatus = requestResult.status;
+        console.log('📍 Location permission status after request:', foregroundStatus);
+      } catch (requestError) {
+        console.error('❌ Error requesting location permissions:', requestError);
+        foregroundStatus = 'denied';
+      }
       
       if (foregroundStatus !== 'granted') {
-        Alert.alert(
-          'Location Permission Required',
-          'HALCYON DRIVE requires location access to track your position. Please enable location permissions in your device settings.',
-          [
-            { text: 'Cancel', style: 'cancel', onPress: () => {} },
-            { 
-              text: 'Open Settings', 
-              onPress: () => {
-                if (Platform.OS === 'ios') {
-                  Linking.openURL('app-settings:');
-                } else {
-                  Linking.openSettings();
+        const message = Platform.OS === 'web' 
+          ? 'HALCYON DRIVE requires location access to track your position. Please allow location access in your browser settings and refresh the page.'
+          : 'HALCYON DRIVE requires location access to track your position. Please enable location permissions in your device settings.';
+        
+        // On web, use console.warn instead of Alert (Alert might not work on web)
+        if (Platform.OS === 'web') {
+          console.warn('⚠️ Location permission denied:', message);
+          console.warn('⚠️ Please allow location access in your browser settings:');
+          console.warn('   1. Tap the lock icon in the address bar');
+          console.warn('   2. Select "Location" and choose "Allow"');
+          console.warn('   3. Refresh the page');
+        } else {
+          Alert.alert(
+            'Location Permission Required',
+            message,
+            [
+              { text: 'Cancel', style: 'cancel', onPress: () => {} },
+              { 
+                text: 'Open Settings', 
+                onPress: () => {
+                  if (Platform.OS === 'ios') {
+                    Linking.openURL('app-settings:');
+                  } else {
+                    Linking.openSettings();
+                  }
                 }
               }
-            }
-          ]
-        );
+            ]
+          );
+        }
         return false;
       }
 
-      // Request background location permission (for iOS)
+      // Request background location permission (for iOS only, not web)
       // Note: Expo Go has limitations with background location - may fail gracefully
       if (Platform.OS === 'ios') {
         try {
@@ -93,6 +121,8 @@ class LocationTrackingService {
           console.warn('⚠️ Could not request background location permission (Expo Go limitation):', backgroundError);
           console.log('📍 Location tracking will work in foreground only');
         }
+      } else if (Platform.OS === 'web') {
+        console.log('📍 Web platform detected - location tracking will work while browser tab is active');
       }
 
       // Fetch driver profile to get availability status
@@ -123,25 +153,68 @@ class LocationTrackingService {
   startTracking() {
     if (this.isTracking || !this.driverId) {
       console.warn('⚠️ Location tracking already started or driver ID not set');
+      if (this.isTracking) {
+        console.log('📍 Location tracking is already active');
+      }
+      if (!this.driverId) {
+        console.log('📍 Driver ID is not set - cannot start tracking');
+      }
       return;
     }
 
     console.log('📍 Starting location tracking...');
+    console.log('📍 Platform:', Platform.OS);
+    console.log('📍 Driver ID:', this.driverId);
 
-    this.locationWatchId = Location.watchPositionAsync(
-      {
-        accuracy: Location.Accuracy.High,
-        timeInterval: 5000, // Check every 5 seconds
-        distanceInterval: 5, // Update every 5 meters
-        mayShowUserSettingsDialog: true,
-      },
-      async (location) => {
-        await this.handleLocationUpdate(location);
+    // Start watching position (fires when device moves)
+    try {
+      this.locationWatchId = Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.High,
+          timeInterval: 5000, // Check every 5 seconds
+          distanceInterval: 5, // Update every 5 meters
+          mayShowUserSettingsDialog: true,
+        },
+        async (location) => {
+          console.log('📍 Location watch triggered:', {
+            lat: location.coords.latitude.toFixed(6),
+            lng: location.coords.longitude.toFixed(6),
+            accuracy: location.coords.accuracy?.toFixed(0) + 'm',
+          });
+          await this.handleLocationUpdate(location);
+        }
+      );
+      console.log('✅ Location watch started');
+    } catch (error) {
+      console.error('❌ Failed to start location watch:', error);
+      // Continue with periodic updates even if watch fails
+    }
+
+    // Also set up a periodic timer to force updates even when stationary
+    // This ensures location stays fresh on the map even when driver is parked
+    this.updateInterval = setInterval(async () => {
+      try {
+        // Get current location even if device hasn't moved
+        const currentLocation = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
+        
+        console.log('📍 Periodic location update:', {
+          lat: currentLocation.coords.latitude.toFixed(6),
+          lng: currentLocation.coords.longitude.toFixed(6),
+          accuracy: currentLocation.coords.accuracy?.toFixed(0) + 'm',
+        });
+        
+        await this.handleLocationUpdate(currentLocation);
+      } catch (error) {
+        console.warn('⚠️ Failed to get periodic location update:', error);
+        // Don't throw - continue tracking
       }
-    );
+    }, this.minUpdateInterval); // Every 10 seconds
 
     this.isTracking = true;
-    console.log('✅ Location tracking started');
+    console.log('✅ Location tracking started (with periodic updates every 10s)');
+    console.log('📍 Platform:', Platform.OS);
   }
 
   /**
@@ -191,14 +264,22 @@ class LocationTrackingService {
    * - First update
    * - Moved more than minDistanceChange meters
    * - More than minUpdateInterval milliseconds since last update
+   * 
+   * Note: Uses current time (not location timestamp) to handle cached GPS locations
    */
   private shouldSendUpdate(location: LocationUpdate): boolean {
     if (!this.lastSentLocation) return true;
 
-    const timeSinceLastUpdate = new Date(location.timestamp).getTime() - 
-      new Date(this.lastSentLocation.timestamp).getTime();
+    // Use current time instead of location timestamp to handle cached GPS data
+    // Location timestamp might be stale if GPS returns cached position
+    const now = Date.now();
+    const timeSinceLastUpdate = now - new Date(this.lastSentLocation.timestamp).getTime();
     
-    if (timeSinceLastUpdate >= this.minUpdateInterval) return true;
+    // Always send if enough time has passed (keeps location fresh on map)
+    if (timeSinceLastUpdate >= this.minUpdateInterval) {
+      console.log(`📍 Sending location update (${Math.round(timeSinceLastUpdate / 1000)}s since last update)`);
+      return true;
+    }
 
     // Calculate distance using Haversine formula
     const distance = this.calculateDistance(
@@ -208,7 +289,14 @@ class LocationTrackingService {
       location.longitude
     );
 
-    return distance >= this.minDistanceChange;
+    // Send if moved significant distance
+    if (distance >= this.minDistanceChange) {
+      console.log(`📍 Sending location update (moved ${distance.toFixed(1)}m)`);
+      return true;
+    }
+
+    // Skip update - not enough time passed and not enough movement
+    return false;
   }
 
   /**
@@ -267,7 +355,10 @@ class LocationTrackingService {
    * Send location update to backend
    */
   private async sendLocationUpdate(location: LocationUpdate) {
-    if (!this.driverId) return;
+    if (!this.driverId) {
+      console.warn('⚠️ Cannot send location update - driver ID not set');
+      return;
+    }
 
     // Check if driver is available OR has an active trip (location sharing mandatory during trips)
     const shouldShareLocation = this.isAvailable || this.activeTripId !== null;
@@ -278,6 +369,14 @@ class LocationTrackingService {
     }
 
     try {
+      console.log('📍 Sending location update to backend...', {
+        driverId: this.driverId,
+        lat: location.latitude.toFixed(6),
+        lng: location.longitude.toFixed(6),
+        accuracy: location.accuracy.toFixed(0) + 'm',
+        platform: Platform.OS,
+      });
+      
       await apiClient.updateDriverLocation(this.driverId, {
         latitude: location.latitude,
         longitude: location.longitude,
@@ -287,14 +386,20 @@ class LocationTrackingService {
         tripId: this.activeTripId || undefined, // Include trip_id if active trip exists
       });
 
-      console.log('📍 Location update sent:', {
+      console.log('✅ Location update sent successfully:', {
         lat: location.latitude.toFixed(6),
         lng: location.longitude.toFixed(6),
         accuracy: location.accuracy.toFixed(0) + 'm',
         tripId: this.activeTripId || 'none',
+        platform: Platform.OS,
       });
     } catch (error) {
       console.error('❌ Failed to send location update:', error);
+      console.error('❌ Error details:', {
+        driverId: this.driverId,
+        platform: Platform.OS,
+        error: error instanceof Error ? error.message : String(error),
+      });
       // Don't throw - continue tracking even if one update fails
     }
   }

@@ -229,6 +229,7 @@ export default function ActivityFeed({
         return <MessageSquare className="text-muted-foreground h-4 w-4" />;
       case 'user_mentioned':
       case 'user_tagged':
+      case 'trip_tagged':
         return <Tag className="text-muted-foreground h-4 w-4" />;
       case 'kanban_card_created':
       case 'kanban_card_moved':
@@ -278,7 +279,8 @@ export default function ActivityFeed({
       case 'user_mentioned':
         return 'mentioned you';
       case 'user_tagged':
-        return 'tagged you';
+      case 'trip_tagged':
+        return 'tagged you in a trip';
       case 'kanban_card_created':
         return 'created a card';
       case 'kanban_card_moved':

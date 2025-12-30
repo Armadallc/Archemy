@@ -70,18 +70,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(userData);
         
         // Initialize location tracking if user is a driver
-        console.log('🔍 Checking user role for location tracking:', userData.role);
+        console.log('🔍 [AuthContext] Checking user role for location tracking:', userData.role);
+        console.log('🔍 [AuthContext] User ID:', userData.id);
+        console.log('🔍 [AuthContext] User role:', userData.role);
+        
         if (userData.role === 'driver') {
-          console.log('✅ User is a driver, initializing location tracking...');
-          const initialized = await locationTrackingService.initialize(userData.id);
-          if (initialized) {
-            console.log('✅ Location tracking initialized, starting...');
-            locationTrackingService.startTracking();
-          } else {
-            console.warn('⚠️ Location tracking initialization failed');
+          console.log('✅ [AuthContext] User is a driver, initializing location tracking...');
+          console.log('📍 [AuthContext] Calling locationTrackingService.initialize with userId:', userData.id);
+          
+          try {
+            const initialized = await locationTrackingService.initialize(userData.id);
+            console.log('📍 [AuthContext] Location tracking initialization result:', initialized);
+            
+            if (initialized) {
+              console.log('✅ [AuthContext] Location tracking initialized, starting...');
+              locationTrackingService.startTracking();
+              console.log('✅ [AuthContext] Location tracking startTracking() called');
+            } else {
+              console.warn('⚠️ [AuthContext] Location tracking initialization failed - permission denied or driver ID not found');
+            }
+          } catch (initError) {
+            console.error('❌ [AuthContext] Error during location tracking initialization:', initError);
           }
         } else {
-          console.log('ℹ️ User is not a driver (role:', userData.role, '), skipping location tracking');
+          console.log('ℹ️ [AuthContext] User is not a driver (role:', userData.role, '), skipping location tracking');
         }
       }
     } catch (error) {
@@ -120,32 +132,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Token is already stored by the API client
       
       // Initialize location tracking if user is a driver
-      console.log('🔍 Checking user role for location tracking:', userData.role);
+      console.log('🔍 [AuthContext] Checking user role for location tracking:', userData.role);
+      console.log('🔍 [AuthContext] User ID:', userData.id);
+      console.log('🔍 [AuthContext] User role:', userData.role);
+      
       if (userData.role === 'driver') {
-        console.log('✅ User is a driver, initializing location tracking...');
-        const initialized = await locationTrackingService.initialize(userData.id);
-        if (initialized) {
-          console.log('✅ Location tracking initialized, starting...');
+        console.log('✅ [AuthContext] User is a driver, initializing location tracking...');
+        console.log('📍 [AuthContext] Calling locationTrackingService.initialize with userId:', userData.id);
+        
+        try {
+          const initialized = await locationTrackingService.initialize(userData.id);
+          console.log('📍 [AuthContext] Location tracking initialization result:', initialized);
           
-          // Fetch driver profile to get availability status
-          try {
-            const profile = await apiClient.getDriverProfile();
-            const isAvailable = profile?.is_available ?? false; // Default to false - driver must explicitly enable
-            locationTrackingService.setAvailability(isAvailable);
-            console.log(`📍 Driver availability status: ${isAvailable}`);
-          } catch (error) {
-            console.warn('⚠️ Could not fetch driver profile for availability status:', error);
-            // Default to false - driver must explicitly enable
-            locationTrackingService.setAvailability(false);
+          if (initialized) {
+            console.log('✅ [AuthContext] Location tracking initialized, starting...');
+            
+            // Fetch driver profile to get availability status
+            try {
+              const profile = await apiClient.getDriverProfile();
+              const isAvailable = profile?.is_available ?? false; // Default to false - driver must explicitly enable
+              locationTrackingService.setAvailability(isAvailable);
+              console.log(`📍 [AuthContext] Driver availability status: ${isAvailable}`);
+            } catch (error) {
+              console.warn('⚠️ [AuthContext] Could not fetch driver profile for availability status:', error);
+              // Default to false - driver must explicitly enable
+              locationTrackingService.setAvailability(false);
+            }
+            
+            locationTrackingService.startTracking();
+            console.log('✅ [AuthContext] Location tracking startTracking() called');
+          } else {
+            // If location permission denied, still allow login but warn user
+            console.warn('⚠️ [AuthContext] Location tracking not started - permission denied or driver ID not found');
           }
-          
-          locationTrackingService.startTracking();
-        } else {
-          // If location permission denied, still allow login but warn user
-          console.warn('⚠️ Location tracking not started - permission denied or driver ID not found');
+        } catch (initError) {
+          console.error('❌ [AuthContext] Error during location tracking initialization:', initError);
         }
       } else {
-        console.log('ℹ️ User is not a driver (role:', userData.role, '), skipping location tracking');
+        console.log('ℹ️ [AuthContext] User is not a driver (role:', userData.role, '), skipping location tracking');
       }
     } catch (error) {
       console.log('❌ AuthContext: Login failed:', error);

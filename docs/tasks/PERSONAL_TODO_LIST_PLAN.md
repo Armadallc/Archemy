@@ -829,3 +829,5 @@ CREATE POLICY "Users can delete their own todos"
 3. **API Validation**: Server validates `user_id` from auth token
 4. **No Cross-User Access**: No way for users to access others' todos
 
+
+

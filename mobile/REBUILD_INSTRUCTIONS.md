@@ -53,3 +53,5 @@ The current code (lines 596-695) shows MessageComponent has:
 
 If delete icons still appear after complete rebuild, there may be a different code path or build target being used.
 
+
+

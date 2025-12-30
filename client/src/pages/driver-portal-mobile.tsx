@@ -83,10 +83,11 @@ interface DriverTrip {
   pickupLocation: string;
   dropoffLocation: string;
   scheduledPickupTime: string;
-  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'order' | 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
   tripType: string;
   passengerCount: number;
   notes?: string;
+  recurring_trip_id?: string;
 }
 
 export default function DriverPortalMobile() {
@@ -103,16 +104,34 @@ export default function DriverPortalMobile() {
   // Only enable trip fetching if user is authenticated as a driver
   const isDriverAuthenticated = Boolean(user && user.role === 'driver');
 
-  // Fetch driver trips - disabled for web drivers
+  // Fetch driver trips
   const { data: trips = [], isLoading, refetch, error } = useQuery<DriverTrip[]>({
-    queryKey: ['/api/mobile/driver/trips'],
+    queryKey: ['/api/mobile/trips/driver'],
     queryFn: async () => {
-      // For web drivers, return empty array instead of calling mobile API
-      return [];
+      if (!isDriverAuthenticated) return [];
+      const response = await apiRequest('GET', '/api/mobile/trips/driver');
+      if (!response.ok) {
+        throw new Error('Failed to fetch trips');
+      }
+      const data = await response.json();
+      // Transform trips to match DriverTrip interface
+      return data.map((trip: any) => ({
+        id: trip.id,
+        clientName: trip.clientName || trip.client_name || (trip.clients ? `${trip.clients.first_name || ''} ${trip.clients.last_name || ''}`.trim() : 'Unknown Client'),
+        clientPhone: trip.clientPhone || trip.client_phone || '',
+        pickupLocation: trip.pickupLocation || trip.pickup_address || '',
+        dropoffLocation: trip.dropoffLocation || trip.dropoff_address || '',
+        scheduledPickupTime: trip.scheduledPickupTime || trip.scheduled_pickup_time || '',
+        status: trip.status || 'scheduled',
+        tripType: trip.tripType || trip.trip_type || 'one_way',
+        passengerCount: trip.passengerCount || trip.passenger_count || 1,
+        notes: trip.notes || trip.notes || undefined,
+        recurring_trip_id: trip.recurring_trip_id
+      }));
     },
-    enabled: false, // Disable mobile API calls
-    refetchInterval: 0,
-    retry: 0,
+    enabled: isDriverAuthenticated,
+    refetchInterval: 30000, // Refetch every 30 seconds
+    retry: 2,
   });
 
   // Status update mutation
@@ -207,6 +226,7 @@ export default function DriverPortalMobile() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
+      case 'order': return <AlertTriangle className="h-4 w-4" style={{ color: '#F59E0B' }} />;
       case 'scheduled': return <Clock className="h-4 w-4 text-blue-600" />;
       case 'in_progress': return <PlayCircle className="h-4 w-4 text-orange-600" />;
       case 'completed': return <CheckCircle className="h-4 w-4 text-green-600" />;
@@ -217,6 +237,7 @@ export default function DriverPortalMobile() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'order': return 'bg-amber-500';
       case 'scheduled': return 'bg-orange-400';
       case 'in_progress': return 'bg-blue-400';
       case 'completed': return 'bg-green-600';
@@ -235,11 +256,62 @@ export default function DriverPortalMobile() {
 
   const getStatusButtonText = (status: string) => {
     switch (status) {
-      case 'scheduled': return 'Confirm Trip';
-      case 'in_progress': return 'End Trip';
+      case 'scheduled': return 'Start Trip';
+      case 'in_progress': return 'Complete Trip';
       case 'completed': return 'Completed';
       default: return 'Update Status';
     }
+  };
+
+  // Confirm order mutation
+  const confirmOrderMutation = useMutation({
+    mutationFn: async (tripId: string) => {
+      const response = await apiRequest('POST', `/api/trips/${tripId}/confirm-order`);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to confirm order');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/mobile/driver/trips'] });
+      refetch();
+    },
+  });
+
+  // Decline order mutation
+  const declineOrderMutation = useMutation({
+    mutationFn: async ({ tripId, reason }: { tripId: string; reason: string }) => {
+      const response = await apiRequest('POST', `/api/trips/${tripId}/decline-order`, {
+        reason
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to decline order');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/mobile/driver/trips'] });
+      refetch();
+    },
+  });
+
+  const [showDeclineDialog, setShowDeclineDialog] = useState<string | null>(null);
+  const [declineReason, setDeclineReason] = useState<string>('');
+
+  const handleConfirmOrder = (tripId: string) => {
+    confirmOrderMutation.mutate(tripId);
+  };
+
+  const handleDeclineOrder = (tripId: string) => {
+    if (!declineReason) {
+      alert('Please select a reason for declining');
+      return;
+    }
+    declineOrderMutation.mutate({ tripId, reason: declineReason });
+    setShowDeclineDialog(null);
+    setDeclineReason('');
   };
 
   const openNavigation = (address: string) => {
@@ -433,13 +505,14 @@ export default function DriverPortalMobile() {
                           {trip.clientName}
                         </span>
                       </div>
-                      <div className={`px-3 py-1 text-xs font-medium ${
+                      <div className={`px-3 py-1 text-xs font-medium rounded-full ${
+                        trip.status === 'order' ? 'bg-amber-100 text-amber-800' :
                         trip.status === 'scheduled' ? 'bg-orange-100 text-orange-800' :
                         trip.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
                         trip.status === 'completed' ? 'bg-green-100 text-green-800' :
                         'bg-stone-100 text-stone-800'
                       }`}>
-                        {trip.status.replace('_', ' ')}
+                        {trip.status === 'order' ? 'ORDER' : trip.status.replace('_', ' ').toUpperCase()}
                       </div>
                     </div>
                     
@@ -454,7 +527,7 @@ export default function DriverPortalMobile() {
 
                   {/* Expanded Trip Details */}
                   {selectedTrip === trip.id && (
-                    <div className="border-t border-stone-200 bg-stone-50">
+                    <div className="border-t card-neu-flat" style={{ backgroundColor: 'var(--background)', border: 'none', borderTop: '1px solid var(--border-muted)' }}>
                       <div className="p-6 space-y-4">
                         {/* Client Info */}
                         <div className="flex items-center gap-3">
@@ -485,48 +558,165 @@ export default function DriverPortalMobile() {
 
                         {/* Action Buttons */}
                         <div className="flex gap-3 pt-4">
-                          {/* Main Status Button */}
-                          {getNextStatus(trip.status) && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleStatusUpdate(trip.id, getNextStatus(trip.status)!);
-                              }}
-                              className="flex-1 bg-stone-800 hover:bg-stone-700 text-white font-semibold py-3 px-6 transition-colors disabled:opacity-50"
-                              disabled={updateStatusMutation.isPending}
-                            >
-                              {updateStatusMutation.isPending ? 'Updating...' : getStatusButtonText(trip.status)}
-                            </button>
-                          )}
+                          {/* Order Status: Show Confirm/Decline buttons */}
+                          {trip.status === 'order' ? (
+                            <>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleConfirmOrder(trip.id);
+                                }}
+                                className="flex-1 card-neu hover:card-neu text-white font-semibold py-3 px-6 transition-all disabled:opacity-50"
+                                style={{ 
+                                  backgroundColor: '#3bfec9',
+                                  border: 'none',
+                                  boxShadow: '0 0 12px rgba(59, 254, 201, 0.3)'
+                                }}
+                                disabled={confirmOrderMutation.isPending}
+                              >
+                                {confirmOrderMutation.isPending ? 'Confirming...' : 'Confirm Order'}
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowDeclineDialog(trip.id);
+                                }}
+                                className="flex-1 card-neu hover:card-neu text-white font-semibold py-3 px-6 transition-all"
+                                style={{ 
+                                  backgroundColor: '#e04850',
+                                  border: 'none',
+                                  boxShadow: '0 0 12px rgba(224, 72, 80, 0.3)'
+                                }}
+                              >
+                                Decline
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open(`/trips/${trip.id}`, '_blank');
+                                }}
+                                className="card-neu hover:card-neu text-foreground font-semibold py-3 px-4 transition-all"
+                                style={{ 
+                                  backgroundColor: 'var(--background)',
+                                  border: 'none',
+                                  boxShadow: 'var(--shadow-neu-flat)'
+                                }}
+                                title="View trip details"
+                              >
+                                <MapPin className="h-4 w-4" />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              {/* Main Status Button */}
+                              {getNextStatus(trip.status) && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStatusUpdate(trip.id, getNextStatus(trip.status)!);
+                                  }}
+                                  className="flex-1 card-neu hover:card-neu text-white font-semibold py-3 px-6 transition-all disabled:opacity-50"
+                                  style={{ 
+                                    backgroundColor: 'var(--primary)',
+                                    border: 'none',
+                                    boxShadow: 'var(--shadow-neu-raised)'
+                                  }}
+                                  disabled={updateStatusMutation.isPending}
+                                >
+                                  {updateStatusMutation.isPending ? 'Updating...' : getStatusButtonText(trip.status)}
+                                </button>
+                              )}
 
-                          {/* Navigation Button */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openNavigation(trip.dropoffLocation);
-                            }}
-                            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 transition-colors"
-                            title="Open navigation to dropoff location"
-                            aria-label="Open navigation to dropoff location"
-                          >
-                            <div className="w-4 h-4 bg-white"></div>
-                          </button>
+                              {/* Navigation Button */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openNavigation(trip.dropoffLocation);
+                                }}
+                                className="card-neu hover:card-neu text-white font-semibold py-3 px-4 transition-all"
+                                style={{ 
+                                  backgroundColor: '#3bfec9',
+                                  border: 'none',
+                                  boxShadow: 'var(--shadow-neu-raised)'
+                                }}
+                                title="Open navigation to dropoff location"
+                                aria-label="Open navigation to dropoff location"
+                              >
+                                <Navigation className="h-4 w-4" />
+                              </button>
 
-                          {/* Cancel Button */}
-                          {trip.status !== 'completed' && trip.status !== 'cancelled' && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setShowCancelConfirm(trip.id);
-                              }}
-                              className="bg-orange-400 hover:bg-orange-500 text-white font-semibold py-3 px-4 transition-colors"
-                              title="Cancel trip"
-                              aria-label="Cancel trip"
-                            >
-                              <div className="w-4 h-1 bg-white"></div>
-                            </button>
+                              {/* View Details Button */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open(`/trips/${trip.id}`, '_blank');
+                                }}
+                                className="card-neu hover:card-neu text-foreground font-semibold py-3 px-4 transition-all"
+                                style={{ 
+                                  backgroundColor: 'var(--background)',
+                                  border: 'none',
+                                  boxShadow: 'var(--shadow-neu-flat)'
+                                }}
+                                title="View trip details"
+                              >
+                                <MapPin className="h-4 w-4" />
+                              </button>
+                            </>
                           )}
                         </div>
+                        
+                        {/* Decline Dialog */}
+                        {showDeclineDialog === trip.id && (
+                          <div className="mt-4 p-4 card-neu rounded-lg" style={{ backgroundColor: 'var(--background)', border: 'none' }}>
+                            <h4 className="font-semibold text-foreground mb-3">Select Decline Reason</h4>
+                            <select
+                              value={declineReason}
+                              onChange={(e) => setDeclineReason(e.target.value)}
+                              className="w-full p-2 mb-3 card-neu-flat rounded-md text-foreground"
+                              style={{ backgroundColor: 'var(--background)', border: 'none' }}
+                            >
+                              <option value="">Select a reason...</option>
+                              <option value="conflict">Conflict</option>
+                              <option value="day_off">Day Off</option>
+                              <option value="unavailable">Unavailable</option>
+                              <option value="vehicle_issue">Vehicle Issue</option>
+                              <option value="personal_emergency">Personal Emergency</option>
+                              <option value="too_far">Too Far</option>
+                            </select>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeclineOrder(trip.id);
+                                }}
+                                className="flex-1 card-neu hover:card-neu text-white font-semibold py-2 px-4 transition-all"
+                                style={{ 
+                                  backgroundColor: '#e04850',
+                                  border: 'none',
+                                  boxShadow: 'var(--shadow-neu-raised)'
+                                }}
+                                disabled={!declineReason || declineOrderMutation.isPending}
+                              >
+                                {declineOrderMutation.isPending ? 'Declining...' : 'Submit Decline'}
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowDeclineDialog(null);
+                                  setDeclineReason('');
+                                }}
+                                className="card-neu hover:card-neu text-foreground font-semibold py-2 px-4 transition-all"
+                                style={{ 
+                                  backgroundColor: 'var(--background)',
+                                  border: 'none',
+                                  boxShadow: 'var(--shadow-neu-flat)'
+                                }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

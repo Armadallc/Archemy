@@ -131,3 +131,5 @@ Once the tables are created:
 - ✅ Automatic sync (5-second debounce)
 - ✅ Works offline (localStorage fallback)
 
+
+

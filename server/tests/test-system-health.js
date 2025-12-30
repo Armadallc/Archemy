@@ -9,7 +9,7 @@ import https from 'https';
 import http from 'http';
 
 const BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://your-app.replit.app' 
+  ? process.env.API_BASE_URL || 'https://your-app.onrender.com' 
   : 'http://localhost:8081';
 
 // Test configuration

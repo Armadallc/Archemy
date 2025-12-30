@@ -28,6 +28,17 @@ export default function Index() {
   const { theme } = useTheme();
   const [showWelcome, setShowWelcome] = useState<boolean | null>(null);
 
+  // Debug: Log when component mounts (helps diagnose PWA launch issues)
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      console.log('📍 Index route loaded', {
+        pathname: typeof window !== 'undefined' ? window.location.pathname : 'unknown',
+        href: typeof window !== 'undefined' ? window.location.href : 'unknown',
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+      });
+    }
+  }, []);
+
   // Check if welcome has been shown and handle navigation
   useEffect(() => {
     if (isLoading) {
@@ -37,6 +48,7 @@ export default function Index() {
     // If user is not authenticated, go to login (don't show welcome)
     if (!user) {
       setShowWelcome(false); // Set to false to prevent loading loop
+      console.log('📍 No user, redirecting to login');
       router.replace('/(auth)/login');
       return;
     }
@@ -44,10 +56,12 @@ export default function Index() {
     // If user is authenticated, check welcome status
     const shown = getWelcomeShown();
     if (!shown) {
+      console.log('📍 Welcome not shown, showing welcome screen');
       setShowWelcome(true);
     } else {
       // Welcome already shown, go to dashboard
       setShowWelcome(false); // Set to false to prevent loading loop
+      console.log('📍 Welcome shown, redirecting to dashboard');
       router.replace('/(tabs)/dashboard');
     }
   }, [user, isLoading]);

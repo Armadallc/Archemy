@@ -65,3 +65,5 @@ After deploying this fix:
 - Background location permission is required for iOS to track when app is in background
 
 
+
+

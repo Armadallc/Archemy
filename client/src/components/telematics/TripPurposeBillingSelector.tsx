@@ -193,8 +193,8 @@ export function TripPurposeBillingSelector({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">None (No billing code)</SelectItem>
-                {serviceCodes.map((code) => (
-                  <SelectItem key={code.id} value={code.code}>
+                {serviceCodes.map((code, index) => (
+                  <SelectItem key={`${code.code}-${code.modifier || ''}-${index}`} value={code.code}>
                     {formatServiceCode(code)}
                   </SelectItem>
                 ))}

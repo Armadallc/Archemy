@@ -11,6 +11,7 @@ import { tripCategoriesStorage } from "../trip-categories-storage";
 import { enhancedTripsStorage, EnhancedTrip } from "../enhanced-trips-storage";
 import { broadcastTripUpdate, broadcastTripCreated } from "../websocket-instance";
 import { pushNotificationService } from "../services/push-notification-service";
+import { tripNotificationService } from "../services/trip-notification-service";
 import { driversStorage, clientsStorage } from "../minimal-supabase";
 import { supabase } from "../db";
 // TODO: Implement logTripActivity when activity logging is needed
@@ -255,7 +256,7 @@ router.post("/recurring-trips", requireSupabaseAuth, requireSupabaseRole(['super
     tripData.scheduled_return_time = scheduledReturnTime;
     tripData.passenger_count = passenger_count || 1;
     tripData.special_requirements = special_requirements || undefined;
-    tripData.status = 'scheduled';
+    tripData.status = 'order'; // New trips start as 'order' until driver confirms
     tripData.notes = notes || undefined;
     tripData.trip_category_id = trip_category_id || undefined;
     tripData.recurring_end_date = endDate.toISOString().split('T')[0]; // Store as DATE
@@ -395,9 +396,12 @@ router.post("/", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corpo
       });
     }
 
+    // Extract tagged_user_ids before creating trip (it's not a column in trips table)
+    const { tagged_user_ids, ...tripBodyWithoutTags } = req.body;
+    
     // Set created_by from authenticated user
     const tripData = {
-      ...req.body,
+      ...tripBodyWithoutTags,
       created_by: req.user?.userId || null
     };
 
@@ -444,6 +448,113 @@ router.post("/", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corpo
     
     // Fetch trip with client data BEFORE broadcasting to ensure client name is available
     const tripWithClient = await tripsStorage.getTrip(trip.id);
+    
+    // Handle user tagging if provided (after fetching tripWithClient for notifications)
+    if (tagged_user_ids && Array.isArray(tagged_user_ids) && tagged_user_ids.length > 0) {
+      const userId = req.user?.userId;
+      if (userId) {
+        try {
+          // Get trip with client data for notifications
+          const tripForNotification = tripWithClient || trip;
+          const clientName = tripForNotification.client_name 
+            || (tripForNotification.clients ? `${tripForNotification.clients.first_name || ''} ${tripForNotification.clients.last_name || ''}`.trim() : 'Unknown Client')
+            || (tripForNotification.client_groups ? tripForNotification.client_groups.name : null)
+            || 'Unknown Client';
+          
+          // Import services
+          const { pushNotificationService } = await import('../services/push-notification-service');
+          const { broadcastTripUpdate } = await import('../websocket-instance');
+          const { createActivityLogEntry } = await import('../services/activityLogService');
+          const { notificationSystem } = await import('../notification-system');
+          
+          // Create tags for each user and notify them
+          for (const taggedUserId of tagged_user_ids) {
+            // Skip if trying to tag self (creator is automatically notified)
+            if (taggedUserId === userId) continue;
+            
+            // Insert tag (will fail silently if duplicate due to UNIQUE constraint)
+            const { error: tagError } = await supabase
+              .from('trip_notification_tags')
+              .insert({
+                trip_id: trip.id,
+                user_id: taggedUserId,
+                created_by: userId
+              });
+            
+            if (tagError && tagError.code !== '23505') { // 23505 is unique violation
+              console.error(`Error tagging user ${taggedUserId} to trip ${trip.id}:`, tagError);
+            } else {
+              // Send all forms of notifications to tagged user
+              try {
+                // 1. Send push notification
+                await pushNotificationService.sendPushNotification(taggedUserId, {
+                  title: 'You\'ve been tagged in a trip',
+                  body: `You've been tagged to receive notifications for ${clientName}'s trip`,
+                  data: {
+                    tripId: trip.id,
+                    type: 'trip_tagged',
+                    clientName: clientName,
+                    scheduledPickupTime: trip.scheduled_pickup_time
+                  },
+                  tag: `trip-${trip.id}-tagged`,
+                  requireInteraction: false
+                });
+                
+                // 2. Create notification entry in notifications table (for bell icon)
+                await notificationSystem.createNotification({
+                  user_id: taggedUserId,
+                  type: 'trip_tagged',
+                  title: 'You\'ve been tagged in a trip',
+                  body: `You've been tagged to receive notifications for ${clientName}'s trip`,
+                  data: {
+                    tripId: trip.id,
+                    clientName: clientName,
+                    scheduledPickupTime: trip.scheduled_pickup_time
+                  },
+                  priority: 'medium',
+                  channels: ['push'],
+                  status: 'sent'
+                });
+                
+                // 3. Create activity log entry (for activity feed with "mentioned only" filter)
+                await createActivityLogEntry({
+                  activity_type: 'trip_tagged',
+                  source_type: 'trip',
+                  source_id: trip.id,
+                  user_id: userId, // Creator of the trip
+                  action_description: `Tagged ${taggedUserId} to receive notifications for ${clientName}'s trip`,
+                  metadata: {
+                    mentioned_users: [taggedUserId],
+                    trip_id: trip.id,
+                    client_name: clientName
+                  },
+                  corporate_client_id: programCorporateClientId || req.user?.corporateClientId || null,
+                  program_id: trip.program_id
+                });
+                
+                // 4. Broadcast via WebSocket with tagging metadata
+                // Send a specific trip_tagged event for tagged users
+                const { broadcastTripTagged } = await import('../websocket-instance');
+                broadcastTripTagged(tripForNotification, {
+                  userId: taggedUserId,
+                  programId: trip.program_id,
+                  clientName: clientName
+                });
+                
+                console.log(`✅ Notified tagged user ${taggedUserId} about trip ${trip.id} (push, notification, activity log, websocket)`);
+              } catch (notifError) {
+                console.error(`Error notifying tagged user ${taggedUserId}:`, notifError);
+                // Don't fail tagging if notification fails
+              }
+            }
+          }
+          console.log(`✅ Tagged ${tagged_user_ids.length} user(s) to trip ${trip.id}`);
+        } catch (tagError) {
+          console.error('Error creating trip notification tags:', tagError);
+          // Don't fail trip creation if tagging fails
+        }
+      }
+    }
     
     // Broadcast trip creation notification with client data
     // Use program's corporate_client_id (fetched above) or fallback to user's corporate_client_id
@@ -1184,6 +1295,794 @@ router.post("/estimate-multi-leg-route", requireSupabaseAuth, async (req: Supaba
   } catch (error) {
     console.error("Error estimating multi-leg route:", error);
     res.status(500).json({ message: "Failed to estimate multi-leg route" });
+  }
+});
+
+// ============================================================================
+// ORDER MANAGEMENT ROUTES
+// ============================================================================
+
+// Confirm trip order (single or recurring)
+router.post("/:id/confirm-order", requireSupabaseAuth, requireSupabaseRole(['driver']), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ message: "User ID not found in session" });
+    }
+
+    // Get the trip
+    const trip = await tripsStorage.getTrip(id);
+    if (!trip) {
+      return res.status(404).json({ message: "Trip not found" });
+    }
+
+    // Verify trip is in 'order' status
+    if (trip.status !== 'order') {
+      return res.status(400).json({ 
+        message: `Cannot confirm trip. Current status is "${trip.status}". Only trips with status "order" can be confirmed.` 
+      });
+    }
+
+    // Verify the driver is assigned to this trip
+    if (trip.driver_id) {
+      const driver = await driversStorage.getDriver(trip.driver_id);
+      if (driver?.user_id !== userId) {
+        return res.status(403).json({ message: "You are not assigned to this trip" });
+      }
+    }
+
+    // Check if this is a recurring trip
+    const isRecurring = !!trip.recurring_trip_id;
+    let updatedTrips: any[] = [];
+
+    if (isRecurring) {
+      // Get all trips in the recurring series
+      const { data: recurringTrips, error: recurringError } = await supabase
+        .from('trips')
+        .select('*')
+        .eq('recurring_trip_id', trip.recurring_trip_id)
+        .eq('status', 'order')
+        .order('scheduled_pickup_time', { ascending: true });
+
+      if (recurringError) throw recurringError;
+
+      if (!recurringTrips || recurringTrips.length === 0) {
+        return res.status(400).json({ message: "No trips in 'order' status found for this recurring series" });
+      }
+
+      // Update all trips in the series to 'scheduled'
+      const { data: updated, error: updateError } = await supabase
+        .from('trips')
+        .update({ 
+          status: 'scheduled',
+          updated_at: new Date().toISOString(),
+          updated_by: userId
+        })
+        .eq('recurring_trip_id', trip.recurring_trip_id)
+        .eq('status', 'order')
+        .select();
+
+      if (updateError) throw updateError;
+      updatedTrips = updated || [];
+
+      console.log(`✅ Confirmed ${updatedTrips.length} trips in recurring series ${trip.recurring_trip_id}`);
+    } else {
+      // Single trip confirmation
+      const updatedTrip = await tripsStorage.updateTrip(id, {
+        status: 'scheduled',
+        updated_by: userId
+      });
+      updatedTrips = [updatedTrip];
+    }
+
+    // Send notification to trip creator and tagged users
+    const driver = await driversStorage.getDriver(trip.driver_id || '');
+    const driverName = driver?.users?.user_name || 'Driver';
+    const clientName = trip.client 
+      ? `${trip.client.first_name} ${trip.client.last_name}` 
+      : trip.client_group?.name || 'Client';
+
+    const additionalInfo = isRecurring
+      ? `${driverName} has confirmed all ${updatedTrips.length} instances of the standing order for ${clientName}`
+      : undefined;
+
+    await tripNotificationService.sendTripNotification({
+      tripId: id,
+      trip: updatedTrips[0],
+      notificationType: 'order_confirmed',
+      driverName,
+      clientName,
+      additionalInfo
+    });
+
+    // Broadcast trip updates
+    for (const updatedTrip of updatedTrips) {
+      broadcastTripUpdate(updatedTrip, {
+        userId: userId,
+        programId: trip.program_id,
+        role: req.user?.role
+      });
+    }
+
+    res.json({
+      message: isRecurring 
+        ? `Confirmed ${updatedTrips.length} trips in recurring series`
+        : "Trip order confirmed",
+      trips: updatedTrips,
+      isRecurring
+    });
+  } catch (error: any) {
+    console.error("Error confirming trip order:", error);
+    res.status(500).json({ 
+      message: "Failed to confirm trip order", 
+      error: error.message 
+    });
+  }
+});
+
+// Decline trip order
+router.post("/:id/decline-order", requireSupabaseAuth, requireSupabaseRole(['driver']), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ message: "User ID not found in session" });
+    }
+
+    // Validate decline reason
+    const validReasons = ['conflict', 'day_off', 'unavailable', 'vehicle_issue', 'personal_emergency', 'too_far'];
+    if (!reason || !validReasons.includes(reason)) {
+      return res.status(400).json({ 
+        message: "Valid decline reason is required",
+        validReasons 
+      });
+    }
+
+    // Get the trip
+    const trip = await tripsStorage.getTrip(id);
+    if (!trip) {
+      return res.status(404).json({ message: "Trip not found" });
+    }
+
+    // Verify trip is in 'order' status
+    if (trip.status !== 'order') {
+      return res.status(400).json({ 
+        message: `Cannot decline trip. Current status is "${trip.status}". Only trips with status "order" can be declined.` 
+      });
+    }
+
+    // Verify the driver is assigned to this trip
+    if (trip.driver_id) {
+      const driver = await driversStorage.getDriver(trip.driver_id);
+      if (driver?.user_id !== userId) {
+        return res.status(403).json({ message: "You are not assigned to this trip" });
+      }
+    }
+
+    // Update trip with decline information
+    const updatedTrip = await tripsStorage.updateTrip(id, {
+      decline_reason: reason,
+      declined_by: userId,
+      declined_at: new Date().toISOString(),
+      driver_id: null, // Remove driver assignment
+      updated_by: userId
+    });
+
+    // Get driver and client info for notifications
+    const driver = await driversStorage.getDriver(trip.driver_id || '');
+    const driverName = driver?.users?.user_name || 'Driver';
+    const clientName = trip.client 
+      ? `${trip.client.first_name} ${trip.client.last_name}` 
+      : trip.client_group?.name || 'Client';
+
+    const reasonText = reason.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+
+    // Notify trip creator and tagged users
+    await tripNotificationService.sendTripNotification({
+      tripId: id,
+      trip: updatedTrip,
+      notificationType: 'order_declined',
+      driverName,
+      clientName,
+      additionalInfo: `${driverName} declined the trip order. Reason: ${reasonText}`
+    });
+
+    // Notify super admins
+    await tripNotificationService.notifySuperAdmins({
+      tripId: id,
+      trip: updatedTrip,
+      notificationType: 'order_declined',
+      driverName,
+      clientName,
+      additionalInfo: `${driverName} declined trip order for ${clientName}. Reason: ${reasonText}`
+    });
+
+    // Broadcast update
+    broadcastTripUpdate(updatedTrip, {
+      userId: userId,
+      programId: trip.program_id,
+      role: req.user?.role
+    });
+
+    res.json({
+      message: "Trip order declined",
+      trip: updatedTrip
+    });
+  } catch (error: any) {
+    console.error("Error declining trip order:", error);
+    res.status(500).json({ 
+      message: "Failed to decline trip order", 
+      error: error.message 
+    });
+  }
+});
+
+// ============================================================================
+// UNIFIED TRIP STATUS UPDATE ENDPOINT (State Machine)
+// ============================================================================
+
+// Update trip status with state machine logic (simplified UI flow)
+router.post("/:id/update-status", requireSupabaseAuth, requireSupabaseRole(['driver']), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const { action, client_aboard, start_wait_time } = req.body;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ message: "User ID not found in session" });
+    }
+
+    // Get the trip
+    const trip = await tripsStorage.getTrip(id);
+    if (!trip) {
+      return res.status(404).json({ message: "Trip not found" });
+    }
+
+    // Verify the driver is assigned to this trip
+    if (trip.driver_id) {
+      const driver = await driversStorage.getDriver(trip.driver_id);
+      if (driver?.user_id !== userId) {
+        return res.status(403).json({ message: "You are not assigned to this trip" });
+      }
+    }
+
+    let updatedTrip: any;
+    const now = new Date().toISOString();
+
+    switch (action) {
+      case 'start_trip':
+        // Start trip - prompt for client aboard
+        if (client_aboard === undefined) {
+          return res.status(400).json({ 
+            message: "client_aboard (boolean) is required for start_trip action",
+            nextPrompt: "Client Aboard? (Y/N)"
+          });
+        }
+
+        updatedTrip = await tripsStorage.updateTrip(id, {
+          status: 'in_progress',
+          actual_pickup_time: now,
+          updated_by: userId,
+          ...(client_aboard && { client_onboard_at: now })
+        });
+
+        // Send notification if client is aboard
+        if (client_aboard) {
+          const driver = await driversStorage.getDriver(trip.driver_id || '');
+          const driverName = driver?.users?.user_name || 'Driver';
+          const clientName = trip.client 
+            ? `${trip.client.first_name} ${trip.client.last_name}` 
+            : trip.client_group?.name || 'Client';
+
+          await tripNotificationService.sendTripNotification({
+            tripId: id,
+            trip: updatedTrip,
+            notificationType: 'client_onboard',
+            driverName,
+            clientName
+          });
+        } else {
+          // Just notify trip started (deadhead)
+          const driver = await driversStorage.getDriver(trip.driver_id || '');
+          const driverName = driver?.users?.user_name || 'Driver';
+          const clientName = trip.client 
+            ? `${trip.client.first_name} ${trip.client.last_name}` 
+            : trip.client_group?.name || 'Client';
+
+          await tripNotificationService.sendTripNotification({
+            tripId: id,
+            trip: updatedTrip,
+            notificationType: 'trip_started',
+            driverName,
+            clientName
+          });
+        }
+        break;
+
+      case 'arrive':
+        // Arrived at destination - for round trips, prompt for wait time
+        if (trip.trip_type === 'round_trip') {
+          if (start_wait_time === undefined) {
+            return res.status(400).json({ 
+              message: "start_wait_time (boolean) is required for arrive action on round trips",
+              nextPrompt: "Start Wait Time? (Y/N)"
+            });
+          }
+
+          if (start_wait_time) {
+            // Start wait time
+            updatedTrip = await tripsStorage.updateTrip(id, {
+              client_dropoff_at: now,
+              wait_time_started_at: now,
+              updated_by: userId
+            });
+
+            const driver = await driversStorage.getDriver(trip.driver_id || '');
+            const driverName = driver?.users?.user_name || 'Driver';
+            const clientName = trip.client 
+              ? `${trip.client.first_name} ${trip.client.last_name}` 
+              : trip.client_group?.name || 'Client';
+
+            await tripNotificationService.sendTripNotification({
+              tripId: id,
+              trip: updatedTrip,
+              notificationType: 'wait_time_started',
+              driverName,
+              clientName
+            });
+          } else {
+            // No wait time - continue to return
+            updatedTrip = await tripsStorage.updateTrip(id, {
+              client_dropoff_at: now,
+              updated_by: userId
+            });
+
+            const driver = await driversStorage.getDriver(trip.driver_id || '');
+            const driverName = driver?.users?.user_name || 'Driver';
+            const clientName = trip.client 
+              ? `${trip.client.first_name} ${trip.client.last_name}` 
+              : trip.client_group?.name || 'Client';
+
+            await tripNotificationService.sendTripNotification({
+              tripId: id,
+              trip: updatedTrip,
+              notificationType: 'client_dropoff',
+              driverName,
+              clientName
+            });
+          }
+        } else {
+          // One-way trip - just mark as arrived
+          updatedTrip = await tripsStorage.updateTrip(id, {
+            client_dropoff_at: now,
+            updated_by: userId
+          });
+        }
+        break;
+
+      case 'client_ready':
+        // Client is ready - stop wait time and continue return trip
+        if (!trip.wait_time_started_at) {
+          return res.status(400).json({ 
+            message: "Wait time was not started for this trip" 
+          });
+        }
+
+        updatedTrip = await tripsStorage.updateTrip(id, {
+          wait_time_stopped_at: now,
+          updated_by: userId
+        });
+
+        const driver = await driversStorage.getDriver(trip.driver_id || '');
+        const driverName = driver?.users?.user_name || 'Driver';
+        const clientName = trip.client 
+          ? `${trip.client.first_name} ${trip.client.last_name}` 
+          : trip.client_group?.name || 'Client';
+
+        await tripNotificationService.sendTripNotification({
+          tripId: id,
+          trip: updatedTrip,
+          notificationType: 'wait_time_stopped',
+          driverName,
+          clientName
+        });
+        break;
+
+      case 'continue_trip':
+        // Continue return trip - prompt for client aboard
+        if (client_aboard === undefined) {
+          return res.status(400).json({ 
+            message: "client_aboard (boolean) is required for continue_trip action",
+            nextPrompt: "Client Aboard? (Y/N)"
+          });
+        }
+
+        updatedTrip = await tripsStorage.updateTrip(id, {
+          ...(client_aboard && { client_onboard_at: now }),
+          updated_by: userId
+        });
+
+        if (client_aboard) {
+          const driver = await driversStorage.getDriver(trip.driver_id || '');
+          const driverName = driver?.users?.user_name || 'Driver';
+          const clientName = trip.client 
+            ? `${trip.client.first_name} ${trip.client.last_name}` 
+            : trip.client_group?.name || 'Client';
+
+          await tripNotificationService.sendTripNotification({
+            tripId: id,
+            trip: updatedTrip,
+            notificationType: 'client_onboard',
+            driverName,
+            clientName
+          });
+        }
+        break;
+
+      case 'complete_trip': {
+        // Complete the trip
+        updatedTrip = await tripsStorage.updateTrip(id, {
+          status: 'completed',
+          actual_dropoff_time: now,
+          actual_return_time: trip.trip_type === 'round_trip' ? now : undefined,
+          updated_by: userId
+        });
+
+        const driver = await driversStorage.getDriver(trip.driver_id || '');
+        const driverName = driver?.users?.user_name || 'Driver';
+        const clientName = trip.client 
+          ? `${trip.client.first_name} ${trip.client.last_name}` 
+          : trip.client_group?.name || 'Client';
+
+        await tripNotificationService.sendTripNotification({
+          tripId: id,
+          trip: updatedTrip,
+          notificationType: 'trip_completed',
+          driverName,
+          clientName
+        });
+        break;
+      }
+
+      case 'no_show': {
+        // Client no show
+        updatedTrip = await tripsStorage.updateTrip(id, {
+          status: 'no_show',
+          updated_by: userId
+        });
+
+        const driver = await driversStorage.getDriver(trip.driver_id || '');
+        const driverName = driver?.users?.user_name || 'Driver';
+        const clientName = trip.client 
+          ? `${trip.client.first_name} ${trip.client.last_name}` 
+          : trip.client_group?.name || 'Client';
+
+        await tripNotificationService.sendTripNotification({
+          tripId: id,
+          trip: updatedTrip,
+          notificationType: 'no_show',
+          driverName,
+          clientName
+        });
+        break;
+      }
+
+      default:
+        return res.status(400).json({ 
+          message: "Invalid action",
+          validActions: ['start_trip', 'arrive', 'client_ready', 'continue_trip', 'complete_trip', 'no_show']
+        });
+    }
+
+    // Broadcast update
+    broadcastTripUpdate(updatedTrip, {
+      userId: userId,
+      programId: trip.program_id,
+      role: req.user?.role
+    });
+
+    // Determine next action/state for UI
+    let nextAction: string | null = null;
+    let buttonState: string | null = null;
+
+    if (action === 'start_trip' && trip.trip_type === 'round_trip') {
+      nextAction = 'arrive';
+      buttonState = 'Arrived';
+    } else if (action === 'arrive' && start_wait_time) {
+      nextAction = 'client_ready';
+      buttonState = 'Waiting...';
+    } else if (action === 'client_ready') {
+      nextAction = 'continue_trip';
+      buttonState = 'Continue Trip';
+    } else if (action === 'continue_trip' || (action === 'arrive' && !start_wait_time)) {
+      nextAction = 'complete_trip';
+      buttonState = 'Complete Trip';
+    } else if (action === 'start_trip' && trip.trip_type === 'one_way') {
+      nextAction = 'complete_trip';
+      buttonState = 'Complete Trip';
+    }
+
+    res.json({
+      message: "Trip status updated",
+      trip: updatedTrip,
+      nextAction,
+      buttonState
+    });
+  } catch (error: any) {
+    console.error("Error updating trip status:", error);
+    res.status(500).json({ 
+      message: "Failed to update trip status", 
+      error: error.message 
+    });
+  }
+});
+
+// ============================================================================
+// TRIP NOTIFICATION TAGS ROUTES
+// ============================================================================
+
+/**
+ * POST /api/trips/:tripId/tags
+ * Tag users to receive notifications for a trip
+ * Access: Trip creator or admin
+ */
+router.post("/:tripId/tags", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin', 'program_user']), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { tripId } = req.params;
+    const { user_ids } = req.body;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    if (!Array.isArray(user_ids) || user_ids.length === 0) {
+      return res.status(400).json({ message: "user_ids array is required" });
+    }
+
+    // Verify trip exists and user has permission (trip creator or admin)
+    const trip = await tripsStorage.getTrip(tripId);
+    if (!trip) {
+      return res.status(404).json({ message: "Trip not found" });
+    }
+
+    const isCreator = trip.created_by === userId;
+    const isAdmin = ['super_admin', 'corporate_admin', 'program_admin'].includes(req.user?.role || '');
+
+    if (!isCreator && !isAdmin) {
+      return res.status(403).json({ message: "Only trip creator or admin can tag users" });
+    }
+
+    // Create tags
+    const createdTags = [];
+    const errors = [];
+
+    for (const taggedUserId of user_ids) {
+      // Skip if trying to tag self (creator is automatically notified)
+      if (taggedUserId === userId) continue;
+
+      try {
+        const { data, error } = await supabase
+          .from('trip_notification_tags')
+          .insert({
+            trip_id: tripId,
+            user_id: taggedUserId,
+            created_by: userId
+          })
+          .select()
+          .single();
+
+        if (error) {
+          if (error.code === '23505') { // Unique violation - tag already exists
+            // Fetch existing tag
+            const { data: existing } = await supabase
+              .from('trip_notification_tags')
+              .select()
+              .eq('trip_id', tripId)
+              .eq('user_id', taggedUserId)
+              .single();
+            
+            if (existing) {
+              createdTags.push(existing);
+            }
+          } else {
+            errors.push({ user_id: taggedUserId, error: error.message });
+          }
+        } else if (data) {
+          createdTags.push(data);
+        }
+      } catch (error: any) {
+        errors.push({ user_id: taggedUserId, error: error.message });
+      }
+    }
+
+    res.json({
+      success: true,
+      tags: createdTags,
+      errors: errors.length > 0 ? errors : undefined
+    });
+  } catch (error: any) {
+    console.error("Error tagging users to trip:", error);
+    res.status(500).json({ 
+      message: "Failed to tag users", 
+      error: error.message 
+    });
+  }
+});
+
+/**
+ * GET /api/trips/:tripId/tags
+ * Get all users tagged for a trip
+ * Access: Trip creator or admin
+ */
+router.get("/:tripId/tags", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin', 'program_user']), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { tripId } = req.params;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    // Verify trip exists and user has permission
+    const trip = await tripsStorage.getTrip(tripId);
+    if (!trip) {
+      return res.status(404).json({ message: "Trip not found" });
+    }
+
+    const isCreator = trip.created_by === userId;
+    const isAdmin = ['super_admin', 'corporate_admin', 'program_admin'].includes(req.user?.role || '');
+
+    if (!isCreator && !isAdmin) {
+      return res.status(403).json({ message: "Only trip creator or admin can view tags" });
+    }
+
+    // Fetch tags with user details
+    const { data: tags, error } = await supabase
+      .from('trip_notification_tags')
+      .select(`
+        *,
+        user:users!trip_notification_tags_user_id_fkey (
+          user_id,
+          user_name,
+          email,
+          first_name,
+          last_name
+        )
+      `)
+      .eq('trip_id', tripId);
+
+    if (error) throw error;
+
+    res.json(tags || []);
+  } catch (error: any) {
+    console.error("Error fetching trip tags:", error);
+    res.status(500).json({ 
+      message: "Failed to fetch tags", 
+      error: error.message 
+    });
+  }
+});
+
+/**
+ * DELETE /api/trips/:tripId/tags/:userId
+ * Remove a user tag from a trip
+ * Access: Trip creator or admin
+ */
+router.delete("/:tripId/tags/:userId", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin', 'program_user']), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    const { tripId, userId: taggedUserId } = req.params;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    // Verify trip exists and user has permission
+    const trip = await tripsStorage.getTrip(tripId);
+    if (!trip) {
+      return res.status(404).json({ message: "Trip not found" });
+    }
+
+    const isCreator = trip.created_by === userId;
+    const isAdmin = ['super_admin', 'corporate_admin', 'program_admin'].includes(req.user?.role || '');
+
+    if (!isCreator && !isAdmin) {
+      return res.status(403).json({ message: "Only trip creator or admin can remove tags" });
+    }
+
+    // Delete tag
+    const { error } = await supabase
+      .from('trip_notification_tags')
+      .delete()
+      .eq('trip_id', tripId)
+      .eq('user_id', taggedUserId);
+
+    if (error) throw error;
+
+    res.json({ success: true, message: "Tag removed" });
+  } catch (error: any) {
+    console.error("Error removing trip tag:", error);
+    res.status(500).json({ 
+      message: "Failed to remove tag", 
+      error: error.message 
+    });
+  }
+});
+
+// Get unassigned orders (for admin dashboard)
+router.get("/orders/unassigned", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corporate_admin', 'program_admin']), async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    // Get trips with status 'order' that are either unassigned or declined
+    const { data: unassignedOrders, error } = await supabase
+      .from('trips')
+      .select(`
+        *,
+        programs:program_id (
+          id,
+          name,
+          corporate_clients:corporate_client_id (
+            id,
+            name
+          )
+        ),
+        clients!client_id (
+          id,
+          scid,
+          first_name,
+          last_name,
+          phone
+        ),
+        client_groups!client_group_id (
+          id,
+          name
+        ),
+        created_by_user:created_by (
+          user_id,
+          user_name
+        ),
+        declined_by_user:declined_by (
+          user_id,
+          user_name
+        )
+      `)
+      .eq('status', 'order')
+      .or('driver_id.is.null,declined_at.not.is.null')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    // Transform the response to match frontend expectations
+    const transformed = (unassignedOrders || []).map((trip: any) => {
+      const transformedTrip = { ...trip };
+      // Rename declined_by user reference
+      if (trip.users) {
+        transformedTrip.declined_by_user = Array.isArray(trip.users) ? trip.users[0] : trip.users;
+        delete transformedTrip.users;
+      }
+      // Transform clients/client_groups to match frontend expectations
+      if (trip.clients) {
+        transformedTrip.client = Array.isArray(trip.clients) ? trip.clients[0] : trip.clients;
+        delete transformedTrip.clients;
+      }
+      if (trip.client_groups) {
+        transformedTrip.client_group = Array.isArray(trip.client_groups) ? trip.client_groups[0] : trip.client_groups;
+        delete transformedTrip.client_groups;
+      }
+      return transformedTrip;
+    });
+
+    res.json(transformed);
+  } catch (error: any) {
+    console.error("Error fetching unassigned orders:", error);
+    res.status(500).json({ 
+      message: "Failed to fetch unassigned orders", 
+      error: error.message 
+    });
   }
 });
 

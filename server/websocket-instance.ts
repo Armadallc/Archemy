@@ -203,6 +203,81 @@ export function broadcastTripUpdate(
   // Note: We don't do a global broadcast here to maintain hierarchical isolation
 }
 
+// Helper function to broadcast trip tagging
+export function broadcastTripTagged(
+  tripData: any,
+  target?: {
+    userId?: string;
+    programId?: string;
+    corporateClientId?: string;
+    clientName?: string;
+  }
+) {
+  if (!wsServerInstance) {
+    console.warn('⚠️ WebSocket server not initialized, cannot broadcast trip tagging');
+    return;
+  }
+
+  // Extract client name
+  let clientName: string | null = target?.clientName || null;
+  
+  if (!clientName) {
+    if (tripData.client_name) {
+      clientName = tripData.client_name;
+    } else if (tripData.clients) {
+      const client = Array.isArray(tripData.clients) ? tripData.clients[0] : tripData.clients;
+      if (client?.first_name || client?.last_name) {
+        clientName = `${client.first_name || ''} ${client.last_name || ''}`.trim();
+      }
+    }
+    
+    if (!clientName && (tripData.client_groups || tripData.client_group_name)) {
+      const group = Array.isArray(tripData.client_groups) ? tripData.client_groups[0] : tripData.client_groups;
+      clientName = group?.name || tripData.client_group_name || null;
+    }
+    
+    if (!clientName) {
+      clientName = 'Unknown Client';
+    }
+  }
+
+  const event = {
+    type: 'trip_tagged' as const,
+    data: {
+      ...tripData,
+      tripId: tripData.id || tripData.tripId,
+      clientName: clientName,
+      notificationTitle: "You've been tagged in a trip",
+      notificationMessage: `You've been tagged to receive notifications for ${clientName}'s trip`
+    },
+    timestamp: new Date().toISOString(),
+    target
+  };
+
+  console.log('📨 Broadcasting trip_tagged notification:', {
+    tripId: tripData.id,
+    clientName: clientName,
+    userId: target?.userId || 'none',
+    programId: target?.programId || 'none'
+  });
+
+  // Send to specific user if provided
+  if (target?.userId) {
+    wsServerInstance.sendToUser(target.userId, event);
+  }
+
+  // Also broadcast to program if provided
+  if (target?.programId) {
+    const tripCorporateClientId = tripData.program?.corporate_client_id 
+      || tripData.programs?.corporate_client_id
+      || tripData.programs?.corporate_clients?.id
+      || tripData.programs?.corporate_clients?.corporate_client_id
+      || target?.corporateClientId;
+    
+    wsServerInstance.broadcastToProgram(target.programId, event, tripCorporateClientId);
+  }
+}
+
 // Helper function to broadcast driver updates
 export function broadcastDriverUpdate(driverData: any, target?: {
   userId?: string;
