@@ -568,6 +568,26 @@
   --input-border: #a5c8ca; /* Aqua - Input borders */
 }
 
+/* Additional override to ensure Aqua colors are always applied in dark mode */
+/* This uses higher specificity and comes after .dark block */
+.dark,
+.dark * {
+  color: var(--foreground, #a5c8ca);
+}
+
+.dark .card-neu,
+.dark .card-neu-flat,
+.dark [class*="card"] {
+  color: var(--card-foreground, #a5c8ca);
+}
+
+.dark input,
+.dark textarea,
+.dark select {
+  color: var(--foreground, #a5c8ca);
+  border-color: var(--input-border, #a5c8ca);
+}
+
 /* ============================================================
    BASE STYLES
    ============================================================ */
