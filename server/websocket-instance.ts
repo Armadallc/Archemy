@@ -261,21 +261,14 @@ export function broadcastTripTagged(
     programId: target?.programId || 'none'
   });
 
-  // Send to specific user if provided
+  // Send to specific user if provided (tagged users should only receive this message)
   if (target?.userId) {
     wsServerInstance.sendToUser(target.userId, event);
+    console.log(`   ✅ trip_tagged notification sent to user: ${target.userId}`);
   }
 
-  // Also broadcast to program if provided
-  if (target?.programId) {
-    const tripCorporateClientId = tripData.program?.corporate_client_id 
-      || tripData.programs?.corporate_client_id
-      || tripData.programs?.corporate_clients?.id
-      || tripData.programs?.corporate_clients?.corporate_client_id
-      || target?.corporateClientId;
-    
-    wsServerInstance.broadcastToProgram(target.programId, event, tripCorporateClientId);
-  }
+  // Don't broadcast to program - tagged users should only receive trip_tagged messages
+  // Other program users don't need to know about tagging
 }
 
 // Helper function to broadcast driver updates
