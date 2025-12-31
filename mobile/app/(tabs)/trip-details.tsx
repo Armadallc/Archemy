@@ -36,7 +36,7 @@ interface Trip {
   actual_pickup_time?: string;
   actual_dropoff_time?: string;
   actual_return_time?: string;
-  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'confirmed' | 'no_show';
+  status: 'order' | 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'confirmed' | 'no_show';
   trip_type: string;
   passenger_count: number;
   notes?: string;
@@ -81,6 +81,8 @@ export default function TripDetailsScreen() {
   const { isEnabled: mobileCheckInEnabled } = useFeatureFlag('mobile_check_in_enabled');
 
   const [refreshing, setRefreshing] = useState(false);
+  const [showDeclineDialog, setShowDeclineDialog] = useState(false);
+  const [declineReason, setDeclineReason] = useState('');
 
   const { data: trips = [], refetch: refetchTrips } = useQuery({
     queryKey: ['driver-trips'],
@@ -113,6 +115,68 @@ export default function TripDetailsScreen() {
       Alert.alert('Error', errorMessage);
     },
   });
+
+  // Confirm order mutation
+  const confirmOrderMutation = useMutation({
+    mutationFn: (tripId: string) => apiClient.confirmOrder(tripId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['driver-trips'] });
+      refetchTrips();
+      Alert.alert('Success', 'Trip order confirmed successfully');
+    },
+    onError: (error) => {
+      console.error('Failed to confirm order:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to confirm order';
+      Alert.alert('Error', errorMessage);
+    },
+  });
+
+  // Decline order mutation
+  const declineOrderMutation = useMutation({
+    mutationFn: ({ tripId, reason }: { tripId: string; reason: string }) =>
+      apiClient.declineOrder(tripId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['driver-trips'] });
+      refetchTrips();
+      setShowDeclineDialog(false);
+      setDeclineReason('');
+      Alert.alert('Success', 'Trip order declined. Super admin will be notified to assign a new driver.');
+    },
+    onError: (error) => {
+      console.error('Failed to decline order:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to decline order';
+      Alert.alert('Error', errorMessage);
+    },
+  });
+
+  const handleConfirmOrder = () => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const confirmed = window.confirm('Are you sure you want to confirm this trip order?');
+      if (confirmed) {
+        confirmOrderMutation.mutate(tripId as string);
+      }
+    } else {
+      Alert.alert(
+        'Confirm Order',
+        'Are you sure you want to confirm this trip order?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Confirm',
+            onPress: () => confirmOrderMutation.mutate(tripId as string),
+          },
+        ]
+      );
+    }
+  };
+
+  const handleDeclineOrder = () => {
+    if (!declineReason) {
+      Alert.alert('Required', 'Please select a reason for declining');
+      return;
+    }
+    declineOrderMutation.mutate({ tripId: tripId as string, reason: declineReason });
+  };
 
   const handleStatusUpdate = (newStatus: string) => {
     // Link/unlink location tracking based on trip status
@@ -604,6 +668,24 @@ export default function TripDetailsScreen() {
       color: theme.colors.primary,
       fontWeight: '600',
     },
+    modalOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1000,
+    },
+    modalContent: {
+      backgroundColor: theme.colors.surface,
+      padding: 20,
+      borderRadius: 12,
+      width: '90%',
+      maxWidth: 400,
+    },
   });
 
   if (!trip) {
@@ -796,62 +878,155 @@ export default function TripDetailsScreen() {
 
         {/* Action Buttons */}
         <View style={styles.actionsContainer}>
-            {/* N/S Button - on the left */}
-            {(trip.status === 'scheduled' || trip.status === 'confirmed') && (
+          {/* Order Status: Show Confirm/Decline buttons */}
+          {trip.status === 'order' ? (
+            <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
               <TouchableOpacity
-                style={[styles.noShowButton]}
-                onPress={() => handleStatusUpdate('no_show')}
-                disabled={updateTripMutation.isPending}
+                style={[styles.actionButton, { backgroundColor: '#3bfec9', flex: 1 }]}
+                onPress={handleConfirmOrder}
+                disabled={confirmOrderMutation.isPending}
               >
-                <Text style={styles.noShowButtonText}>N/S</Text>
+                <Ionicons name="checkmark-circle" size={20} color="rgba(244, 244, 244, 1)" />
+                <Text style={[styles.actionButtonText, { color: 'rgba(244, 244, 244, 1)', fontSize: 16 }]}>
+                  {confirmOrderMutation.isPending ? 'Confirming...' : 'Confirm Order'}
+                </Text>
               </TouchableOpacity>
-            )}
-            
-            {/* NAV R/T and Start Trip buttons - stacked vertically on the right */}
-            <View style={styles.actionButtonsContainer}>
-              {/* Round Trip Navigation Button */}
-              {(trip.trip_type || (trip.scheduled_return_time ? 'round_trip' : 'one_way')) === 'round_trip' && (
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: '#e04850', flex: 1 }]}
+                onPress={() => setShowDeclineDialog(true)}
+                disabled={declineOrderMutation.isPending}
+              >
+                <Ionicons name="close-circle" size={20} color="rgba(244, 244, 244, 1)" />
+                <Text style={[styles.actionButtonText, { color: 'rgba(244, 244, 244, 1)', fontSize: 16 }]}>
+                  Decline
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+              {/* N/S Button - on the left */}
+              {(trip.status === 'scheduled' || trip.status === 'confirmed') && (
                 <TouchableOpacity
-                  style={[styles.actionButton, styles.navigationButton]}
-                  onPress={handleNavigateRoundTrip}
+                  style={[styles.noShowButton]}
+                  onPress={() => handleStatusUpdate('no_show')}
+                  disabled={updateTripMutation.isPending}
                 >
-                  <Ionicons name="map" size={20} color="rgba(244, 244, 244, 1)" />
-                  <Text style={[styles.actionButtonText, { color: 'rgba(244, 244, 244, 1)', fontSize: 16 }]}>NAV R/T</Text>
+                  <Text style={styles.noShowButtonText}>N/S</Text>
                 </TouchableOpacity>
               )}
               
-              {trip.status === 'scheduled' || trip.status === 'confirmed' ? (
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.startButton]}
-                  onPress={() => handleStatusUpdate('in_progress')}
-                  disabled={updateTripMutation.isPending}
-                >
-                  <Ionicons name="play" size={20} color="rgba(244, 244, 244, 1)" />
-                  <Text style={[styles.actionButtonText, { color: 'rgba(244, 244, 244, 1)', fontSize: 16 }]}>Start Trip</Text>
-                </TouchableOpacity>
-              ) : trip.status === 'in_progress' ? (
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.completeButton]}
-                  onPress={() => handleStatusUpdate('completed')}
-                  disabled={updateTripMutation.isPending}
-                >
-                  <Ionicons name="checkmark" size={20} color="rgba(244, 244, 244, 1)" />
-                  <Text style={[styles.actionButtonText, { color: 'rgba(244, 244, 244, 1)', fontSize: 16 }]}>Complete Trip</Text>
-                </TouchableOpacity>
-              ) : (
-                <View style={styles.completedContainer}>
-                  <Ionicons 
-                    name="checkmark-circle" 
-                    size={24} 
-                    color={trip.status === 'no_show' 
-                      ? theme.colors.driverColors.color5 
-                      : theme.colors.tripStatus.completed} 
-                  />
-                  <Text style={styles.completedText}>Trip {trip.status === 'no_show' ? 'No Show' : trip.status}</Text>
-                </View>
-              )}
-            </View>
+              {/* NAV R/T and Start Trip buttons - stacked vertically on the right */}
+              <View style={styles.actionButtonsContainer}>
+                {/* Round Trip Navigation Button */}
+                {(trip.trip_type || (trip.scheduled_return_time ? 'round_trip' : 'one_way')) === 'round_trip' && (
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.navigationButton]}
+                    onPress={handleNavigateRoundTrip}
+                  >
+                    <Ionicons name="map" size={20} color="rgba(244, 244, 244, 1)" />
+                    <Text style={[styles.actionButtonText, { color: 'rgba(244, 244, 244, 1)', fontSize: 16 }]}>NAV R/T</Text>
+                  </TouchableOpacity>
+                )}
+                
+                {trip.status === 'scheduled' || trip.status === 'confirmed' ? (
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.startButton]}
+                    onPress={() => handleStatusUpdate('in_progress')}
+                    disabled={updateTripMutation.isPending}
+                  >
+                    <Ionicons name="play" size={20} color="rgba(244, 244, 244, 1)" />
+                    <Text style={[styles.actionButtonText, { color: 'rgba(244, 244, 244, 1)', fontSize: 16 }]}>Start Trip</Text>
+                  </TouchableOpacity>
+                ) : trip.status === 'in_progress' ? (
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.completeButton]}
+                    onPress={() => handleStatusUpdate('completed')}
+                    disabled={updateTripMutation.isPending}
+                  >
+                    <Ionicons name="checkmark" size={20} color="rgba(244, 244, 244, 1)" />
+                    <Text style={[styles.actionButtonText, { color: 'rgba(244, 244, 244, 1)', fontSize: 16 }]}>Complete Trip</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.completedContainer}>
+                    <Ionicons 
+                      name="checkmark-circle" 
+                      size={24} 
+                      color={trip.status === 'no_show' 
+                        ? theme.colors.driverColors.color5 
+                        : theme.colors.tripStatus.completed} 
+                    />
+                    <Text style={styles.completedText}>Trip {trip.status === 'no_show' ? 'No Show' : trip.status}</Text>
+                  </View>
+                )}
+              </View>
+            </>
+          )}
         </View>
+
+        {/* Decline Dialog */}
+        {showDeclineDialog && (
+          <View style={[styles.modalOverlay, { 
+            position: 'absolute', 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            bottom: 0, 
+            backgroundColor: 'rgba(0, 0, 0, 0.5)', 
+            justifyContent: 'center', 
+            alignItems: 'center',
+            zIndex: 1000
+          }]}>
+            <View style={[styles.modalContent, { 
+              backgroundColor: theme.colors.surface, 
+              padding: 20, 
+              borderRadius: 12,
+              width: '90%',
+              maxWidth: 400
+            }]}>
+              <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>Select Decline Reason</Text>
+              <View style={{ marginBottom: 16 }}>
+                {['conflict', 'day_off', 'unavailable', 'vehicle_issue', 'personal_emergency', 'too_far'].map((reason) => (
+                  <TouchableOpacity
+                    key={reason}
+                    style={{
+                      padding: 12,
+                      marginBottom: 8,
+                      backgroundColor: declineReason === reason ? theme.colors.primary : theme.colors.background,
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: declineReason === reason ? theme.colors.primary : theme.colors.border,
+                    }}
+                    onPress={() => setDeclineReason(reason)}
+                  >
+                    <Text style={{ color: theme.colors.foreground, textTransform: 'capitalize' }}>
+                      {reason.replace('_', ' ')}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <TouchableOpacity
+                  style={[styles.actionButton, { backgroundColor: theme.colors.mutedForeground, flex: 1 }]}
+                  onPress={() => {
+                    setShowDeclineDialog(false);
+                    setDeclineReason('');
+                  }}
+                >
+                  <Text style={[styles.actionButtonText, { color: 'rgba(244, 244, 244, 1)' }]}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionButton, { backgroundColor: '#e04850', flex: 1 }]}
+                  onPress={handleDeclineOrder}
+                  disabled={!declineReason || declineOrderMutation.isPending}
+                >
+                  <Text style={[styles.actionButtonText, { color: 'rgba(244, 244, 244, 1)' }]}>
+                    {declineOrderMutation.isPending ? 'Declining...' : 'Decline'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
       </View>
     </ScrollView>
   );
