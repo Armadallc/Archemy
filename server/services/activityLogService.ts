@@ -170,16 +170,9 @@ export async function getActivityLog(
       // Program admin/user can see activities for their programs OR where they're mentioned
       // IMPORTANT: We need to fetch entries where user is mentioned regardless of program_id
       // So we'll fetch a broader set and filter in memory
-      // For mentionsOnly, don't filter by program at all - fetch all and filter for mentions
-      if (!mentionsOnly) {
-        // For normal view, fetch entries in their programs (mentions will be added in post-processing)
-        if (primaryProgramId) {
-          query = query.eq('program_id', primaryProgramId);
-        } else if (authorizedPrograms.length > 0) {
-          query = query.in('program_id', authorizedPrograms);
-        }
-      }
-      // For mentionsOnly, don't filter by program - we'll fetch all and filter for mentions in memory
+      // For both normal view and mentionsOnly, we need to fetch all entries to check for mentions
+      // We'll filter by program in memory after fetching
+      // Don't filter by program_id in the query - fetch all and filter in memory
     } else {
       // Default: show activities created by the user
       if (!mentionsOnly) {
@@ -207,11 +200,11 @@ export async function getActivityLog(
 
     // For program admins/users, we need to fetch entries where they're mentioned
     // regardless of program_id. We'll do this by fetching a broader set and filtering.
-    // For mentionsOnly, fetch ALL entries (not filtered by program) to find mentions
+    // For both mentionsOnly and normal view, fetch ALL entries (not filtered by program) to find mentions
     let shouldFetchAllForMentions = false;
-    if (mentionsOnly && (userRole === 'program_admin' || userRole === 'program_user')) {
+    if (userRole === 'program_admin' || userRole === 'program_user') {
       shouldFetchAllForMentions = true;
-      // Remove program_id filter for mentionsOnly to find all mentions
+      // Remove program_id filter to find all mentions across programs
       // We'll need to rebuild the query without program filtering
       query = supabase
         .from('activity_log')
@@ -300,6 +293,7 @@ export async function getActivityLog(
     } else if (userRole === 'program_admin' || userRole === 'program_user') {
       // For program admins/users, also include entries where they're mentioned
       // even if they're not in the same program
+      // Since we fetched all entries (not filtered by program), we need to filter in memory
       const programFiltered = filteredData.filter((entry: any) => {
         if (primaryProgramId) {
           return entry.program_id === primaryProgramId;
@@ -323,6 +317,11 @@ export async function getActivityLog(
         uniqueIds.add(entry.id);
         return true;
       });
+      
+      // Apply pagination after filtering (since we fetched all entries)
+      if (shouldFetchAllForMentions) {
+        filteredData = filteredData.slice(offset, offset + limit);
+      }
     }
 
     // Transform the data to match the expected format
