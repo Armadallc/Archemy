@@ -3,9 +3,9 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { Clock, MapPin, Phone, User, Calendar, CheckCircle, PlayCircle, XCircle, Navigation, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Clock, MapPin, Phone, User, Calendar, CheckCircle, PlayCircle, XCircle, Navigation, AlertTriangle, ChevronLeft, ChevronRight, Bell, X, MessageCircle } from 'lucide-react';
 import { apiRequest } from '../lib/queryClient';
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addWeeks, subWeeks, addMonths, subMonths, isSameMonth } from 'date-fns';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addWeeks, subWeeks, addMonths, subMonths, isSameMonth, formatDistanceToNow } from 'date-fns';
 import { useAuth } from '../hooks/useAuth';
 
 function DriverLogin() {
@@ -100,6 +100,7 @@ export default function DriverPortalMobile() {
   const [selectedTrip, setSelectedTrip] = useState<string | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   // Only enable trip fetching if user is authenticated as a driver
   const isDriverAuthenticated = Boolean(user && user.role === 'driver');
@@ -274,7 +275,7 @@ export default function DriverPortalMobile() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/mobile/driver/trips'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/mobile/trips/driver'] });
       refetch();
     },
   });
@@ -292,7 +293,7 @@ export default function DriverPortalMobile() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/mobile/driver/trips'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/mobile/trips/driver'] });
       refetch();
     },
   });
@@ -405,6 +406,18 @@ export default function DriverPortalMobile() {
           <div className="flex justify-between items-center p-6">
             <h1 className="text-2xl font-bold text-stone-900 tracking-tight">Driver Portal</h1>
             <div className="flex space-x-2">
+              {/* Notification Bell */}
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative bg-stone-600 hover:bg-stone-700 text-white font-medium px-3 py-2 text-sm transition-colors duration-200"
+              >
+                <Bell className="h-4 w-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
               <button 
                 onClick={() => refetch()}
                 className="bg-stone-600 hover:bg-stone-700 text-white font-medium px-3 py-2 text-sm transition-colors duration-200"
@@ -419,6 +432,80 @@ export default function DriverPortalMobile() {
               </button>
             </div>
           </div>
+
+          {/* Notification Panel */}
+          {showNotifications && (
+            <div className="absolute top-full left-0 right-0 bg-white border-b border-stone-300 shadow-lg z-50 max-h-[60vh] overflow-y-auto">
+              <div className="p-4 border-b border-stone-200 flex justify-between items-center">
+                <h2 className="text-lg font-bold text-stone-900">Notifications</h2>
+                <div className="flex space-x-2">
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={() => markAllAsReadMutation.mutate()}
+                      className="text-sm text-stone-600 hover:text-stone-900 px-2 py-1"
+                      disabled={markAllAsReadMutation.isPending}
+                    >
+                      {markAllAsReadMutation.isPending ? 'Marking...' : 'Mark All Read'}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => clearAllNotificationsMutation.mutate()}
+                    className="text-sm text-stone-600 hover:text-stone-900 px-2 py-1"
+                    disabled={clearAllNotificationsMutation.isPending}
+                  >
+                    {clearAllNotificationsMutation.isPending ? 'Clearing...' : 'Clear All'}
+                  </button>
+                  <button
+                    onClick={() => setShowNotifications(false)}
+                    className="text-stone-600 hover:text-stone-900"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+              <div className="divide-y divide-stone-200">
+                {notifications.length === 0 ? (
+                  <div className="p-8 text-center text-stone-600">
+                    <Bell className="h-12 w-12 mx-auto mb-4 text-stone-400" />
+                    <p>No notifications</p>
+                  </div>
+                ) : (
+                  notifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      onClick={() => handleNotificationClick(notification)}
+                      className={`p-4 cursor-pointer hover:bg-stone-50 transition-colors ${
+                        !notification.read ? 'bg-blue-50' : ''
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-stone-900">{notification.title}</h3>
+                            {!notification.read && (
+                              <span className="h-2 w-2 bg-blue-500 rounded-full"></span>
+                            )}
+                          </div>
+                          <p className="text-sm text-stone-600 mb-2">{notification.body}</p>
+                          <p className="text-xs text-stone-500">
+                            {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                          </p>
+                        </div>
+                        <div className="ml-4">
+                          {notification.data?.tripId && (
+                            <MapPin className="h-4 w-4 text-stone-400" />
+                          )}
+                          {(notification.data?.discussionId || notification.data?.chatId) && (
+                            <MessageCircle className="h-4 w-4 text-stone-400" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Trip Summary Cards */}
           <div className="grid grid-cols-3 gap-4 px-6 pb-6">

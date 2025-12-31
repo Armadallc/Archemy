@@ -112,6 +112,106 @@ router.patch("/preferences/:userId", requireSupabaseAuth, async (req: SupabaseAu
   }
 });
 
+// Get notifications for current user
+router.get("/", requireSupabaseAuth, async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const { read, limit = 50 } = req.query;
+    let query = supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', req.user.userId)
+      .order('created_at', { ascending: false })
+      .limit(parseInt(limit as string));
+
+    if (read !== undefined) {
+      query = query.eq('read', read === 'true');
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+    res.json(data || []);
+  } catch (error: any) {
+    console.error("Error fetching notifications:", error);
+    res.status(500).json({ message: "Failed to fetch notifications", error: error.message });
+  }
+});
+
+// Mark notification as read
+router.patch("/:id/read", requireSupabaseAuth, async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const { id } = req.params;
+    const { data, error } = await supabase
+      .from('notifications')
+      .update({ read: true, read_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('user_id', req.user.userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    if (!data) {
+      return res.status(404).json({ message: "Notification not found" });
+    }
+
+    res.json(data);
+  } catch (error: any) {
+    console.error("Error marking notification as read:", error);
+    res.status(500).json({ message: "Failed to mark notification as read", error: error.message });
+  }
+});
+
+// Mark all notifications as read for current user
+router.patch("/mark-all-read", requireSupabaseAuth, async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const { data, error } = await supabase
+      .from('notifications')
+      .update({ read: true, read_at: new Date().toISOString() })
+      .eq('user_id', req.user.userId)
+      .eq('read', false)
+      .select();
+
+    if (error) throw error;
+    res.json({ count: data?.length || 0, message: "All notifications marked as read" });
+  } catch (error: any) {
+    console.error("Error marking all notifications as read:", error);
+    res.status(500).json({ message: "Failed to mark all notifications as read", error: error.message });
+  }
+});
+
+// Clear all notifications for current user
+router.delete("/clear-all", requireSupabaseAuth, async (req: SupabaseAuthenticatedRequest, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const { data, error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('user_id', req.user.userId)
+      .select();
+
+    if (error) throw error;
+    res.json({ count: data?.length || 0, message: "All notifications cleared" });
+  } catch (error: any) {
+    console.error("Error clearing notifications:", error);
+    res.status(500).json({ message: "Failed to clear notifications", error: error.message });
+  }
+});
+
 export default router;
 
 
