@@ -156,6 +156,8 @@ export default function QuickAddLocation({
     if (user?.role === 'super_admin' || user?.role === 'corporate_admin') {
       return selectedProgram;
     } else if (user?.role === 'program_admin') {
+      // Program admins can access locations from their authorized programs
+      // If a program is selected, use it; otherwise backend will use all authorized programs
       return selectedProgram || (user as any).primary_program_id;
     }
     return undefined;
@@ -208,7 +210,17 @@ export default function QuickAddLocation({
         throw error;
       }
     },
-    enabled: !!(effectiveCorporateClient || effectiveProgram || effectiveLocation || user?.role === 'super_admin'),
+    // Enable query for:
+    // - Super admins (always)
+    // - Users with effective filters (corporate client, program, or location)
+    // - Program admins (they can access locations from their authorized programs even without a selected program)
+    enabled: !!(
+      user?.role === 'super_admin' || 
+      effectiveCorporateClient || 
+      effectiveProgram || 
+      effectiveLocation ||
+      user?.role === 'program_admin' // Program admins should always be able to fetch locations
+    ),
     retry: 1,
   });
 
