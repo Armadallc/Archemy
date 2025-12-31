@@ -80,7 +80,46 @@ export function useSelectedTheme() {
 
   // Apply theme tokens when selection is loaded
   // Note: This runs after FireThemeProvider, so we need to ensure our styles take precedence
+  // Cleanup function to remove any existing overrides for protected variables
+  const cleanupProtectedVariables = () => {
+    const isDark = document.documentElement.classList.contains('dark');
+    if (!isDark) return;
+    
+    const protectedVars = [
+      '--foreground',
+      '--foreground-secondary',
+      '--foreground-muted',
+      '--card-foreground',
+      '--popover-foreground',
+      '--muted-foreground',
+      '--border',
+      '--border-muted',
+      '--border-strong',
+      '--input-border'
+    ];
+    
+    // Remove from dark-mode-custom-styles element
+    const styleElement = document.getElementById('dark-mode-custom-styles');
+    if (styleElement) {
+      let existingStyles = styleElement.textContent || '';
+      protectedVars.forEach((protectedVar) => {
+        const varRegex = new RegExp(`${protectedVar.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*:[^;]+;`, 'g');
+        existingStyles = existingStyles.replace(varRegex, '');
+      });
+      styleElement.textContent = existingStyles;
+    }
+    
+    // Also remove from :root inline styles
+    const root = document.documentElement;
+    protectedVars.forEach((protectedVar) => {
+      root.style.removeProperty(protectedVar);
+    });
+  };
+
   useEffect(() => {
+    // Cleanup any existing overrides on mount and when theme changes
+    cleanupProtectedVariables();
+    
     if (!userSelection || !userSelection.theme) {
       return;
     }
