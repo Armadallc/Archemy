@@ -176,6 +176,26 @@ export default function QuickAddLocation({
     return undefined;
   }, [propLocationId, user?.role]);
 
+  // Determine if query should be enabled
+  const isQueryEnabled = useMemo(() => {
+    const enabled = !!(
+      user?.role === 'super_admin' || 
+      effectiveCorporateClient || 
+      effectiveProgram || 
+      effectiveLocation ||
+      user?.role === 'program_admin' ||
+      (user?.role === 'program_user' && effectiveLocation)
+    );
+    console.log('🔍 QuickAddLocation query enablement check:', {
+      userRole: user?.role,
+      effectiveProgram,
+      effectiveCorporateClient,
+      effectiveLocation,
+      enabled,
+    });
+    return enabled;
+  }, [user?.role, effectiveCorporateClient, effectiveProgram, effectiveLocation]);
+
   // Fetch frequent locations using the new by-tag endpoint
   const { data: frequentLocationsByTag = {}, isLoading, error: queryError } = useQuery({
     queryKey: ['/api/locations/frequent/by-tag', effectiveCorporateClient, effectiveProgram, effectiveLocation],
@@ -219,14 +239,7 @@ export default function QuickAddLocation({
     // - Program admins (they can access locations from their authorized programs even without a selected program)
     //   Backend will use all authorized programs if no program_id is provided
     // - Program users (they can access locations from their assigned location if they have a location_id)
-    enabled: !!(
-      user?.role === 'super_admin' || 
-      effectiveCorporateClient || 
-      effectiveProgram || 
-      effectiveLocation ||
-      user?.role === 'program_admin' || // Program admins should always be able to fetch locations (backend handles authorized programs)
-      (user?.role === 'program_user' && effectiveLocation) // Program users need a location_id to fetch locations
-    ),
+    enabled: isQueryEnabled,
     retry: 1,
   });
 
