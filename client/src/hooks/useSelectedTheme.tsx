@@ -153,6 +153,21 @@ export function useSelectedTheme() {
         'colors.semantic.status.warning': '--in-progress',
       };
 
+      // Protected CSS variables that should never be overridden in dark mode
+      // These are handled by index.css and should always use Aqua #a5c8ca
+      const protectedVars = [
+        '--foreground',
+        '--foreground-secondary',
+        '--foreground-muted',
+        '--card-foreground',
+        '--popover-foreground',
+        '--muted-foreground',
+        '--border',
+        '--border-muted',
+        '--border-strong',
+        '--input-border'
+      ];
+
       // Clear previous mode's variables before applying new ones
       // This prevents conflicts when switching between light and dark modes
       if (isDark) {
@@ -162,6 +177,19 @@ export function useSelectedTheme() {
         });
         root.style.removeProperty('--ring');
         root.style.removeProperty('--page-background'); // Explicitly clear page-background
+        
+        // CRITICAL: Remove any existing overrides for protected variables from dark-mode-custom-styles
+        // This ensures the CSS file defaults (Aqua) take precedence
+        const styleElement = document.getElementById('dark-mode-custom-styles');
+        if (styleElement) {
+          let existingStyles = styleElement.textContent || '';
+          // Remove any rules for protected variables
+          protectedVars.forEach((protectedVar) => {
+            const varRegex = new RegExp(`${protectedVar.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*:[^;]+;`, 'g');
+            existingStyles = existingStyles.replace(varRegex, '');
+          });
+          styleElement.textContent = existingStyles;
+        }
       } else {
         // Switching to light mode - clear dark mode variables from style block
         const styleElement = document.getElementById('dark-mode-custom-styles');

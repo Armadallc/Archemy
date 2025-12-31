@@ -85,7 +85,27 @@ const applyThemeTokens = (tokenObj: any, isDark: boolean = false) => {
 
   const root = document.documentElement;
 
+  // Protected CSS variables that should never be overridden in dark mode
+  // These are handled by index.css and should always use Aqua #a5c8ca
+  const protectedVars = [
+    '--foreground',
+    '--foreground-secondary',
+    '--foreground-muted',
+    '--card-foreground',
+    '--popover-foreground',
+    '--muted-foreground',
+    '--border',
+    '--border-muted',
+    '--border-strong',
+    '--input-border'
+  ];
+
   Object.entries(mapping).forEach(([path, cssVar]) => {
+    // Skip protected variables in dark mode
+    if (isDark && protectedVars.includes(cssVar)) {
+      return;
+    }
+    
     const value = getTokenValueByPath(tokenObj, path);
     if (value) {
       if (isDark) {

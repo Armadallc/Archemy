@@ -141,12 +141,37 @@ const applyTheme = (slots: ThemeSlots, coreColors: ReturnType<typeof getCoreColo
   if (typeof window === 'undefined') return;
   
   const root = document.documentElement;
+  const isDark = document.documentElement.classList.contains('dark');
+  
+  // Protected CSS variables that should never be overridden in dark mode
+  // These are handled by index.css and should always use Aqua #a5c8ca
+  const protectedVars = [
+    '--foreground',
+    '--foreground-secondary',
+    '--foreground-muted',
+    '--card-foreground',
+    '--popover-foreground',
+    '--muted-foreground',
+    '--border',
+    '--border-muted',
+    '--border-strong',
+    '--input-border'
+  ];
   
   // Map slots to CSS variables
   root.style.setProperty('--background', coreColors[slots.background].hex);
-  root.style.setProperty('--foreground', coreColors[slots.text].hex);
+  
+  // Skip protected variables in dark mode
+  if (!isDark || !protectedVars.includes('--foreground')) {
+    root.style.setProperty('--foreground', coreColors[slots.text].hex);
+  }
+  
   root.style.setProperty('--card', coreColors[slots.card].hex);
-  root.style.setProperty('--card-foreground', coreColors[slots.cardText].hex);
+  
+  if (!isDark || !protectedVars.includes('--card-foreground')) {
+    root.style.setProperty('--card-foreground', coreColors[slots.cardText].hex);
+  }
+  
   root.style.setProperty('--primary', coreColors[slots.accent].hex);
   root.style.setProperty('--primary-foreground', coreColors[slots.accentText].hex);
   root.style.setProperty('--accent', coreColors[slots.accent].hex);
@@ -158,15 +183,24 @@ const applyTheme = (slots: ThemeSlots, coreColors: ReturnType<typeof getCoreColo
   
   // Muted (slightly different from card)
   root.style.setProperty('--muted', coreColors[slots.background].hex);
-  root.style.setProperty('--muted-foreground', coreColors[slots.text].hex);
+  
+  if (!isDark || !protectedVars.includes('--muted-foreground')) {
+    root.style.setProperty('--muted-foreground', coreColors[slots.text].hex);
+  }
   
   // Popover
   root.style.setProperty('--popover', coreColors[slots.card].hex);
-  root.style.setProperty('--popover-foreground', coreColors[slots.cardText].hex);
   
-  // Border - derive from card color
-  const borderColor = slots.card === 'charcoal' ? '#464a4f' : '#d4d7da';
-  root.style.setProperty('--border', borderColor);
+  if (!isDark || !protectedVars.includes('--popover-foreground')) {
+    root.style.setProperty('--popover-foreground', coreColors[slots.cardText].hex);
+  }
+  
+  // Border - derive from card color, but skip in dark mode
+  if (!isDark || !protectedVars.includes('--border')) {
+    const borderColor = slots.card === 'charcoal' ? '#464a4f' : '#d4d7da';
+    root.style.setProperty('--border', borderColor);
+  }
+  
   root.style.setProperty('--input', coreColors[slots.card].hex);
   root.style.setProperty('--ring', coreColors[slots.accent].hex);
 };
