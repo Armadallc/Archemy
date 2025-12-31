@@ -887,8 +887,8 @@ export default function TripDetailsScreen() {
                 onPress={handleConfirmOrder}
                 disabled={confirmOrderMutation.isPending}
               >
-                <Ionicons name="checkmark-circle" size={20} color="rgba(244, 244, 244, 1)" />
-                <Text style={[styles.actionButtonText, { color: 'rgba(244, 244, 244, 1)', fontSize: 16 }]}>
+                <Ionicons name="checkmark-circle" size={20} color="#1E2023" />
+                <Text style={[styles.actionButtonText, { color: '#1E2023', fontSize: 16 }]}>
                   {confirmOrderMutation.isPending ? 'Confirming...' : 'Confirm Order'}
                 </Text>
               </TouchableOpacity>
