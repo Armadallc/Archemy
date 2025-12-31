@@ -290,6 +290,7 @@ export default function TripDetailsScreen() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'order': return '#F59E0B'; // Amber for order status
       case 'scheduled': return theme.colors.tripStatus.scheduled;
       case 'confirmed': return theme.colors.tripStatus.confirmed;
       case 'in_progress': return theme.colors.tripStatus.inProgress;
