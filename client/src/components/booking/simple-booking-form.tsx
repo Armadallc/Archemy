@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
@@ -271,7 +271,28 @@ function SimpleBookingForm() {
   const [selectedCorporateClientLocal, setSelectedCorporateClientLocal] = useState<string>("");
 
   // Determine which program/corporate client to use
-  const effectiveProgram = selectedProgram || selectedProgramLocal;
+  // For program admins, automatically use their primary_program_id or first authorized program
+  // if no program is selected from hierarchy
+  const effectiveProgram = useMemo(() => {
+    if (selectedProgram || selectedProgramLocal) {
+      return selectedProgram || selectedProgramLocal;
+    }
+    
+    // For program admins, automatically use their program
+    if (user?.role === 'program_admin') {
+      const primaryProgramId = (user as any).primary_program_id;
+      const authorizedPrograms = (user as any).authorized_programs || [];
+      
+      if (primaryProgramId) {
+        return primaryProgramId;
+      } else if (authorizedPrograms.length > 0) {
+        return authorizedPrograms[0];
+      }
+    }
+    
+    return undefined;
+  }, [selectedProgram, selectedProgramLocal, user]);
+  
   const effectiveCorporateClient = selectedCorporateClient || selectedCorporateClientLocal;
 
   // Fetch corporate clients (for super admins)
@@ -299,7 +320,7 @@ function SimpleBookingForm() {
               (level === 'client' && user?.role === 'corporate_admin' && !!effectiveCorporateClient),
   });
 
-  // Auto-select program for super admins or corporate admins
+  // Auto-select program for super admins, corporate admins, or program admins
   React.useEffect(() => {
     // For super admins: auto-select first program when corporate client is selected
     if (level === 'corporate' && !selectedProgram && programs.length > 0 && !selectedProgramLocal) {
@@ -320,6 +341,21 @@ function SimpleBookingForm() {
       } else if (programs.length > 1) {
         // If multiple programs, still auto-select first one (user can change)
         setSelectedProgramLocal(programs[0].id);
+      }
+    }
+    
+    // For program admins: automatically use their primary_program_id or first authorized program
+    // They should not need to select a program - it should be scoped automatically
+    if (user?.role === 'program_admin' && !selectedProgram && !selectedProgramLocal) {
+      const primaryProgramId = (user as any).primary_program_id;
+      const authorizedPrograms = (user as any).authorized_programs || [];
+      
+      if (primaryProgramId) {
+        // Use primary program ID if available
+        setSelectedProgramLocal(primaryProgramId);
+      } else if (authorizedPrograms.length > 0) {
+        // Use first authorized program if no primary program
+        setSelectedProgramLocal(authorizedPrograms[0]);
       }
     }
   }, [level, selectedProgram, programs, selectedProgramLocal, user]);
