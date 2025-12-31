@@ -369,12 +369,36 @@ function applyDarkMode(theme: ThemeSlots) {
   }
   
   if (root.classList.contains("dark")) {
+    // Protected CSS variables that should never be overridden in dark mode
+    // These are handled by index.css and should always use Aqua #a5c8ca
+    const protectedVars = [
+      '--foreground',
+      '--foreground-secondary',
+      '--foreground-muted',
+      '--card-foreground',
+      '--popover-foreground',
+      '--muted-foreground',
+      '--border',
+      '--border-muted',
+      '--border-strong',
+      '--input-border'
+    ];
+    
     // Core semantic variables
     root.style.setProperty("--page-background", PALETTE[theme.dark.pageBackground]); // Main page background
     root.style.setProperty("--background", PALETTE[theme.dark.background]);
-    root.style.setProperty("--foreground", PALETTE[theme.dark.text]);
+    
+    // Skip protected variables in dark mode
+    if (!protectedVars.includes('--foreground')) {
+      root.style.setProperty("--foreground", PALETTE[theme.dark.text]);
+    }
+    
     root.style.setProperty("--card", PALETTE[theme.dark.card]);
-    root.style.setProperty("--card-foreground", PALETTE[theme.dark.cardText]);
+    
+    if (!protectedVars.includes('--card-foreground')) {
+      root.style.setProperty("--card-foreground", PALETTE[theme.dark.cardText]);
+    }
+    
     root.style.setProperty("--surface", PALETTE[theme.dark.surface]);
     root.style.setProperty("--surface-elevated", PALETTE[theme.dark.card]);
     root.style.setProperty("--accent", PALETTE[theme.dark.accent]);
@@ -388,15 +412,25 @@ function applyDarkMode(theme: ThemeSlots) {
     
     // Muted variants
     root.style.setProperty("--muted", PALETTE[theme.dark.surface]);
-    root.style.setProperty("--muted-foreground", PALETTE[theme.dark.text]);
+    
+    if (!protectedVars.includes('--muted-foreground')) {
+      root.style.setProperty("--muted-foreground", PALETTE[theme.dark.text]);
+    }
+    
     root.style.setProperty("--surface-muted", PALETTE[theme.dark.surface]);
     
     // Popover
     root.style.setProperty("--popover", PALETTE[theme.dark.card]);
-    root.style.setProperty("--popover-foreground", PALETTE[theme.dark.cardText]);
     
-    // Border - NOW SEPARATE from surface
-    root.style.setProperty("--border", PALETTE[theme.dark.borderColor]);
+    if (!protectedVars.includes('--popover-foreground')) {
+      root.style.setProperty("--popover-foreground", PALETTE[theme.dark.cardText]);
+    }
+    
+    // Border - NOW SEPARATE from surface, but skip in dark mode
+    if (!protectedVars.includes('--border')) {
+      root.style.setProperty("--border", PALETTE[theme.dark.borderColor]);
+    }
+    
     root.style.setProperty("--border-weight", BORDER_WEIGHTS[theme.dark.borderWeight]);
     
     // Secondary
@@ -405,7 +439,10 @@ function applyDarkMode(theme: ThemeSlots) {
     
     // Input
     root.style.setProperty("--input", PALETTE[theme.dark.surface]);
-    root.style.setProperty("--input-border", PALETTE[theme.dark.borderColor]);
+    
+    if (!protectedVars.includes('--input-border')) {
+      root.style.setProperty("--input-border", PALETTE[theme.dark.borderColor]);
+    }
     
     // Ring (focus states)
     root.style.setProperty("--ring", PALETTE[theme.dark.accent]);
