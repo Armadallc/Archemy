@@ -150,18 +150,21 @@ export default function QuickAddLocation({
   }, [propCorporateClientId, user?.role, selectedCorporateClient]);
 
   const effectiveProgram = useMemo(() => {
-    // Use prop if provided, otherwise use hierarchy
+    // Use prop if provided (this takes precedence - from parent component)
     if (propProgramId) return propProgramId;
     
     if (user?.role === 'super_admin' || user?.role === 'corporate_admin') {
       return selectedProgram;
     } else if (user?.role === 'program_admin') {
       // Program admins can access locations from their authorized programs
-      // If a program is selected, use it; otherwise backend will use all authorized programs
-      return selectedProgram || (user as any).primary_program_id;
+      // If a program is selected, use it; otherwise use primary_program_id or first authorized program
+      const primaryProgramId = (user as any).primary_program_id;
+      const authorizedPrograms = (user as any).authorized_programs || [];
+      
+      return selectedProgram || primaryProgramId || (authorizedPrograms.length > 0 ? authorizedPrograms[0] : undefined);
     }
     return undefined;
-  }, [propProgramId, user?.role, selectedProgram]);
+  }, [propProgramId, user?.role, selectedProgram, user]);
 
   const effectiveLocation = useMemo(() => {
     // Use prop if provided, otherwise use hierarchy
