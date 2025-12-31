@@ -249,6 +249,26 @@ export function useSelectedTheme() {
               document.head.appendChild(styleElement);
             }
 
+            // Never inject styles for protected CSS variables in dark mode
+            // These are handled by index.css and should not be overridden
+            const protectedVars = [
+              '--foreground',
+              '--foreground-secondary',
+              '--foreground-muted',
+              '--card-foreground',
+              '--popover-foreground',
+              '--muted-foreground',
+              '--border',
+              '--border-muted',
+              '--border-strong',
+              '--input-border'
+            ];
+            
+            if (protectedVars.includes(cssVar)) {
+              // Skip injecting this variable - let CSS file defaults (Aqua) take precedence
+              return;
+            }
+            
             let existingStyles = styleElement.textContent || '';
             const varRegex = new RegExp(`${cssVar.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*:[^;]+;`, 'g');
             const newRule = `${cssVar}: ${value};`;

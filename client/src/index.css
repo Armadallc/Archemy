@@ -555,16 +555,17 @@
 
   /* Force text and border colors to Aqua in dark mode - override any theme tokens */
   /* These are set at the end of .dark block to ensure they take precedence over dynamic theme overrides */
-  --foreground: var(--color-aqua); /* #a5c8ca - Body, surface, and card text */
-  --foreground-secondary: var(--color-aqua); /* #a5c8ca - Secondary text */
-  --foreground-muted: var(--color-aqua); /* #a5c8ca - Muted text */
-  --card-foreground: var(--color-aqua); /* #a5c8ca - Card text */
-  --popover-foreground: var(--color-aqua); /* #a5c8ca - Popover text */
-  --muted-foreground: var(--color-aqua); /* #a5c8ca - Muted text */
-  --border: var(--color-aqua); /* #a5c8ca - Primary borders */
-  --border-muted: var(--color-aqua); /* #a5c8ca - Muted borders */
-  --border-strong: var(--color-aqua); /* #a5c8ca - Strong borders */
-  --input-border: var(--color-aqua); /* #a5c8ca - Input borders */
+  /* Using direct color values (#a5c8ca) instead of CSS variables to prevent any override */
+  --foreground: #a5c8ca; /* Aqua - Body, surface, and card text */
+  --foreground-secondary: #a5c8ca; /* Aqua - Secondary text */
+  --foreground-muted: #a5c8ca; /* Aqua - Muted text */
+  --card-foreground: #a5c8ca; /* Aqua - Card text */
+  --popover-foreground: #a5c8ca; /* Aqua - Popover text */
+  --muted-foreground: #a5c8ca; /* Aqua - Muted text */
+  --border: #a5c8ca; /* Aqua - Primary borders */
+  --border-muted: #a5c8ca; /* Aqua - Muted borders */
+  --border-strong: #a5c8ca; /* Aqua - Strong borders */
+  --input-border: #a5c8ca; /* Aqua - Input borders */
 }
 
 /* ============================================================
