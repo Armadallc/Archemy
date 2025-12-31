@@ -519,11 +519,12 @@ export default function TripDetailsScreen() {
     actionsContainer: {
       marginTop: 20,
       marginBottom: 40,
-      paddingHorizontal: 4,
+      paddingHorizontal: 0,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      gap: 8,
+      gap: 12,
+      width: '100%',
     },
     actionButtonsContainer: {
       flexDirection: 'column',
@@ -536,10 +537,11 @@ export default function TripDetailsScreen() {
       alignItems: 'center',
       justifyContent: 'center',
       paddingVertical: 16,
-      paddingHorizontal: 20,
+      paddingHorizontal: 12,
       borderRadius: 12,
       backgroundColor: '#1e2023',
-      minWidth: 210,
+      minWidth: 0,
+      flex: 1,
     },
     noShowButton: {
       width: 76,
