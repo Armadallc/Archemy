@@ -356,6 +356,16 @@ export default function QuickAddLocation({
     return filtered;
   }, [frequentLocationsByTag, searchTerm]);
 
+  // Check if query is enabled
+  const queryEnabled = !!(
+    user?.role === 'super_admin' || 
+    effectiveCorporateClient || 
+    effectiveProgram || 
+    effectiveLocation ||
+    user?.role === 'program_admin' ||
+    (user?.role === 'program_user' && effectiveLocation)
+  );
+
   console.log('🔍 QuickAddLocation render state:', {
     effectiveProgram,
     effectiveCorporateClient,
@@ -364,6 +374,10 @@ export default function QuickAddLocation({
     allLocationsCount: allLocations.length,
     filteredLocationsByTagKeys: Object.keys(filteredLocationsByTag),
     isLoading,
+    queryEnabled,
+    userRole: user?.role,
+    frequentLocationsByTag: Object.keys(frequentLocationsByTag),
+    queryError: queryError?.message,
     searchTerm,
   });
 
