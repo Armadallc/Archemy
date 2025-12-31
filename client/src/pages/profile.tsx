@@ -196,22 +196,23 @@ export default function ProfilePage() {
 
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8081';
       
+      // Only send fields that exist in the users table
+      // Users table has: first_name, last_name, phone, avatar_url
+      // Note: address, job_title, company, bio, location are not in users table
+      const validUpdates: any = {};
+      if (formData.first_name !== undefined) validUpdates.first_name = formData.first_name;
+      if (formData.last_name !== undefined) validUpdates.last_name = formData.last_name;
+      if (formData.phone !== undefined) validUpdates.phone = formData.phone;
+      // Note: address, job_title, company, bio, location fields don't exist in users table
+      // These would need to be stored elsewhere (e.g., user_profiles table) if needed
+      
       const response = await fetch(`${apiBaseUrl}/api/users/${user?.user_id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          phone: formData.phone,
-          address: formData.address,
-          job_title: formData.job_title,
-          company: formData.company,
-          bio: formData.bio,
-          location: formData.location,
-        })
+        body: JSON.stringify(validUpdates)
       });
 
       if (!response.ok) {

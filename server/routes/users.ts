@@ -514,6 +514,31 @@ router.patch("/:userId", requireSupabaseAuth, async (req: SupabaseAuthenticatedR
     // Prepare update data - handle both camelCase and snake_case field names
     const updateData: any = { ...updates };
     
+    // List of valid fields in the users table (excluding system fields)
+    const validUserFields = [
+      'first_name', 'last_name', 'user_name', 'email', 'phone', 'avatar_url',
+      'primary_program_id', 'corporate_client_id', 'authorized_programs',
+      'is_active', 'display_id', 'tenant_role_id', 'active_tenant_id'
+    ];
+    
+    // Filter out invalid fields that don't exist in the users table
+    Object.keys(updateData).forEach(key => {
+      // Normalize camelCase to snake_case first
+      const normalizedKey = key
+        .replace(/([A-Z])/g, '_$1')
+        .toLowerCase()
+        .replace(/^_/, '');
+      
+      // Check if field is valid (after normalization)
+      if (!validUserFields.includes(normalizedKey) && 
+          !validUserFields.includes(key) &&
+          key !== 'password' && // password is handled separately
+          key !== 'updated_at') { // updated_at is added automatically
+        console.warn(`⚠️ Attempting to update invalid field: ${key} (normalized: ${normalizedKey}). Field does not exist in users table.`);
+        delete updateData[key];
+      }
+    });
+    
     // Normalize field names (camelCase to snake_case)
     if (updateData.firstName !== undefined) {
       updateData.first_name = updateData.firstName;
