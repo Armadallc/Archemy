@@ -162,8 +162,8 @@ class TripNotificationService {
 
             // 3. Create activity log entry (for activity feed with "mentioned only" filter)
             // Create one entry per trip update with all tagged users in metadata
-            // Only create once, not per recipient
-            if (tripCreatorId && taggedUserIds.length > 0 && !activityLogCreated) {
+            // Always create for trip updates, not just when there are tagged users
+            if (tripCreatorId && !activityLogCreated) {
               await createActivityLogEntry({
                 activity_type: options.notificationType,
                 source_type: 'trip',
@@ -171,7 +171,7 @@ class TripNotificationService {
                 user_id: tripCreatorId, // Creator of the trip
                 action_description: body,
                 metadata: {
-                  mentioned_users: taggedUserIds, // All tagged users
+                  mentioned_users: taggedUserIds.length > 0 ? taggedUserIds : undefined, // All tagged users (if any)
                   trip_id: options.tripId,
                   notification_type: options.notificationType,
                   client_name: options.clientName,
