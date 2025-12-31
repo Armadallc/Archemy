@@ -225,6 +225,19 @@ export function useSelectedTheme() {
         // Skip pageBackground since we already handled it above
         if (cssVar === '--page-background') return;
         
+        // In dark mode, always force text and border colors to Aqua #a5c8ca
+        // This ensures consistent text and border colors regardless of theme tokens
+        if (isDark && (
+          cssVar === '--foreground' ||
+          cssVar === '--card-foreground' ||
+          cssVar === '--popover-foreground' ||
+          cssVar === '--muted-foreground' ||
+          cssVar === '--border'
+        )) {
+          // Skip applying theme token - let CSS defaults (Aqua) take precedence
+          return;
+        }
+        
         const value = getTokenValueByPath(tokens, path);
         if (value) {
           if (isDark) {
