@@ -168,14 +168,18 @@ export async function getActivityLog(
       query = query.eq('corporate_client_id', corporateClientId);
     } else if (userRole === 'program_admin' || userRole === 'program_user') {
       // Program admin/user can see activities for their programs OR where they're mentioned
-      // For mentionsOnly, we still want to scope by program first, then filter for mentions
-      // For normal view, show entries in their programs (mentions will be added in post-processing)
-      if (primaryProgramId) {
-        query = query.eq('program_id', primaryProgramId);
-      } else if (authorizedPrograms.length > 0) {
-        query = query.in('program_id', authorizedPrograms);
+      // IMPORTANT: We need to fetch entries where user is mentioned regardless of program_id
+      // So we'll fetch a broader set and filter in memory
+      // For mentionsOnly, don't filter by program at all - fetch all and filter for mentions
+      if (!mentionsOnly) {
+        // For normal view, fetch entries in their programs (mentions will be added in post-processing)
+        if (primaryProgramId) {
+          query = query.eq('program_id', primaryProgramId);
+        } else if (authorizedPrograms.length > 0) {
+          query = query.in('program_id', authorizedPrograms);
+        }
       }
-      // Note: If no programs, we'll still fetch and filter in memory for mentions
+      // For mentionsOnly, don't filter by program - we'll fetch all and filter for mentions in memory
     } else {
       // Default: show activities created by the user
       if (!mentionsOnly) {
@@ -201,8 +205,49 @@ export async function getActivityLog(
       query = query.lte('created_at', endDate.toISOString());
     }
 
-    // Apply pagination
-    query = query.range(offset, offset + limit - 1);
+    // For program admins/users, we need to fetch entries where they're mentioned
+    // regardless of program_id. We'll do this by fetching a broader set and filtering.
+    // For mentionsOnly, fetch ALL entries (not filtered by program) to find mentions
+    let shouldFetchAllForMentions = false;
+    if (mentionsOnly && (userRole === 'program_admin' || userRole === 'program_user')) {
+      shouldFetchAllForMentions = true;
+      // Remove program_id filter for mentionsOnly to find all mentions
+      // We'll need to rebuild the query without program filtering
+      query = supabase
+        .from('activity_log')
+        .select(`
+          id,
+          activity_type,
+          source_type,
+          source_id,
+          user_id,
+          action_description,
+          metadata,
+          corporate_client_id,
+          program_id,
+          created_at
+        `)
+        .order('created_at', { ascending: false });
+      
+      // Re-apply other filters
+      if (activityType) {
+        query = query.eq('activity_type', activityType);
+      }
+      if (sourceType) {
+        query = query.eq('source_type', sourceType);
+      }
+      if (startDate) {
+        query = query.gte('created_at', startDate.toISOString());
+      }
+      if (endDate) {
+        query = query.lte('created_at', endDate.toISOString());
+      }
+    }
+
+    // If we need to fetch all for mentions, don't apply pagination yet
+    if (!shouldFetchAllForMentions) {
+      query = query.range(offset, offset + limit - 1);
+    }
 
     const { data, error } = await query;
 
@@ -247,6 +292,11 @@ export async function getActivityLog(
         return Array.isArray(mentionedUsers) && mentionedUsers.includes(userId) ||
                Array.isArray(mentionedRoles) && mentionedRoles.includes(userRole || '');
       });
+      
+      // Apply pagination after filtering for mentions
+      if (shouldFetchAllForMentions) {
+        filteredData = filteredData.slice(offset, offset + limit);
+      }
     } else if (userRole === 'program_admin' || userRole === 'program_user') {
       // For program admins/users, also include entries where they're mentioned
       // even if they're not in the same program

@@ -558,17 +558,23 @@ router.post("/", requireSupabaseAuth, requireSupabaseRole(['super_admin', 'corpo
     
     // Broadcast trip creation notification with client data
     // Use program's corporate_client_id (fetched above) or fallback to user's corporate_client_id
+    // NOTE: Don't broadcast to program users if users were tagged - they'll receive trip_tagged messages instead
+    // Only broadcast to driver and program users if no users were tagged
+    const hasTaggedUsers = tagged_user_ids && Array.isArray(tagged_user_ids) && tagged_user_ids.length > 0;
+    
     if (tripWithClient) {
       broadcastTripCreated(tripWithClient, {
         userId: driverUserId, // Send to assigned driver if exists
-        programId: trip.program_id, // Also notify all program users
+        // Only broadcast to program if no users were tagged (tagged users get trip_tagged messages)
+        programId: hasTaggedUsers ? undefined : trip.program_id,
         corporateClientId: programCorporateClientId || req.user?.corporateClientId || undefined
       });
     } else {
       // Fallback to trip without client data if fetch fails
       broadcastTripCreated(trip, {
         userId: driverUserId,
-        programId: trip.program_id,
+        // Only broadcast to program if no users were tagged
+        programId: hasTaggedUsers ? undefined : trip.program_id,
         corporateClientId: programCorporateClientId || req.user?.corporateClientId || undefined
       });
     }
