@@ -214,12 +214,14 @@ export default function QuickAddLocation({
     // - Super admins (always)
     // - Users with effective filters (corporate client, program, or location)
     // - Program admins (they can access locations from their authorized programs even without a selected program)
+    // - Program users (they can access locations from their assigned location if they have a location_id)
     enabled: !!(
       user?.role === 'super_admin' || 
       effectiveCorporateClient || 
       effectiveProgram || 
       effectiveLocation ||
-      user?.role === 'program_admin' // Program admins should always be able to fetch locations
+      user?.role === 'program_admin' || // Program admins should always be able to fetch locations
+      (user?.role === 'program_user' && effectiveLocation) // Program users need a location_id to fetch locations
     ),
     retry: 1,
   });
