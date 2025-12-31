@@ -881,25 +881,25 @@ export default function TripDetailsScreen() {
         <View style={styles.actionsContainer}>
           {/* Order Status: Show Confirm/Decline buttons */}
           {trip.status === 'order' ? (
-            <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
+            <View style={{ flexDirection: 'row', gap: 12, width: '100%', paddingHorizontal: 0 }}>
               <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: '#3bfec9', flex: 1 }]}
+                style={[styles.actionButton, { backgroundColor: '#3bfec9', flex: 1, minWidth: 0 }]}
                 onPress={handleConfirmOrder}
                 disabled={confirmOrderMutation.isPending}
               >
                 <Ionicons name="checkmark-circle" size={20} color="#1E2023" />
                 <Text style={[styles.actionButtonText, { color: '#1E2023', fontSize: 16 }]}>
-                  {confirmOrderMutation.isPending ? 'Confirming...' : 'Confirm Order'}
+                  {confirmOrderMutation.isPending ? 'Confirming...' : 'CONFIRM'}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: '#e04850', flex: 1 }]}
+                style={[styles.actionButton, { backgroundColor: '#e04850', flex: 1, minWidth: 0 }]}
                 onPress={() => setShowDeclineDialog(true)}
                 disabled={declineOrderMutation.isPending}
               >
                 <Ionicons name="close-circle" size={20} color="rgba(244, 244, 244, 1)" />
                 <Text style={[styles.actionButtonText, { color: 'rgba(244, 244, 244, 1)', fontSize: 16 }]}>
-                  Decline
+                  DECLINE
                 </Text>
               </TouchableOpacity>
             </View>
