@@ -297,6 +297,22 @@ class ApiClient {
     });
   }
 
+  // Order Management Methods
+  async confirmOrder(tripId: string): Promise<any> {
+    logger.info('Confirming trip order', 'ApiClient', { tripId });
+    return this.request(`/api/trips/${tripId}/confirm-order`, {
+      method: 'POST',
+    });
+  }
+
+  async declineOrder(tripId: string, reason: string): Promise<any> {
+    logger.info('Declining trip order', 'ApiClient', { tripId, reason });
+    return this.request(`/api/trips/${tripId}/decline-order`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+  }
+
   // Emergency Methods
   async sendEmergencyAlert(data: { location: any; tripId?: string }): Promise<any> {
     logger.info('Sending emergency alert', 'ApiClient', data);
