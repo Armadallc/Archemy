@@ -246,9 +246,12 @@ class TripNotificationService {
 
     switch (notificationType) {
       case 'order_confirmed':
+        // Format: "(Driver's username) confirmed trip for (client first name) on (date/time)"
+        const clientFirstName = clientName ? clientName.split(' ')[0] : 'client';
+        const dateTime = tripDate && tripTime ? `${tripDate} at ${tripTime}` : (tripDate || tripTime || '');
         return {
           title: 'Trip Order Confirmed',
-          body: additionalInfo || `${driverName || 'Driver'} has confirmed the trip order for ${clientName || 'client'}${tripDate ? ` on ${tripDate}` : ''}`,
+          body: additionalInfo || `${driverName || 'Driver'} confirmed trip for ${clientFirstName}${dateTime ? ` on ${dateTime}` : ''}`,
           data: {
             tripId,
             type: 'order_confirmed',
